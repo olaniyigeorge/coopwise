@@ -8,6 +8,8 @@ class GlobalConfig(BaseSettings):
     CLIENT_DOMAIN: str
     DOMAIN: str
     DATABASE_URL: str
+    ALGORITHM: str
+    APP_SECRET_KEY: str
     class Config:
         env_file = ".env"
         extra = "ignore"  
@@ -18,6 +20,8 @@ class DevConfig(GlobalConfig):
     CLIENT_DOMAIN: str
     DOMAIN: str
     DATABASE_URL: str
+    ALGORITHM: str
+    APP_SECRET_KEY: str
     # class Config:
     #     env_prefix: str = "DEV_"
 
@@ -27,6 +31,8 @@ class TestConfig(GlobalConfig):
     CLIENT_DOMAIN: str
     DOMAIN: str
     DATABASE_URL: str
+    ALGORITHM: str
+    APP_SECRET_KEY: str
     # class Config:
     #     env_prefix: str = "TEST_"
 
@@ -36,6 +42,8 @@ class ProdConfig(GlobalConfig):
     CLIENT_DOMAIN: str
     DOMAIN: str
     DATABASE_URL: str
+    ALGORITHM: str
+    APP_SECRET_KEY: str
     # class Config:
     #     env_prefix: str = "PROD_"
 
