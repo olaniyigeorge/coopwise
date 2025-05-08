@@ -1,6 +1,6 @@
 from fastapi import Request
 import time
-from services.logger import logger
+from app.utils.logger import logger
 
 async def app_middleware(request: Request, call_next):
 

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.ext.declarative import declarative_base
 
 
-from config import config
+from app.core.config import config
 
 
 # SQLAlchemy Base class for declarative models
