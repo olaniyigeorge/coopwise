@@ -6,7 +6,7 @@ load_dotenv()
 from app.core.middleware import app_middleware
 from app.utils.logger import logger
 from app.core.config import config
-# from v1_routes import auth, interviews, jobs, statements, industries, ws_interview, users, transcribe
+from app.api.v1.routes import auth # , interviews, jobs, statements, industries, ws_interview, users, transcribe
 import uvicorn
 from contextlib import asynccontextmanager
 from db.database import database, init_db
@@ -31,7 +31,7 @@ app = FastAPI(
 
 
 # Register Routers
-# app.include_router(users.router)
+app.include_router(auth.router)
 # app.include_router(auth.router)
 
 
