@@ -3,9 +3,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 load_dotenv() 
-from middleware import app_middleware 
-from services.logger import logger
-from config import config
+from app.core.middleware import app_middleware
+from app.utils.logger import logger
+from app.core.config import config
 # from v1_routes import auth, interviews, jobs, statements, industries, ws_interview, users, transcribe
 import uvicorn
 from contextlib import asynccontextmanager
