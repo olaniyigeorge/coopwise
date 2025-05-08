@@ -1,0 +1,88 @@
+from fastapi import BackgroundTasks, Depends, FastAPI
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+load_dotenv() 
+from middleware import app_middleware 
+from services.logger import logger
+from config import config
+# from v1_routes import auth, interviews, jobs, statements, industries, ws_interview, users, transcribe
+import uvicorn
+from contextlib import asynccontextmanager
+from db.database import database, init_db
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await database.connect()
+    await init_db() # Run db initialization
+    yield 
+    await database.disconnect()
+
+
+app = FastAPI(
+    title=config.PROJECT_NAME, 
+    docs_url="/api/docs",
+    lifespan=lifespan
+)
+
+
+# Register Routers
+# app.include_router(users.router)
+# app.include_router(auth.router)
+
+
+# Add Middleware
+app.add_middleware(BaseHTTPMiddleware, dispatch=app_middleware)
+
+# Add CORS to middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[config.CLIENT_DOMAIN],  
+    allow_credentials=True,
+    allow_methods=["*"],  
+    allow_headers=["*"], 
+)
+
+
+templates = Jinja2Templates(directory="templates")
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    base_url = config.DOMAIN
+    
+   
+    return templates.TemplateResponse("home.html", {
+        "request": request,
+        "name": "CoopWise Backend",
+        "details": "CoopWise API Backend",
+        "docs": f"{base_url}/api/docs",
+    })
+
+@app.get("/ping")
+async def home(request: Request):
+
+    return {"message":"Pong"}    
+    
+#@app.get("/health", response_class=HTMLResponse)
+# async def health_check(request: Request):
+#     """
+#     Health check endpoint.
+#     """
+#     return templates.TemplateResponse("health.html", {
+#         "request": request,
+#         "name": "iHr",
+#         "details": "iHr health check",
+#         "docs": f"{config.DOMAIN}/api/docs"
+#     })
+
+
+
+
+
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", reload=True, port=8000)
