@@ -41,10 +41,10 @@ async def get_coop(coop_id: str, db: AsyncSession = Depends(get_async_db_session
     """
         Fetch a single cooperative group by ID.
     """
-    interview = await CooperativeGroupService.get_coop_group_by_id(db, coop_id)
-    if not interview:
+    coop_group = await CooperativeGroupService.get_coop_group_by_id(db, coop_id)
+    if not coop_group:
         raise HTTPException(status_code=404, detail="Cooperative group not found")
-    return interview
+    return coop_group
 
 
 @router.patch("/{coop_id}", response_model=CoopGroupDetails)
