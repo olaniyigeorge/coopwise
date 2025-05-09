@@ -9,7 +9,7 @@ from app.services.auth_service import AuthService
 
 router = APIRouter(
     prefix="/api/v1/auth", 
-    tags=["auth"]
+    tags=["Auth & Onboarding"]
     )
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 

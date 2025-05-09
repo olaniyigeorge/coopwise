@@ -58,4 +58,4 @@ def get_config():
     return configs[env_state]()
 
 
-config = get_config()
+config: DevConfig = get_config()
