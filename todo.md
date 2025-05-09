@@ -16,3 +16,6 @@ id, name, creator_id, invite_code, target_amount, contribution_frequency, rotati
 
 ##### Membership
 id, user_id, cooperative_id, is_admin, joined_at
+
+##### Contributions
+ id, user_id, cooperative_id, amount, date, auto_logged, status

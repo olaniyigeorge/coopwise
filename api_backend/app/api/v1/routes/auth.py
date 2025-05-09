@@ -28,8 +28,7 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     user = await AuthService.authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid login credentials")
-    
-    token = AuthService.create_access_token({"sub": user.email, "id": user.id})
+    token = AuthService.create_access_token({"sub": user.email, "id": str(user.id)})
     return {"access_token": token, "token_type": "Bearer"}
 
 
