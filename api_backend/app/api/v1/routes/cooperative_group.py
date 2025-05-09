@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated, List
 
-from app.schemas.cooperative_group import CoopGroupCreate, CoopGroupDetails, CooperativeStatus
+from app.schemas.cooperative_group import CoopGroupCreate, CoopGroupDetails, CoopGroupUpdate, CooperativeStatus
 from db.dependencies import get_async_db_session
 from app.services.group_service import CooperativeGroupService
 
@@ -37,7 +37,7 @@ async def list_cooperative_groups(
 
 
 @router.get("/{coop_id}", response_model=CoopGroupDetails)
-async def get_interview(coop_id: str, db: AsyncSession = Depends(get_async_db_session)):
+async def get_coop(coop_id: str, db: AsyncSession = Depends(get_async_db_session)):
     """
         Fetch a single cooperative group by ID.
     """
@@ -45,3 +45,34 @@ async def get_interview(coop_id: str, db: AsyncSession = Depends(get_async_db_se
     if not interview:
         raise HTTPException(status_code=404, detail="Cooperative group not found")
     return interview
+
+
+@router.patch("/{coop_id}", response_model=CoopGroupDetails)
+async def update_coop(
+    coop_id: str,
+    coop_update_data: CoopGroupUpdate,
+    db: AsyncSession = Depends(get_async_db_session)
+):
+    """
+    Update a cooperative group's details by its ID.
+    """
+    updated_coop = await CooperativeGroupService.update_coop(db, coop_id, coop_update_data)
+    if not updated_coop:
+        raise HTTPException(status_code=404, detail="Cooperative group not found")
+    return updated_coop
+
+
+@router.delete("/{coop_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_coop(
+    coop_id: str,
+    db: AsyncSession = Depends(get_async_db_session)
+):
+    """
+    Delete a cooperative group by its ID.
+    Returns 204 No Content if successful.
+    """
+    deleted_coop = await CooperativeGroupService.delete_coop(db, coop_id)
+    if not deleted_coop:
+        raise HTTPException(status_code=404, detail="Cooperative group not found")
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
