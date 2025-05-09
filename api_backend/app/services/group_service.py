@@ -56,7 +56,7 @@ class CooperativeGroupService:
         return coop_groups
 
     @staticmethod
-    async def get_coop_group_by_id(db: AsyncSession, coop_group_id: int) -> Optional[CooperativeGroup]:
+    async def get_coop_group_by_id(db: AsyncSession, coop_group_id: str) -> Optional[CooperativeGroup]:
         try:
             stmt = select(CooperativeGroup).where(CooperativeGroup.id == coop_group_id)
             result = await db.execute(stmt)
@@ -67,7 +67,7 @@ class CooperativeGroupService:
         return coop_group
 
     @staticmethod
-    async def update_interview(db: AsyncSession, coop_group_id: int, coop_group_update_data: CoopGroupUpdate) -> Optional[CooperativeGroup]:
+    async def update_coop(db: AsyncSession, coop_group_id: str, coop_group_update_data: CoopGroupUpdate) -> Optional[CooperativeGroup]:
         try:
             stmt = select(CooperativeGroup).where(CooperativeGroup.id == coop_group_id)
             result = await db.execute(stmt)
@@ -87,4 +87,22 @@ class CooperativeGroupService:
             raise e
 
         return coop_group
-    
+            
+    @staticmethod
+    async def delete_coop(db: AsyncSession, coop_group_id: str) -> Optional[CooperativeGroup]:
+        try:
+            stmt = select(CooperativeGroup).where(CooperativeGroup.id == coop_group_id)
+            result = await db.execute(stmt)
+            coop_group = result.scalars().first()
+
+            if not coop_group:
+                return None
+
+            await db.delete(coop_group)
+            await db.commit()
+        except Exception as e:
+            await db.rollback()
+            logger.logger.error(e)
+            raise e
+
+        return coop_group
