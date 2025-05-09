@@ -34,6 +34,6 @@ database = databases.Database(
 # Create all tables
 async def init_db():
     async with async_engine.begin() as conn:
-        print(f"\nCreating db tables...\n")
         await conn.run_sync(Base.metadata.create_all)
+        print(f"\n-> DB tables initialized \n")
 
