@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 from uuid import UUID
 import enum
 
-from db.models.cooperative_group import ContributionFrequency, CooperativeStatus, PayoutStrategy
+from db.models.cooperative_group import ContributionFrequency, CooperativeModel, CooperativeStatus, PayoutStrategy
 
 
 # class CoopGroupBase(BaseModel):
@@ -15,6 +15,7 @@ class CoopGroupCreate(BaseModel):
     contribution_amount: int
     contribution_frequency: ContributionFrequency
     payout_strategy: PayoutStrategy
+    # coop_model: CooperativeModel
     target_amount: int
     status: CooperativeStatus
 
@@ -25,6 +26,7 @@ class CoopGroupDetails(BaseModel):
     contribution_amount: int
     contribution_frequency: ContributionFrequency
     payout_strategy: PayoutStrategy
+    # coop_model: CooperativeModel
     target_amount: int
     status: CooperativeStatus
     created_at: datetime
@@ -37,5 +39,6 @@ class CoopGroupUpdate(BaseModel):
     contribution_amount: int
     contribution_frequency: ContributionFrequency
     payout_strategy: PayoutStrategy
+    # coop_model: CooperativeModel
     target_amount: int
     status: CooperativeStatus

@@ -1,8 +1,10 @@
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 
+from app.schemas.auth import AuthenticatedUser
 from app.schemas.user import UserCreate, UserRead, Token
 from db.dependencies import get_async_db_session
 from app.services.auth_service import AuthService
@@ -24,16 +26,34 @@ async def register_user(
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-                                 db: AsyncSession = Depends(get_async_db_session) ):
+                                 db: AsyncSession = Depends(get_async_db_session)):
     user = await AuthService.authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid login credentials")
-    token = AuthService.create_access_token({"sub": user.email, "id": str(user.id)})
+    token = AuthService.create_access_token({"sub": user.email, "id": str(user.id), "role": user.role.value})
     return {"access_token": token, "token_type": "Bearer"}
 
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)]
+) -> AuthenticatedUser:
+    payload = AuthService.decode_token(token)
+    
+    auth_user = AuthenticatedUser(
+        id=payload.get("id"),
+        email=payload.get("sub"),
+        role=payload.get("role")
+    )
+    return auth_user
+
+async def require_admin_or_owner(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    resource_owner_id: UUID
 ):
     payload = AuthService.decode_token(token)
-    return {"id": payload.get("id"), "email": payload.get("sub")}
+    role = payload.get("role")
+    user_id = payload.get("id")
+
+    if role != "admin" and user_id != resource_owner_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return {"id": user_id, "email": payload.get("sub"), "role": role}

@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated, List
+from typing import List
 
-from app.schemas.cooperative_group import CoopGroupCreate, CoopGroupDetails, CoopGroupUpdate, CooperativeStatus
+from app.schemas.cooperative_group import CoopGroupCreate, CoopGroupDetails, CoopGroupUpdate
 from db.dependencies import get_async_db_session
-from app.services.group_service import CooperativeGroupService
+from app.services.cooperative_group_service import CooperativeGroupService
 
 
 router = APIRouter(

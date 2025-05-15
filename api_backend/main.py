@@ -6,7 +6,7 @@ load_dotenv()
 from app.core.middleware import app_middleware
 from app.utils.logger import logger
 from app.core.config import config
-from app.api.v1.routes import auth, cooperative_group
+from app.api.v1.routes import auth, cooperative_group, membership
 import uvicorn
 from contextlib import asynccontextmanager
 from db.database import database, init_db
@@ -33,7 +33,7 @@ app = FastAPI(
 # Register Routers
 app.include_router(auth.router)
 app.include_router(cooperative_group.router)
-
+app.include_router(membership.router)
 
 # Add Middleware
 app.add_middleware(BaseHTTPMiddleware, dispatch=app_middleware)
