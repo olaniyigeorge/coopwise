@@ -21,6 +21,11 @@ class PayoutStrategy(enum.Enum):
     EQUAL = "equal"
     PRIORITY = "priority"
 
+class CooperativeModel(enum.Enum):
+    AJO = "ajo"
+    COOP = "coop"
+
+
 
 # Enum for Cooperative Status
 class CooperativeStatus(enum.Enum):
@@ -31,12 +36,13 @@ class CooperativeStatus(enum.Enum):
 
 class CooperativeGroup(Base):
     __tablename__ = "cooperative_groups"
-    id = Column(String, primary_key=True, default=lambda: str(uuid4()), index=True)
+    id =  Column(PGUUID(as_uuid=True),  primary_key=True, default=lambda: str(uuid4()), index=True)
     name = Column(String, nullable=False)
-    creator_id =Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    creator_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     contribution_amount = Column(Numeric, nullable=False)
     contribution_frequency = Column(Enum(ContributionFrequency), nullable=False)
     payout_strategy = Column(Enum(PayoutStrategy), nullable=False)
+    # coop_model = Column(Enum(CooperativeModel), default="ajo", nullable=False)
     target_amount = Column(Numeric, nullable=False)
     status = Column(Enum(CooperativeStatus), default=CooperativeStatus.ACTIVE, nullable=False)
     created_at = Column(DateTime, default=datetime.now, nullable=False)

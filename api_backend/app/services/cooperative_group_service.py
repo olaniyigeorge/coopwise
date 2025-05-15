@@ -4,7 +4,6 @@
 # Enforce rotation rules and statuses.
 
 
-
 from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
