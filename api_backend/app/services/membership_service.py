@@ -138,7 +138,7 @@ class CooperativeMembershipService:
         coop_id: UUID, 
         filter: str,
         db: AsyncSession, 
-        # user: AuthenticatedUser,
+        # user: AuthenticatedUser, TODO: Allow filtering by membership status
         skip: int = 0, 
         limit: int = 10,  
     ):

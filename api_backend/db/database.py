@@ -16,9 +16,14 @@ Base = declarative_base()
 # Metadata for table definitions
 metadata = sqlalchemy.MetaData()
 
+DATABASE_URL = config.DATABASE_URL
+
+
+print(f"\n-> DB URL: {DATABASE_URL} \n")
+
 # Define the engine
 async_engine = create_async_engine(
-    url=config.DATABASE_URL,
+    url=DATABASE_URL,
     #echo=True,
 )
 
@@ -28,7 +33,7 @@ AsyncSessionLocal = async_sessionmaker(bind=async_engine, class_=AsyncSession, e
 
 # Asynchronous database instance
 database = databases.Database(
-    config.DATABASE_URL #force_rollback=config.DB_FORCE_ROLLBACK
+    DATABASE_URL #force_rollback=config.DB_FORCE_ROLLBACK
 )
  
 # Create all tables

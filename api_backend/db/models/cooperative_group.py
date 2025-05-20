@@ -42,7 +42,7 @@ class CooperativeGroup(Base):
     contribution_amount = Column(Numeric, nullable=False)
     contribution_frequency = Column(Enum(ContributionFrequency), nullable=False)
     payout_strategy = Column(Enum(PayoutStrategy), nullable=False)
-    # coop_model = Column(Enum(CooperativeModel), default="ajo", nullable=False)
+    coop_model = Column(Enum(CooperativeModel), default="ajo", nullable=False)
     target_amount = Column(Numeric, nullable=False)
     status = Column(Enum(CooperativeStatus), default=CooperativeStatus.ACTIVE, nullable=False)
     created_at = Column(DateTime, default=datetime.now, nullable=False)
