@@ -1,5 +1,6 @@
 from datetime import datetime
 from uuid import uuid4
+from db.models.membership import GroupMembership
 from db.database import Base
 from sqlalchemy import Boolean, Column, String, Enum, DateTime, Float
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -51,4 +52,21 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
-    cooperatives = relationship("CooperativeGroup", back_populates="users")
+    memberships = relationship(
+        "GroupMembership", 
+        back_populates="user", 
+        foreign_keys="GroupMembership.user_id"
+    )
+    cooperatives = relationship(
+        "CooperativeGroup",
+        secondary="group_memberships",
+        back_populates="users",
+        primaryjoin="User.id == GroupMembership.user_id",
+        secondaryjoin="GroupMembership.group_id == CooperativeGroup.id",
+        foreign_keys=[GroupMembership.user_id, GroupMembership.group_id]
+    )
+    invited_memberships = relationship(
+        "GroupMembership",
+        back_populates="inviter",
+        foreign_keys="GroupMembership.invited_by"
+    )

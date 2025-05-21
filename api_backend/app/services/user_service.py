@@ -59,7 +59,6 @@ class UserService:
             # Update user fields
             print(user_data)
             for field, value in user_data.dict(exclude_unset=True).items():
-                print(f"Updating {field} to {value}")
                 setattr(user, field, value)
 
             await db.commit()
