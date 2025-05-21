@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
+from db.models.membership import GroupMembership
 from db.database import Base
 from sqlalchemy import Column, String, Enum, DateTime, Numeric, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -42,10 +43,23 @@ class CooperativeGroup(Base):
     contribution_amount = Column(Numeric, nullable=False)
     contribution_frequency = Column(Enum(ContributionFrequency), nullable=False)
     payout_strategy = Column(Enum(PayoutStrategy), nullable=False)
-    coop_model = Column(Enum(CooperativeModel), default="ajo", nullable=False)
+    coop_model = Column(Enum(CooperativeModel), default=CooperativeModel.AJO, nullable=False)
     target_amount = Column(Numeric, nullable=False)
     status = Column(Enum(CooperativeStatus), default=CooperativeStatus.ACTIVE, nullable=False)
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
-    users = relationship("User", back_populates="cooperatives")
+    memberships = relationship(
+        "GroupMembership",
+        back_populates="group",
+        foreign_keys=[GroupMembership.group_id]
+    )
+
+    users = relationship(
+        "User",
+        secondary="group_memberships",
+        back_populates="cooperatives",
+        primaryjoin="CooperativeGroup.id == GroupMembership.group_id",
+        secondaryjoin="GroupMembership.user_id == User.id",
+        foreign_keys=[GroupMembership.user_id, GroupMembership.group_id]
+    )
