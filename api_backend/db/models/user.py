@@ -63,8 +63,10 @@ class User(Base):
         back_populates="users",
         primaryjoin="User.id == GroupMembership.user_id",
         secondaryjoin="GroupMembership.group_id == CooperativeGroup.id",
-        foreign_keys=[GroupMembership.user_id, GroupMembership.group_id]
+        foreign_keys=[GroupMembership.user_id, GroupMembership.group_id],
+        overlaps="memberships,user"
     )
+    
     invited_memberships = relationship(
         "GroupMembership",
         back_populates="inviter",
