@@ -1,6 +1,6 @@
 from datetime import datetime
 from db.database import Base
-from sqlalchemy import Column, Enum, DateTime, ForeignKey, Integer
+from sqlalchemy import Boolean, Column, Enum, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 
@@ -15,6 +15,7 @@ class MembershipRole(enum.Enum):
 
 # Enum for Membership status
 class MembershipStatus(enum.Enum):
+    CLICKED = "clicked"
     ACCEPTED = "accepted"
     PENDING = "pending"
     REJECTED = "rejected"
@@ -27,14 +28,18 @@ class GroupMembership(Base):
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     group_id = Column(PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=False)
     role = Column(Enum(MembershipRole), default=MembershipRole.MEMBER, nullable=False)
+    invite_code = Column(String, nullable=True)
     invited_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    status = Column(Enum(MembershipStatus), default=MembershipStatus.PENDING, nullable=False)
+    status = Column(Enum(MembershipStatus), default=MembershipStatus.CLICKED, nullable=False)
     joined_at = Column(DateTime, default=None, nullable=True)
+
+    has_received_payout_this_cycle = Column(Boolean, default=False)
+
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
     user = relationship("User", back_populates="memberships", foreign_keys=[user_id])
     inviter = relationship("User", back_populates="invited_memberships", foreign_keys=[invited_by])
-    group = relationship("CooperativeGroup", back_populates="memberships")
+    group = relationship("CooperativeGroup", back_populates="memberships", overlaps="users")
 
