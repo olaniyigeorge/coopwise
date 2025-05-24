@@ -12,21 +12,25 @@ from db.models.cooperative_group import ContributionFrequency, CooperativeModel,
 class CoopGroupCreate(BaseModel):
     name: str
     creator_id: UUID
-    contribution_amount: int
+    description: str | None = None
+    contribution_amount: int = 15000
+    max_members: int = 12
     contribution_frequency: ContributionFrequency
     payout_strategy: PayoutStrategy
-    # coop_model: CooperativeModel
-    target_amount: int
+    coop_model: CooperativeModel
+    target_amount: int = 180000
     status: CooperativeStatus
 
 class CoopGroupDetails(BaseModel):
     id: UUID
     name: str
     creator_id: UUID
+    description: str | None = None
     contribution_amount: int
     contribution_frequency: ContributionFrequency
     payout_strategy: PayoutStrategy
-    # coop_model: CooperativeModel
+    coop_model: CooperativeModel
+    max_members: int 
     target_amount: int
     status: CooperativeStatus
     created_at: datetime
@@ -37,8 +41,10 @@ class CoopGroupDetails(BaseModel):
 class CoopGroupUpdate(BaseModel):
     name: str
     contribution_amount: int
+    description: str | None = None
     contribution_frequency: ContributionFrequency
     payout_strategy: PayoutStrategy
-    # coop_model: CooperativeModel
+    coop_model: CooperativeModel
+    max_members: int
     target_amount: int
     status: CooperativeStatus

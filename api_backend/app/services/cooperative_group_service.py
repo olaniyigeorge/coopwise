@@ -6,10 +6,12 @@
 
 from datetime import datetime, timedelta
 from typing import Optional
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from jose import jwt, JWTError
 
+from db.models.membership import GroupMembership
 from app.schemas.cooperative_group import CoopGroupCreate, CoopGroupUpdate
 from db.models.cooperative_group import CooperativeGroup
 from app.utils import logger
@@ -105,3 +107,21 @@ class CooperativeGroupService:
             raise e
 
         return coop_group
+
+
+    @staticmethod
+    async def get_my_coop_groups(db: AsyncSession, user_id: UUID, skip: int = 0, limit: int = 10):
+        try:
+            stmt = (
+                select(CooperativeGroup)
+                .join(GroupMembership)
+                .where(GroupMembership.user_id == user_id)
+                .offset(skip)
+                .limit(limit)
+            )
+            result = await db.execute(stmt)
+            groups = result.scalars().all()
+            return groups
+        except Exception as e:
+            logger.logger.error(e)
+            raise

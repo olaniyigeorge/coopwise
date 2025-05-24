@@ -97,48 +97,140 @@ class CooperativeMembershipService:
         user: AuthenticatedUser, 
         
     ):
-        # print(
-        #     f'''
-        #       \n OPTION: {db} 
-        #       \n MEM_ID: {user} 
-        #       \n DB: {option} 
-        #       \n USER: {membership_id}\n
-        #     '''
-        # )
-        print(f"\n Saying {db} to membership {user} by {membership_id}\n")
         try:
             # TODO: Prefetch group data
-            stmt = select(GroupMembership).where(GroupMembership.id == user)
-            result = await option.execute(stmt)
+            stmt = select(GroupMembership).where(GroupMembership.id == membership_id)
+            result = await db.execute(stmt)
             membership = result.scalars().first()
 
             # if membership:
             stmt = select(CooperativeGroup).where(CooperativeGroup.id == membership.group_id)
-            group_result = await option.execute(stmt)
+            group_result = await db.execute(stmt)
             coop_group = group_result.scalars().first()
 
             # check is user is the group creator or has a membership with elevated role
-            if coop_group.creator_id != membership_id.id:
+            if coop_group.creator_id != user.id:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permissions to confirm a membership")
 
-            if db == "yes":
+            if option == "accepted":
                 membership.status = "ACCEPTED"
-                await option.commit()
-                await option.refresh(membership)
+            if option == "rejected":
+                membership.status = "REJECTED"
+            if option == "pending":
+                membership.status = "PENDING"
+            if option == "cancelled":
+                membership.status = "CANCELLED"
+            
+            await db.commit()
+            await db.refresh(membership)
         
         except Exception as e:
             logger.logger.error(e)
             raise e
         return membership
 
+    # Generate invite code
+    @staticmethod
+    async def generate_invite_code(
+        db: AsyncSession,
+        group_id: UUID,
+        inviter_id: UUID,
+    ) -> Optional[str]:
         
+        invite_code = config.INVITE_CODE_PREFIX + str(inviter_id) + ":" + str(group_id)
+        print(f"\n Invite code: {invite_code} \n")
+        try:
+            stmt = select(GroupMembership).where(GroupMembership.group_id == group_id, GroupMembership.invited_by == inviter_id)
+            result = await db.execute(stmt)
+            existing_membership = result.scalars().first()
+
+            if existing_membership:
+                print("Membership exists")        
+        except Exception as e:
+            logger.logger.error(e)
+            raise e
+        
+        return invite_code
+   
+    # Checkout group with invite code
+    @staticmethod
+    async def checkout_invite_code(
+        db: AsyncSession,
+        invite_code: str,
+        user: AuthenticatedUser
+    ):
+        invited_id__group_id = invite_code[11:]
+        inviter_id, group_id = invited_id__group_id.split(":")
+        group_id = UUID(group_id)
+        inviter_id = UUID(inviter_id)
+        try:
+            stmt = select(GroupMembership).where(GroupMembership.group_id == group_id, GroupMembership.invited_by == inviter_id, GroupMembership.user_id == user.id)    
+            result = await db.execute(stmt)
+            existing_membership = result.scalars().first()
+
+            if not existing_membership:
+                new_membership = GroupMembership(
+                    user_id = user.id,
+                    group_id = group_id,
+                    role = "MEMBER",
+                    invited_by = inviter_id,
+                    status = "CLICKED"
+                )
+
+                db.add(new_membership)
+                await db.commit()
+                await db.refresh(new_membership)
+                return {
+                    "message": "Membership checked out successfully",
+                    "membership": new_membership
+                }
+            else:
+                return {
+                    "message":"You have checked this membership out on this group",
+                    "membership": existing_membership
+                }
+        except Exception as e:
+            logger.logger.error(e)
+            raise e
+
+        return membership
+    
+    
+    # Accept invite code
+    @staticmethod
+    async def accept_invite_code(
+        db: AsyncSession,
+        user: AuthenticatedUser,
+        invite_code: str
+    ) -> Optional[GroupMembership]: 
+        invited_id__group_id = invite_code[11:]
+        inviter_id, group_id = invited_id__group_id.split(":")
+        group_id = UUID(group_id)
+        inviter_id = UUID(inviter_id)
+        try:
+            stmt = select(GroupMembership).where(GroupMembership.group_id == group_id, GroupMembership.invited_by == inviter_id, GroupMembership.user_id == user.id)    
+            result = await db.execute(stmt)
+            existing_membership = result.scalars().first()
+
+            if not existing_membership:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invite code not found or already accepted.")
+            
+            existing_membership.status = "PENDING"
+            await db.commit()
+            await db.refresh(existing_membership)
+        except Exception as e:
+            logger.logger.error(e)
+            raise e
+
+        return existing_membership
+    
     # Gets all the memberships that belongs to a cooperative group
     @staticmethod
     async def get_memberships_by_group(
         coop_id: UUID, 
         filter: str,
         db: AsyncSession, 
-        # user: AuthenticatedUser,
+        # user: AuthenticatedUser, TODO: Allow filtering by membership status
         skip: int = 0, 
         limit: int = 10,  
     ):
@@ -156,7 +248,7 @@ class CooperativeMembershipService:
     @staticmethod
     async def list_coop_memberships(
         db: AsyncSession, 
-        user: AuthenticatedUser,
+        #user: AuthenticatedUser,
         skip: int = 0, 
         limit: int = 10,
         

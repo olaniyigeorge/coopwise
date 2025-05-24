@@ -34,6 +34,17 @@ async def list_cooperative_groups(
     return await CooperativeGroupService.get_coop_groups(
         db, skip=skip, limit=limit)
     
+@router.get("/me", response_model=List[CoopGroupDetails])
+async def list_cooperative_groups(
+        db: AsyncSession = Depends(get_async_db_session), 
+        skip: int = 0, limit: int = 10
+    ):
+    """
+        Fetch a list of cooperative groups with optional pagination.
+    """
+
+    return await CooperativeGroupService.get_coop_groups(
+        db, skip=skip, limit=limit)
 
 
 @router.get("/{coop_id}", response_model=CoopGroupDetails)
