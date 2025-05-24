@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
+import CTA from '@/components/cta'
 import { 
   HelpCircle, 
   MessageCircle, 
@@ -141,15 +142,9 @@ export default function SupportPage() {
               Choose the support method that works best for you. Our team is ready to help through multiple channels.
             </p>
           </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {supportOptions.map((option, index) => (
-              <Card key={index} className={`text-center border-0 shadow-sm hover:shadow-md transition-shadow duration-200 ${option.recommended ? 'ring-2 ring-primary/20' : ''}`}>
-                {option.recommended && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-primary text-white">Recommended</Badge>
-                  </div>
-                )}
+              <Card key={index} className="text-center border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <CardHeader className="pb-4">
                   <div className="flex justify-center mb-4">
                     <div className="p-3 bg-primary/10 rounded-xl">
@@ -166,7 +161,7 @@ export default function SupportPage() {
                   </div>
                   <Button 
                     className="w-full"
-                    variant={option.recommended ? "default" : "outline"}
+                    variant="outline"
                   >
                     {option.action}
                   </Button>
@@ -326,33 +321,33 @@ export default function SupportPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 md:py-20 bg-primary">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-            Still Need Help?
-          </h2>
-          <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
-            Our support team is standing by to help you succeed with CoopWise. Don't hesitate to reach out.
-          </p>
-          <div className="flex items-center space-x-4 justify-center">
-            <Button 
-              variant="secondary" 
-              className="bg-white text-primary hover:bg-gray-100 px-6 py-3 transition-colors duration-200"
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Start Live Chat
-            </Button>
-            <Link href="/contact">
+        <section className="py-16 md:py-20 bg-primary">
+          <div className="max-w-4xl mx-auto px-4 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+              Still Need Help?
+            </h2>
+            <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
+              Our support team is standing by to help you succeed with CoopWise. Don't hesitate to reach out.
+            </p>
+            <div className="flex items-center space-x-4 justify-center">
               <Button 
-                variant="outline" 
-                className="border-white text-white hover:bg-white hover:text-primary px-6 py-3 transition-colors duration-200"
+                variant="secondary" 
+                className="bg-white text-primary hover:bg-gray-100 px-6 py-3 transition-colors duration-200"
               >
-                Contact Us
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Start Live Chat
               </Button>
-            </Link>
+              <Link href="/contact">
+                <Button 
+                  variant="secondary" 
+                  className="bg-white text-primary hover:bg-gray-100 px-6 py-3 transition-colors duration-200"
+                >
+                  Contact Us
+                </Button>
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
       <Footer />
     </div>

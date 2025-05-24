@@ -404,11 +404,17 @@ export default function ContactPage() {
           <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
             Join thousands of people who are already saving money smarter with our community-powered platform.
           </p>
-                    <div className="flex items-center space-x-4 justify-center">            <Link href="/auth/signup">              <Button                 variant="secondary"                 className="bg-white text-primary hover:bg-gray-100 px-6 py-3 transition-colors duration-200"              >                Get Started Free              </Button>            </Link>            <Link href="/how-it-works">              <Button                 variant="outline"                 className="border-white text-white hover:bg-white hover:text-primary px-6 py-3 transition-colors duration-200"              >                Learn How It Works              </Button>            </Link>          </div>
+                    <div className="flex items-center space-x-4 justify-center">            <Link href="/auth/signup">         
+                         <Button                 variant="secondary"                 className="bg-white text-primary hover:bg-gray-100 px-6 py-3 transition-colors duration-200"              >                Get Started Free              </Button>      
+                               </Link>            <Link href="/how-it-works">          <Button 
+                variant="secondary" 
+                className= "bg-white text-primary hover:bg-gray-100 px-6 py-3 transition-colors duration-200"
+              >    
+                                          Learn How It Works              </Button>            </Link>          </div>
         </div>
       </section>
 
       <Footer />
     </div>
   )
-} 
+}
