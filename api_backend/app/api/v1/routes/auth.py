@@ -16,12 +16,17 @@ router = APIRouter(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
 
-@router.post("/register", response_model=UserRead)
+@router.post("/register")
 async def register_user(
     user: UserCreate,
     db: AsyncSession = Depends(get_async_db_session)
 ):
-    return await AuthService.register_user(user, db)
+    reg = await AuthService.register_user(user, db)
+    token = AuthService.create_access_token({"sub": reg.email, "id": str(reg.id), "role": reg.role.value})
+    return {
+        "token": token,
+        "user": reg
+    }
 
 
 @router.post("/token", response_model=Token)
@@ -46,6 +51,16 @@ async def get_current_user(
     )
     return auth_user
 
+async def is_admin_permissions(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    resource_owner_id: UUID
+):
+    current_user  = await get_current_user(token)
+
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return current_user
+
 async def require_admin_or_owner(
     token: Annotated[str, Depends(oauth2_scheme)],
     resource_owner_id: UUID
@@ -54,6 +69,9 @@ async def require_admin_or_owner(
     role = payload.get("role")
     user_id = payload.get("id")
 
+
+
     if role != "admin" and user_id != resource_owner_id:
         raise HTTPException(status_code=403, detail="Not authorized")
+    
     return {"id": user_id, "email": payload.get("sub"), "role": role}

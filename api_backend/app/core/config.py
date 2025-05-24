@@ -6,6 +6,7 @@ class GlobalConfig(BaseSettings):
     ENV: str
     PROJECT_NAME: str
     CLIENT_DOMAIN: str
+    INVITE_CODE_PREFIX: str
     DOMAIN: str
     DATABASE_URL: str
     ALGORITHM: str
@@ -18,6 +19,7 @@ class DevConfig(GlobalConfig):
     ENV: str
     PROJECT_NAME: str
     CLIENT_DOMAIN: str
+    INVITE_CODE_PREFIX: str
     DOMAIN: str
     DATABASE_URL: str
     ALGORITHM: str
@@ -29,6 +31,7 @@ class TestConfig(GlobalConfig):
     ENV: str
     PROJECT_NAME: str
     CLIENT_DOMAIN: str
+    INVITE_CODE_PREFIX: str
     DOMAIN: str
     DATABASE_URL: str
     ALGORITHM: str
@@ -40,6 +43,7 @@ class ProdConfig(GlobalConfig):
     ENV: str
     PROJECT_NAME: str
     CLIENT_DOMAIN: str
+    INVITE_CODE_PREFIX: str
     DOMAIN: str
     DATABASE_URL: str
     ALGORITHM: str
