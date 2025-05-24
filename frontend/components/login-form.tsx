@@ -4,6 +4,8 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,15 +13,54 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff } from "lucide-react"
 
 export default function LoginForm() {
+  const router = useRouter()
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle login logic here
-    console.log({ phone, password, rememberMe })
+    
+    if (!isFormFilled) return
+    
+    try {
+      setIsLoading(true)
+      
+      // Show loading toast
+      toast.info('Signing in...', {
+        description: 'Please wait while we verify your credentials.'
+      })
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // In a real app, you would validate credentials with your API
+      // For demo purposes, we'll accept any non-empty credentials
+      if (phone.trim() && password.trim()) {
+        // Store authentication data (in a real app, you'd get this from the API)
+        // localStorage.setItem('authToken', 'demo-token')
+        // localStorage.setItem('user', JSON.stringify({ phone, name: 'Mercy Oyelenmu' }))
+        
+        toast.success('Login successful!', {
+          description: 'Welcome back to CoopWise.'
+        })
+        
+        // Redirect to dashboard
+        router.push('/dashboard')
+      } else {
+        throw new Error('Invalid credentials')
+      }
+      
+    } catch (error) {
+      console.error('Login error:', error)
+      toast.error('Login failed', {
+        description: 'Please check your credentials and try again.'
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const isFormFilled = phone.trim() !== "" && password.trim() !== ""
@@ -93,21 +134,21 @@ export default function LoginForm() {
               Remember me
             </label>
           </div>
-          <Link href="/forgot-password" className="text-sm font-medium text-primary hover:text-primary/90">
+          <Link href="/auth/forgot-password" className="text-sm font-medium text-primary hover:text-primary/90">
             Forgot Password?
           </Link>
         </div>
 
         <Button 
           type="submit" 
-          disabled={!isFormFilled}
+          disabled={!isFormFilled || isLoading}
           className={`w-full h-10 font-medium rounded mt-2 ${
-            isFormFilled 
+            isFormFilled && !isLoading
             ? "bg-primary hover:bg-primary/90 text-white" 
-            : "bg-gray-200 text-gray-500"
+            : "bg-gray-200 text-gray-700"
           }`}
         >
-          Sign In
+          {isLoading ? 'Signing In...' : 'Sign In'}
         </Button>
       </form>
 

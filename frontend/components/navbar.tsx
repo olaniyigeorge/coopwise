@@ -10,15 +10,10 @@ export default function Navbar() {
   const pathname = usePathname();
   
   return (
-    <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-      <Link href="/" className="flex items-center space-x-2">
-        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-          <span className="text-primary font-bold text-xs">CW</span>
-        </div>
-        <span className="text-xl font-semibold text-primary">CoopWise</span>
-      </Link>
+    <nav className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between" suppressHydrationWarning>
+            <Link href="/" className="flex items-center space-x-3">        <Image           src="/images/coopwise-logo.svg"           alt="CoopWise Logo"           width={32}           height={32}          className="w-8 h-8"        />        <span className="text-xl font-semibold text-primary">CoopWise</span>      </Link>
       
-      <div className="hidden md:flex items-center space-x-8">
+      <div className="hidden md:flex items-center space-x-8" suppressHydrationWarning>
         <Link 
           href="/" 
           className={`text-sm font-medium relative py-1 
@@ -54,7 +49,7 @@ export default function Navbar() {
         </Link>
       </div>
       
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2" suppressHydrationWarning>
         <Link href="/auth/login">
           <Button 
             variant="outline" 
