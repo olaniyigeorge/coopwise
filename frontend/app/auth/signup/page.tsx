@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff } from "lucide-react"
 
-export default function SignupForm() {
+export default function SignupPage() {
   const router = useRouter()
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
@@ -32,7 +32,9 @@ export default function SignupForm() {
                        password.trim() !== ""
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 max-w-screen-sm w-full mx-auto">
+    <div className="min-h-screen auth_bg flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-lg shadow-lg p-6 w-full">
       <div className="mb-6">
         <div className="flex justify-start">
           <Link href="/" className="inline-block mb-4">
@@ -134,6 +136,8 @@ export default function SignupForm() {
         <p className="text-sm text-secondary">
           Already have an account? <Link href="/auth/login" className="text-primary hover:text-primary/90 font-medium">Sign In</Link>
         </p>
+      </div>
+        </div>
       </div>
     </div>
   )
