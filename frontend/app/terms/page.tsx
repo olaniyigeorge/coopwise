@@ -271,9 +271,9 @@ export default function TermsPage() {
               </Button>
             </Link>
             <Link href="/contact">
-              <Button 
-                variant="outline" 
-                className="border-white text-white hover:bg-white hover:text-primary px-6 py-3 transition-colors duration-200"
+            <Button 
+                variant="secondary" 
+                className= "bg-white text-primary hover:bg-gray-100 px-6 py-3 transition-colors duration-200"
               >
                 Ask Questions
               </Button>
