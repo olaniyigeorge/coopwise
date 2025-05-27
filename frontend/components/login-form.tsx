@@ -25,7 +25,7 @@ export default function LoginForm() {
   const isFormFilled = phone.trim() !== "" && password.trim() !== ""
 
   return (
-    <div className="bg-white rounded-lg p-6 max-w-screen-sm w-full mx-auto">
+    <div className="bg-white rounded-lg shadow-lg p-6 w-full">
       <div className="mb-6">
         <div className="flex justify-start">
           <Link href="/" className="inline-block mb-4">
