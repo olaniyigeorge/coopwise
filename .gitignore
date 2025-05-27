@@ -177,5 +177,5 @@ cython_debug/
 
 
 logs/
-yarn.lockapi_backend/.env.prod
+yarn.lock
 api_backend/.env.prod
