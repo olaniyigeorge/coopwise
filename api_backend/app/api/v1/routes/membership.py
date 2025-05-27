@@ -9,7 +9,7 @@ from app.schemas.cooperative_membership import (
 )
 from db.dependencies import get_async_db_session
 from app.services.membership_service import CooperativeMembershipService
-from app.core.dependencies import get_current_user, require_admin_or_owner
+from app.core.dependencies import get_current_user, is_admin_or_owner
 
 router = APIRouter(
     prefix="/api/v1/memberships",

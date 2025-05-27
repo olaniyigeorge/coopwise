@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 
 from app.schemas.auth import AuthenticatedUser
-from app.schemas.user import UserCreate, UserRead, Token
+from app.schemas.user import AuthUser, UserCreate, UserRead, Token
 from db.dependencies import get_async_db_session
 from app.services.auth_service import AuthService
 
@@ -29,14 +29,15 @@ async def register_user(
     }
 
 
-@router.post("/token", response_model=Token)
+@router.post("/token", response_model=AuthUser)
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                                  db: AsyncSession = Depends(get_async_db_session)):
     user = await AuthService.authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid login credentials")
     token = AuthService.create_access_token({"sub": user.email, "id": str(user.id), "role": user.role.value})
-    return {"access_token": token, "token_type": "Bearer"}
+
+    return {"access_token": token, "user": user}
 
 
 async def get_current_user(
@@ -53,25 +54,21 @@ async def get_current_user(
 
 async def is_admin_permissions(
     token: Annotated[str, Depends(oauth2_scheme)],
-    resource_owner_id: UUID
 ):
     current_user  = await get_current_user(token)
 
-    if current_user.role != "admin":
+    if current_user.role.value != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
     return current_user
 
-async def require_admin_or_owner(
+async def is_admin_or_owner(
     token: Annotated[str, Depends(oauth2_scheme)],
     resource_owner_id: UUID
 ):
-    payload = AuthService.decode_token(token)
-    role = payload.get("role")
-    user_id = payload.get("id")
-
-
-
-    if role != "admin" and user_id != resource_owner_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    current_user  = await get_current_user(token)
     
-    return {"id": user_id, "email": payload.get("sub"), "role": role}
+    if current_user.role.value == "admin" or current_user.id == resource_owner_id:
+        return current_user
+
+    raise HTTPException(status_code=403, detail="Not authorized")
+    

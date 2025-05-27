@@ -1,9 +1,10 @@
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
 from db.models.user import User
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user import UserCreate, UserRead, UserUpdate
 from app.utils.crypto import get_password_hash, verify_password
 from app.utils.logger import logger
 
@@ -28,7 +29,7 @@ class UserService:
         return users
     
     @staticmethod
-    async def get_user_by_id(db: AsyncSession, user_id: str) -> User | None:
+    async def get_user_by_id(db: AsyncSession, user_id: UUID) -> UserRead | None:
         """
         Fetch a single user by ID.
         """
