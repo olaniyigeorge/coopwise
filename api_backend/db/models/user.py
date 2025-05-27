@@ -72,3 +72,9 @@ class User(Base):
         back_populates="inviter",
         foreign_keys="GroupMembership.invited_by"
     )
+
+    # payments = relationship(
+    #     "Payment", 
+    #     back_populates="user", 
+    #     cascade="all, delete-orphan"
+    # )

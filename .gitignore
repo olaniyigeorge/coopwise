@@ -14,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/
 lib64/
 parts/
 sdist/
@@ -129,6 +129,8 @@ celerybeat.pid
 
 # Environments
 .env
+.env.prod
+env.prod
 .venv
 env/
 venv/
@@ -175,3 +177,4 @@ cython_debug/
 
 
 logs/
+yarn.lock

@@ -11,6 +11,9 @@ class GlobalConfig(BaseSettings):
     DATABASE_URL: str
     ALGORITHM: str
     APP_SECRET_KEY: str
+    PAYSTACK_SECRET_KEY: str
+    PAYSTACK_PUBLIC_KEY:str
+    
     class Config:
         env_file = ".env"
         extra = "ignore"  
@@ -24,6 +27,8 @@ class DevConfig(GlobalConfig):
     DATABASE_URL: str
     ALGORITHM: str
     APP_SECRET_KEY: str
+    PAYSTACK_SECRET_KEY: str
+    PAYSTACK_PUBLIC_KEY:str
     # class Config:
     #     env_prefix: str = "DEV_"
 
@@ -36,6 +41,8 @@ class TestConfig(GlobalConfig):
     DATABASE_URL: str
     ALGORITHM: str
     APP_SECRET_KEY: str
+    PAYSTACK_SECRET_KEY: str
+    PAYSTACK_PUBLIC_KEY:str
     # class Config:
     #     env_prefix: str = "TEST_"
 
@@ -48,6 +55,8 @@ class ProdConfig(GlobalConfig):
     DATABASE_URL: str
     ALGORITHM: str
     APP_SECRET_KEY: str
+    PAYSTACK_SECRET_KEY: str
+    PAYSTACK_PUBLIC_KEY:str
     # class Config:
     #     env_prefix: str = "PROD_"
 

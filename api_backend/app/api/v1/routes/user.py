@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
 
-from app.api.v1.routes.auth import is_admin_permissions
+from app.api.v1.routes.auth import is_admin_or_owner, is_admin_permissions
+from app.schemas.auth import AuthenticatedUser
 from app.schemas.user import UserRead, UserUpdate
 from db.dependencies import get_async_db_session
 from app.services.user_service import UserService
@@ -17,14 +17,14 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 @router.get("/")
 async def get_users(
     skip: int = 0, limit: int = 10, 
-    # user: AuthenticatedUser = Depends(is_admin_permissions), TODO: Uncomment this line to enforce admin permissions
+    user: AuthenticatedUser = Depends(is_admin_permissions), 
     db: AsyncSession = Depends(get_async_db_session)
 ):
     """
         Fetch a list of users with optional pagination.
     """
-    # if not user:
-    #     raise HTTPException(status_code=401, detail="Invalid login credentials")
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid login credentials")
     return await UserService.get_users(db, skip=skip, limit=limit)
 
 
@@ -32,6 +32,7 @@ async def get_users(
 async def update_user(
     user_id: str,
     user_update_data: UserUpdate,
+    user: AuthenticatedUser = Depends(is_admin_or_owner), 
     db: AsyncSession = Depends(get_async_db_session)
 ):
     """
@@ -45,7 +46,7 @@ async def update_user(
 @router.get("/{user_id}", response_model=UserRead)
 async def get_user(
     user_id: str, 
-    # user: AuthenticatedUser = Depends(is_admin_or_owner_permissions), TODO: Uncomment this line to enforce admin permissions
+    user: AuthenticatedUser = Depends(is_admin_or_owner), # TODO: Uncomment this line to enforce admin permissions
     db: AsyncSession = Depends(get_async_db_session)
 ):
     """

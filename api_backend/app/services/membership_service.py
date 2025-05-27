@@ -244,6 +244,28 @@ class CooperativeMembershipService:
         return memberships
 
 
+    # Get memberships by user and group
+    @staticmethod
+    async def get_membership_by_user_and_group(
+        user_id: UUID, 
+        group_id: UUID, 
+        db: AsyncSession
+    ) -> Optional[GroupMembership]:
+        try:
+            stmt = select(GroupMembership).where(
+                GroupMembership.user_id == user_id, 
+                GroupMembership.group_id == group_id
+            )
+            result = await db.execute(stmt)
+            membership = result.scalars().first()
+        except Exception as e:
+            logger.logger.error(e)
+            raise e
+        
+        return membership
+    
+    
+    # Get memberships by user  
     # Listing all memberships 
     @staticmethod
     async def list_coop_memberships(

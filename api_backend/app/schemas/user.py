@@ -63,6 +63,10 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class AuthUser(BaseModel):
+    access_token: str
+    user: UserRead
+
 
 class UserKYC(BaseModel):
     id: UUID
