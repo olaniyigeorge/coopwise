@@ -92,8 +92,8 @@ export default function HowItWorks() {
                 <div className="w-full">
                   <h3 className="text-lg font-bold text-gray-900 mb-2">{step.title}</h3>
                   <div className="space-y-2 mb-4">
-                    {step.bullets.map((bullet, idx) => (
-                      <BulletPoint key={idx}>{bullet}</BulletPoint>
+                    {step.bullets?.map((bullet, idx) => (
+                      <BulletPoint key={idx}>{typeof bullet === 'string' ? bullet : String(bullet)}</BulletPoint>
                     ))}
                   </div>
                   <div className="flex justify-center w-full">
@@ -150,8 +150,8 @@ export default function HowItWorks() {
                     <div className="max-w-md">
                       <h3 className="text-xl font-bold text-gray-900 mb-4">{step.title}</h3>
                       <div className="space-y-2">
-                        {step.bullets.map((bullet, idx) => (
-                          <BulletPoint key={idx}>{bullet}</BulletPoint>
+                        {step.bullets?.map((bullet, idx) => (
+                          <BulletPoint key={idx}>{typeof bullet === 'string' ? bullet : String(bullet)}</BulletPoint>
                         ))}
                       </div>
                     </div>
@@ -162,8 +162,8 @@ export default function HowItWorks() {
                     <div className="max-w-md">
                       <h3 className="text-xl font-bold text-gray-900 mb-4">{step.title}</h3>
                       <div className="space-y-2">
-                        {step.bullets.map((bullet, idx) => (
-                          <BulletPoint key={idx}>{bullet}</BulletPoint>
+                        {step.bullets?.map((bullet, idx) => (
+                          <BulletPoint key={idx}>{typeof bullet === 'string' ? bullet : String(bullet)}</BulletPoint>
                         ))}
                       </div>
                     </div>
