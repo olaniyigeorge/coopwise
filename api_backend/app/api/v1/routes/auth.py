@@ -13,7 +13,7 @@ router = APIRouter(
     prefix="/api/v1/auth", 
     tags=["Auth & Onboarding"]
     )
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 @router.post("/register")
@@ -29,15 +29,79 @@ async def register_user(
     }
 
 
-@router.post("/token", response_model=AuthUser)
+@router.post("/login", response_model=AuthUser)
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                                  db: AsyncSession = Depends(get_async_db_session)):
     user = await AuthService.authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid login credentials")
-    token = AuthService.create_access_token({"sub": user.email, "id": str(user.id), "role": user.role.value})
+    token = await AuthService.create_access_token({"sub": user.email, "id": str(user.id), "role": user.role.value})
 
     return {"access_token": token, "user": user}
+
+
+@router.post("/forgot-password")
+async def forgot_password(email: str, db: AsyncSession = Depends(get_async_db_session)):
+    return await AuthService.send_reset_password_link(email, db)
+
+
+@router.get("/confirm-reset-password")
+async def confirm_reset_password_token(token: str):
+    try:
+        payload = await AuthService.confirm_reset_token(token)
+        return {
+            "status": "active",
+            "message": "Token is valid. Proceed to reset password.",
+            "data": payload
+        }
+    except HTTPException as e:
+        return {
+            "status": "expired",
+            "message": "Token expired or invalid. Please request a new reset link.",
+            "data": None
+        }
+
+
+@router.post("/change-password")
+async def reset_password(
+    token: str,
+    new_password: str,
+    db: AsyncSession = Depends(get_async_db_session)
+):
+    return await AuthService.change_password(token, new_password, db)
+
+
+# @router.post("/forgot-password")
+# async def forgot_password(email: str):
+#     # gt th email
+#     # confirm account
+#     # create a token user info
+#     # build a reset password link
+#     # Mail the link to user.email 
+#     pass
+
+# @router.get("/confirm-reset-password")
+# async def confirm_reset_password_token(token: str):
+#     # get the token
+#     # parse the token
+#     # confirm its not expired
+#     # if its expired, return {status: expired, message: request new link, data: null}
+#     # if link: return { status: active, message: "Provide a nw password", data: user_data}
+#     pass
+
+
+# @router.post("/change-password")
+# async def reset_password(token: str, new_password: str, db: AsyncSession):
+#     # get the token
+#     # parse the token
+#     # confirm its not expired
+#     # if its expired, return {status: expired, message: request new link, data: null}
+#     # If token active: ...
+#     # get user with token.user.id
+#     # call; get_password_hash to hash password
+#     # update the user acc with the hashed password
+#     # return {status: success, message: "Password changed", data: user}
+#     pass
 
 
 async def get_current_user(
