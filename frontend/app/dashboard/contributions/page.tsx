@@ -320,7 +320,7 @@ function AllContributionsContent() {
             <TabsTrigger value="pending" className="flex items-center gap-2">
               Pending
               <Badge variant="secondary" className="text-xs">
-                {userContributions.filter(c => 
+                {userContributions.filter((c: { status: any }) => 
                   c.status === ContributionStatus.PENDING || 
                   c.status === ContributionStatus.PROCESSING
                 ).length}
