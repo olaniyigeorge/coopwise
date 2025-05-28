@@ -179,3 +179,4 @@ cython_debug/
 logs/
 yarn.lock
 api_backend/.env.prod
+api_backend/client_secret_430069870345-ajc4s5j2idb7b9an43frc970s2qs9e60.apps.googleusercontent.com.json
