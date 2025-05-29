@@ -1,28 +1,63 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { toast } from "@/components/ui/use-toast"
 
 export default function LoginForm() {
-  const [phone, setPhone] = useState("")
+  const router = useRouter()
+  const { login } = useAuth()
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle login logic here
-    console.log({ phone, password, rememberMe })
+    setError(null)
+    setLoading(true)
+    
+    try {
+      await login({ username, password })
+      // Successful login is handled by the auth context (redirects to dashboard)
+    } catch (err: any) {
+      console.error('Login error:', err)
+      
+      // Extract error message
+      let errorMessage = 'Failed to login. Please check your credentials.'
+      
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          errorMessage = err.response.data
+        } else if (err.response.data.detail) {
+          errorMessage = err.response.data.detail
+        } else if (err.response.data.error) {
+          errorMessage = err.response.data.error
+        }
+      }
+      
+      setError(errorMessage)
+      
+      toast({
+        title: "Login Failed",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const isFormFilled = phone.trim() !== "" && password.trim() !== ""
+  const isFormFilled = username.trim() !== "" && password.trim() !== ""
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 w-full">
@@ -42,16 +77,23 @@ export default function LoginForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
+            {error}
+          </div>
+        )}
+        
         <div className="space-y-1">
-          <Label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone Number/Email</Label>
+          <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username/Email</Label>
           <Input
-            id="phone"
+            id="username"
             type="text"
-            placeholder="Enter your phone number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Enter your username or email"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
             className="w-full h-10 border border-gray-300 rounded"
+            disabled={loading}
           />
         </div>
 
@@ -66,12 +108,14 @@ export default function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full h-10 border border-gray-300 rounded pr-10"
+              disabled={loading}
             />
             <button 
               type="button" 
               onClick={() => setShowPassword(!showPassword)} 
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
               tabIndex={-1}
+              disabled={loading}
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -85,6 +129,7 @@ export default function LoginForm() {
               checked={rememberMe} 
               onCheckedChange={(checked) => setRememberMe(checked as boolean)} 
               className="h-4 w-4"
+              disabled={loading}
             />
             <label
               htmlFor="remember"
@@ -100,14 +145,21 @@ export default function LoginForm() {
 
         <Button 
           type="submit" 
-          disabled={!isFormFilled}
+          disabled={!isFormFilled || loading}
           className={`w-full h-10 font-medium rounded mt-2 ${
-            isFormFilled 
+            isFormFilled && !loading
             ? "bg-primary hover:bg-primary/90 text-white" 
             : "bg-gray-200 text-gray-500"
           }`}
         >
-          Sign In
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+              Signing In...
+            </>
+          ) : (
+            "Sign In"
+          )}
         </Button>
       </form>
 

@@ -9,26 +9,62 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Loader2 } from "lucide-react"
 
 export default function SignupPage() {
   const router = useRouter()
+  const { register, error, loading, clearError } = useAuth()
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [username, setUsername] = useState("")
+  const [localError, setLocalError] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle signup logic here
-    console.log({ fullName, phone, email, password })
+    clearError()
+    setLocalError(null)
     
-    // Redirect to profile page after signup
-    router.push('/auth/profile')
+    // Basic validation
+    if (password.length < 6) {
+      setLocalError("Password must be at least 6 characters")
+      return
+    }
+    
+    // Validate phone number format (simple E.164 validation)
+    let formattedPhone = phone
+    if (!phone.startsWith('+')) {
+      formattedPhone = '+' + phone
+    }
+    
+    if (!/^\+\d{7,15}$/.test(formattedPhone)) {
+      setLocalError("Phone number must be in international format (e.g. +2348012345678)")
+      return
+    }
+    
+    try {
+      await register({
+        full_name: fullName,
+        phone_number: formattedPhone,
+        email: email,
+        password: password,
+        username: username || email, // Use email as username if not provided
+        role: "user"
+      })
+      // Redirect is handled in the auth context
+    } catch (err) {
+      // Error handling is done in the auth context
+      console.error("Registration error:", err)
+    }
   }
 
   const isFormFilled = fullName.trim() !== "" && 
                        phone.trim() !== "" && 
+                       email.trim() !== "" &&
                        password.trim() !== ""
 
   return (
@@ -50,6 +86,12 @@ export default function SignupPage() {
         <p className="text-sm text-center text-secondary mt-1">Join CoopWise to start saving smarter</p>
       </div>
 
+      {(error || localError) && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{localError || error}</AlertDescription>
+        </Alert>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1">
           <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full Name</Label>
@@ -65,16 +107,19 @@ export default function SignupPage() {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone Number</Label>
+          <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username</Label>
           <Input
-            id="phone"
-            type="tel"
-            placeholder="Enter your phone number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            id="username"
+            type="text"
+            placeholder="Choose a username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
             className="w-full h-10 border border-gray-300 rounded"
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Username is required and must be unique
+          </p>
         </div>
 
         <div className="space-y-1">
@@ -82,11 +127,28 @@ export default function SignupPage() {
           <Input
             id="email"
             type="email"
-            placeholder="Enter your email address (optional)"
+            placeholder="Enter your email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
             className="w-full h-10 border border-gray-300 rounded"
           />
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone Number</Label>
+          <Input
+            id="phone"
+            type="tel"
+            placeholder="Enter your phone number (e.g. +2348012345678)"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+            className="w-full h-10 border border-gray-300 rounded"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Use international format (e.g., +2348012345678)
+          </p>
         </div>
 
         <div className="space-y-1">
@@ -111,7 +173,7 @@ export default function SignupPage() {
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Password must be at least 8 characters, with one capital letter and one lowercase letter.
+            Password must be at least 6 characters.
           </p>
         </div>
 
@@ -121,14 +183,21 @@ export default function SignupPage() {
 
         <Button 
           type="submit" 
-          disabled={!isFormFilled}
+          disabled={!isFormFilled || loading}
           className={`w-full h-10 font-medium rounded mt-2 ${
-            isFormFilled 
+            isFormFilled && !loading
             ? "bg-primary hover:bg-primary/90 text-white" 
             : "bg-gray-200 text-gray-500"
           }`}
         >
-          Sign Up
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating Account...
+            </>
+          ) : (
+            "Sign Up"
+          )}
         </Button>
       </form>
 
