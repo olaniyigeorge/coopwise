@@ -73,3 +73,24 @@ class NotificationService:
 
         await db.commit()
         return {"message": f"{len(unread_notifications)} notifications marked as read."}
+
+
+    @staticmethod
+    async def push_notification(user_id: int, title: str, message: str, payload: dict, db: AsyncSession):
+        # Save + optionally push via WebSocket or Push
+        pass
+
+    @staticmethod
+    async def broadcast_notification(title: str, message: str, payload: dict, db: AsyncSession):
+        # You can use a background task or queue for this if scale matters
+        from app.services.user_service import UserService
+
+        users = await UserService.get_all_users(db)
+        for user in users:
+            await NotificationService.push_notification(
+                user_id=user.id,
+                title=title,
+                message=message,
+                payload=payload,
+                db=db
+            )

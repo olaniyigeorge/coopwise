@@ -374,13 +374,13 @@ class CooperativeMembershipService:
         user: AuthenticatedUser,
         skip: int = 0,
         limit: int = 10
-    ) -> Optional[List[GroupMembership]]:
+    ) -> Optional[List[MembershipDetails]]:
         cache_key = f"top_memberships:user:{user.id}:skip:{skip}:limit:{limit}"
         cached = await get_cache(cache_key)
 
         if cached:
             logger.info(f"🔄 Using cached top memberships for user {user.id} (skip={skip}, limit={limit})")
-            return [MembershipDetails.model_validate(m) for m in cached]
+            return [MembershipDetails.model_validate(item) for item in cached]
 
         logger.info(f"🔍 Fetching top memberships for user {user.id} (skip={skip}, limit={limit})")
 
@@ -393,17 +393,16 @@ class CooperativeMembershipService:
                 .limit(limit)
             )
             result = await db.execute(stmt)
-            memberships = result.scalars().all()
+            memberships: List[GroupMembership] = result.scalars().all()
 
-            # Cache the results
-            await update_cache(
-                cache_key,
-                [MembershipDetails.model_validate(n) for n in memberships],
-                ttl=300  # Cache for 5 minutes
-            )
+            # Dump to JSON-safe format
+            serialized = [MembershipDetails.model_validate(m).model_dump(mode="json") for m in memberships]
+
+            await update_cache(cache_key, serialized, ttl=300)
             logger.info(f"✅ Cached top memberships for user {user.id}")
         except Exception as e:
             logger.error(f"❌ Failed to fetch top memberships: {e}")
             raise
 
-        return memberships
+        # Re-validate for return
+        return [MembershipDetails.model_validate(item) for item in serialized]

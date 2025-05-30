@@ -137,5 +137,5 @@ class SummaryService:
             group_goals=group_goals
         )
 
-        await update_cache(cache_key, targets.json(), ttl=300)
+        await update_cache(cache_key, targets.model_dump_json(), ttl=300)
         return targets
