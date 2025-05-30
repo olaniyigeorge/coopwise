@@ -38,6 +38,16 @@ class CoopGroupDetails(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
+class CoopGroupTargetSummary(BaseModel):
+    id: UUID
+    name: str
+    target_amount: int
+
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CoopGroupUpdate(BaseModel):
     name: str
     contribution_amount: int

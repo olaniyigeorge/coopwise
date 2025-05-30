@@ -33,6 +33,8 @@ class GroupMembership(Base):
     status = Column(Enum(MembershipStatus), default=MembershipStatus.CLICKED, nullable=False)
     joined_at = Column(DateTime, default=None, nullable=True)
 
+    payout_position = Column(Integer, default=0, nullable=False)  # Position in the payout queue
+
     has_received_payout_this_cycle = Column(Boolean, default=False)
 
 

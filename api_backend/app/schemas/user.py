@@ -40,7 +40,7 @@ class UserUpdate(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class UserRead(BaseModel):
+class UserDetail(BaseModel):
     id: UUID
     username: str
     email: EmailStr
@@ -65,7 +65,7 @@ class Token(BaseModel):
 
 class AuthUser(BaseModel):
     access_token: str
-    user: UserRead
+    user: UserDetail
 
 
 class UserKYC(BaseModel):

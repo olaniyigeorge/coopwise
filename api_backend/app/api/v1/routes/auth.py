@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 
 from app.schemas.auth import AuthenticatedUser
-from app.schemas.user import AuthUser, UserCreate, UserRead, Token
+from app.schemas.user import AuthUser, UserCreate, UserDetail, Token
 from db.dependencies import get_async_db_session
 from app.services.auth_service import AuthService
 
@@ -74,8 +74,7 @@ async def reset_password(
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)]
 ) -> AuthenticatedUser:
-    payload = AuthService.decode_token(token)
-    
+    payload = await AuthService.decode_token(token)
     auth_user = AuthenticatedUser(
         id=payload.get("id"),
         email=payload.get("sub"),

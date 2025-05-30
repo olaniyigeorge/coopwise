@@ -1,15 +1,17 @@
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
+from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.schemas.user import UserRead
+from app.schemas.user import UserDetail
+from app.utils.cache import get_cache, update_cache
 from db.models.cooperative_group import CooperativeGroup
 from db.models.user import User
 from app.schemas.auth import AuthenticatedUser
-from app.schemas.cooperative_membership import AcceptMembership, MembershipCreate
+from app.schemas.cooperative_membership import AcceptMembership, MembershipCreate, MembershipDetails
 from db.models.membership import GroupMembership
-from app.utils import logger
+from app.utils.logger import logger
 from app.core.config import config
 from fastapi import HTTPException, status
 
@@ -44,7 +46,7 @@ class CooperativeMembershipService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
                 detail=f"Could not fetch cooperative group details - {str(e)}"
             )
-        user = UserRead(
+        user = UserDetail(
             id=invited_by_user.id,
             username=invited_by_user.username,
             email=invited_by_user.email
@@ -243,7 +245,26 @@ class CooperativeMembershipService:
             raise e
         return memberships
 
+    # Get memberships by user
+    @staticmethod
+    async def get_memberships_by_user(
+        user_id: UUID,
+        db: AsyncSession,
+        skip: int = 0,
+        limit: int = 10,
+    ) -> Optional[list[GroupMembership]]:
+        try:
+            stmt = select(GroupMembership).where(GroupMembership.user_id == user_id).offset(skip).limit(limit)
+            result = await db.execute(stmt)
+            memberships = result.scalars().all()
+        except Exception as e:
+            logger.logger.error(e)
+            raise e
+        
+        return memberships
+    
 
+    
     # Get memberships by user and group
     @staticmethod
     async def get_membership_by_user_and_group(
@@ -344,3 +365,45 @@ class CooperativeMembershipService:
             raise e
 
         return membership
+
+
+    # Get top memberships ( with more activity or more contributions )
+    @staticmethod
+    async def get_top_memberships(
+        db: AsyncSession,
+        user: AuthenticatedUser,
+        skip: int = 0,
+        limit: int = 10
+    ) -> Optional[List[GroupMembership]]:
+        cache_key = f"top_memberships:user:{user.id}:skip:{skip}:limit:{limit}"
+        cached = await get_cache(cache_key)
+
+        if cached:
+            logger.info(f"🔄 Using cached top memberships for user {user.id} (skip={skip}, limit={limit})")
+            return [MembershipDetails.model_validate(m) for m in cached]
+
+        logger.info(f"🔍 Fetching top memberships for user {user.id} (skip={skip}, limit={limit})")
+
+        try:
+            stmt = (
+                select(GroupMembership)
+                .where(GroupMembership.user_id == user.id)
+                .order_by(GroupMembership.created_at.desc())
+                .offset(skip)
+                .limit(limit)
+            )
+            result = await db.execute(stmt)
+            memberships = result.scalars().all()
+
+            # Cache the results
+            await update_cache(
+                cache_key,
+                [MembershipDetails.model_validate(n) for n in memberships],
+                ttl=300  # Cache for 5 minutes
+            )
+            logger.info(f"✅ Cached top memberships for user {user.id}")
+        except Exception as e:
+            logger.error(f"❌ Failed to fetch top memberships: {e}")
+            raise
+
+        return memberships
