@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
@@ -22,7 +22,7 @@ async def register_user(
     db: AsyncSession = Depends(get_async_db_session)
 ):
     reg = await AuthService.register_user(user, db)
-    token = AuthService.create_access_token({"sub": reg.email, "id": str(reg.id), "role": reg.role.value})
+    token = await AuthService.create_access_token({"sub": reg.email, "id": str(reg.id), "role": reg.role.value})
     return {
         "token": token,
         "user": reg
@@ -81,6 +81,21 @@ async def get_current_user(
         role=payload.get("role")
     )
     return auth_user
+
+
+async def get_current_user_ws(websocket: WebSocket) -> AuthenticatedUser:
+    token = websocket.query_params.get("token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Missing token")
+
+    payload = await AuthService.decode_token(token)
+    auth_user = AuthenticatedUser(
+        id=payload.get("id"),
+        email=payload.get("sub"),
+        role=payload.get("role")
+    )
+    return auth_user
+
 
 async def is_admin_permissions(
     token: Annotated[str, Depends(oauth2_scheme)],

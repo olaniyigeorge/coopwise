@@ -6,7 +6,7 @@ load_dotenv()
 from app.core.middleware import app_middleware
 from app.utils.logger import logger
 from app.core.config import config
-from app.api.v1.routes import auth, cooperative_group, membership, user, contribution, dashboard
+from app.api.v1.routes import auth, cooperative_group, membership, user, contribution, dashboard, notifications_router
 import uvicorn
 from contextlib import asynccontextmanager
 from db.database import database, init_db
@@ -37,6 +37,7 @@ app.include_router(membership.router)
 app.include_router(user.router)
 app.include_router(contribution.router)
 app.include_router(dashboard.router)
+app.include_router(notifications_router.router)
 
 # Add Middleware
 app.add_middleware(BaseHTTPMiddleware, dispatch=app_middleware)
@@ -66,20 +67,7 @@ async def home(request: Request):
     })
 @app.get("/ping")
 async def home(request: Request):
-
-    return {"message":"Pong"}    
-    
-#@app.get("/health", response_class=HTMLResponse)
-# async def health_check(request: Request):
-#     """
-#     Health check endpoint.
-#     """
-#     return templates.TemplateResponse("health.html", {
-#         "request": request,
-#         "name": "iHr",
-#         "details": "iHr health check",
-#         "docs": f"{config.DOMAIN}/api/docs"
-#     })
+    return {"message":"Pong"} 
 
 
 

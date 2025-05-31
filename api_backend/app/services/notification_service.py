@@ -2,9 +2,10 @@
 
 # Schedule future alerts.from typing import List
 from datetime import datetime
-from typing import List
+from typing import Dict, List
 from uuid import UUID
 
+from fastapi import WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -14,10 +15,42 @@ from db.models.notifications import Notification
 from app.schemas.auth import AuthenticatedUser
 from app.utils.cache import get_cache, update_cache
 from app.utils.logger import logger
-from app.schemas.notifications_schema import NotificationDetail  # assuming this is your output schema
+from app.schemas.notifications_schema import NotificationCreate, NotificationDetail  # assuming this is your output schema
+
+active_connections: Dict[int, List[WebSocket]] = {}
 
 
 class NotificationService:
+    @staticmethod
+    async def create_notification_and_push_notification(
+        notification_data: NotificationCreate,
+        db: AsyncSession 
+    ) -> NotificationDetail:
+        """
+        Creates a notification and pushes it to the user via WebSocket.
+        """
+        notification = Notification(
+            user_id = notification_data.user_id,
+            title = notification_data.title,
+            message = notification_data.message,
+            type = notification_data.type,
+            event_type = notification_data.event_type,
+            entity_url = notification_data.entity_url
+        )
+
+        db.add(notification)
+        await db.commit()
+        await db.refresh(notification)
+
+        # Convert to Pydantic schema
+        notification_detail = NotificationDetail.model_validate(notification)
+
+        # Push notification to user via WebSocket
+        await NotificationService.push_notification_to_user(notification_data.user_id, notification_detail)
+        return notification_detail
+    
+
+
     @staticmethod
     async def get_user_notifications(
         user: AuthenticatedUser,
@@ -76,9 +109,13 @@ class NotificationService:
 
 
     @staticmethod
-    async def push_notification(user_id: int, title: str, message: str, payload: dict, db: AsyncSession):
-        # Save + optionally push via WebSocket or Push
-        pass
+    async def push_notification_to_user(user_id: int, notification_data: NotificationDetail):
+        connections = active_connections.get(user_id, [])
+        for ws in connections:
+            await ws.send_json(notification_data.model_dump_json())
+
+
+
 
     @staticmethod
     async def broadcast_notification(title: str, message: str, payload: dict, db: AsyncSession):

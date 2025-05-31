@@ -10,14 +10,27 @@ from db.models.notifications import EventType, NotificationStatus, NotificationT
 
 class NotificationDetail(BaseModel):
     id: UUID
+    #user_id: UUID
     title: Optional[str]
     message: Optional[str]
     event_type: EventType
     type: NotificationType
     status: NotificationStatus
     is_read: bool
+    read_at: Optional[datetime]
     user: UserDetail
     entity_url: Optional[str]
     created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class NotificationCreate(BaseModel):
+    user_id: UUID
+    title: str
+    message: str
+    event_type: EventType
+    type: NotificationType
+    entity_url: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
