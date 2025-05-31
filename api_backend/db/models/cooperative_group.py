@@ -50,9 +50,9 @@ class CooperativeGroup(Base):
     coop_model = Column(Enum(CooperativeModel), default=CooperativeModel.AJO, nullable=False)
     target_amount = Column(Numeric, nullable=False)
     status = Column(Enum(CooperativeStatus), default=CooperativeStatus.ACTIVE, nullable=False)
-    
+    next_payout_date = Column(DateTime, nullable=True)  # When the next payout is due
     rules = Column(JSON, nullable=True) # Like metatdata that are used to define the rules of the cooperative
-    
+
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 

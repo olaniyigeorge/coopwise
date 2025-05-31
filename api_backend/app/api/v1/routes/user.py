@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.routes.auth import is_admin_or_owner, is_admin_permissions
 from app.schemas.auth import AuthenticatedUser
-from app.schemas.user import UserRead, UserUpdate
+from app.schemas.user import UserDetail, UserUpdate
 from db.dependencies import get_async_db_session
 from app.services.user_service import UserService
 
@@ -28,7 +28,7 @@ async def get_users(
     return await UserService.get_users(db, skip=skip, limit=limit)
 
 
-@router.patch("/{user_id}", response_model=UserRead)
+@router.patch("/{user_id}", response_model=UserDetail)
 async def update_user(
     user_id: str,
     user_update_data: UserUpdate,
@@ -43,7 +43,7 @@ async def update_user(
         raise HTTPException(status_code=404, detail="User not found")
     return updated_user 
 
-@router.get("/{user_id}", response_model=UserRead)
+@router.get("/{user_id}", response_model=UserDetail)
 async def get_user(
     user_id: str, 
     user: AuthenticatedUser = Depends(is_admin_or_owner), # TODO: Uncomment this line to enforce admin permissions

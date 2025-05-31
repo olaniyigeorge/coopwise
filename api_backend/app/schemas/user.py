@@ -40,7 +40,7 @@ class UserUpdate(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class UserRead(BaseModel):
+class UserDetail(BaseModel):
     id: UUID
     username: str
     email: EmailStr
@@ -65,7 +65,7 @@ class Token(BaseModel):
 
 class AuthUser(BaseModel):
     access_token: str
-    user: UserRead
+    user: UserDetail
 
 
 class UserKYC(BaseModel):
@@ -76,3 +76,23 @@ class UserKYC(BaseModel):
     is_verified: bool = False
     
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserDetailsAll(BaseModel):
+    id: UUID
+    username: str
+    email: EmailStr
+    full_name: str
+    phone_number: PhoneNumberStr
+    role: UserRoles
+    target_savings_amount: Optional[float] = None
+    savings_purpose: Optional[str] = None
+    income_range: Optional[IncomeRange] = None
+    saving_frequency: Optional[SavingFrequency] = None
+    is_email_verified: bool = False
+    is_phone_verified: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+

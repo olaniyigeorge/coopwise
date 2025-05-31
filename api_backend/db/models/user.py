@@ -72,6 +72,17 @@ class User(Base):
         back_populates="inviter",
         foreign_keys="GroupMembership.invited_by"
     )
+    notifications = relationship(
+        "Notification", 
+        back_populates="user", 
+        lazy="selectin", 
+        cascade="all, delete-orphan"
+    )
+    ai_insights = relationship(
+        "AIInsight", 
+        back_populates="user", 
+        lazy="selectin"
+    )
 
     # payments = relationship(
     #     "Payment", 
