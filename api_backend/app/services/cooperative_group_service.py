@@ -16,6 +16,7 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import joinedload
 
 from app.schemas.auth import AuthenticatedUser
+from app.schemas.dashboard_schema import ExploreGroups
 from app.utils.cache import get_cache, update_cache
 from db.models.membership import GroupMembership
 from app.schemas.cooperative_group import CoopGroupCreate, CoopGroupDetails, CoopGroupUpdate
@@ -140,7 +141,7 @@ class CooperativeGroupService:
         redis: Redis,
         page: int = 1,
         page_size: int = 10
-    ) -> dict:
+    ) -> ExploreGroups:
         cache_key = f"groups:{user.id}:page:{page}"
         cached = await get_cache(cache_key)
         if cached:
@@ -174,10 +175,10 @@ class CooperativeGroupService:
         suggested_groups_result = await db.execute(suggested_group_stmt)
         suggested_groups: List[CooperativeGroup] = suggested_groups_result.scalars().all()
 
-        result = {
-            "user_groups": [CoopGroupDetails.model_validate(g) for g in user_groups],
-            "suggested_groups": [CoopGroupDetails.model_validate(g) for g in suggested_groups]
-        }
+        result = ExploreGroups(
+            user_groups= [CoopGroupDetails.model_validate(g) for g in user_groups],
+            suggested_groups=[CoopGroupDetails.model_validate(g) for g in suggested_groups]
+        )
         result_serializable = jsonable_encoder(result)
         
         await update_cache(cache_key, result_serializable, ttl=300)

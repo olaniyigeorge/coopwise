@@ -7,7 +7,7 @@ from datetime import datetime
 
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.cooperative_group import CoopGroupDetails, CoopGroupTargetSummary
-from app.schemas.dashboard_schema import Targets
+from app.schemas.dashboard_schema import Activity, Summary, Targets
 from app.utils.cache import get_cache, update_cache
 from db.models.contribution_model import Contribution
 from db.models.membership import GroupMembership
@@ -24,7 +24,7 @@ class SummaryService:
         user: AuthenticatedUser,
         db: AsyncSession,
         redis: Redis
-    ) -> dict:
+    ) -> Summary:
 
         key = f"summary:{user.id}"
         cached_summary = await get_cache(key)
@@ -139,3 +139,30 @@ class SummaryService:
 
         await update_cache(cache_key, targets.model_dump_json(), ttl=300)
         return targets
+    
+    @staticmethod
+    async def get_recent_activities(
+        db: AsyncSession, 
+        user: AuthenticatedUser, 
+        redis: Redis
+    ):
+        return [
+            Activity(
+                type="contribution",
+                user_id=user.id,
+                entity_id=12345,  # Example entity ID
+                created_at=datetime.now().isoformat(),
+                description="User made a contribution",
+                amount=100.0  # Example amount
+            ),
+            Activity(
+                type="joined_group",
+                user_id=user.id,
+                entity_id=67890,  # Example entity ID
+                created_at=datetime.now().isoformat(),
+                description="User joined a new group",
+                amount=None  # No amount for this activity
+            )
+        ]
+    
+    

@@ -29,7 +29,6 @@ async def get_dashboard_data(
     - Notifications generated from user events
     - Cooperative members in user's groups
     """
-    print(f"\n\n\nFetching dashboard data for user: {user.id}\n\n\n")
     try:
         dashboard_data = await DashboardService.get_dashboard_data(db, redis, user)
         return dashboard_data

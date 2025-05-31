@@ -1,3 +1,4 @@
+from typing import List
 from redis import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +32,7 @@ class InsightEngine:
         redis: Redis,
         skip: int = 0,
         limit: int = 10
-    ) -> list[AIInsightDetail]:
+    ) -> List[AIInsightDetail]:
         cache_key = f"insights:{user.id}:skip:{skip}:limit:{limit}"
         cached = await get_cache(cache_key)
         if cached:
