@@ -36,8 +36,13 @@ const createGroupSchema = z.object({
 
 type FormValues = z.infer<typeof createGroupSchema>
 
-export default function CreateGroupForm() {
+interface CreateGroupFormProps {
+  onSubmitSuccess?: (formData: any) => void;
+}
+
+export default function CreateGroupForm({ onSubmitSuccess }: CreateGroupFormProps) {
   const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   
   const form = useForm<FormValues>({
     resolver: zodResolver(createGroupSchema),
@@ -46,24 +51,42 @@ export default function CreateGroupForm() {
       description: "",
       contributionAmount: "",
       contributionFrequency: "",
-      maxMembers: "",
+      maxMembers: "10",
       targetAmount: "",
     },
   })
   
-  function onSubmit(values: FormValues) {
+  async function onSubmit(values: FormValues) {
+    try {
+      setIsSubmitting(true)
     console.log(values)
     // In a real app, you would submit this data to your API
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      if (onSubmitSuccess) {
+        onSubmitSuccess(values)
+      } else {
     router.push('/dashboard')
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div className="bg-white rounded-lg shadow-sm">
-      <div className="px-6 py-4 border-b border-gray-100">
-        <h2 className="text-lg font-medium text-gray-900">Group Details</h2>
-      </div>
-      
       <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Create Group</h1>
+          <p className="text-sm text-gray-500 mt-1">Set up a new savings group and invite members</p>
+        </div>
+        
+        <h2 className="text-lg font-medium text-gray-900 mb-2">Group Details</h2>
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Group Name */}
@@ -73,13 +96,11 @@ export default function CreateGroupForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm font-medium text-gray-700">
-                    Group Name*
-                    <span className="text-gray-500 font-normal ml-1">(Choose a name that identifies your group clearly)</span>
+                    Group Name <span className="text-gray-500 font-normal ml-1">(Choose a name that identifies your group clearly)</span>
                   </FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="Market Women Association" 
-                      className="mt-1"
+                      placeholder="E.g., Market Women Association" 
                       {...field} 
                     />
                   </FormControl>
@@ -99,9 +120,9 @@ export default function CreateGroupForm() {
                   </FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Market Women Association is ..................."
-                      className="mt-1 resize-none"
-                      rows={4}
+                      placeholder="Brief describe the purpose of this group"
+                      className="resize-none"
+                      rows={3}
                       {...field}
                     />
                   </FormControl>
@@ -122,8 +143,7 @@ export default function CreateGroupForm() {
                     </FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="₦100,000"
-                        className="mt-1"
+                        placeholder="E.g., ₦100,000"
                         {...field} 
                       />
                     </FormControl>
@@ -142,7 +162,7 @@ export default function CreateGroupForm() {
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger>
                           <SelectValue placeholder="Select Frequency" />
                         </SelectTrigger>
                       </FormControl>
@@ -169,12 +189,18 @@ export default function CreateGroupForm() {
                       Maximum Number of Members
                     </FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number"
-                        placeholder="10"
-                        className="mt-1"
-                        {...field} 
-                      />
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="10" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[...Array(20)].map((_, i) => (
+                            <SelectItem key={i + 1} value={(i + 1).toString()}>
+                              {i + 1}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <p className="text-xs text-gray-500 mt-1">You can adjust this later if needed</p>
                     <FormMessage />
@@ -192,8 +218,7 @@ export default function CreateGroupForm() {
                     </FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="E.g. ₦10,000,000"
-                        className="mt-1"
+                        placeholder="E.g., ₦100,000"
                         {...field} 
                       />
                     </FormControl>
@@ -205,12 +230,13 @@ export default function CreateGroupForm() {
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-end pt-6">
+            <div className="flex justify-end">
               <Button 
                 type="submit"
-                className="bg-primary hover:bg-primary/90 text-white px-8"
+                disabled={isSubmitting}
+                className="bg-primary hover:bg-primary/90 text-white"
               >
-                Set Group Rules
+                {isSubmitting ? 'Setting up...' : 'Set Group Rules'}
               </Button>
             </div>
           </form>

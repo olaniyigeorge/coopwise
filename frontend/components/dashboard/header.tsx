@@ -52,7 +52,9 @@ export default function Header({
         
         {/* Title section */}
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 truncate">{title}</h1>
+          {title && (
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 truncate">{title}</h1>
+          )}
           {subtitle && (
             <p className="text-xs sm:text-sm text-gray-600 mt-1 truncate">{subtitle}</p>
           )}

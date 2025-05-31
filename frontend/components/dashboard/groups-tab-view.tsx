@@ -29,7 +29,12 @@ function LoadingFallback() {
 function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [activeTab, setActiveTab] = useState<string>(defaultTab)
+  
+  // Check for tab in URL params
+  const tabParam = searchParams.get('tab')
+  const initialTab = tabParam === 'my' ? 'my-groups' : tabParam === 'discover' ? 'discover' : defaultTab
+  
+  const [activeTab, setActiveTab] = useState<string>(initialTab)
   const [searchQuery, setSearchQuery] = useState('')
   
   // Simulate fetching user data to determine if they have any groups
@@ -37,14 +42,22 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
   const [hasGroups, setHasGroups] = useState<boolean | null>(null)
   
   useEffect(() => {
+    // If tab param changes, update the active tab
+    if (tabParam === 'my') {
+      setActiveTab('my-groups')
+    } else if (tabParam === 'discover') {
+      setActiveTab('discover')
+    }
+  }, [tabParam])
+  
+  useEffect(() => {
     // Simulate API call to check if user has groups
     const fetchUserGroups = async () => {
       // This would be an API call in a real app
       setTimeout(() => {
-        // For demo purposes, we'll alternate between having groups and not
+        // For demo purposes, we'll assume user has groups if they've created any
         // In a real app, this would come from your API
-        const hasExistingGroups = localStorage.getItem('hasGroups') === 'true'
-        setHasGroups(hasExistingGroups)
+        setHasGroups(true) // Default to true for better UX after group creation
       }, 500)
     }
     

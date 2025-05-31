@@ -51,29 +51,29 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Group Header */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex justify-between items-start mb-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900 mb-2">{group.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">{group.name}</h1>
             <p className="text-gray-600 text-sm">{group.description}</p>
           </div>
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto">
             <Share className="w-4 h-4" />
             Share invite
           </Button>
         </div>
 
         {/* Stats Cards Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6">
           {/* Group Savings */}
-          <div className="space-y-2">
+          <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
             <h3 className="text-sm text-gray-500">Group savings</h3>
             <p className="text-xs text-gray-500">{group.totalMembers} members in this group</p>
             <div className="space-y-2">
-              <p className="text-2xl font-semibold text-gray-900">₦{group.totalSaved.toLocaleString()}</p>
-              <p className="text-sm text-gray-500">Total saved by this group</p>
+              <p className="text-xl sm:text-2xl font-semibold text-gray-900">₦{group.totalSaved.toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-gray-500">Total saved by this group</p>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs">
                   <span>Progress to goal</span>
@@ -91,22 +91,22 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
           </div>
 
           {/* Next Contribution */}
-          <div className="space-y-2">
+          <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-2">
               <h3 className="text-sm text-gray-500">Next Contribution</h3>
               <Calendar className="w-4 h-4 text-gray-400" />
             </div>
             <div className="space-y-2">
-              <p className="text-2xl font-semibold text-gray-900">₦{group.nextContribution.amount.toLocaleString()}</p>
-              <p className="text-sm text-gray-500">Due on {group.nextContribution.dueDate} ({group.nextContribution.daysLeft} days to go)</p>
-              <div className="flex items-center gap-2">
+              <p className="text-xl sm:text-2xl font-semibold text-gray-900">₦{group.nextContribution.amount.toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-gray-500">Due on {group.nextContribution.dueDate} ({group.nextContribution.daysLeft} days to go)</p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-orange-500"></div>
                   <span className="text-xs">Frequency</span>
                 </div>
                 <span className="text-xs font-medium">{group.nextContribution.frequency}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-orange-500"></div>
                   <span className="text-xs">Status</span>
@@ -114,28 +114,28 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
                 <span className="text-xs font-medium bg-orange-100 text-orange-800 px-2 py-1 rounded">{group.nextContribution.status}</span>
               </div>
             </div>
-            <Button className="w-full bg-primary hover:bg-primary/90">
+            <Button className="w-full bg-primary hover:bg-primary/90 mt-2">
               Make Contribution
             </Button>
           </div>
 
           {/* Next Payout */}
-          <div className="space-y-2">
+          <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-2">
               <h3 className="text-sm text-gray-500">Next Payout</h3>
               <Calendar className="w-4 h-4 text-gray-400" />
             </div>
             <div className="space-y-2">
-              <p className="text-2xl font-semibold text-gray-900">₦{group.nextPayout.amount.toLocaleString()}</p>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
+              <p className="text-xl sm:text-2xl font-semibold text-gray-900">₦{group.nextPayout.amount.toLocaleString()}</p>
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-green-500"></div>
                     <span className="text-xs">Receiving Next</span>
                   </div>
                   <span className="text-xs font-medium">{group.nextPayout.recipient}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-green-500"></div>
                     <span className="text-xs">Receiving Date</span>
@@ -150,9 +150,9 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
 
       {/* Tabs */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="flex">
+        <div className="flex flex-wrap">
           <button
-            className={`flex-1 py-3 px-6 text-center font-medium transition-all ${
+            className={`flex-1 py-2 sm:py-3 px-2 sm:px-6 text-center text-xs sm:text-sm font-medium transition-all ${
               activeTab === 'contributions'
                 ? 'bg-primary text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -162,7 +162,7 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
             Contributions
           </button>
           <button
-            className={`flex-1 py-3 px-6 text-center font-medium transition-all ${
+            className={`flex-1 py-2 sm:py-3 px-2 sm:px-6 text-center text-xs sm:text-sm font-medium transition-all ${
               activeTab === 'payouts'
                 ? 'bg-primary text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -172,19 +172,19 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
             Payouts
           </button>
           <button
-            className={`flex-1 py-3 px-6 text-center font-medium transition-all ${
+            className={`flex-1 py-2 sm:py-3 px-2 sm:px-6 text-center text-xs sm:text-sm font-medium transition-all ${
               activeTab === 'members'
                 ? 'bg-primary text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
             onClick={() => setActiveTab('members')}
           >
-            Group Members
+            Members
           </button>
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {activeTab === 'contributions' && <ContributionHistory groupId={groupId} />}
           {activeTab === 'payouts' && <PayoutTracker groupId={groupId} />}
           {activeTab === 'members' && <GroupMembersList groupId={groupId} />}
@@ -192,7 +192,7 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
       </div>
 
       {/* Group Rules */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
         <h2 className="text-lg font-semibold mb-4">Group Rules</h2>
         <p className="text-sm text-gray-600 mb-4">
           These are the rules set for your group to keep things fair and organized.
@@ -215,8 +215,8 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
           </div>
         </div>
         
-        <div className="mt-6 flex justify-end">
-          <Button variant="outline" className="text-red-600 border-red-600 hover:bg-red-50">
+        <div className="mt-6 flex justify-center sm:justify-end">
+          <Button variant="outline" className="text-red-600 border-red-600 hover:bg-red-50 w-full sm:w-auto">
             Leave Group
           </Button>
         </div>
