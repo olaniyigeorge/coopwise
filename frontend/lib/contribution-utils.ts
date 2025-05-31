@@ -1,31 +1,58 @@
-import { ContributionStatus, ContributionType, PaymentMethod } from './mock-data'
+import { 
+  Contribution, 
+  ContributionStatus, 
+  ContributionType, 
+  PaymentMethod,
+  ContributionSummary,
+  ContributionStats
+} from './types'
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN'
-  }).format(amount)
+export function formatCurrency(amount: number, currency: string = '₦'): string {
+  return `${currency}${amount.toLocaleString()}`
 }
 
-export function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
+export function formatDate(date: string): string {
+  const d = new Date(date)
+  const now = new Date()
+  const diffTime = Math.abs(now.getTime() - d.getTime())
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) {
+    return `Today ${d.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit', 
+      hour12: true 
+    })}`
+  } else if (diffDays === 1) {
+    return 'Yesterday'
+  } else if (diffDays < 7) {
+    return `${diffDays} days ago`
+  } else {
+    return d.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })
+  }
 }
 
 export function getStatusColor(status: ContributionStatus): string {
   switch (status) {
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800'
-    case 'completed':
+    case ContributionStatus.COMPLETED:
       return 'bg-green-100 text-green-800'
-    case 'failed':
+    case ContributionStatus.PENDING:
+      return 'bg-yellow-100 text-yellow-800'
+    case ContributionStatus.PROCESSING:
+      return 'bg-blue-100 text-blue-800'
+    case ContributionStatus.FAILED:
       return 'bg-red-100 text-red-800'
-    case 'cancelled':
-      return 'bg-gray-100 text-gray-800'
+    case ContributionStatus.OVERDUE:
+      return 'bg-red-100 text-red-800'
+    case ContributionStatus.PARTIAL:
+      return 'bg-orange-100 text-orange-800'
     default:
       return 'bg-gray-100 text-gray-800'
   }
@@ -33,14 +60,18 @@ export function getStatusColor(status: ContributionStatus): string {
 
 export function getStatusLabel(status: ContributionStatus): string {
   switch (status) {
-    case 'pending':
-      return 'Pending'
-    case 'completed':
+    case ContributionStatus.COMPLETED:
       return 'Completed'
-    case 'failed':
+    case ContributionStatus.PENDING:
+      return 'Pending'
+    case ContributionStatus.PROCESSING:
+      return 'Processing'
+    case ContributionStatus.FAILED:
       return 'Failed'
-    case 'cancelled':
-      return 'Cancelled'
+    case ContributionStatus.OVERDUE:
+      return 'Overdue'
+    case ContributionStatus.PARTIAL:
+      return 'Partial'
     default:
       return 'Unknown'
   }
@@ -48,30 +79,118 @@ export function getStatusLabel(status: ContributionStatus): string {
 
 export function getTypeLabel(type: ContributionType): string {
   switch (type) {
-    case 'savings':
-      return 'Savings'
-    case 'loan':
-      return 'Loan'
-    case 'investment':
-      return 'Investment'
-    case 'donation':
-      return 'Donation'
+    case ContributionType.REGULAR:
+      return 'Regular Contribution'
+    case ContributionType.LATE_PAYMENT:
+      return 'Late Payment'
+    case ContributionType.ADVANCE_PAYMENT:
+      return 'Advance Payment'
+    case ContributionType.PENALTY:
+      return 'Penalty'
+    case ContributionType.BONUS:
+      return 'Bonus'
     default:
-      return 'Unknown'
+      return 'Contribution'
   }
 }
 
 export function getPaymentMethodLabel(method: PaymentMethod): string {
   switch (method) {
-    case 'card':
-      return 'Credit/Debit Card'
-    case 'bank_transfer':
+    case PaymentMethod.BANK_TRANSFER:
       return 'Bank Transfer'
-    case 'mobile_money':
+    case PaymentMethod.CARD:
+      return 'Card Payment'
+    case PaymentMethod.USSD:
+      return 'USSD'
+    case PaymentMethod.MOBILE_MONEY:
       return 'Mobile Money'
-    case 'cash':
+    case PaymentMethod.CASH:
       return 'Cash'
     default:
       return 'Unknown'
   }
 }
+
+export function calculateContributionSummary(contributions: Contribution[]): ContributionSummary {
+  const summary: ContributionSummary = {
+    totalContributions: contributions.length,
+    totalAmount: 0,
+    pendingContributions: 0,
+    pendingAmount: 0,
+    completedContributions: 0,
+    completedAmount: 0,
+    overdueContributions: 0,
+    overdueAmount: 0
+  }
+
+  contributions.forEach(contribution => {
+    summary.totalAmount += contribution.amount
+
+    switch (contribution.status) {
+      case ContributionStatus.PENDING:
+      case ContributionStatus.PROCESSING:
+        summary.pendingContributions++
+        summary.pendingAmount += contribution.amount
+        break
+      case ContributionStatus.COMPLETED:
+        summary.completedContributions++
+        summary.completedAmount += contribution.amount
+        break
+      case ContributionStatus.OVERDUE:
+        summary.overdueContributions++
+        summary.overdueAmount += contribution.amount
+        break
+    }
+  })
+
+  return summary
+}
+
+export function isContributionOverdue(contribution: Contribution): boolean {
+  if (!contribution.dueDate) return false
+  return new Date(contribution.dueDate) < new Date() && 
+         contribution.status !== ContributionStatus.COMPLETED
+}
+
+export function sortContributionsByDate(contributions: Contribution[], order: 'asc' | 'desc' = 'desc'): Contribution[] {
+  return [...contributions].sort((a, b) => {
+    const dateA = new Date(a.date).getTime()
+    const dateB = new Date(b.date).getTime()
+    return order === 'desc' ? dateB - dateA : dateA - dateB
+  })
+}
+
+export function filterContributions(
+  contributions: Contribution[], 
+  filters: {
+    status?: ContributionStatus[]
+    type?: ContributionType[]
+    groupId?: string
+    dateFrom?: string
+    dateTo?: string
+  }
+): Contribution[] {
+  return contributions.filter(contribution => {
+    if (filters.status && !filters.status.includes(contribution.status)) {
+      return false
+    }
+    
+    if (filters.type && !filters.type.includes(contribution.type)) {
+      return false
+    }
+    
+    if (filters.groupId && contribution.groupId !== filters.groupId) {
+      return false
+    }
+    
+    if (filters.dateFrom && new Date(contribution.date) < new Date(filters.dateFrom)) {
+      return false
+    }
+    
+    if (filters.dateTo && new Date(contribution.date) > new Date(filters.dateTo)) {
+      return false
+    }
+    
+    return true
+  })
+} 
