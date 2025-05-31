@@ -45,7 +45,7 @@ class CooperativeGroupService:
             await db.commit()
             await db.refresh(new_coop_group)
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 
                 detail=f"Could not create cooperative group - {str(e)}"
@@ -59,7 +59,7 @@ class CooperativeGroupService:
             result = await db.execute(stmt)
             coop_groups = result.scalars().all()
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
         return coop_groups
 
@@ -70,7 +70,7 @@ class CooperativeGroupService:
             result = await db.execute(stmt)
             coop_group = result.scalars().first()
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
         return coop_group
 
@@ -91,7 +91,7 @@ class CooperativeGroupService:
             await db.refresh(coop_group)
         except Exception as e:
             await db.rollback()
-            logger.logger.error(e)
+            logger.error(e)
             raise e
 
         return coop_group
@@ -110,7 +110,7 @@ class CooperativeGroupService:
             await db.commit()
         except Exception as e:
             await db.rollback()
-            logger.logger.error(e)
+            logger.error(e)
             raise e
 
         return coop_group
@@ -130,7 +130,7 @@ class CooperativeGroupService:
             groups = result.scalars().all()
             return groups
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise
 
 

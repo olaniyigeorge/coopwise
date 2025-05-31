@@ -58,7 +58,7 @@ class InsightEngine:
             return [AIInsightDetail.model_validate(i) for i in serialized]
 
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
 
     @staticmethod

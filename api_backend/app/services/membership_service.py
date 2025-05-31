@@ -41,7 +41,7 @@ class CooperativeMembershipService:
             invited_by_user = result.scalars().first()
 
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
                 detail=f"Could not fetch cooperative group details - {str(e)}"
@@ -84,7 +84,7 @@ class CooperativeMembershipService:
             await db.refresh(new_membership)
         except Exception as e:
             await db.rollback()
-            logger.logger.error(e)
+            logger.error(e)
             raise e
 
         return new_membership
@@ -127,7 +127,7 @@ class CooperativeMembershipService:
             await db.refresh(membership)
         
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
         return membership
 
@@ -149,7 +149,7 @@ class CooperativeMembershipService:
             if existing_membership:
                 print("Membership exists")        
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
         
         return invite_code
@@ -192,7 +192,7 @@ class CooperativeMembershipService:
                     "membership": existing_membership
                 }
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
 
         return membership
@@ -221,7 +221,7 @@ class CooperativeMembershipService:
             await db.commit()
             await db.refresh(existing_membership)
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
 
         return existing_membership
@@ -241,7 +241,7 @@ class CooperativeMembershipService:
             result = await db.execute(stmt)
             memberships = result.scalars().all()
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
         return memberships
 
@@ -258,7 +258,7 @@ class CooperativeMembershipService:
             result = await db.execute(stmt)
             memberships = result.scalars().all()
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
         
         return memberships
@@ -280,7 +280,7 @@ class CooperativeMembershipService:
             result = await db.execute(stmt)
             membership = result.scalars().first()
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
         
         return membership
@@ -304,7 +304,7 @@ class CooperativeMembershipService:
             result = await db.execute(stmt)
             memberships = result.scalars().all()
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
         return memberships
 
@@ -324,7 +324,7 @@ class CooperativeMembershipService:
             result = await db.execute(stmt)
             membership = result.scalars().first()
         except Exception as e:
-            logger.logger.error(e)
+            logger.error(e)
             raise e
         
 
@@ -361,7 +361,7 @@ class CooperativeMembershipService:
                 await db.refresh(membership)
         except Exception as e:
             await db.rollback()
-            logger.logger.error(e)
+            logger.error(e)
             raise e
 
         return membership
