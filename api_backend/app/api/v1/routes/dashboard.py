@@ -14,7 +14,11 @@ router = APIRouter(
 )
 
 
-@router.get("/", summary="Get full dashboard data for the current user") # response_model=DashboardData, 
+@router.get(
+        "/", 
+        # response_model=DashboardData,
+        summary="Get full dashboard data for the current user"
+    )  
 async def get_dashboard_data(
     db: AsyncSession = Depends(get_async_db_session),
     redis: Redis = Depends(get_redis),

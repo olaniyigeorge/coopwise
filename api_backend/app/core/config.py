@@ -13,6 +13,7 @@ class GlobalConfig(BaseSettings):
     APP_SECRET_KEY: str
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
+    REDIS_URL: str
     
     class Config:
         env_file = ".env"
@@ -29,6 +30,7 @@ class DevConfig(GlobalConfig):
     APP_SECRET_KEY: str
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
+    REDIS_URL: str
     # class Config:
     #     env_prefix: str = "DEV_"
 
@@ -43,6 +45,7 @@ class TestConfig(GlobalConfig):
     APP_SECRET_KEY: str
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
+    REDIS_URL: str
     # class Config:
     #     env_prefix: str = "TEST_"
 
@@ -57,6 +60,7 @@ class ProdConfig(GlobalConfig):
     APP_SECRET_KEY: str
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
+    REDIS_URL: str
     # class Config:
     #     env_prefix: str = "PROD_"
 
