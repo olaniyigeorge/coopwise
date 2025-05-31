@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.routes.auth import is_admin_or_owner, is_admin_permissions
+from app.api.v1.routes.auth import get_current_user, is_admin_or_owner, is_admin_permissions
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.user import UserDetail, UserUpdate
 from db.dependencies import get_async_db_session
@@ -12,7 +12,22 @@ router = APIRouter(
     prefix="/api/v1/users", 
     tags=["User Management"]
     )
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+
+
+@router.get("/me", response_model=UserDetail)
+async def get_my_profile(
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session)
+):
+    """
+        Fetch a authenticated user.
+    """
+    user = await UserService.get_user_by_id(db, user.id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
 
 @router.get("/")
 async def get_users(
@@ -56,5 +71,4 @@ async def get_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
-
 

@@ -1,11 +1,13 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, status
+from fastapi import APIRouter, Depends, HTTPException, WebSocket
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 
 from app.schemas.auth import AuthenticatedUser
-from app.schemas.user import AuthUser, UserCreate, UserDetail, Token
+from app.schemas.notifications_schema import NotificationCreate
+from app.schemas.user import AuthUser, UserCreate
+from app.services.notification_service import NotificationService
 from db.dependencies import get_async_db_session
 from app.services.auth_service import AuthService
 
@@ -22,6 +24,18 @@ async def register_user(
     db: AsyncSession = Depends(get_async_db_session)
 ):
     reg = await AuthService.register_user(user, db)
+
+    noti_data = NotificationCreate(
+        user_id = reg.id,
+        title = "Sign up Successful",
+        message = "Welcome to Coopwise ",
+        event_type = "general_alert",
+        type = "info",
+        entity_url = None
+    )
+    await NotificationService.create_notification_and_push_notification(
+        noti_data, db
+    )
     token = await AuthService.create_access_token({"sub": reg.email, "id": str(reg.id), "role": reg.role.value})
     return {
         "token": token,

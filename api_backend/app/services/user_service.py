@@ -25,7 +25,6 @@ class UserService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Could not fetch users"
             )
-            # raise HTTPException(status_code=401, detail="Invalid login credentials")
         return users
     
     @staticmethod

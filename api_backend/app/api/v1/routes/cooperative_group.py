@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
+from app.api.v1.routes.auth import get_current_user
 from app.schemas.cooperative_group import CoopGroupCreate, CoopGroupDetails, CoopGroupUpdate
+from app.schemas.notifications_schema import NotificationCreate
+from app.services.notification_service import NotificationService
 from db.dependencies import get_async_db_session
 from app.services.cooperative_group_service import CooperativeGroupService
 
@@ -16,10 +19,24 @@ router = APIRouter(
 @router.post("/create", response_model=CoopGroupDetails, status_code=status.HTTP_201_CREATED)
 async def create_cooperative_group(
     coop_data: CoopGroupCreate,
-    # user = Depends(get_current_user),
+    user = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db_session)
 ):
-    return await CooperativeGroupService.create_coop(coop_data, db)
+    coop = await CooperativeGroupService.create_coop(coop_data, db)
+    
+    noti_data = NotificationCreate(
+        user_id = user.id,
+        title = "New Cooperative Created",
+        message = f"Your cooperative, {coop.name} was created successful",
+        event_type = "group",
+        type = "success",
+        entity_url = None
+    )
+    await NotificationService.create_notification_and_push_notification(
+        noti_data, db
+    )
+
+    return coop
 
 
 @router.get("/", response_model=List[CoopGroupDetails])

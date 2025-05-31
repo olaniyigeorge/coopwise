@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, constr
 from uuid import UUID
 from db.models.user import IncomeRange, SavingFrequency, UserRoles
@@ -12,7 +12,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: Annotated[str, constr(min_length=6)]
     full_name: str
-    phone_number: PhoneNumberStr  # E.164 international format
+    phone_number: PhoneNumberStr  
     role: Optional[UserRoles] = UserRoles.USER
 
     target_savings_amount: Optional[float] = None
