@@ -186,7 +186,7 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
             Share invite
           </Button>
         </div>
-      </div>
+                </div>
 
       {/* Invite Dialog */}
       <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
@@ -306,10 +306,10 @@ const GroupStats = ({
             <div className="h-full bg-green-600 rounded-full" style={{ width: `${progress}%` }}></div>
           </div>
           <p className="text-xs text-gray-500 mt-1">Goal: ₦{targetAmount.toLocaleString()}</p>
-        </div>
-      </div>
-      
-      {/* Next Contribution */}
+            </div>
+          </div>
+
+          {/* Next Contribution */}
       <div className="flex-1 bg-white rounded-md p-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-base font-medium">Next Contribution</h2>
@@ -328,26 +328,26 @@ const GroupStats = ({
             </div>
             <span className="text-xs text-gray-500">Frequency</span>
             <span className="ml-auto text-xs text-gray-900">{contributionFrequency}</span>
-          </div>
+                </div>
           
           <div className="flex items-center">
             <div className="w-5 h-5 text-xs flex items-center justify-center bg-gray-100 rounded-full mr-2">
               <div className="h-3 w-3 text-gray-500">!</div>
-            </div>
+              </div>
             <span className="text-xs text-gray-500">Status</span>
             <span className="ml-auto bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded">Pending</span>
-          </div>
-        </div>
+              </div>
+            </div>
         
         <Button 
           className="w-full bg-teal-700 hover:bg-teal-800 text-white text-sm"
           onClick={() => setShowContributionModal(true)}
         >
-          Make Contribution
-        </Button>
-      </div>
-      
-      {/* Next Payout */}
+              Make Contribution
+            </Button>
+          </div>
+
+          {/* Next Payout */}
       <div className="flex-1 bg-white rounded-md p-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-base font-medium">Next Payout</h2>
@@ -468,7 +468,7 @@ const GroupStats = ({
           )}
         </DialogContent>
       </Dialog>
-    </div>
+        </div>
   );
 };
 
@@ -483,20 +483,20 @@ const ContributionHistory = () => {
     <div className="bg-white rounded-md p-4">
       {/* Tabs Section */}
       <div className="flex mb-4 rounded-md overflow-hidden border">
-        <button 
-          onClick={() => setActiveTab('contributions')}
+          <button
+            onClick={() => setActiveTab('contributions')}
           className={`py-2 flex-1 text-center font-medium text-sm ${activeTab === 'contributions' ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-600'}`}
-        >
-          Contributions
-        </button>
-        <button 
-          onClick={() => setActiveTab('payouts')}
+          >
+            Contributions
+          </button>
+          <button
+            onClick={() => setActiveTab('payouts')}
           className={`py-2 flex-1 text-center font-medium text-sm ${activeTab === 'payouts' ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-600'}`}
-        >
-          Payouts
-        </button>
-        <button 
-          onClick={() => setActiveTab('members')}
+          >
+            Payouts
+          </button>
+          <button
+            onClick={() => setActiveTab('members')}
           className={`py-2 flex-1 text-center font-medium text-sm ${activeTab === 'members' ? 'bg-teal-700 text-white' : 'bg-gray-100 text-gray-600'}`}
         >
           Group Members
@@ -606,7 +606,7 @@ const ContributionHistory = () => {
           <p className="text-gray-500">Group members will be displayed here</p>
         </div>
       )}
-    </div>
+      </div>
   );
 };
 
@@ -702,7 +702,7 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-teal-700 mb-4" />
         <p className="text-gray-600">Loading group details...</p>
-      </div>
+          </div>
     );
   }
   
@@ -717,7 +717,7 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
             Back to My Groups
           </Button>
         </Link>
-      </div>
+        </div>
     );
   }
 

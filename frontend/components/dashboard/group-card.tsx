@@ -80,34 +80,34 @@ export default function GroupCard({
         {renderBadge()}
       </div>
       
-      {nextContribution && (
+          {nextContribution && (
         <div className="mt-3">
           <p className="text-xs text-gray-600 mb-1">Next contribution:</p>
-          <p className="text-base font-semibold">{nextContribution.amount}</p>
+                <p className="text-base font-semibold">{nextContribution.amount}</p>
           <p className="text-xs text-gray-500 flex items-center mt-0.5">
             <svg className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 8V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
             </svg>
-            Due on {nextContribution.dueDate} ({nextContribution.daysLeft} days to go)
-          </p>
-        </div>
-      )}
-      
-      {nextPayout && (
+                  Due on {nextContribution.dueDate} ({nextContribution.daysLeft} days to go)
+                </p>
+            </div>
+          )}
+          
+          {nextPayout && (
         <div className="mt-3">
           <p className="text-xs text-gray-600 mb-1">Next payout:</p>
-          <p className="text-base font-semibold">{nextPayout.amount}</p>
+                <p className="text-base font-semibold">{nextPayout.amount}</p>
           <p className="text-xs text-gray-500 flex items-center mt-0.5">
             <svg className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 8V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
             </svg>
-            Expected on {nextPayout.date}
-          </p>
-        </div>
+                  Expected on {nextPayout.date}
+                </p>
+              </div>
       )}
-    </div>
+            </div>
   );
 
   // For Discover Groups view
@@ -125,21 +125,21 @@ export default function GroupCard({
         A savings group for {description}
       </p>
       
-      <div className="mt-4">
+        <div className="mt-4">
         <h4 className="text-xs font-medium mb-1">Group Savings</h4>
         <p className="text-base font-bold mb-4">₦100,000,000</p>
         
-        <Button 
+          <Button 
           className="w-full bg-teal-700 hover:bg-teal-800 text-white"
-          onClick={(e) => {
+            onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             onRequestInvite?.();
-          }}
-        >
-          Request code
-        </Button>
-      </div>
+            }}
+          >
+            Request code
+          </Button>
+        </div>
     </div>
   );
 
