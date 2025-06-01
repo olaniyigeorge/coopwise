@@ -261,4 +261,4 @@ export function getActionableInsights(limit: number = 5): AIInsight[] {
       insight.status === ImplementationStatus.IN_PROGRESS
     )
     .slice(0, limit)
-} 
+}

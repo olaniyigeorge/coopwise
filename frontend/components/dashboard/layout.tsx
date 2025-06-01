@@ -6,6 +6,7 @@ import Header from './header'
 import MobileBottomNav from './mobile-bottom-nav'
 import { usePathname } from 'next/navigation'
 import { Toaster } from 'sonner'
+import { useAuth } from '@/lib/auth-context'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -14,6 +15,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { user } = useAuth()
   
   // Get header configuration based on the current pathname
   const getHeaderConfig = () => {
@@ -37,30 +39,30 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       
       case '/dashboard/create-group':
         return {
-          title: 'Create Group',
-          subtitle: 'Set up a new savings group and invite members',
+          // Empty title since it's already in the page content
+          title: '',
           showBackButton: true,
           backUrl: '/dashboard'
         }
       
       case '/dashboard/my-group':
         return {
-          title: 'Saving Groups',
-          subtitle: 'See your active groups or join a new one.',
+          title: '',
+          subtitle: '',
           showBackButton: false
         }
       
       case '/dashboard/discover-groups':
         return {
-          title: 'Saving Groups',
-          subtitle: 'See your active groups or join a new one.',
+          title: '',
+          subtitle: '',
           showBackButton: false
         }
       
       case '/dashboard/join-group':
         return {
-          title: 'Join Group',
-          subtitle: 'Enter a group code to join an existing savings group',
+          title: '',
+          subtitle: '',
           showBackButton: true,
           backUrl: '/dashboard'
         }
@@ -86,8 +88,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       
       case '/dashboard/contributions':
         return {
-          title: 'All Contributions',
-          subtitle: 'Track and manage all your contribution history',
+          title: '',
+          subtitle: '',
           showBackButton: false
         }
       
@@ -130,6 +132,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {...headerConfig} 
           onMenuClick={() => setSidebarOpen(true)}
           showMobileMenu={true}
+          userName={user?.full_name || "User"}
         />
         
         <main className="p-3 sm:p-4 lg:p-6 pb-20 lg:pb-6">

@@ -2,8 +2,10 @@
 
 import React from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import AIInsightsSummary from './ai-insights-summary'
+import DashboardGroupsSection from './dashboard-groups-section'
 
 // Stats card component
 const StatsCard = ({ 
@@ -24,7 +26,7 @@ const StatsCard = ({
 )
 
 export default function DashboardOverview() {
-  const [activeTab, setActiveTab] = React.useState<'my-groups' | 'discover'>('my-groups')
+  const router = useRouter()
 
   return (
     <div>
@@ -46,6 +48,7 @@ export default function DashboardOverview() {
           <Button 
             variant="outline" 
             className="border-primary text-primary hover:bg-primary hover:text-white text-sm sm:text-base"
+            onClick={() => router.push('/dashboard/create-group')}
           >
             Create a Group
           </Button>
@@ -141,61 +144,8 @@ export default function DashboardOverview() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Left Column */}
         <div className="space-y-4 sm:space-y-6">
-          {/* Groups Tab Section */}
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="flex rounded-lg overflow-hidden">
-              <button 
-                className={`flex-1 py-2 sm:py-3 px-3 sm:px-6 text-center text-sm sm:text-base font-medium transition-all duration-300 ${
-                  activeTab === 'my-groups' 
-                    ? 'bg-primary text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                onClick={() => setActiveTab('my-groups')}
-              >
-                My Groups
-              </button>
-              <button 
-                className={`flex-1 py-2 sm:py-3 px-3 sm:px-6 text-center text-sm sm:text-base font-medium transition-all duration-300 ${
-                  activeTab === 'discover' 
-                    ? 'bg-primary text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                onClick={() => setActiveTab('discover')}
-              >
-                Discover Groups
-              </button>
-            </div>
-            
-            {/* Groups Content */}
-            {activeTab === 'my-groups' && (
-              <div className="p-4 sm:p-6 lg:p-8 text-center">
-                <h3 className="text-base sm:text-lg font-medium mb-2 sm:mb-3">You don't have any group yet</h3>
-                <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">Create a group or join an existing one to start saving together</p>
-                
-                <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3">
-                  <Button 
-                    variant="default" 
-                    className="font-medium text-sm sm:text-base"
-                    onClick={() => window.location.href = '/dashboard/contributions/make/loading?amount=25000'}
-                  >
-                    Make Contribution
-                  </Button>
-                  <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white text-sm sm:text-base">Create a Group</Button>
-                </div>
-              </div>
-            )}
-            
-            {activeTab === 'discover' && (
-              <div className="p-4 sm:p-6 lg:p-8 text-center">
-                <h3 className="text-base sm:text-lg font-medium mb-2 sm:mb-3">Discover new groups</h3>
-                <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">Find groups that match your saving goals</p>
-                
-                <div className="flex justify-center">
-                  <Button variant="default" className="font-medium text-sm sm:text-base">Explore Groups</Button>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Groups Section - Using the new component */}
+          <DashboardGroupsSection />
           
           {/* Recent Activity Section */}
           <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-5">

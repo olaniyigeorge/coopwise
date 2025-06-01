@@ -60,7 +60,7 @@ export default function GroupCard({
     }
     
     return (
-      <span className={`text-xs px-2 py-1 rounded-full ${badgeStyles[badge]}`}>
+      <span className={`text-xs px-2 py-1 rounded-md ${badgeStyles[badge]}`}>
         {badge === 'member' && 'Member'}
         {badge === 'admin' && 'Admin'}
         {badge === 'open' && 'Open'}
@@ -69,67 +69,83 @@ export default function GroupCard({
     )
   }
 
-  const cardContent = (
-    <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+  // For My Groups view
+  const myGroupContent = (
+    <div className="bg-white rounded-md p-4">
       <div className="flex justify-between items-start mb-2">
         <div>
-          <h3 className="text-lg font-medium">{name}</h3>
-          <p className="text-sm text-gray-500">{memberCount} members • {contributionAmount} {frequency}</p>
+          <h3 className="text-base font-medium">{name}</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Your Payout Number: {id === '1' ? '1' : Math.floor(Math.random() * 5) + 1}</p>
         </div>
         {renderBadge()}
       </div>
       
-      <p className="text-sm text-gray-600 mb-4">
-        A saving group for {description}
-      </p>
-      
-      {isMyGroup ? (
-        // My Groups view with contribution and payout info
-        <div className="space-y-3">
           {nextContribution && (
-            <div>
-              <p className="text-sm font-medium">Next contribution:</p>
-              <div className="flex justify-between">
+        <div className="mt-3">
+          <p className="text-xs text-gray-600 mb-1">Next contribution:</p>
                 <p className="text-base font-semibold">{nextContribution.amount}</p>
-                <p className="text-sm text-gray-500">
+          <p className="text-xs text-gray-500 flex items-center mt-0.5">
+            <svg className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 8V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+            </svg>
                   Due on {nextContribution.dueDate} ({nextContribution.daysLeft} days to go)
                 </p>
-              </div>
             </div>
           )}
           
           {nextPayout && (
-            <div>
-              <p className="text-sm font-medium">Next payout:</p>
-              <div className="flex justify-between">
+        <div className="mt-3">
+          <p className="text-xs text-gray-600 mb-1">Next payout:</p>
                 <p className="text-base font-semibold">{nextPayout.amount}</p>
-                <p className="text-sm text-gray-500">
+          <p className="text-xs text-gray-500 flex items-center mt-0.5">
+            <svg className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 8V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+            </svg>
                   Expected on {nextPayout.date}
                 </p>
               </div>
+      )}
             </div>
-          )}
+  );
+
+  // For Discover Groups view
+  const discoverGroupContent = (
+    <div className="bg-white rounded-md p-4">
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <h3 className="text-base font-medium">{name}</h3>
+          <p className="text-xs text-gray-500 mt-0.5">{memberCount} members • {contributionAmount} {frequency}</p>
         </div>
-      ) : (
-        // Discover Groups view with request button
+        {renderBadge()}
+      </div>
+      
+      <p className="text-xs text-gray-600 mb-4">
+        A savings group for {description}
+      </p>
+      
         <div className="mt-4">
+        <h4 className="text-xs font-medium mb-1">Group Savings</h4>
+        <p className="text-base font-bold mb-4">₦100,000,000</p>
+        
           <Button 
+          className="w-full bg-teal-700 hover:bg-teal-800 text-white"
             onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onRequestInvite?.()
+            e.preventDefault();
+            e.stopPropagation();
+            onRequestInvite?.();
             }}
-            variant="default"
-            className="w-full"
           >
             Request code
           </Button>
         </div>
-      )}
     </div>
-  )
+  );
 
-  // If it's a user's group and has an ID, make it clickable
+  const cardContent = isMyGroup ? myGroupContent : discoverGroupContent;
+
+  // If it's a user's group and has an ID, make it clickable to view details
   if (isMyGroup && id) {
     return (
       <Link href={`/dashboard/my-group/${id}`} className="block">
