@@ -2,12 +2,8 @@
 
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import MyGroupsList from './my-groups-list'
 import DiscoverGroupsList from './discover-groups-list'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface GroupsTabViewProps {
   defaultTab?: 'my-groups' | 'discover'
@@ -65,73 +61,46 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
   }, [])
   
   // Handle tab change
-  const handleTabChange = (value: string) => {
-    setActiveTab(value)
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
     
     // Update URL to reflect the current tab
-    if (value === 'my-groups') {
+    if (tab === 'my-groups') {
       router.push('/dashboard/my-group')
     } else {
       router.push('/dashboard/discover-groups')
     }
   }
-  
-  // Toggle user state for demo purposes (new user vs existing user)
-  const toggleUserState = () => {
-    const newState = !hasGroups
-    localStorage.setItem('hasGroups', String(newState))
-    setHasGroups(newState)
-  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Tabs 
-          value={activeTab} 
-          onValueChange={handleTabChange}
-          className="w-full max-w-md"
+    <div>
+      <h1 className="text-2xl font-semibold text-teal-700 mb-1">Saving Groups</h1>
+      <h2 className="text-sm text-gray-500 mb-4">See your active groups or join a new one.</h2>
+      <div className="grid grid-cols-2 rounded-md overflow-hidden mb-6">
+        <button
+          onClick={() => handleTabChange('my-groups')}
+          className={`py-3 text-center font-medium text-sm ${
+            activeTab === 'my-groups' 
+              ? 'bg-teal-700 text-white' 
+              : 'bg-gray-200 text-gray-700'
+          }`}
         >
-          <TabsList className="grid w-full grid-cols-2 h-12 bg-gray-100 rounded-lg p-1">
-            <TabsTrigger 
-              value="my-groups" 
-              className={`rounded-md ${activeTab === 'my-groups' ? 'bg-primary text-white' : ''}`}
-            >
-              My Groups
-            </TabsTrigger>
-            <TabsTrigger 
-              value="discover" 
-              className={`rounded-md ${activeTab === 'discover' ? 'bg-primary text-white' : ''}`}
-            >
-              Discover Groups
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            type="text"
-            placeholder="Search group"
-            className="pl-9 py-5"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
-      
-      {/* Dev toggle button - remove in production */}
-      <div className="hidden">
-        <Button 
-          onClick={toggleUserState} 
-          variant="outline" 
-          size="sm"
+          My Groups
+        </button>
+        <button
+          onClick={() => handleTabChange('discover')}
+          className={`py-3 text-center font-medium text-sm ${
+            activeTab === 'discover' 
+              ? 'bg-teal-700 text-white' 
+              : 'bg-gray-200 text-gray-700'
+          }`}
         >
-          Toggle User State (Currently: {hasGroups ? 'Existing User' : 'New User'})
-        </Button>
+          Discover Groups
+        </button>
       </div>
       
       {/* Tab content */}
-      <div className="mt-6">
+      <div>
         {activeTab === 'my-groups' && (
           <MyGroupsList hasGroups={hasGroups} searchQuery={searchQuery} />
         )}

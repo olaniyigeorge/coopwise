@@ -47,8 +47,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       
       case '/dashboard/my-group':
         return {
-          title: 'Saving Groups',
-          subtitle: 'See your active groups or join a new one.',
+          title: '',
+          subtitle: '',
           showBackButton: false
         }
       
@@ -88,8 +88,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       
       case '/dashboard/contributions':
         return {
-          title: 'All Contributions',
-          subtitle: 'Track and manage all your contribution history',
+          title: '',
+          subtitle: '',
           showBackButton: false
         }
       

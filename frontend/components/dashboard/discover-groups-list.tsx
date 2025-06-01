@@ -19,7 +19,7 @@ const transformGroup = (group: Group) => ({
   maxMembers: group.max_members,
   contributionAmount: `₦${group.contribution_amount.toLocaleString()}`,
   frequency: group.contribution_frequency,
-  description: group.description || `A ${group.contribution_frequency} savings group`,
+  description: group.description || `A savings group for entrepreneurs`,
   badge: group.memberCount >= group.max_members ? 'full' as const : 'open' as const,
 });
 
@@ -126,7 +126,7 @@ export default function DiscoverGroupsList({ searchQuery }: DiscoverGroupsListPr
   
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {paginatedGroups.map(group => (
           <GroupCard 
             key={group.id}
@@ -145,8 +145,7 @@ export default function DiscoverGroupsList({ searchQuery }: DiscoverGroupsListPr
       </div>
       
       {filteredGroups.length > 0 && (
-        <div className="mt-8 flex justify-center">
-          {/* Only show pagination when we have more than limit (10) items */}
+        <div className="mt-6 flex justify-center">
           {filteredGroups.length > limit && (
           <Pagination 
               totalPages={totalPages} 
@@ -163,63 +162,63 @@ export default function DiscoverGroupsList({ searchQuery }: DiscoverGroupsListPr
 // Mock data for fallback when API fails
 const mockDiscoverGroups = [
   {
-    id: '1',
-    name: 'Tailors Association',
+    id: crypto.randomUUID(),
+    name: 'Charity Association',
     memberCount: 10,
-    maxMembers: 15,
-    contributionAmount: '₦100,000',
-    frequency: 'monthly',
-    description: 'A savings group for tailors',
-    badge: 'open' as const,
-  },
-  {
-    id: '2',
-    name: 'Oja Connect',
-    memberCount: 8,
-    maxMembers: 10,
+    maxMembers: 12,
     contributionAmount: '₦50,000',
     frequency: 'monthly',
-    description: 'Market women savings group',
-    badge: 'open' as const,
+    description: 'entrepreneurs',
+    badge: null
   },
   {
-    id: '3',
-    name: 'Tech Founders Circle',
+    id: crypto.randomUUID(),
+    name: 'Charity Association',
     memberCount: 10,
-    maxMembers: 10,
-    contributionAmount: '₦60,000',
+    maxMembers: 12,
+    contributionAmount: '₦50,000',
     frequency: 'monthly',
-    description: 'A savings group for tech entrepreneurs',
-    badge: 'full' as const,
+    description: 'entrepreneurs',
+    badge: null
   },
   {
-    id: '4',
-    name: 'Teachers Union',
-    memberCount: 8,
-    maxMembers: 10,
-    contributionAmount: '₦80,000',
+    id: crypto.randomUUID(),
+    name: 'Charity Association',
+    memberCount: 10,
+    maxMembers: 12,
+    contributionAmount: '₦50,000',
     frequency: 'monthly',
-    description: 'A group for educators',
-    badge: 'open' as const,
+    description: 'entrepreneurs',
+    badge: null
   },
   {
-    id: '5',
-    name: 'Farmers Cooperative',
+    id: crypto.randomUUID(),
+    name: 'Charity Association',
+    memberCount: 10,
+    maxMembers: 12,
+    contributionAmount: '₦50,000',
+    frequency: 'monthly',
+    description: 'entrepreneurs',
+    badge: null
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Charity Association',
     memberCount: 12,
     maxMembers: 15,
-    contributionAmount: '₦100,000',
+    contributionAmount: '₦50,000',
     frequency: 'monthly',
-    description: 'Agricultural support group',
-    badge: 'open' as const,
+    description: 'entrepreneurs',
+    badge: null
   },
   {
-    id: '6',
-    name: 'Creative Artists',
-    memberCount: 14,
+    id: crypto.randomUUID(),
+    name: 'Charity Association',
+    memberCount: 12,
     maxMembers: 15,
-    contributionAmount: '₦120,000',
+    contributionAmount: '₦50,000',
     frequency: 'monthly',
-    description: 'For artists and creatives',
-    badge: 'open' as const,
+    description: 'entrepreneurs',
+    badge: null
   }
-] 
+]; 

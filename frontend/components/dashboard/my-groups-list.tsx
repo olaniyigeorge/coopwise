@@ -25,7 +25,7 @@ const transformMyGroup = (group: Group) => ({
   contributionAmount: `₦${group.contribution_amount.toLocaleString()}`,
   frequency: group.contribution_frequency,
   description: group.description || `A ${group.contribution_frequency} savings group`,
-  badge: 'member' as const, // Default to member, can be updated based on real data
+  badge: group.role || 'member' as const, // Use role from API if available
   nextContribution: {
     amount: `₦${group.contribution_amount.toLocaleString()}`,
     dueDate: getNextContributionDate(group.contribution_frequency),
@@ -90,7 +90,25 @@ function getNextPayoutDate(frequency: string): string {
 }
 
 export default function MyGroupsList({ hasGroups, searchQuery }: MyGroupsListProps) {
-  const [groups, setGroups] = useState<ReturnType<typeof transformMyGroup>[]>([])
+  const [groups, setGroups] = useState<Array<{
+    id: string;
+    name: string;
+    memberCount: number;
+    maxMembers: number;
+    contributionAmount: string;
+    frequency: string;
+    description: string;
+    badge: "member" | "admin";
+    nextContribution: {
+      amount: string;
+      dueDate: string;
+      daysLeft: number;
+    };
+    nextPayout: {
+      amount: string;
+      date: string;
+    };
+  }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -121,10 +139,9 @@ export default function MyGroupsList({ hasGroups, searchQuery }: MyGroupsListPro
           setGroups(transformedGroups);
           setTotalPages(Math.ceil(transformedGroups.length / limit));
         } else {
-          // If no real groups, use mock data
-          console.log('No groups returned from API, using mock data');
-          setGroups(mockMyGroups);
-          setTotalPages(Math.ceil(mockMyGroups.length / limit));
+          // If no groups, set empty array
+          setGroups([]);
+          setTotalPages(1);
         }
       } catch (error) {
         console.error('Error fetching my groups:', error);
@@ -133,9 +150,9 @@ export default function MyGroupsList({ hasGroups, searchQuery }: MyGroupsListPro
           description: "Could not load your groups. Please try again later.",
           variant: "destructive",
         });
-        // Use mock data as fallback
-        setGroups(mockMyGroups);
-        setTotalPages(Math.ceil(mockMyGroups.length / limit));
+        // Set empty array on error
+        setGroups([]);
+        setTotalPages(1);
       } finally {
         setIsLoading(false);
       }
@@ -197,7 +214,7 @@ export default function MyGroupsList({ hasGroups, searchQuery }: MyGroupsListPro
   
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {paginatedGroups.map(group => (
           <GroupCard 
             key={group.id}
@@ -213,13 +230,14 @@ export default function MyGroupsList({ hasGroups, searchQuery }: MyGroupsListPro
             nextContribution={group.nextContribution}
             nextPayout={group.nextPayout}
             onViewDetails={() => console.log('View details for', group.name)}
+            onRequestInvite={() => console.log('Request code for', group.name)}
           />
         ))}
       </div>
       
       {filteredGroups.length > 0 && (
-        <div className="mt-8 flex justify-center">
-          {/* Only show pagination when we have more than limit (10) items */}
+        <div className="mt-6 flex justify-center">
+          {/* Only show pagination when we have more than limit items */}
           {filteredGroups.length > limit && (
             <Pagination 
               totalPages={totalPages} 
@@ -232,83 +250,3 @@ export default function MyGroupsList({ hasGroups, searchQuery }: MyGroupsListPro
     </div>
   )
 }
-
-// Mock data for fallback when API fails
-const mockMyGroups = [
-  {
-    id: '1',
-    name: 'Moms Budget Circle',
-    memberCount: 12,
-    maxMembers: 15,
-    contributionAmount: '₦50,000',
-    frequency: 'monthly',
-    description: 'A savings group for mothers',
-    badge: 'member' as const,
-    nextContribution: {
-      amount: '₦50,000',
-      dueDate: 'May 25',
-      daysLeft: 10
-    },
-    nextPayout: {
-      amount: '₦250,000',
-      date: 'May 25'
-    }
-  },
-  {
-    id: '2',
-    name: 'Hustle and Save Gang',
-    memberCount: 15,
-    maxMembers: 15,
-    contributionAmount: '₦60,000',
-    frequency: 'monthly',
-    description: 'A group for entrepreneurs',
-    badge: 'admin' as const,
-    nextContribution: {
-      amount: '₦60,000',
-      dueDate: 'May 25',
-      daysLeft: 10
-    },
-    nextPayout: {
-      amount: '₦300,000',
-      date: 'May 25'
-    }
-  },
-  {
-    id: '3',
-    name: 'Charity Association',
-    memberCount: 10,
-    maxMembers: 15,
-    contributionAmount: '₦100,000',
-    frequency: 'monthly',
-    description: 'A savings group for charitable activities',
-    badge: 'admin' as const,
-    nextContribution: {
-      amount: '₦100,000',
-      dueDate: 'May 25',
-      daysLeft: 10
-    },
-    nextPayout: {
-      amount: '₦500,000',
-      date: 'May 25'
-    }
-  },
-  {
-    id: '4',
-    name: 'Hustle and Save Gang',
-    memberCount: 10,
-    maxMembers: 15,
-    contributionAmount: '₦100,000',
-    frequency: 'monthly',
-    description: 'A group for young professionals',
-    badge: 'member' as const,
-    nextContribution: {
-      amount: '₦100,000',
-      dueDate: 'May 25',
-      daysLeft: 10
-    },
-    nextPayout: {
-      amount: '₦500,000',
-      date: 'May 25'
-    }
-  },
-]
