@@ -44,7 +44,7 @@ class Payment(Base):
 
     transaction_reference = Column(String(128), unique=True, nullable=True)
     provider_response = Column(JSON, nullable=True)  # raw response data for debugging or audits
-    meta = Column(JSON, nullable=True)  # extra info (IP address, device, etc.)
+    payment_metadata = Column(JSON, nullable=True)  # extra info (IP address, device, etc.)
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.utcnow, nullable=False)

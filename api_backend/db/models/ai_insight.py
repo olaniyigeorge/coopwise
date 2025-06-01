@@ -1,44 +1,91 @@
 from datetime import datetime
 from uuid import uuid4, UUID
-from sqlalchemy import Column, String, Text, Enum, Float, DateTime, ForeignKey
+from sqlalchemy import JSON, Column, String, Text, Enum as SQLAlchemyEnum, Float, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from db.database import Base
 import enum
 
 
-class InsightCategory(str, enum.Enum):
+
+
+
+
+
+
+
+# ------------
+
+
+class InsightCategory(enum.Enum):
     CONTRIBUTION = "contribution"
     SAVINGS = "savings"
     BEHAVIOR = "behavior"
     GROUP = "group"
     MILESTONE = "milestone"
+    ENERGY_SAVING = "energy_saving"
+    FINANCIAL_OPTIMIZATION = "financial_optimization"
+    CONTRIBUTION_STRATEGY = "contribution_strategy"
+    SPENDING_ANALYSIS = "spending_analysis"
+    INVESTMENT_TIPS = "investment_tips"
+    BUDGETING = "budgeting"
+    GOAL_SETTING = "goal_setting"
     OTHER = "other"
 
-
-class InsightStatus(str, enum.Enum):
+class InsightStatus(enum.Enum):
     ACTIVE = "active"
     READY = "ready"
     EXPIRED = "expired"
+
+class InsightType(enum.Enum):
+    PERSONAL = "personal"
+    GROUP_SPECIFIC = "group_specific"
+    GENERAL = "general"
+    TRENDING = "trending"
+
+class DifficultyLevel(enum.Enum):
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+
+class ImplementationStatus(enum.Enum):
+    NOT_STARTED = "not_started"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    DISMISSED = "dismissed"
 
 
 class AIInsight(Base):
     __tablename__ = "ai_insights"
 
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-
     title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
     summary = Column(Text, nullable=False)
-    category = Column(Enum(InsightCategory), nullable=False, default=InsightCategory.OTHER)
     recommended_action = Column(Text, nullable=True)
 
-    impact_score = Column(Float, default=0.0)  # Scale 0.0 to 1.0
-    potential_gain = Column(Float, default=0.0)  # Optional: ₦, % or unit-less
+    user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    group_id = Column(PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=True)
 
-    status = Column(Enum(InsightStatus), default=InsightStatus.READY, nullable=False)
+    category = Column(SQLAlchemyEnum(InsightCategory), nullable=False)
+    type = Column(SQLAlchemyEnum(InsightType), nullable=False)
+    difficulty = Column(SQLAlchemyEnum(DifficultyLevel), nullable=False)
+    status = Column(SQLAlchemyEnum(ImplementationStatus), default=ImplementationStatus.NOT_STARTED)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    estimated_savings = Column(Float, default=0.0)
+    potential_gain = Column(Float, default=0.0)
+    impact_score = Column(Float, default=0.0)
+
+    tags = Column(JSON, default=list)
+    timeframe = Column(String, nullable=True)
+    implementation_time = Column(Float, default=0.0)  # In seconds
+
+    insight_metadata = Column(JSON, default=dict)
+
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     user = relationship("User", back_populates="ai_insights", lazy="joined")
+    group = relationship("CooperativeGroup", back_populates="ai_insights", lazy="joined")
+
+

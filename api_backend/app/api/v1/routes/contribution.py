@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
+
 from app.services.payment_service import PaymentService
 from app.services.user_service import UserService
 from app.schemas.contribution_schemas import ContributionCreate
@@ -99,13 +100,8 @@ async def deposit(
     current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """
-    Makes a contribution of a specific amount to a cooperatie group 
+    Deposits money into your Coopwise account. 
     """
-    # Check is user has a membership to thE coop
-    # If no, return early with a msg(use are not a member of this cooperative)
-    # If yes, make payment
-    # if payment successfull
-    # mark user's membership as paid for the month
 
     #print(f"\nContribution data: {contribution_data}\n")
     deposit = PaymentCreate(
@@ -160,4 +156,14 @@ async def deposit(
         "charge_response": charge_response
     }
 
-   
+@router.post("/withdraw")
+async def withdraw(  
+    amount: float,
+    db: AsyncSession = Depends(get_async_db_session),
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
+    # check wallet for balance 
+    # If balance gte amount continue
+    # If user does not have a missed contribution continue
+    # transfer amount to user's account
+    pass

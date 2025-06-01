@@ -67,18 +67,18 @@ class PaymentCreate(BaseModel):
     currency: str
     note: Optional[str]
 
-    gateway: PaymentGateway
-    status: PaymentStatus
-    transaction_reference: str
+    gateway: Optional[PaymentGateway]
+    status: Optional[PaymentStatus]
+    transaction_reference: Optional[str]
     payment_method: PaymentMethod
-    provider_response: JSON
-    metadata: JSON
-    created_at:datetime
-    updated_at : datetime
-    
-    payment_method: PaymentMethod
-    description: str = None
+    provider_response: Optional[JSON]
+    payment_metadata: Optional[JSON]
 
+    model_config = ConfigDict(
+        from_attributes=True,
+        arbitrary_types_allowed=True,
+        fields={"metadata": "payment_metadata"}
+    )
 
 class PaymentDetails(BaseModel):
     """
@@ -95,9 +95,13 @@ class PaymentDetails(BaseModel):
     transaction_reference: str
     payment_method: PaymentMethod
     provider_response: JSON
-    metadata: JSON
+    payment_metadata: JSON
     created_at:datetime
     updated_at : datetime
 
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        arbitrary_types_allowed=True,
+        fields={"metadata": "payment_metadata"}
+    )
