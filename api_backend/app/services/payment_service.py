@@ -1,21 +1,12 @@
-# Determine eligible payout member.
-
-# Process or simulate rotating payouts.
-
-# Record payout logs.
-
-
-
-from uuid import UUID
-from pydantic import BaseModel
 import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
 from app.core.config import config
-from app.schemas.payments import ChargeResponse, PaystackPayload
+from app.schemas.payments import ChargeResponse, CoopWisePaymentDataCreate, PaymentCreate, PaystackPayload
 from app.utils.logger import logger
+from db.models.payment_model import Payment, PaymentGateway, PaymentStatus
 
 class PaymentService:
    
@@ -27,7 +18,6 @@ class PaymentService:
         """
         # Simulate a payment request to Paystack
         logger.info(f"\n\n\n\nProcessing payment with Paystack: {payload}\n\n")
-        # Here you would typically make an HTTP request to the Paystack API
 
         try:
             url = "https://api.flutterwave.com/v3/charges?type=bank_transfer"
@@ -49,7 +39,7 @@ class PaymentService:
             }
             headers = {
                 "accept": "application/json",
-                "Authorization": f"Bearer FLWSECK_TEST-SANDBOXDEMOKEY-X",
+                "Authorization": f"Bearer {config.PAYSTACK_SECRET_KEY}", # FLWSECK_TEST-SANDBOXDEMOKEY-X
                 "Content-Type": "application/json"
             }
 
@@ -60,13 +50,11 @@ class PaymentService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Payment processing failed"
             )
-        print(f"\n\n{response.text}")
+        print(f"\n\n{response.text}\n\n")
 
-        res = response.json()
+        res : ChargeResponse = response.json()
 
-        return ChargeResponse(
-            **res
-        )
+        return res
     
     @staticmethod
     async def confirm_payment(db: AsyncSession, user_id: str):
@@ -74,3 +62,38 @@ class PaymentService:
         Confirm the payment
         """
         pass
+
+
+    @staticmethod
+    async def create_payment(db: AsyncSession, payment_data: PaymentCreate):
+        """
+        Create payment object for this transaction.
+        """
+        try:
+            # result = await db.execute(select(Payment).where(Payment.transaction_reference == user_data.email))
+            # if result.scalars().first():
+            #     raise HTTPException(status_code=400, detail="Email already registered")
+
+            new_payment = Payment(
+                user_id=payment_data.user_id,
+                amount=payment_data.amount,
+                currency=payment_data.currency,
+                payment_method=payment_data.payment_method,
+                note=payment_data.note or "",
+                gateway=payment_data.gateway or PaymentGateway.OTHER.value,
+                status=payment_data.status or PaymentStatus.INITIATED.value,
+                transaction_reference=payment_data.transaction_reference or None
+            )
+
+            db.add(new_payment)
+            await db.commit()
+            await db.refresh(new_payment)
+            return new_payment
+
+        except Exception as e:
+            logger.error(f"Payment creation failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Could not create payment"
+            )
+

@@ -49,8 +49,6 @@ class NotificationService:
         await NotificationService.push_notification_to_user(notification_data.user_id, notification_detail)
         return notification_detail
     
-
-
     @staticmethod
     async def get_user_notifications(
         user: AuthenticatedUser,
@@ -113,8 +111,6 @@ class NotificationService:
         connections = active_connections.get(user_id, [])
         for ws in connections:
             await ws.send_json(notification_data.model_dump_json())
-
-
 
 
     @staticmethod

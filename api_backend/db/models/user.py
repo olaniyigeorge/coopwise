@@ -84,8 +84,8 @@ class User(Base):
         lazy="selectin"
     )
 
-    # payments = relationship(
-    #     "Payment", 
-    #     back_populates="user", 
-    #     cascade="all, delete-orphan"
-    # )
+    payments = relationship(
+        "Payment", 
+        back_populates="user", 
+        cascade="all, delete-orphan"
+    )

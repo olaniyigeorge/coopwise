@@ -1,18 +1,12 @@
-from pydantic import BaseModel, Field
+from datetime import datetime
+import enum
+from uuid import UUID
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any
 
+from sqlalchemy import JSON
 
-
-class PaymentData(BaseModel):
-    """
-    Schema for payment data.
-    """
-    amount: float
-    currency: str
-    payment_method: str
-    user_id: int
-    description: str = None
-
+from db.models.payment_model import PaymentGateway, PaymentStatus
 
 
 class SubAccount(BaseModel):
@@ -51,3 +45,59 @@ class ChargeResponse(BaseModel):
     status: str
     message: str
     meta: ChargeResponseMeta
+
+
+
+
+# ----------       COOPWISE PAYMENT       ----------    
+
+
+class PaymentMethod(enum.Enum):
+  BANK_TRANSFER = 'bank_transfer',
+  CARD = 'card',
+  USSD = 'ussd',
+  MOBILE_MONEY = 'mobile_money',
+  CASH = 'cash'
+
+
+class PaymentCreate(BaseModel):
+    user_id: UUID
+    contribution_id: Optional[UUID]
+    amount: float
+    currency: str
+    note: Optional[str]
+
+    gateway: PaymentGateway
+    status: PaymentStatus
+    transaction_reference: str
+    payment_method: PaymentMethod
+    provider_response: JSON
+    metadata: JSON
+    created_at:datetime
+    updated_at : datetime
+    
+    payment_method: PaymentMethod
+    description: str = None
+
+
+class PaymentDetails(BaseModel):
+    """
+    Schema for payment data.
+    """
+    id: UUID
+    user_id: UUID
+    contribution_id: UUID
+    amount: float
+    currency: str
+    note: str
+    gateway: PaymentGateway
+    status: PaymentStatus
+    transaction_reference: str
+    payment_method: PaymentMethod
+    provider_response: JSON
+    metadata: JSON
+    created_at:datetime
+    updated_at : datetime
+
+
+    model_config = ConfigDict(from_attributes=True)

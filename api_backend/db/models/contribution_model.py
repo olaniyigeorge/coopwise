@@ -38,6 +38,6 @@ class Contribution(Base):
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
-    # user = relationship("User", back_populates="contributions")
-    # group = relationship("CooperativeGroup", back_populates="contributions")
-    # payment = relationship("Payment", back_populates="contribution", uselist=False)
+    user = relationship("User", back_populates="contributions")
+    group = relationship("CooperativeGroup", back_populates="contributions")
+    payment = relationship("Payment", back_populates="contribution", uselist=False)

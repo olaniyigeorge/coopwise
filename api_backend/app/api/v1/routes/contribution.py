@@ -8,7 +8,7 @@ from app.services.payment_service import PaymentService
 from app.services.user_service import UserService
 from app.schemas.contribution_schemas import ContributionCreate
 from app.api.v1.routes.auth import get_current_user
-from app.schemas.payments import PaystackPayload
+from app.schemas.payments import PaymentCreate, PaystackPayload
 from app.services.contribution_service import ContributionService
 from app.schemas.auth import AuthenticatedUser
 from db.dependencies import get_async_db_session
@@ -37,7 +37,7 @@ async def contribute(
 
     #print(f"\nContribution data: {contribution_data}\n")
     contribution_data = ContributionCreate(
-        user_id=contribution_data.user_id,
+        user_id=current_user.id,
         group_id=contribution_data.group_id,
         currency=contribution_data.currency,
 
@@ -66,7 +66,7 @@ async def contribute(
     payment_payload = PaystackPayload(
         amount=contribution.amount * 100,  
         email=user.email,
-        currency="NGN",
+        currency=contribution.currency,
         tx_ref=str(contribution.id),
         fullname=user.full_name,
         phone_number=user.phone_number,
@@ -88,6 +88,76 @@ async def contribute(
         "message": "Contribution made successfully.",
         "contribution": contribution,
         "charge_response": contribution_payment
+    }
+
+   
+
+@router.post("/add_money", summary="Deposit money into your coopwise account")
+async def deposit(
+    deposit_data: PaymentCreate,
+    db: AsyncSession = Depends(get_async_db_session),
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+    Makes a contribution of a specific amount to a cooperatie group 
+    """
+    # Check is user has a membership to thE coop
+    # If no, return early with a msg(use are not a member of this cooperative)
+    # If yes, make payment
+    # if payment successfull
+    # mark user's membership as paid for the month
+
+    #print(f"\nContribution data: {contribution_data}\n")
+    deposit = PaymentCreate(
+        user_id=current_user.id,
+        group_id=deposit_data.group_id,
+        currency=deposit_data.currency,
+
+        amount=deposit_data.amount,
+        note=deposit_data.note,
+    )
+
+    payment = await PaymentService.create_payment(
+        db=db,
+        payment_data=deposit
+        
+    )
+    if not payment:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    user = await UserService.get_user_by_id(
+        user_id=current_user.id,
+        db=db
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    
+    payment_payload = PaystackPayload(
+        amount=payment.amount * 100,  
+        email=user.email,
+        currency=payment.currency,
+        tx_ref=str(payment.id),
+        fullname=user.full_name,
+        phone_number=user.phone_number,
+        client_ip="154.123.220.1",
+        device_fingerprint="62wd23423rq324323qew1",
+        meta={
+            "flightID": "123949494DC",
+            "sideNote": payment.note,
+        },
+        is_permanent=False
+    )
+
+    charge_response = await PaymentService.pay_with_paystack(
+        payment_payload
+    ) 
+    print(f"\Charge response: {charge_response}\n")
+    
+    return {
+        "message": "Deposit successful.",
+        "payment": payment,
+        "charge_response": charge_response
     }
 
    

@@ -52,7 +52,7 @@ async def create_notification(
     """
 
     # notification_data["user_id"] = str(user.id)
-    notification_detail = await NotificationService.create_notification_and_push_notification(
+    notification_detail = await NotificationService.create_and_push_notification_to_user(
         notification_data, db
     )
     return notification_detail
