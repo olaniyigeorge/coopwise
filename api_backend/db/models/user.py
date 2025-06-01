@@ -52,6 +52,10 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
+
+
+
+    # ------------- Relationships -------------
     memberships = relationship(
         "GroupMembership", 
         back_populates="user", 
@@ -66,7 +70,6 @@ class User(Base):
         foreign_keys=[GroupMembership.user_id, GroupMembership.group_id],
         overlaps="memberships,user"
     )
-    
     invited_memberships = relationship(
         "GroupMembership",
         back_populates="inviter",
@@ -83,9 +86,13 @@ class User(Base):
         back_populates="user", 
         lazy="selectin"
     )
-
     payments = relationship(
         "Payment", 
+        back_populates="user", 
+        cascade="all, delete-orphan"
+    )
+    contributions = relationship(
+        "Contribution", 
         back_populates="user", 
         cascade="all, delete-orphan"
     )

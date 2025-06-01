@@ -6,6 +6,7 @@ from typing import Dict, List
 from uuid import UUID
 
 from fastapi import WebSocket
+from pydantic import TypeAdapter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -22,7 +23,7 @@ active_connections: Dict[int, List[WebSocket]] = {}
 
 class NotificationService:
     @staticmethod
-    async def create_notification_and_push_notification(
+    async def create_and_push_notification_to_user(
         notification_data: NotificationCreate,
         db: AsyncSession 
     ) -> NotificationDetail:
@@ -79,8 +80,11 @@ class NotificationService:
 
         # Convert to Pydantic schema
         serialized = [NotificationDetail.model_validate(n) for n in notifications]
-
-        await update_cache(cache_key, serialized, ttl=300)
+    
+        # Serialize list of Pydantic models to JSON-serializable format (list of dicts)
+        serialized_json = [n.model_dump(mode="json") for n in serialized]
+   
+        await update_cache(cache_key, serialized_json, ttl=300)
         logger.info(f"📦 Cached notifications for user {user.id}")
         return serialized
 
@@ -104,7 +108,6 @@ class NotificationService:
 
         await db.commit()
         return {"message": f"{len(unread_notifications)} notifications marked as read."}
-
 
     @staticmethod
     async def push_notification_to_user(user_id: int, notification_data: NotificationDetail):

@@ -70,3 +70,13 @@ class CooperativeGroup(Base):
         foreign_keys=[GroupMembership.user_id, GroupMembership.group_id],
         overlaps="group,memberships,user"
     )
+    ai_insights = relationship(
+        "AIInsight",
+        back_populates="group",
+        cascade="all, delete-orphan"
+    )
+    contributions = relationship(
+        "Contribution",
+        back_populates="group",
+        cascade="all, delete-orphan"
+    )

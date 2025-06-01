@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 
+from app.schemas.notifications_schema import NotificationCreate
+from app.services.notification_service import NotificationService
 from app.services.payment_service import PaymentService
 from app.services.user_service import UserService
 from app.schemas.contribution_schemas import ContributionCreate
@@ -36,7 +38,7 @@ async def contribute(
     # if payment successfull
     # mark user's membership as paid for the month
 
-    #print(f"\nContribution data: {contribution_data}\n")
+
     contribution_data = ContributionCreate(
         user_id=current_user.id,
         group_id=contribution_data.group_id,
@@ -63,6 +65,17 @@ async def contribute(
     if not contribution:
         raise HTTPException(status_code=400, detail="Failed to make contribution.")
 
+    noti_data = NotificationCreate(
+        user_id = contribution.user_id,
+        title = "Contribution Successful",
+        message = f"You have successfully made a contribution to your cooperative group.",
+        event_type = "contribution",
+        type = "success",
+        entity_url = None
+    )
+    await NotificationService.create_and_push_notification_to_user(
+        noti_data, db
+    )
     
     payment_payload = PaystackPayload(
         amount=contribution.amount * 100,  
@@ -83,6 +96,22 @@ async def contribute(
     contribution_payment = await PaymentService.pay_with_paystack(
         payment_payload
     ) 
+    if not contribution_payment.get("status", False):
+        raise HTTPException(status_code=400, detail="Payment failed.")
+    
+
+    noti_data = NotificationCreate(
+        user_id = contribution.user_id,
+        title = "Payment Successful",
+        message = f"You have successfully made a payment for your contribution.",
+        event_type = "transaction",
+        type = "success",
+        entity_url = None
+    )
+    await NotificationService.create_and_push_notification_to_user(
+        noti_data, db
+    )
+    
     print(f"\nContribution payment: {contribution_payment}\n")
     
     return {

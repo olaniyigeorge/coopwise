@@ -399,7 +399,7 @@ class CooperativeMembershipService:
             serialized = [MembershipDetails.model_validate(m).model_dump(mode="json") for m in memberships]
 
             await update_cache(cache_key, serialized, ttl=300)
-            logger.info(f"✅ Cached top memberships for user {user.id}")
+            logger.info(f"✅ Cached top memberships for user {cache_key}")
         except Exception as e:
             logger.error(f"❌ Failed to fetch top memberships: {e}")
             raise

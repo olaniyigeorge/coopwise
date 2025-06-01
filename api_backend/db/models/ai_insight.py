@@ -67,9 +67,9 @@ class AIInsight(Base):
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     group_id = Column(PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=True)
 
-    category = Column(SQLAlchemyEnum(InsightCategory), nullable=False)
-    type = Column(SQLAlchemyEnum(InsightType), nullable=False)
-    difficulty = Column(SQLAlchemyEnum(DifficultyLevel), nullable=False)
+    category = Column(SQLAlchemyEnum(InsightCategory), default=InsightCategory.OTHER, nullable=False)
+    type = Column(SQLAlchemyEnum(InsightType), default=InsightType.GENERAL, nullable=False)
+    difficulty = Column(SQLAlchemyEnum(DifficultyLevel), default=DifficultyLevel.MEDIUM, nullable=False)
     status = Column(SQLAlchemyEnum(ImplementationStatus), default=ImplementationStatus.NOT_STARTED)
 
     estimated_savings = Column(Float, default=0.0)

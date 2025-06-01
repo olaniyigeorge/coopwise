@@ -28,12 +28,12 @@ async def register_user(
     noti_data = NotificationCreate(
         user_id = reg.id,
         title = "Sign up Successful",
-        message = "Welcome to Coopwise ",
+        message = "Welcome to Coopwise",
         event_type = "general_alert",
         type = "info",
         entity_url = None
     )
-    await NotificationService.create_notification_and_push_notification(
+    await NotificationService.create_and_push_notification_to_user(
         noti_data, db
     )
     token = await AuthService.create_access_token({"sub": reg.email, "id": str(reg.id), "role": reg.role.value})
