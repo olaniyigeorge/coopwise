@@ -6,7 +6,7 @@ async def app_middleware(request: Request, call_next):
 
     start_time = time.time()
     response = await call_next(request)
-    process_time = time.time() - start_time
+    process_time = (time.time() - start_time) * 1000
 
     # if request.url == "xxx" ---> implement authorization or check auth
 
