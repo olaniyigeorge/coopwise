@@ -12,7 +12,7 @@ from app.utils.logger import logger
 class UserService:
 
     @staticmethod
-    async def get_users(db: AsyncSession, skip: int = 0, limit: int = 10) -> list[User]:
+    async def get_users(db: AsyncSession, skip: int = 0, limit: int = 10) -> list[UserDetail]:
         """
         Fetch a list of users with optional pagination.
         """

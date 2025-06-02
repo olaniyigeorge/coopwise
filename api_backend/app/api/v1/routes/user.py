@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +35,7 @@ async def get_users(
     skip: int = 0, limit: int = 10, 
     user: AuthenticatedUser = Depends(is_admin_permissions), 
     db: AsyncSession = Depends(get_async_db_session)
-):
+) -> List[UserDetail]:
     """
         Fetch a list of users with optional pagination.
     """

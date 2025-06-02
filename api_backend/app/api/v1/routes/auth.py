@@ -114,7 +114,12 @@ async def get_current_user_ws(websocket: WebSocket) -> AuthenticatedUser:
 async def is_admin_permissions(
     token: Annotated[str, Depends(oauth2_scheme)],
 ):
-    current_user  = await get_current_user(token)
+    payload = await AuthService.decode_token(token)
+    current_user = AuthenticatedUser(
+        id=payload.get("id"),
+        email=payload.get("sub"),
+        role=payload.get("role")
+    )
 
     if current_user.role.value != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
