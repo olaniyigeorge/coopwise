@@ -110,7 +110,7 @@ const AuthService = {
   async register(data: RegisterData) {
     try {
       // Use a proxy route for registration
-      const response = await axios.post('/api/users', data);
+      const response = await axios.post('/api/auth/register', data);
       
       console.log('Registration response:', response.data);
       
@@ -118,7 +118,7 @@ const AuthService = {
       if (response.data) {
         try {
           const loginResponse = await this.login({
-            username: data.username,
+            username: data.email,
             password: data.password
           });
           

@@ -14,6 +14,10 @@ export async function POST(request: NextRequest) {
     formData.append('username', body.username);
     formData.append('password', body.password);
     formData.append('grant_type', body.grant_type || 'password');
+    // add the “empty” fields exactly as the endpoint expects:
+    formData.append('scope',         body.scope || '');
+    formData.append('client_id',     body.client_id || '');
+    formData.append('client_secret', body.client_secret || '');
 
     // Call the authentication API
     const response = await fetch(`${API_URL}/api/v1/auth/login`, {
