@@ -64,6 +64,7 @@ async def accept_invite(
     user: AuthenticatedUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db_session)
 ):
+    print("\n⏩ raw invite_code as FastAPI sees it:", invite_code, "\n")
     """
     Accept a cooperative membership invitation using an invite code.
     """

@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from redis.asyncio import Redis
 
-from db.models.notifications import Notification
+from db.models.notifications import Notification, NotificationStatus
 from app.schemas.auth import AuthenticatedUser
 from app.utils.cache import get_cache, update_cache
 from app.utils.logger import logger
@@ -51,7 +51,7 @@ class NotificationService:
         return notification_detail
     
     @staticmethod
-    async def get_user_notifications(
+    async def get_user_unread_notifications(
         user: AuthenticatedUser,
         db: AsyncSession,
         redis: Redis,
@@ -60,7 +60,7 @@ class NotificationService:
         """
         Returns recent notifications for a given user with Redis caching.
         """
-        cache_key = f"user:{user.id}:notifications"
+        cache_key = f"user:{user.id}:unread_notifications"
         cached = await get_cache(cache_key)
         if cached:
             logger.info(f"🔄 Using cached notifications for user {user.id}")
@@ -70,6 +70,7 @@ class NotificationService:
         stmt = (
             select(Notification)
             .where(Notification.user_id == user.id)
+            .where(Notification.status == NotificationStatus.UNREAD)
             .order_by(Notification.created_at.desc())
             .limit(limit)
             .options(joinedload(Notification.user))

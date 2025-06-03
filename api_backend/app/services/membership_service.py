@@ -90,6 +90,39 @@ class CooperativeMembershipService:
         return new_membership
     
 
+    @staticmethod
+    async def create_membership(
+        db: AsyncSession, 
+        membership_data: MembershipCreate,
+        user: AuthenticatedUser
+
+    ) -> Optional[GroupMembership]:
+        try:          
+            stmt = select(GroupMembership).filter(GroupMembership.group_id == membership_data.group_id, GroupMembership.user_id == user.id)
+            result = await db.execute(stmt)
+            existing_membership = result.scalars().first()
+
+            if existing_membership:
+                return existing_membership
+
+            new_membership = GroupMembership(
+                user_id = user.id,
+                group_id = membership_data.group_id,
+                role = membership_data.role,
+                invited_by = membership_data.invited_by,
+                status = membership_data.status               
+            )
+            db.add(new_membership)
+            await db.commit()
+            await db.refresh(new_membership)
+        except Exception as e:
+            await db.rollback()
+            logger.error(e)
+            raise e
+
+        return new_membership
+    
+
     # Confirms membership - Sets membership state to accepted
     @staticmethod
     async def confirm_membership(
@@ -399,7 +432,7 @@ class CooperativeMembershipService:
             serialized = [MembershipDetails.model_validate(m).model_dump(mode="json") for m in memberships]
 
             await update_cache(cache_key, serialized, ttl=300)
-            logger.info(f"✅ Cached top memberships for user {cache_key}")
+            logger.info(f"📦 Cached top memberships for user {cache_key}")
         except Exception as e:
             logger.error(f"❌ Failed to fetch top memberships: {e}")
             raise

@@ -42,6 +42,7 @@ class CoopGroupDetails(BaseModel):
 class CoopGroupTargetSummary(BaseModel):
     id: UUID
     name: str
+    contribution_amount: int
     target_amount: int
 
 

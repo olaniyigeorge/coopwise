@@ -80,3 +80,8 @@ class CooperativeGroup(Base):
         back_populates="group",
         cascade="all, delete-orphan"
     )
+    activities = relationship(
+        "ActivityLog",
+        back_populates="group",
+        cascade="all, delete-orphan"
+    )

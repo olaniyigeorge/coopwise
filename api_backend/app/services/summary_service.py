@@ -41,12 +41,13 @@ class SummaryService:
             your_savings = savings_query.scalar() or 0.0
 
             # 2. Next contribution date
+            # TODO Create a a the contribution for all members on payout 
             next_contrib_query = await db.execute(
                 select(Contribution.due_date)
                 .where(
                     Contribution.user_id == user.id,
                     Contribution.due_date != None,
-                    Contribution.due_date > datetime.utcnow()
+                    Contribution.due_date > datetime.now()
                 )
                 .order_by(Contribution.due_date.asc())
                 .limit(1)
@@ -116,7 +117,7 @@ class SummaryService:
 
         # Fetch groups the user is in and their target_amounts
         stmt = (
-            select(CooperativeGroup.id, CooperativeGroup.name, CooperativeGroup.target_amount)
+            select(CooperativeGroup.id, CooperativeGroup.name, CooperativeGroup.contribution_amount, CooperativeGroup.target_amount)
             .join(GroupMembership, CooperativeGroup.id == GroupMembership.group_id)
             .where(GroupMembership.user_id == user.id)
         )
@@ -127,6 +128,7 @@ class SummaryService:
             CoopGroupTargetSummary(
                 id=group.id,
                 name=group.name,
+                contribution_amount=group.contribution_amount,
                 target_amount=group.target_amount
             )
             for group in groups
@@ -139,30 +141,4 @@ class SummaryService:
 
         await update_cache(cache_key, targets.model_dump_json(), ttl=300)
         return targets
-    
-    @staticmethod
-    async def get_recent_activities(
-        db: AsyncSession, 
-        user: AuthenticatedUser, 
-        redis: Redis
-    ):
-        return [
-            Activity(
-                type="contribution",
-                user_id=user.id,
-                entity_id=12345,  # Example entity ID
-                created_at=datetime.now().isoformat(),
-                description="User made a contribution",
-                amount=100.0  # Example amount
-            ),
-            Activity(
-                type="joined_group",
-                user_id=user.id,
-                entity_id=67890,  # Example entity ID
-                created_at=datetime.now().isoformat(),
-                description="User joined a new group",
-                amount=None  # No amount for this activity
-            )
-        ]
-    
     

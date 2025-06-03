@@ -3,11 +3,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.api.v1.routes.auth import get_current_user
+from app.schemas.activity_schemas import ActivityCreate
+from app.schemas.auth import AuthenticatedUser
 from app.schemas.cooperative_group import CoopGroupCreate, CoopGroupDetails, CoopGroupUpdate
+from app.schemas.cooperative_membership import MembershipCreate
+from app.schemas.dashboard_schema import ActivityType
 from app.schemas.notifications_schema import NotificationCreate
+from app.services.activity_service import ActivityService
 from app.services.notification_service import NotificationService
 from db.dependencies import get_async_db_session
 from app.services.cooperative_group_service import CooperativeGroupService
+from app.services.membership_service import CooperativeMembershipService
 
 
 router = APIRouter(
@@ -19,10 +25,38 @@ router = APIRouter(
 @router.post("/create", response_model=CoopGroupDetails, status_code=status.HTTP_201_CREATED)
 async def create_cooperative_group(
     coop_data: CoopGroupCreate,
-    user = Depends(get_current_user),
+    user: AuthenticatedUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db_session)
 ):
     coop = await CooperativeGroupService.create_coop(coop_data, db)
+
+    membership_data =  MembershipCreate(
+        user_id=user.id,
+        group_id=coop.id,
+        invited_by=user.id,
+        role="admin",
+        status="accepted"
+    )
+    print(f"\ncreatung memebership... {membership_data}\n")
+    await CooperativeMembershipService.create_membership(
+        db,
+        membership_data,
+        user
+    )
+
+    activity_data =  ActivityCreate(
+        user_id=coop.creator_id,
+        type=ActivityType.CREATED_GROUP.value,
+        description=f"You created a group",
+        group_id=coop.id,
+        entity_id=str(coop.id), 
+        amount=None
+    )
+    print(f"\Logging activity... {membership_data}\n")
+    await ActivityService.log(
+        db,
+        activity_data
+    )
     
     noti_data = NotificationCreate(
         user_id = user.id,
@@ -32,7 +66,7 @@ async def create_cooperative_group(
         type = "success",
         entity_url = None
     )
-    await NotificationService.create_notification_and_push_notification(
+    await NotificationService.create_and_push_notification_to_user(
         noti_data, db
     )
 

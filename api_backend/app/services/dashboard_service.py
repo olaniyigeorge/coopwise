@@ -4,11 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
 from app.schemas.auth import AuthenticatedUser
-from app.schemas.dashboard_schema import DashboardData, Summary, Targets, Activity
-# from app.services.summary_service import SummaryService
-# from app.services.target_service import TargetService
+from app.schemas.dashboard_schema import DashboardData
 from app.services.cooperative_group_service import CooperativeGroupService
-# from app.services.activity_service import ActivityService
+from app.services.activity_service import ActivityService
 
 from app.services.insights_service import InsightEngine
 from app.services.notification_service import NotificationService
@@ -37,24 +35,12 @@ class DashboardService:
         summary = await SummaryService.get_user_summary(user, db, redis)
         targets = await SummaryService.get_user_targets(user, db, redis)
         groups = await CooperativeGroupService.get_user_and_suggested_groups(user, db, redis)
-        activities = await SummaryService.get_recent_activities(db, user, redis)
+        activities = await ActivityService.get_user_recent_activities(db, user, redis)
         ai_insights = await InsightEngine.get_user_insights(db, user, redis, skip=0, limit=10)
-        notifications = await NotificationService.get_user_notifications(user, db, redis)
+        notifications = await NotificationService.get_user_unread_notifications(user, db, redis)
         cooperative_members = await CooperativeMembershipService.get_top_memberships(db, user, skip=0, limit=20)
 
         logger.info(f"Dashboard successfully built for user {user_data}")
-
-        # return {
-        #     "user": user_data,
-        #     "summary": summary,
-        #     "targets": targets,
-        #     "groups": groups,
-        #     "notifications": notifications,
-        #     "cooperative_members": cooperative_members,
-        #     "ai_insights": ai_insights,
-        #     "activities": activities
-        # }
-    
 
         return DashboardData(
                 user=user_data,
