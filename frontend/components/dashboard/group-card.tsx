@@ -130,7 +130,7 @@ export default function GroupCard({
         <p className="text-base font-bold mb-4">₦100,000,000</p>
         
           <Button 
-          className="w-full bg-teal-700 hover:bg-teal-800 text-white"
+          className="w-full bg-[#06413F] hover:bg-[#072b29] text-white"
             onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();

@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from functools import lru_cache
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class GlobalConfig(BaseSettings):
     ENV: str
@@ -14,10 +14,12 @@ class GlobalConfig(BaseSettings):
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
     REDIS_URL: str
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore"
     
-    class Config:
-        env_file = ".env"
-        extra = "ignore"  
+    )
 
 class DevConfig(GlobalConfig):
     ENV: str
@@ -31,8 +33,11 @@ class DevConfig(GlobalConfig):
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
     REDIS_URL: str
-    # class Config:
-    #     env_prefix: str = "DEV_"
+
+    # model_config = SettingsConfigDict(
+    #     env_prefix=str = "DEV_"
+    
+    # )
 
 class TestConfig(GlobalConfig):
     ENV: str
@@ -46,8 +51,11 @@ class TestConfig(GlobalConfig):
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
     REDIS_URL: str
-    # class Config:
-    #     env_prefix: str = "TEST_"
+
+    # model_config = SettingsConfigDict(
+    #     env_prefix=str = "TEST_"
+    
+    # )
 
 class ProdConfig(GlobalConfig):
     ENV: str
@@ -61,8 +69,11 @@ class ProdConfig(GlobalConfig):
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
     REDIS_URL: str
-    # class Config:
-    #     env_prefix: str = "PROD_"
+    
+    # model_config = SettingsConfigDict(
+    #     env_prefix=str = "PROD_"
+    
+    # )
 
 
 @lru_cache()

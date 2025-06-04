@@ -84,11 +84,11 @@ export default function LoginForm() {
         )}
         
         <div className="space-y-1">
-          <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username/Email</Label>
+          <Label htmlFor="username" className="text-sm font-medium text-gray-700">Email</Label>
           <Input
             id="username"
             type="text"
-            placeholder="Enter your username or email"
+            placeholder="Enter your email"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
