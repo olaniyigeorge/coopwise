@@ -28,6 +28,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
+      <div className="flex items-center justify-between">
       <div className="mb-4 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold">
           Welcome, {firstName}
@@ -37,7 +38,7 @@ export default function Dashboard() {
 
       {/* Top buttons - hide on mobile */}
       <div className="hidden md:flex justify-end mb-6 space-x-3">
-            <Button 
+        <Button 
           variant="default" 
           className="bg-primary hover:bg-primary/90"
             >
@@ -50,7 +51,8 @@ export default function Dashboard() {
         >
               Create a Group
             </Button>
-          </div>
+      </div>
+      </div>
 
           {/* Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
@@ -126,7 +128,7 @@ export default function Dashboard() {
           </div>
 
       {/* Main content in two columns on desktop, one column on mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 ">
         {/* Left column - takes 2/3 on desktop */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Groups Section */}

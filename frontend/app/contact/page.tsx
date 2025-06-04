@@ -28,7 +28,7 @@ import {
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
-    name: '',
+    full_name: '',
     email: '',
     subject: '',
     message: ''
@@ -41,14 +41,14 @@ export default function ContactPage() {
       icon: <Mail className="w-6 h-6 text-primary" />,
       title: "Email Support",
       description: "Get help from our team",
-      contact: "support@coopwise.com",
+      contact: "hellocoopwise@gmail.com",
       availability: "We respond within 24 hours"
     },
     {
       icon: <Phone className="w-6 h-6 text-primary" />,
       title: "Phone Support",
       description: "Speak with our experts",
-      contact: "+1 (555) 123-4567",
+      contact: "+234 814 4441 712",
       availability: "Mon-Fri, 9AM-6PM EST"
     },
     {
@@ -93,11 +93,12 @@ export default function ContactPage() {
     setIsSubmitting(true)
     
     // Simulate API call
+    // TODO call -> /api/v1/support/write-us
     await new Promise(resolve => setTimeout(resolve, 2000))
     
     setIsSubmitting(false)
     setSubmitted(true)
-    setFormData({ name: '', email: '', subject: '', message: '' })
+    setFormData({ full_name: '', email: '', subject: '', message: '' })
   }
 
   return (
@@ -195,8 +196,8 @@ export default function ContactPage() {
 
       {/* Contact Form */}
       <section className="py-16 md:py-20">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
             {/* Form */}
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
@@ -222,11 +223,11 @@ export default function ContactPage() {
                       Full Name *
                     </label>
                     <Input
-                      id="name"
-                      name="name"
+                      id="full_name"
+                      name="full_name"
                       type="text"
                       required
-                      value={formData.name}
+                      value={formData.full_name}
                       onChange={handleInputChange}
                       placeholder="Your full name"
                     />
@@ -312,8 +313,8 @@ export default function ContactPage() {
                       <div className="font-semibold text-gray-900">Visit our office</div>
                       <div className="text-gray-600">
                         123 Innovation Drive<br />
-                        San Francisco, CA 94105<br />
-                        United States
+                        Lagos State,<br />
+                        Nigeria
                       </div>
                     </div>
                   </div>

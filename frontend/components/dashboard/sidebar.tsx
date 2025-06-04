@@ -127,7 +127,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex w-[208px] bg-primary h-screen overflow-y-auto fixed left-0 top-0 flex-col">
+      <div className="hidden lg:flex w-[208px] bg-primary h-screen overflow-y-auto fixed left-0 top-0 flex-col bg-[#06413F]">
         {/* Logo */}
         <div className="p-4 flex items-center justify-center">
           <div className="flex items-center">
