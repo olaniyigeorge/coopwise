@@ -1,9 +1,9 @@
 "use client"
 
 import React from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Bell, ChevronDown, ArrowLeft, Menu } from 'lucide-react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 interface HeaderProps {
   title?: string
@@ -24,44 +24,69 @@ export default function Header({
   onMenuClick,
   showMobileMenu = false
 }: HeaderProps) {
+  
+  // Function to get the first name
+  const getFirstName = (name: string) => {
+    return name.split(' ')[0];
+  }
+  
+  // Function to get the first letter of the first name
+  const getFirstNameInitial = (name: string) => {
+    const firstName = getFirstName(name);
+    return firstName ? firstName[0].toUpperCase() : '';
+  }
+  
+  // Generate a consistent color based on the user's name
+  const getAvatarColor = (name: string) => {
+    // Get a simple hash of the name
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Generate a hue between 0 and 360
+    const hue = Math.abs(hash) % 360;
+    
+    // Use a consistent saturation and lightness for all avatars
+    return `hsl(${hue}, 65%, 55%)`;
+  }
+  
+  const avatarColor = getAvatarColor(userName);
+  const firstNameInitial = getFirstNameInitial(userName);
+  const firstName = getFirstName(userName);
+  
   return (
-    <header className="flex justify-between items-center py-3 px-3 sm:py-4 sm:px-4 lg:px-6 bg-white border-b border-gray-100">
-      {/* Left section */}
-      <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-        {/* Mobile menu button */}
-        {showMobileMenu && onMenuClick && (
+    <header className="w-full bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        {/* Mobile Menu Button */}
+        {showMobileMenu && (
           <button 
             onClick={onMenuClick}
-            className="lg:hidden p-2 hover:bg-gray-50 rounded-lg transition-colors"
+            className="p-1 rounded-md hover:bg-gray-100 transition-colors lg:hidden"
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5 text-gray-600" />
           </button>
         )}
         
-        {/* Back button */}
+        {/* Back Button */}
         {showBackButton && (
           <Link 
             href={backUrl}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="p-1 rounded-md hover:bg-gray-100 transition-colors flex items-center gap-1"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:inline">Back</span>
+            <ArrowLeft className="w-4 h-4 text-gray-600" />
+            <span className="text-sm text-gray-600">Back</span>
           </Link>
         )}
         
-        {/* Title section */}
-        <div className="min-w-0 flex-1">
-          {title && (
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 truncate">{title}</h1>
-          )}
-          {subtitle && (
-            <p className="text-xs sm:text-sm text-gray-600 mt-1 truncate">{subtitle}</p>
-          )}
+        {/* Page Title */}
+        <div>
+          <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{title}</h1>
+          {subtitle && <p className="text-xs sm:text-sm text-gray-500">{subtitle}</p>}
         </div>
       </div>
       
-      {/* Right section */}
       <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
         {/* Notification Bell */}
         <button 
@@ -74,27 +99,13 @@ export default function Header({
         
         {/* User Profile */}
         <div className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-gray-50 rounded-lg px-1 sm:px-2 py-1 transition-colors">
-          <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full overflow-hidden bg-gray-200 relative flex-shrink-0">
-            <Image 
-              src="/images/test-dp.png"
-              alt={userName}
-              width={32}
-              height={32}
-              className="object-cover"
-              onError={(e) => {
-                // Hide broken image and show fallback
-                e.currentTarget.style.display = 'none'
-                const fallback = e.currentTarget.nextElementSibling as HTMLElement
-                if (fallback) fallback.style.display = 'flex'
-              }}
-            />
-            {/* Fallback initials */}
-            <div className="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-medium text-gray-700 bg-gray-200" style={{ display: 'none' }}>
-              {userName.split(' ').map(n => n[0]).join('')}
-            </div>
-          </div>
+          <Avatar className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0">
+            <AvatarFallback style={{ backgroundColor: "#06413F", color: 'white' }}>
+              {firstNameInitial}
+            </AvatarFallback>
+          </Avatar>
           <div className="hidden sm:flex items-center gap-1 min-w-0">
-            <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">{userName}</span>
+            <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">{firstName}</span>
             <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
           </div>
         </div>

@@ -3,13 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // API base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // Get the URL parameters
-    const { searchParams } = new URL(request.url);
-    const group_id = searchParams.get('group_id');
-    const invite_code = searchParams.get('invite_code');
-
     // Get the authorization header
     const authHeader = request.headers.get('Authorization');
     
@@ -21,34 +16,29 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    // Get request body
+    const body = await request.json();
+    
+    if (!body.invite_code) {
+      return NextResponse.json(
+        { error: 'Missing required parameter: invite_code' },
+        { status: 400 }
+      );
+    }
+    
+    console.log('Accepting invite code:', body.invite_code);
+    
     // Setup headers
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Authorization': authHeader
     };
 
-    let apiUrl;
-    
-    // Determine if we're generating or verifying an invite code
-    if (invite_code) {
-      // Verifying an invite code
-      console.log('Verifying invite code:', invite_code);
-      apiUrl = `${API_URL}/api/v1/memberships/invite?invite_code=${invite_code}`;
-    } else if (group_id) {
-      // Generating an invite code
-      console.log('Generating invite code for group:', group_id);
-      apiUrl = `${API_URL}/api/v1/memberships/invite?group_id=${group_id}`;
-    } else {
-      return NextResponse.json(
-        { error: 'Missing required parameter: either group_id or invite_code must be provided' },
-        { status: 400 }
-      );
-    }
-
-    // Forward the request to the external API
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers
+    // Forward the request to the external API with invite_code as a query parameter
+    const response = await fetch(`${API_URL}/api/v1/memberships/accept-invite?invite_code=${encodeURIComponent(body.invite_code)}`, {
+      method: 'POST',
+      headers,
+      // No body needed as we're sending the invite_code as a query parameter
     });
     
     // Debug - log response status
@@ -66,7 +56,7 @@ export async function GET(request: NextRequest) {
       console.error('Error parsing JSON response:', e);
       // If parsing fails, return the error
       return NextResponse.json(
-        { detail: 'Invalid response from server' },
+        { detail: 'Invalid response from server', raw_response: responseText },
         { status: 500 }
       );
     }
@@ -74,9 +64,9 @@ export async function GET(request: NextRequest) {
     // Return the API response with appropriate status
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Error handling invite code request:', error);
+    console.error('Error accepting invite code:', error);
     return NextResponse.json(
-      { error: 'Failed to process invite code request' },
+      { error: 'Failed to accept invite code' },
       { status: 500 }
     );
   }

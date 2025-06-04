@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AppWrapper } from '@/components/app-wrapper'
+import { Toaster } from "@/components/ui/toaster"
 
 // Load Inter font with subset optimization
 const inter = Inter({
@@ -81,6 +82,7 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body className="font-sans" suppressHydrationWarning>
         <AppWrapper>{children}</AppWrapper>
+        <Toaster />
       </body>
     </html>
   )

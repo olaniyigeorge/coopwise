@@ -28,7 +28,12 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
+<<<<<<< HEAD
       <div className="flex items-center justify-between">
+=======
+      <div className='flex justify-between w-full'>
+        
+>>>>>>> 09f4d4936c3fd82edcfc23b771e4cad2c07ae657
       <div className="mb-4 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold">
           Welcome, {firstName}
@@ -51,8 +56,14 @@ export default function Dashboard() {
         >
               Create a Group
             </Button>
+<<<<<<< HEAD
       </div>
       </div>
+=======
+          </div>
+      </div>
+    
+>>>>>>> 09f4d4936c3fd82edcfc23b771e4cad2c07ae657
 
           {/* Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">

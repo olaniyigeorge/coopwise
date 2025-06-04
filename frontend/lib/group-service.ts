@@ -8,6 +8,8 @@ const GROUP_ENDPOINTS = {
   CREATE: '/api/groups/create',
   DETAILS: (id: string) => `/api/groups/${id}`,
   JOIN: (id: string) => `/api/groups/${id}/join`,
+  VERIFY_INVITE: '/api/memberships/invite',
+  ACCEPT_INVITE: '/api/memberships/accept-invite',
 };
 
 // Define types
@@ -29,6 +31,7 @@ export interface Group {
   memberCount?: number;
 }
 
+// Define types for group creation
 export interface GroupCreateData {
   name: string;
   creator_id: string;
@@ -40,7 +43,14 @@ export interface GroupCreateData {
   max_members: number;
   target_amount?: number;
   status?: string;
-  rules?: { title: string; description: string }[];
+  rules?: string[];
+}
+
+// Define types for group details
+export interface GroupDetails extends Group {
+  members?: any[];
+  contributions?: any[];
+  rules?: string[];
 }
 
 // Group service
@@ -48,7 +58,9 @@ const GroupService = {
   // Get all available groups (discovery)
   async getGroups() {
     try {
-      const response = await axios.get(GROUP_ENDPOINTS.LIST);
+      const response = await axios.get(GROUP_ENDPOINTS.LIST, {
+        headers: AuthService.getAuthHeader()
+      });
       
       return response.data || [];
     } catch (error) {
@@ -61,9 +73,7 @@ const GroupService = {
   async getMyGroups() {
     try {
       const response = await axios.get(GROUP_ENDPOINTS.MY_GROUPS, {
-        headers: {
-          ...AuthService.getAuthHeader()
-        }
+        headers: AuthService.getAuthHeader()
       });
       
       return response.data || [];
@@ -77,9 +87,7 @@ const GroupService = {
   async getGroupDetails(id: string) {
     try {
       const response = await axios.get(GROUP_ENDPOINTS.DETAILS(id), {
-        headers: {
-          ...AuthService.getAuthHeader()
-        }
+        headers: AuthService.getAuthHeader()
       });
       
       return response.data;
@@ -145,6 +153,62 @@ const GroupService = {
     } catch (error) {
       console.error(`Error joining group ${groupId}:`, error);
       throw error;
+    }
+  },
+
+  // Verify an invite code (first step of joining a group)
+  async verifyInviteCode(inviteCode: string) {
+    try {
+      console.log('Verifying invite code:', inviteCode);
+      
+      const response = await axios.get(`${GROUP_ENDPOINTS.VERIFY_INVITE}?invite_code=${inviteCode}`, {
+        headers: AuthService.getAuthHeader()
+      });
+      
+      console.log('Invite code verification response:', response.data);
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Error verifying invite code:', error);
+      console.error('Response data:', error.response?.data);
+      
+      // Show more detailed error message
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to verify invite code';
+      
+      throw new Error(errorMessage);
+    }
+  },
+  
+  // Accept an invite code (second step of joining a group)
+  async acceptInviteCode(inviteCode: string) {
+    try {
+      console.log('Accepting invite code:', inviteCode);
+      
+      const response = await axios.post(GROUP_ENDPOINTS.ACCEPT_INVITE, 
+        { invite_code: inviteCode },
+        {
+          headers: {
+            ...AuthService.getAuthHeader(),
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log('Invite code acceptance response:', response.data);
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Error accepting invite code:', error);
+      console.error('Response data:', error.response?.data);
+      
+      // Show more detailed error message
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          'Failed to accept invite code';
+      
+      throw new Error(errorMessage);
     }
   }
 };
