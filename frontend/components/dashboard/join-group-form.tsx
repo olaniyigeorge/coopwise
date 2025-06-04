@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle2, Info } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Info, Loader2 } from 'lucide-react'
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,6 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useToast } from "@/components/ui/use-toast"
+import GroupService from '@/lib/group-service'
 
 // Schema for invite code validation
 const inviteCodeSchema = z.object({
@@ -34,25 +36,32 @@ const inviteCodeSchema = z.object({
   }),
 })
 
-// Mock group data - in a real app, this would come from the API after verifying the code
-const mockGroupData = {
-  name: "Charity Association",
-  description: "Association of entrepreneurs...",
-  contributionAmount: "₦100,000",
-  frequency: "Monthly",
-  memberCount: "8 out of 10",
-  rules: [
-    "All members must contribute ₦1,000 every week as agreed by the group.",
-    "Payouts will follow a set order based on the member's payout number.",
-    "Member who pays late will be charged ₦100 late fee."
-  ]
+// Interface for group data
+interface GroupData {
+  name: string;
+  description: string;
+  contributionAmount: string | number;
+  frequency: string;
+  memberCount: string;
+  rules: string[];
 }
 
 export default function JoinGroupForm() {
   const router = useRouter()
+  const { toast } = useToast()
   const [verifying, setVerifying] = useState(false)
+  const [joining, setJoining] = useState(false)
   const [showGroupDetails, setShowGroupDetails] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [groupData, setGroupData] = useState<GroupData>({
+    name: "",
+    description: "",
+    contributionAmount: "",
+    frequency: "",
+    memberCount: "",
+    rules: []
+  })
+  const [currentInviteCode, setCurrentInviteCode] = useState("")
   
   const form = useForm<z.infer<typeof inviteCodeSchema>>({
     resolver: zodResolver(inviteCodeSchema),
@@ -62,24 +71,112 @@ export default function JoinGroupForm() {
   })
   
   // Function to verify the invite code
-  function onVerifyCode(values: z.infer<typeof inviteCodeSchema>) {
+  async function onVerifyCode(values: z.infer<typeof inviteCodeSchema>) {
     setVerifying(true)
+    setCurrentInviteCode(values.inviteCode)
     
-    // In a real app, this would make an API call to verify the code
-    setTimeout(() => {
-      setVerifying(false)
-      setShowGroupDetails(true)
-    }, 1000)
+    try {
+      // Call the API to verify the invite code
+      const response = await GroupService.verifyInviteCode(values.inviteCode);
+      console.log('Verify response:', response);
+      
+      // Extract group data from the response
+      if (response && response.membership) {
+        const membership = response.membership;
+        
+        // Check if the user has already joined this group
+        if (membership.status && membership.status.toLowerCase() !== 'clicked') {
+          toast({
+            title: "Already Joined",
+            description: "You have already joined or requested to join this group.",
+            variant: "default",
+          });
+          
+          // Still fetch and show group details
+        }
+        
+        // Get group details
+        try {
+          const groupDetails = await GroupService.getGroupDetails(membership.group_id);
+          console.log('Group details:', groupDetails);
+          
+          if (groupDetails) {
+            // Format the data for display
+            setGroupData({
+              name: groupDetails.name || "Unknown Group",
+              description: groupDetails.description || "No description available",
+              contributionAmount: groupDetails.contribution_amount || 0,
+              frequency: groupDetails.contribution_frequency || "Not specified",
+              memberCount: `${groupDetails.members?.length || 0} out of ${groupDetails.max_members || 'unlimited'}`,
+              rules: groupDetails.rules || []
+            });
+            
+            // Show the group details modal
+            setShowGroupDetails(true);
+          }
+        } catch (error: any) {
+          console.error("Error fetching group details:", error);
+          toast({
+            title: "Error",
+            description: error.message || "Could not fetch group details. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Invalid invite code or group not found.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error verifying invite code:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to verify invite code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setVerifying(false);
+    }
   }
   
   // Function to join the group
-  function onJoinGroup() {
-    setShowGroupDetails(false)
+  async function onJoinGroup() {
+    setJoining(true);
     
-    // In a real app, this would make an API call to join the group
-    setTimeout(() => {
-      setShowSuccessModal(true)
-    }, 500)
+    try {
+      // Call the API to accept the invite code
+      const response = await GroupService.acceptInviteCode(currentInviteCode);
+      console.log('Join response:', response);
+      
+      // Close the group details modal and show success
+      setShowGroupDetails(false);
+      
+      // Always show success modal after attempting to join
+      setShowSuccessModal(true);
+      
+      // Notify user of success
+      toast({
+        title: "Success",
+        description: "You have successfully joined the group!",
+        variant: "default",
+      });
+    } catch (error: any) {
+      console.error("Error joining group:", error);
+      
+      // Close the group details dialog
+      setShowGroupDetails(false);
+      
+      // Show error toast
+      toast({
+        title: "Error",
+        description: error.message || "Failed to join group. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setJoining(false);
+    }
   }
   
   // Function to go back to the dashboard
@@ -106,7 +203,7 @@ export default function JoinGroupForm() {
                     <FormLabel>Invite code</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="e.g. 7B36AJ" 
+                        placeholder="e.g. COOPWISE123abc" 
                         {...field} 
                         className="text-base py-6"
                       />
@@ -122,7 +219,12 @@ export default function JoinGroupForm() {
               className="w-full py-6" 
               disabled={verifying}
             >
-              {verifying ? "Verifying..." : "Verify Code"}
+              {verifying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : "Verify Code"}
             </Button>
           </form>
         </Form>
@@ -149,32 +251,34 @@ export default function JoinGroupForm() {
           <div className="space-y-4 py-4">
             <div>
               <h3 className="text-sm font-medium text-gray-500">Group Name:</h3>
-              <p className="font-medium">{mockGroupData.name}</p>
+              <p className="font-medium">{groupData.name}</p>
             </div>
             
             <div>
               <h3 className="text-sm font-medium text-gray-500">Description:</h3>
-              <p>{mockGroupData.description}</p>
+              <p>{groupData.description}</p>
             </div>
             
             <div>
               <h3 className="text-sm font-medium text-gray-500">Contribution Amount/Frequency:</h3>
-              <p>{mockGroupData.contributionAmount}/{mockGroupData.frequency}</p>
+              <p>₦{groupData.contributionAmount}/{groupData.frequency}</p>
             </div>
             
             <div>
               <h3 className="text-sm font-medium text-gray-500">Number of Members:</h3>
-              <p>{mockGroupData.memberCount}</p>
+              <p>{groupData.memberCount}</p>
             </div>
             
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Group Rules:</h3>
-              <ul className="list-disc pl-5 space-y-1 text-sm">
-                {mockGroupData.rules.map((rule, index) => (
-                  <li key={index}>{rule}</li>
-                ))}
-              </ul>
-            </div>
+            {groupData.rules.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Group Rules:</h3>
+                <ul className="list-disc pl-5 space-y-1 text-sm">
+                  {groupData.rules.map((rule, index) => (
+                    <li key={index}>{rule}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
           
           <DialogFooter className="flex flex-row space-x-2">
@@ -183,6 +287,7 @@ export default function JoinGroupForm() {
               variant="outline"
               onClick={() => setShowGroupDetails(false)}
               className="flex-1"
+              disabled={joining}
             >
               Cancel
             </Button>
@@ -190,8 +295,14 @@ export default function JoinGroupForm() {
               type="button"
               onClick={onJoinGroup}
               className="flex-1"
+              disabled={joining}
             >
-              Join Group
+              {joining ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Joining...
+                </>
+              ) : "Join Group"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -206,7 +317,7 @@ export default function JoinGroupForm() {
             </div>
           </div>
           
-          <DialogTitle className="text-xl">You've joined Just Us group!</DialogTitle>
+          <DialogTitle className="text-xl">You've joined {groupData.name}!</DialogTitle>
           <DialogDescription className="text-center">
             You've been added to the group.<br />
             Check your dashboard to see your payout number and start saving with others.

@@ -28,7 +28,7 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
   
   // Check for tab in URL params
   const tabParam = searchParams.get('tab')
-  const initialTab = tabParam === 'my' ? 'my-groups' : tabParam === 'discover' ? 'discover' : defaultTab
+  const initialTab = tabParam === 'my' ? 'discover' : tabParam === 'my-groups' ? 'my-groups' : defaultTab
   
   const [activeTab, setActiveTab] = useState<string>(initialTab)
   const [searchQuery, setSearchQuery] = useState('')
@@ -63,13 +63,7 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
   // Handle tab change
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
-    
-    // Update URL to reflect the current tab
-    if (tab === 'my-groups') {
-      router.push('/dashboard/my-group')
-    } else {
-      router.push('/dashboard/discover-groups')
-    }
+  
   }
 
   return (

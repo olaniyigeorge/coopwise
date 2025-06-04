@@ -28,6 +28,8 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
+      <div className='flex justify-between w-full'>
+        
       <div className="mb-4 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-semibold">
           Welcome, {firstName}
@@ -51,6 +53,8 @@ export default function Dashboard() {
               Create a Group
             </Button>
           </div>
+      </div>
+    
 
           {/* Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
