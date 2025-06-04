@@ -1,20 +1,19 @@
-import asyncio
-from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException, status
+from redis.asyncio import Redis
+
 
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.dashboard_schema import DashboardData
+from app.utils.logger import logger
+
 from app.services.cooperative_group_service import CooperativeGroupService
 from app.services.activity_service import ActivityService
-
 from app.services.insights_service import InsightEngine
 from app.services.notification_service import NotificationService
 from app.services.membership_service import CooperativeMembershipService
 from app.services.summary_service import SummaryService
 from app.services.user_service import UserService
-from app.utils.logger import logger
-from redis.asyncio import Redis
+
 
 
 class DashboardService:
@@ -43,12 +42,12 @@ class DashboardService:
         logger.info(f"Dashboard successfully built for user {user_data}")
 
         return DashboardData(
-                user=user_data,
-                summary=summary,
-                targets=targets,
-                groups=groups,
-                activities=activities,
-                ai_insights=ai_insights,
-                notifications=notifications,
+            user=user_data,
+            summary=summary,
+            targets=targets,
+            groups=groups,
+            activities=activities,
+            ai_insights=ai_insights,
+            notifications=notifications,
                 cooperative_members=cooperative_members
-            )
+        )

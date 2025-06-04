@@ -22,7 +22,7 @@ router = APIRouter(
 
 
 
-@router.get("/me/activities", response_model=List[ActivityDetail])
+@router.get("/me", response_model=List[ActivityDetail])
 async def get_user_activities(
     db: AsyncSession = Depends(get_async_db_session),
     user: AuthenticatedUser = Depends(get_current_user)

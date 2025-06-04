@@ -1,13 +1,12 @@
-import json
-from typing import List, Optional
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from redis.asyncio import Redis
 from datetime import datetime
 
 from app.schemas.auth import AuthenticatedUser
-from app.schemas.cooperative_group import CoopGroupDetails, CoopGroupTargetSummary
-from app.schemas.dashboard_schema import Activity, Summary, Targets
+from app.schemas.cooperative_group import CoopGroupTargetSummary
+from app.schemas.dashboard_schema import Summary, Targets
 from app.utils.cache import get_cache, update_cache
 from db.models.contribution_model import Contribution
 from db.models.membership import GroupMembership
