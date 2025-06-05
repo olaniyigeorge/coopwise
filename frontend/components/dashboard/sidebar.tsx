@@ -137,7 +137,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               width={36} 
               height={36}
             />
-            <span className="text-white font-semibold ml-2 text-lg">CoopWise</span>
+            <span className="text-white font-semibold -ml-2 text-lg">CoopWise</span>
           </div>
         </div>
         
@@ -166,7 +166,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       </div>
 
       {/* Mobile Sidebar */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-primary transform transition-transform duration-300 ease-in-out ${
+      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-[#06413F] transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex flex-col h-full">
@@ -174,7 +174,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center">
                 <Image 
-                  src="/images/coopwise-logo.svg" 
+                  src="/assets/icons/logo.svg" 
                   alt="CoopWise Logo" 
                 width={30} 
                 height={30}
