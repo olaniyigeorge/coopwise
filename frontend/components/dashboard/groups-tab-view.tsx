@@ -70,12 +70,12 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
     <div className="p-3">
       <h1 className="text-2xl font-semibold text-teal-700 mb-1">Saving Groups</h1>
       <h2 className="text-sm text-gray-500 mb-4">See your active groups or join a new one.</h2>
-      <div className="grid grid-cols-2 rounded-md overflow-hidden mb-6">
+      <div className="grid grid-cols-2 rounded-md py-3 px-2 overflow-hidden bg-gray-200 mb-6">
         <button
           onClick={() => handleTabChange('my-groups')}
-          className={`py-3 text-center font-medium text-sm ${
+          className={`py-3  w-full text-center font-medium text-sm rounded-md ${
             activeTab === 'my-groups' 
-              ? 'bg-[#06413F] text-white' 
+              ? 'bg-primary text-white' 
               : 'bg-gray-200 text-gray-700'
           }`}
         >
@@ -83,9 +83,9 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
         </button>
         <button
           onClick={() => handleTabChange('discover')}
-          className={`py-3 text-center font-medium text-sm ${
+          className={`py-3 text-center font-medium text-sm rounded-md ${
             activeTab === 'discover' 
-              ? 'bg-[#06413F] text-white' 
+              ? 'bg-primary text-white' 
               : 'bg-gray-200 text-gray-700'
           }`}
         >

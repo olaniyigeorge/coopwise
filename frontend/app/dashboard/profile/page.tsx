@@ -87,14 +87,7 @@ export default function ProfilePage() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">
-            Manage your details and account settings.
-          </p>
-        </div>
-
+        
         {/* Profile Form */}
         <Card>
           <CardHeader className="pb-4">

@@ -305,7 +305,7 @@ export default function ProfileSetupPage() {
             Help us personalize your CoopWise experience
           </CardDescription>
           <Progress value={progress} className="h-2 mt-2" />
-          <div className="text-xs text-gray-500 text-right">Step {currentStep} of 3</div>
+          <div className="text-xs text-[#02696F] text-right">Step {currentStep} of 3</div>
         </CardHeader>
         
         {error && (

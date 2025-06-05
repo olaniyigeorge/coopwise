@@ -30,12 +30,13 @@ export default function Features() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <div key={index} className="bg-white p-8 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 bg-[#EFF6F5] rounded-full flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-[#EFF6F5] rounded-full flex items-center justify-center mb-6 hover:scale-110 transition-transform">
                 <Image 
                   src={feature.icon}
                   alt={feature.title}
-                  width={24}
-                  height={24}
+                  width={32}
+                  height={32}
+                  className="hover:scale-110 transition-transform"
                 />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>

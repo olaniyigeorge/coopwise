@@ -127,12 +127,12 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex w-[208px] bg-primary h-screen overflow-y-auto fixed left-0 top-0 flex-col bg-[#06413F]">
+      <div className="hidden lg:flex w-[208px] bg-[#06413F] h-screen overflow-y-auto fixed left-0 top-0 flex-col ">
         {/* Logo */}
         <div className="p-4 flex items-center justify-center">
-          <div className="flex items-center">
+          <div className="flex gap-6 items-center">
             <Image 
-              src="/images/coopwise-logo.svg" 
+              src="/assets/icons/logo.svg" 
               alt="CoopWise Logo" 
               width={36} 
               height={36}
