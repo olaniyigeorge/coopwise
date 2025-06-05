@@ -37,6 +37,12 @@ export async function GET(request: NextRequest) {
     } else if (group_id) {
       // Generating an invite code
       console.log('Generating invite code for group:', group_id);
+      
+      // Support for specific test group ID
+      if (group_id === 'ad75064d-591a-451e-8a75-508713ffc978') {
+        console.log('Using test group ID: ad75064d-591a-451e-8a75-508713ffc978');
+      }
+      
       apiUrl = `${API_URL}/api/v1/memberships/invite?group_id=${group_id}`;
     } else {
       return NextResponse.json(

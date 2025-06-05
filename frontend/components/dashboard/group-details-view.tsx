@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Calendar, Loader2, Share, Check, Copy } from 'lucide-react'
+import { ArrowLeft, Calendar, Loader2, Share, Check, Copy, Info } from 'lucide-react'
 import Link from 'next/link'
 import GroupService from '@/lib/group-service'
 import { toast } from '@/components/ui/use-toast'
@@ -111,7 +111,7 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
         throw new Error('You must be logged in to generate an invite code');
       }
       
-      // Use our proxy API route with proper Authorization header
+      // Use the API endpoint with the specific group ID
       const response = await fetch(`/api/memberships/invite?group_id=${groupId}`, {
         method: 'GET',
         headers: {
@@ -121,14 +121,28 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate invite code');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || errorData.error || 'Failed to generate invite code');
       }
 
       const data = await response.json();
-      setInviteCode(data.invite_code || data.code || data.inviteCode || "");
+      console.log('Invite code generated successfully:', data);
+      
+      // Extract the invite code from the response
+      const code = data.invite_code || data.code || data.inviteCode || "";
+      setInviteCode(code);
+      
+      // Show the dialog with the invite code
       setShowInviteDialog(true);
     } catch (error) {
       console.error('Error generating invite code:', error);
+      
+      // Handle the specific group ID error case
+      const isTestGroupId = groupId === 'ad75064d-591a-451e-8a75-508713ffc978';
+      if (isTestGroupId) {
+        console.error(`Error with test group ID ${groupId}:`, error);
+      }
+      
       toast({
         title: "Error",
         description: "Failed to generate invite code. Please try again.",
@@ -217,10 +231,26 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
               <span className="sr-only">Copy</span>
             </Button>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 space-y-3">
+            <div className="bg-blue-50 p-3 rounded-md border border-blue-100">
+              <h4 className="text-sm font-medium text-blue-800 flex items-center">
+                <Info className="h-4 w-4 mr-2" />
+                How to share this code
+              </h4>
+              <ol className="text-xs text-blue-800 mt-2 space-y-1 list-decimal ml-4">
+                <li>Copy the invite code above</li>
+                <li>Share it with the person you want to invite</li>
+                <li>Ask them to go to the "Join Group" page in CoopWise</li>
+                <li>They should paste this code to join your group</li>
+              </ol>
+            </div>
             <p className="text-xs text-gray-500">
               This invite code will expire in 7 days. Members who join will need to be approved by the group admin.
             </p>
+            <div className="border-t pt-3">
+              <p className="text-xs font-medium">Direct them to:</p>
+              <p className="text-sm font-semibold mt-1">CoopWise Dashboard → Join Group</p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -646,12 +676,22 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Log the group ID for testing
+  useEffect(() => {
+    console.log(`GroupDetailsView initialized with groupId: ${groupId}`);
+    // For testing specific group IDs like "ad75064d-591a-451e-8a75-508713ffc978"
+  }, [groupId]);
+  
   // Fetch group data when component mounts
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
         setIsLoading(true);
         setError(null);
+        
+        // Test specific group ID: ad75064d-591a-451e-8a75-508713ffc978
+        // This logs the ID to console but uses the actual groupId param for the API call
+        console.log(`Fetching group details for: ${groupId}`);
         
         const data = await GroupService.getGroupDetails(groupId);
         

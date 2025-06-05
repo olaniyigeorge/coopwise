@@ -191,9 +191,24 @@ export default function JoinGroupForm() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onVerifyCode)} className="space-y-6">
             <div>
-              <p className="text-sm text-gray-600 mb-4">
-                Enter an invite code you got from the group admin or a member of the group to join their saving group
-              </p>
+              <div className="mb-6 space-y-3">
+                <p className="text-sm text-gray-600">
+                  Enter an invite code you received from a group admin or member to join their saving group
+                </p>
+                
+                <div className="bg-blue-50 p-3 rounded-md border border-blue-100">
+                  <h4 className="text-sm font-medium text-blue-800 flex items-center mb-2">
+                    <Info className="h-4 w-4 mr-2" />
+                    How to join a group
+                  </h4>
+                  <ol className="text-xs text-blue-800 space-y-1 list-decimal ml-4">
+                    <li>Paste the invite code you received</li>
+                    <li>Review the group details</li>
+                    <li>Confirm to join the group</li>
+                    <li>Wait for admin approval (if required)</li>
+                  </ol>
+                </div>
+              </div>
             
               <FormField
                 control={form.control}
@@ -319,18 +334,38 @@ export default function JoinGroupForm() {
           
           <DialogTitle className="text-xl">You've joined {groupData.name}!</DialogTitle>
           <DialogDescription className="text-center">
-            You've been added to the group.<br />
-            Check your dashboard to see your payout number and start saving with others.
+            Your membership is pending approval from the group admin.<br />
+            Once approved, you can start saving with others.
           </DialogDescription>
           
-          <div className="mt-6">
+          <div className="bg-blue-50 p-3 rounded-md border border-blue-100 text-left my-4">
+            <h4 className="text-sm font-medium text-blue-800 flex items-center mb-2">
+              <Info className="h-4 w-4 mr-2" />
+              What happens next?
+            </h4>
+            <ul className="text-xs text-blue-800 space-y-2 list-disc ml-4">
+              <li>Your request will be reviewed by the group admin</li>
+              <li>Once approved, you'll see your payout position</li>
+              <li>You'll be notified when your membership is approved</li>
+              <li>View your membership status in "My Groups" section</li>
+            </ul>
+          </div>
+          
+          <div className="mt-4 flex gap-2">
             <Button
               type="button"
-              onClick={goToDashboard}
-              className="w-full"
+              variant="outline"
+              onClick={() => router.push('/dashboard/join-group')}
+              className="flex-1"
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
+              Join Another
+            </Button>
+            <Button
+              type="button"
+              onClick={() => router.push('/dashboard/my-group')}
+              className="flex-1"
+            >
+              My Groups
             </Button>
           </div>
         </DialogContent>

@@ -7,6 +7,10 @@ import GroupService, { Group } from '@/lib/group-service'
 import { Loader2 } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import { useRouter } from 'next/navigation'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Copy } from 'lucide-react'
 
 interface DiscoverGroupsListProps {
   searchQuery: string
@@ -40,6 +44,10 @@ export default function DiscoverGroupsList({ searchQuery, suggestedGroups = [], 
   const [localLoading, setLocalLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [inviteCode, setInviteCode] = useState('')
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false)
+  const [selectedGroupId, setSelectedGroupId] = useState('')
   const limit = 6 // Number of groups per page
   const router = useRouter()
   
@@ -85,18 +93,60 @@ export default function DiscoverGroupsList({ searchQuery, suggestedGroups = [], 
   // Function to handle requesting an invite code
   const handleRequestInvite = async (groupId: string) => {
     try {
-      toast({
-        title: "Requesting invite code...",
-        description: "Please wait while we generate an invite code",
+      setSelectedGroupId(groupId);
+      setIsGeneratingCode(true);
+      setShowInviteModal(true);
+      
+      // Get the token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+      
+      // Generate invite code using our proxy API endpoint
+      const response = await fetch(`/api/memberships/invite?group_id=${groupId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
       
-      // Navigate to join group page with the group ID
-      router.push(`/dashboard/join-group?id=${groupId}`);
-    } catch (error) {
-      console.error('Error requesting invite:', error);
+      if (!response.ok) {
+        throw new Error('Failed to generate invite code');
+      }
+      
+      const data = await response.json();
+      setInviteCode(data.invite_code || data.code || data.inviteCode || "");
+      
       toast({
-        title: "Error requesting invite",
-        description: "Could not request an invite code. Please try again later.",
+        title: "Success",
+        description: "Invite code generated successfully",
+      });
+    } catch (error) {
+      console.error('Error generating invite code:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate invite code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingCode(false);
+    }
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      toast({
+        title: "Success",
+        description: "Invite code copied to clipboard!",
+      });
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard.",
         variant: "destructive",
       });
     }
@@ -160,6 +210,53 @@ export default function DiscoverGroupsList({ searchQuery, suggestedGroups = [], 
           )}
         </div>
       )}
+
+      {/* Invite Code Modal */}
+      <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Invite Code</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {isGeneratingCode ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <span>Generating invite code...</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Share this invite code with others to join the group
+                </p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={inviteCode}
+                    readOnly
+                    className="font-mono"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={copyToClipboard}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowInviteModal(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
