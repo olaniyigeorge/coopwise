@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from db.models.wallet_models import Wallet, LocalCurrency, WalletLedger, LedgerType
-from app.schemas.wallet_schemas import WalletDeposit, WalletWithdraw, WalletBalance
+from app.schemas.wallet_schemas import WalletDeposit, WalletDetail, WalletWithdraw, WalletBalance
 from app.schemas.auth import AuthenticatedUser
 from app.utils.exchange_client import fetch_exchange_rate
 from fastapi import HTTPException, status
@@ -14,7 +14,25 @@ from redis.asyncio import Redis
 from app.utils.cache import get_cache, update_cache
 
 
+
+
+ACCURUE_STAGING_URL = "https://staging.api.useaccrue.com/cashramp/api/graphql"
+ACCURUE_PROD_URL = "https://api.useaccrue.com/cashramp/api/graphql"
+
 class WalletService:
+
+    # @staticmethod
+    # async def ping_accurue():
+    
+    #     const cashramp = axios.create({
+    #     baseURL: ACCURUE_STAGING_URL,
+    #     headers: {
+    #         Authorization: `Bearer ${process.env.CSHRMP_SECRET_KEY}`,
+    #     },
+    #     });
+    #     return {
+    #         "msg": "Success"
+    #     }
 
     @staticmethod
     async def create_user_wallet(
@@ -24,7 +42,7 @@ class WalletService:
         """
         Create a wallet entry for a new user. Called at user signup.
         """
-        new_wallet = Wallet(user_id=user.id, local_currency=user.saving_currency or LocalCurrency.NGN)
+        new_wallet = Wallet(user_id=user.id, local_currency=LocalCurrency.NGN)
         db.add(new_wallet)
         await db.commit()
         await db.refresh(new_wallet)
@@ -168,9 +186,63 @@ class WalletService:
             stable_coin_balance=float(stable_bal),
             local_currency=wallet.local_currency.value,
             local_currency_balance=float(local_bal),
-            as_of=datetime.utcnow()
+            as_of=datetime.now()
         )
 
         # 4. Cache the result
         await update_cache(cache_key, balance.model_dump(mode="json"), ttl=300)
         return balance
+
+    @staticmethod
+    async def get_wallet(
+        db: AsyncSession,
+        user: AuthenticatedUser,
+        redis: Redis
+    ) -> WalletDetail:
+        """
+        Returns:
+         - Wallet details
+        Uses Redis cache for performance.
+        """
+        cache_key = f"wallet_detail:{user.id}"
+        cached = await get_cache(cache_key)
+        if cached:
+            logger.info(f"🔄 Using cached wallet for user {user.id}")
+            return WalletBalance.model_validate(cached)
+
+
+        logger.info(f"📬 Fetching wallet from db for {user.id}")
+        # 1. Fetch wallet
+        stmt = select(Wallet).where(Wallet.user_id == user.id)
+        result = await db.execute(stmt)
+        wallet = result.scalars().first()
+        if not wallet:
+            logger.info(f"📬 Wallet not found for {user.id}. Creating wallet...\n")
+            wallet = await WalletService.create_user_wallet(
+                user, db
+            )
+            if not wallet:
+                raise HTTPException(status_code=404, detail="Wallet not found")
+          
+        # 4. Cache the result
+        wallet_data = WalletDetail.model_validate(wallet)
+        await update_cache(cache_key, wallet_data.model_dump_json(), ttl=300)
+        return wallet_data
+    
+    # @staticmethod
+    # async def get_wallet_by_id(db: AsyncSession, user: UUID) -> UserDetail | None:
+    #     """
+    #     Fetch a single user by ID.
+    #     """
+    #     try:
+    #         result = await db.execute(select(User).where(User.id == user_id))
+    #         user = result.scalars().first()
+    #         if not user:
+    #             raise HTTPException(status_code=404, detail="User not found")
+    #         return user
+    #     except Exception as e:
+    #         logger.error(f"Failed to fetch user by ID: {e}")
+    #         raise HTTPException(
+    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #             detail="Could not fetch user"
+    #         )

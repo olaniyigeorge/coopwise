@@ -4,7 +4,7 @@ from redis.asyncio import Redis
 from db.dependencies import get_async_db_session
 from app.services.wallet_service import WalletService
 from app.schemas.auth import AuthenticatedUser
-from app.schemas.wallet_schemas import WalletDeposit, WalletWithdraw, WalletBalance
+from app.schemas.wallet_schemas import WalletDeposit, WalletWithdraw, WalletBalance, WalletDetail
 from app.core.dependencies import get_current_user, get_redis
 
 router = APIRouter(
@@ -20,6 +20,15 @@ async def deposit(
     redis: Redis = Depends(get_redis)
 ):
     return await WalletService.deposit(user, data, db, redis)
+
+@router.get("/get-wallet") # , response_model=WalletDetail
+async def get_wallet(
+    db: AsyncSession = Depends(get_async_db_session), 
+    user: AuthenticatedUser = Depends(get_current_user),
+    redis: Redis = Depends(get_redis)
+    ):
+
+    return await WalletService.get_wallet(db, user, redis)
 
 @router.post("/withdraw", response_model=WalletBalance)
 async def withdraw(

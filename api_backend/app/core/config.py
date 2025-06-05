@@ -14,6 +14,8 @@ class GlobalConfig(BaseSettings):
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
     REDIS_URL: str
+    CASHRAMP_PUBKEY: str
+    CASHRAMP_SECKEY: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -33,6 +35,8 @@ class DevConfig(GlobalConfig):
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
     REDIS_URL: str
+    CASHRAMP_PUBKEY: str
+    CASHRAMP_SECKEY: str
 
     # model_config = SettingsConfigDict(
     #     env_prefix=str = "DEV_"
@@ -51,6 +55,8 @@ class TestConfig(GlobalConfig):
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
     REDIS_URL: str
+    CASHRAMP_PUBKEY: str
+    CASHRAMP_SECKEY: str
 
     # model_config = SettingsConfigDict(
     #     env_prefix=str = "TEST_"
@@ -69,6 +75,8 @@ class ProdConfig(GlobalConfig):
     PAYSTACK_SECRET_KEY: str
     PAYSTACK_PUBLIC_KEY:str
     REDIS_URL: str
+    CASHRAMP_PUBKEY: str
+    CASHRAMP_SECKEY: str
     
     # model_config = SettingsConfigDict(
     #     env_prefix=str = "PROD_"

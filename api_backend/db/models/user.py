@@ -43,7 +43,7 @@ class User(Base):
     savings_purpose = Column(String, nullable=True)  # e.g., "Sheila's tuition"
     income_range = Column(Enum(IncomeRange), nullable=True)
     saving_frequency = Column(Enum(SavingFrequency), nullable=True)  # e.g., "monthly"
-    
+      
     # Verification Flags
     is_email_verified = Column(Boolean, default=False)
     is_phone_verified = Column(Boolean, default=False)

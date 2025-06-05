@@ -7,7 +7,7 @@ from db.database import Base
 import enum
 
 
-class LocalCurrency(str, enum.Enum):
+class LocalCurrency(enum.Enum):
     NGN = "NGN"
     GHS = "GHS"
     KES = "KES"
@@ -50,7 +50,7 @@ class Wallet(Base):
 
 
 
-class LedgerType(str, enum.Enum):
+class LedgerType(enum.Enum):
     DEPOSIT = "deposit"
     WITHDRAWAL = "withdrawal"
     CONTRIBUTION = "contribution"  # when user spends from wallet to pay a coop contribution

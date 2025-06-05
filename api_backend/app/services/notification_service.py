@@ -122,9 +122,9 @@ class NotificationService:
         # You can use a background task or queue for this if scale matters
         from app.services.user_service import UserService
 
-        users = await UserService.get_all_users(db)
+        users = await UserService.get_users(db)
         for user in users:
-            await NotificationService.push_notification(
+            await NotificationService.push_notification_to_user(
                 user_id=user.id,
                 title=title,
                 message=message,
