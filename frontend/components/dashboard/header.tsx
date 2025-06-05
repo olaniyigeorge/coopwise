@@ -179,7 +179,7 @@ export default function Header({
           <DropdownMenuTrigger asChild>
             <div className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-gray-50 rounded-lg px-1 sm:px-2 py-1 transition-colors">
               <Avatar className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0">
-                <AvatarFallback style={{ backgroundColor: "#06413F", color: 'white' }}>
+                <AvatarFallback className="bg-primary text-white">
                   {firstNameInitial}
                 </AvatarFallback>
               </Avatar>
