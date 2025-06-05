@@ -6,7 +6,7 @@ load_dotenv()
 from app.core.middleware import app_middleware
 from app.utils.logger import logger
 from app.core.config import config
-from app.api.v1.routes import auth, cooperative_group, membership, user, contribution, dashboard, notifications_router, support_router
+from app.api.v1.routes import auth, cooperative_group, membership, user, contribution, dashboard, notifications_router, support_router, wallet_routes
 import uvicorn
 from contextlib import asynccontextmanager
 from db.database import database, init_db
@@ -39,6 +39,7 @@ app.include_router(contribution.router)
 app.include_router(dashboard.router)
 app.include_router(notifications_router.router)
 app.include_router(support_router.router)
+app.include_router(wallet_routes.router)
 
 # Add Middleware
 app.add_middleware(BaseHTTPMiddleware, dispatch=app_middleware)

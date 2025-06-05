@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
-from api_backend.db.dependencies import get_async_db_session
+from db.dependencies import get_async_db_session
 from app.services.wallet_service import WalletService
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.wallet_schemas import WalletDeposit, WalletWithdraw, WalletBalance
