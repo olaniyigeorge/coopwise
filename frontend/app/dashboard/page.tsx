@@ -42,7 +42,7 @@ export default function Dashboard() {
         <Button 
           variant="default" 
           className="bg-primary hover:bg-primary/90"
-            >
+           onClick={() => router.push('/dashboard/join-group')}>
               Join a Group
             </Button>
         <Button 
@@ -59,72 +59,72 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
             <div className="bg-white rounded-lg shadow p-5">
               <h3 className="text-gray-500 text-sm mb-2">Your savings</h3>
-              <div className="text-2xl font-bold">₦0</div>
+              <div className="text-2xl font-bold">₦680,000</div>
               <div className="text-gray-500 text-xs mt-1">Total saved across all groups</div>
               <div className="mt-4">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
-              <span>Progress</span>
-              <span>0%</span>
-            </div>
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>Progress</span>
+                  <span>0%</span>
+                </div>
                 <div className="relative w-full h-1.5 bg-gray-100 rounded-full">
                   <div className="absolute left-0 top-0 h-full bg-primary rounded-full" style={{ width: '0%' }}></div>
                 </div>
-            <div className="text-xs text-gray-500 mt-1">Goal: ₦800,000.00</div>
+                <div className="text-xs text-gray-500 mt-1">Goal: ₦800,000.00</div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-5">
+              <h3 className="text-gray-500 text-sm mb-2">Your Wallet</h3>
+              <div className="flex items-center">
+                <div className="text-2xl font-bold">₦200,000</div>
+            
+              </div>
+              <div className="text-gray-500 text-xs mt-1">Balance available in your wallet for contributions</div>
+              <div className="mt-4">
+                <Button 
+                  variant="default" 
+                  className="bg-primary hover:bg-primary/90 text-xs w-full"
+                >
+                  Add Money
+                </Button>
               </div>
             </div>
 
             <div className="bg-white rounded-lg shadow p-5">
               <h3 className="text-gray-500 text-sm mb-2">Next Contribution</h3>
-          <div className="flex items-start mt-3">
-            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-              <Image 
-                src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                alt="Group Icon" 
-                width={20} 
-                height={20} 
-              />
-            </div>
-            <div className="ml-3">
-              <div className="text-base font-medium">No upcoming contribution</div>
-              <div className="text-gray-500 text-xs mt-1">Create a group or join an existing one to start saving together</div>
-            </div>
-          </div>
+              <div className="flex items-start mt-3">
+                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center relative">
+                  <Image 
+                    src="/assets/icons/fluent_people-community-48-regular (1).svg" 
+                    alt="Group Icon" 
+                    width={20} 
+                    height={20} 
+                  />
+                </div>
+                <div className="ml-3">
+                  <div className="text-base font-medium">No upcoming contribution</div>
+                  <div className="text-gray-500 text-xs mt-1">Create a group or join an existing one to start saving together</div>
+                </div>
+              </div>
             </div>
 
             <div className="bg-white rounded-lg shadow p-5">
               <h3 className="text-gray-500 text-sm mb-2">Next Payout</h3>
-          <div className="flex items-start mt-3">
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <Image 
-                src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                alt="Group Icon" 
-                width={20} 
-                height={20} 
-              />
-            </div>
-            <div className="ml-3">
-              <div className="text-base font-medium">No payout yet!</div>
-              <div className="text-gray-500 text-xs mt-1">You'll see your payout date here after joining a group</div>
-            </div>
-          </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-5">
-              <h3 className="text-gray-500 text-sm mb-2">Payout Number</h3>
-          <div className="flex items-start mt-3">
-            <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-              <Image 
-                src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                alt="Group Icon" 
-                width={20} 
-                height={20} 
-              />
-            </div>
-            <div className="ml-3">
-              <div className="text-base font-medium">Not assigned yet!</div>
-              <div className="text-gray-500 text-xs mt-1">Join or create a group to get a payout number</div>
-            </div>
-          </div>
+              <div className="flex items-start mt-3">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center relative">
+                  <Image 
+                    src="/assets/icons/fluent_people-community-48-regular (1).svg" 
+                    alt="Group Icon" 
+                    width={20} 
+                    height={20} 
+                  />
+             
+                </div>
+                <div className="ml-3">
+                  <div className="text-base font-medium">No payout yet!</div>
+                  <div className="text-gray-500 text-xs mt-1">You'll see your payout date here after joining a group</div>
+                </div>
+              </div>
             </div>
           </div>
 

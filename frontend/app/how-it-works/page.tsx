@@ -11,6 +11,7 @@ import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
 import CTA from '@/components/cta'
 import { CheckCircle, Users, DollarSign, TrendingUp, Shield, Zap } from 'lucide-react'
+import HowItWorksTimeline from '@/components/how-it-works-timeline'
 
 export default function HowItWorksPage() {
   const steps = [
@@ -20,7 +21,7 @@ export default function HowItWorksPage() {
         "If someone invites you, just tap the group link they shared",
         "Or visit www.coopwise.com to get started"
       ],
-      phoneImage: "/assets/icons/PhoneBorder.svg",
+      phoneImage: "/assets/images/Phone0.png",
       phonePosition: "right"
     },
     {
@@ -29,7 +30,7 @@ export default function HowItWorksPage() {
         "Sign up with your name, email or phone number",
         "Set your savings goal and basic initial takes less than 2 minutes"
       ],
-      phoneImage: "/assets/icons/PhoneBorder.svg",
+      phoneImage: "/assets/images/Phone1.png",
       phonePosition: "left"
     },
     {
@@ -38,7 +39,7 @@ export default function HowItWorksPage() {
         "Enter an invite code if you're joining a group",
         "Or start your own group and invite people you trust"
       ],
-      phoneImage: "/assets/icons/PhoneBorder.svg",
+      phoneImage: "/assets/images/Phone2.png",
       phonePosition: "right"
     },
     {
@@ -47,7 +48,7 @@ export default function HowItWorksPage() {
         "Decide how much to contribute and how often",
         "Decide if payouts rotate or stay fixed, it's your group, your rules"
       ],
-      phoneImage: "/assets/icons/PhoneBorder.svg",
+      phoneImage: "/assets/images/Phone3.png",
       phonePosition: "left"
     },
     {
@@ -56,7 +57,7 @@ export default function HowItWorksPage() {
         "Make regular contributions",
         "CoopWise sends helpful reminders and suggestions to keep you on track"
       ],
-      phoneImage: "/assets/icons/PhoneBorder.svg",
+      phoneImage: "/assets/images/Phone4.png",
       phonePosition: "right"
     },
     {
@@ -65,7 +66,7 @@ export default function HowItWorksPage() {
         "See your group's total savings, who has contributed, and when payouts are coming",
         "Everything is transparent and easy to follow"
       ],
-      phoneImage: "/assets/icons/PhoneBorder.svg",
+      phoneImage: "/assets/icons/Phone6.png",
       phonePosition: "left"
     }
   ]
@@ -128,9 +129,7 @@ export default function HowItWorksPage() {
       {/* Hero Section */}
       <section className="max-w-6xl mx-auto px-4 pt-8 md:pt-12 pb-10 md:pb-16">
         <div className="text-center space-y-4 md:space-y-6">
-          <Badge variant="secondary" className="mb-4">
-            How CoopWise Works
-          </Badge>
+      
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
             Simple Steps to{" "}
             <span className="text-brand-teal relative">
@@ -174,132 +173,8 @@ export default function HowItWorksPage() {
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-10 md:mb-20 text-primary">
             Your Savings Journey in 6 Simple Steps
           </h2>
-          
-          {/* Mobile version */}
-          <div className="md:hidden relative">
-            <div className="absolute left-4 top-0 bottom-0 flex flex-col items-center">
-              <div className="absolute top-0 bottom-0 w-0.5 bg-gray-200"></div>
-              {steps.map((_, index) => (
-                <div 
-                  key={index} 
-                  className="absolute w-4 h-4 rounded-full border-2 border-primary bg-white z-10 flex items-center justify-center"
-                  style={{ top: `${(100 / (steps.length - 1)) * index}%` }}
-                >
-                  <div className="w-2 h-2 rounded-full bg-primary"></div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="space-y-16 relative">
-              {steps.map((step, index) => (
-                <div key={index} className="flex items-start pl-10">
-                  <div className="w-full">
-                    <div className="bg-white rounded-lg p-6 shadow-sm border">
-                      <div className="flex items-center mb-3">
-                        <Badge variant="outline" className="mr-3">
-                          Step {index + 1}
-                        </Badge>
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">{step.title}</h3>
-                      <div className="space-y-2 mb-4">
-                        {step.bullets.map((bullet, idx) => (
-                          <BulletPoint key={idx}>{bullet}</BulletPoint>
-                        ))}
-                      </div>
-                      <div className="flex justify-center w-full">
-                        <div className="relative w-28 h-56">
-                          <Image
-                            src={step.phoneImage}
-                            alt={`Step: ${step.title}`}
-                            fill
-                            className="object-contain"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Desktop version */}
-          <div className="hidden md:block relative">
-            <div className="absolute left-16 top-0 bottom-0 flex flex-col items-center">
-              <div className="absolute top-0 bottom-0 w-0.5 bg-gray-200"></div>
-              {steps.map((_, index) => (
-                <div 
-                  key={index} 
-                  className="absolute w-6 h-6 rounded-full border-2 border-primary bg-white z-10 flex items-center justify-center"
-                  style={{ top: `${(100 / (steps.length - 1)) * index}%` }}
-                >
-                  <div className="w-3 h-3 rounded-full bg-primary"></div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="space-y-[calc(100vh/8)] relative">
-              {steps.map((step, index) => (
-                <div key={index} className="flex justify-center items-center space-x-20">
-                  {step.phonePosition === 'left' ? (
-                    <>
-                      <div className="relative w-36 h-72">
-                        <Image
-                          src={step.phoneImage}
-                          alt={`Step: ${step.title}`}
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-                      
-                      <div className="max-w-md">
-                        <div className="bg-white rounded-lg p-6 shadow-sm border">
-                          <div className="flex items-center mb-3">
-                            <Badge variant="outline" className="mr-3">
-                              Step {index + 1}
-                            </Badge>
-                          </div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-4">{step.title}</h3>
-                          <div className="space-y-2">
-                            {step.bullets.map((bullet, idx) => (
-                              <BulletPoint key={idx}>{bullet}</BulletPoint>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="max-w-md">
-                        <div className="bg-white rounded-lg p-6 shadow-sm border">
-                          <div className="flex items-center mb-3">
-                            <Badge variant="outline" className="mr-3">
-                              Step {index + 1}
-                            </Badge>
-                          </div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-4">{step.title}</h3>
-                          <div className="space-y-2">
-                            {step.bullets.map((bullet, idx) => (
-                              <BulletPoint key={idx}>{bullet}</BulletPoint>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="relative w-36 h-72">
-                        <Image
-                          src={step.phoneImage}
-                          alt={`Step: ${step.title}`}
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <HowItWorksTimeline />
+      
         </div>
       </section>
 

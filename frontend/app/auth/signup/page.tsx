@@ -106,7 +106,7 @@ export default function SignupPage() {
           />
         </div>
 
-        <div className="space-y-1">
+ {/*        <div className="space-y-1">
           <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username</Label>
           <Input
             id="username"
@@ -120,7 +120,7 @@ export default function SignupPage() {
           <p className="text-xs text-gray-500 mt-1">
             Username is required and must be unique
           </p>
-        </div>
+        </div> */}
 
         <div className="space-y-1">
           <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>

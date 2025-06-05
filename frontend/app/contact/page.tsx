@@ -108,9 +108,7 @@ export default function ContactPage() {
       {/* Hero Section */}
       <section className="max-w-6xl mx-auto px-4 pt-8 md:pt-12 pb-10 md:pb-16">
         <div className="text-center space-y-4 md:space-y-6">
-          <Badge variant="secondary" className="mb-4">
-            Contact Support
-          </Badge>
+      
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
             We're Here to{" "}
             <span className="text-brand-teal relative">

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 
 export default function Hero() {
   return (
-    <section className="max-w-6xl mx-auto px-4 pt-8 md:pt-12 pb-10 md:pb-16">
+    <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-2 pt-8 md:pt-12 pb-10 md:pb-16">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
         <div className="space-y-4 md:space-y-6 text-center md:text-left">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
@@ -48,14 +48,14 @@ export default function Hero() {
           </div>
         </div>
         
-        <div className="mx-auto md:mx-0 w-full max-w-[320px] md:max-w-[500px]">
-          <div className="relative w-full h-[280px] sm:h-[320px] md:h-[400px] rounded-xl overflow-hidden shadow-md">
+        <div className="flex justify-center md:justify-end w-full">
+          <div className="relative w-full max-w-[320px] md:max-w-[500px] h-[280px] sm:h-[320px] md:h-[400px] rounded-xl overflow-hidden shadow-md">
             <Image 
               src="/images/hero-image.png" 
               alt="Happy CoopWise User" 
               fill
               sizes="(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 40vw"
-              className="object-contain w-full h-full"
+              className="object-cover w-full h-full"
               priority
             />
           </div>
