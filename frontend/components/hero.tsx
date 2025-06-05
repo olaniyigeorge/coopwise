@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 
 export default function Hero() {
   return (
-    <section className="max-w-6xl mx-auto px-0 pt-8 md:pt-12 pb-10 md:pb-16">
+    <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-2 pt-8 md:pt-12 pb-10 md:pb-16">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
         <div className="space-y-4 md:space-y-6 text-center md:text-left">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight">

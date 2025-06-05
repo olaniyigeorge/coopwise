@@ -9,6 +9,8 @@ const useLocalProxy = process.env.NEXT_PUBLIC_USE_LOCAL_PROXY === 'true' || fals
 const ENABLE_MOCK_FALLBACK = process.env.NEXT_PUBLIC_ENABLE_MOCK_FALLBACK === 'true' || false;
 
 interface UpdateUserData {
+  id?: string;
+  resource_owner_id?: string;
   target_savings_amount?: number | null;
   savings_purpose?: string | null;
   income_range?: string | null;
@@ -18,6 +20,10 @@ interface UpdateUserData {
   full_name?: string;
   phone_number?: string;
   role?: string;
+  is_email_verified?: boolean;
+  is_phone_verified?: boolean;
+  created_at?: string;
+  updated_at?: string;
   // Add more fields as needed
 }
 
@@ -38,6 +44,12 @@ const formatUserData = (userData: UpdateUserData): UpdateUserData => {
       formattedData.target_savings_amount = 0;
     }
   }
+
+  // Ensure required fields have default values
+  formattedData.is_email_verified = formattedData.is_email_verified !== undefined ? formattedData.is_email_verified : false;
+  formattedData.is_phone_verified = formattedData.is_phone_verified !== undefined ? formattedData.is_phone_verified : false;
+  formattedData.created_at = formattedData.created_at || new Date().toISOString();
+  formattedData.updated_at = new Date().toISOString();
   
   return formattedData;
 };
@@ -55,8 +67,8 @@ const UserService = {
       const formattedData = formatUserData(userData);
       console.log('Formatted user data for API:', formattedData);
 
-      // Always use direct API for production
-      const endpoint = `${API_URL}/api/v1/users/${userId}`;
+      // Use the local proxy endpoint instead of direct API call
+      const endpoint = `/api/users/${userId}`;
       
       console.log(`Sending update request to: ${endpoint}`);
       

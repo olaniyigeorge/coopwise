@@ -1,16 +1,14 @@
 "use client"
 
-import React, { useState } from 'react'
-import Image from 'next/image'
+import React, { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Camera, Upload, X, User } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuth } from '@/lib/auth-context'
 
 interface ProfileData {
   fullName: string
@@ -20,22 +18,57 @@ interface ProfileData {
   savingAmountGoal: string
   savingGoal: string
   savingFrequency: string
-  avatar?: string
 }
 
+// Mapping for income range values to match backend enum
+const incomeRangeMapping: Record<string, string> = {
+  "Below 100000": "BELOW_50K",
+  "100000-500000": "RANGE_100K_200K",
+  "500000-1000000": "RANGE_350K_500K",
+  "1000000-5000000": "ABOVE_500K",
+  "Above 5000000": "ABOVE_500K",
+  "Above 6000000": "ABOVE_500K"
+};
+
+// Mapping for saving frequency values to match backend enum
+const savingFrequencyMapping: Record<string, string> = {
+  "Daily": "daily",
+  "Weekly": "weekly",
+  "Monthly": "monthly",
+  "Quarterly": "monthly" // Backend doesn't have quarterly, default to monthly
+};
+
 export default function ProfilePage() {
+  const { user, updateUserProfile, refreshUserData } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData>({
-    fullName: 'Mercy Oyelenmu',
-    phoneNumber: '+234768046342',
-    email: 'mercy274@gmail.com',
-    monthlySavingsTarget: 'Above 6000000',
-    savingAmountGoal: '4000000',
-    savingGoal: 'Education',
-    savingFrequency: 'Monthly'
+    fullName: '',
+    phoneNumber: '',
+    email: '',
+    monthlySavingsTarget: '',
+    savingAmountGoal: '',
+    savingGoal: '',
+    savingFrequency: ''
   })
 
   const [isLoading, setIsLoading] = useState(false)
-  const [imagePreview, setImagePreview] = useState<string>('')
+
+  // Load user data when component mounts
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        fullName: user.full_name || '',
+        phoneNumber: user.phone_number || '',
+        email: user.email || '',
+        monthlySavingsTarget: user.income_range || '',
+        savingAmountGoal: user.target_savings_amount?.toString() || '',
+        savingGoal: user.savings_purpose || '',
+        savingFrequency: user.saving_frequency || ''
+      });
+    } else {
+      // If no user data, try to refresh it
+      refreshUserData();
+    }
+  }, [user, refreshUserData]);
 
   const handleInputChange = (field: keyof ProfileData, value: string) => {
     setProfileData(prev => ({
@@ -44,44 +77,66 @@ export default function ProfilePage() {
     }))
   }
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const result = e.target?.result as string
-        setImagePreview(result)
-        setProfileData(prev => ({
-          ...prev,
-          avatar: result
-        }))
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const handleRemovePhoto = () => {
-    setImagePreview('')
-    setProfileData(prev => ({
-      ...prev,
-      avatar: undefined
-    }))
-  }
-
   const handleSaveChanges = async () => {
-    setIsLoading(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    setIsLoading(false)
-    toast.success('Profile updated successfully!', {
-      description: 'Your changes have been saved.',
-    })
-  }
+    if (!user) {
+      toast.error('You must be logged in to update your profile');
+      return;
+    }
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase()
+    setIsLoading(true);
+    
+    try {
+      // Format the data exactly as the API expects it based on the API schema
+      const updateData = {
+        id: user.id,
+        resource_owner_id: user.id,
+        username: user.username,
+        email: profileData.email,
+        full_name: profileData.fullName,
+        phone_number: profileData.phoneNumber,
+        role: user.role || "user",
+        target_savings_amount: profileData.savingAmountGoal ? parseFloat(profileData.savingAmountGoal) : 0,
+        savings_purpose: profileData.savingGoal || "",
+        income_range: profileData.monthlySavingsTarget || "Below 50K",
+        saving_frequency: profileData.savingFrequency || "daily",
+        is_email_verified: user.is_email_verified !== undefined ? user.is_email_verified : false,
+        is_phone_verified: user.is_phone_verified !== undefined ? user.is_phone_verified : false,
+        created_at: user.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      console.log('Sending profile update data:', updateData);
+      
+      // Use the proxy endpoint through the auth context
+      await updateUserProfile(updateData);
+      
+      toast.success('Profile updated successfully!', {
+        description: 'Your changes have been saved.',
+      });
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      
+      let errorMessage = 'Failed to update your profile';
+      
+      // Extract error details from the response
+      if (error.response?.data?.detail) {
+        if (Array.isArray(error.response.data.detail)) {
+          errorMessage = error.response.data.detail.map((err: any) => 
+            `${err.loc.join('.')}: ${err.msg}`
+          ).join(', ');
+        } else {
+          errorMessage = error.response.data.detail;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error('Update failed', {
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -94,49 +149,6 @@ export default function ProfilePage() {
             <CardTitle className="text-lg font-semibold">Profile Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Profile Photo Section */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-              <div className="flex justify-center sm:justify-start">
-                <div className="relative">
-                  <Avatar className="w-20 h-20 sm:w-24 sm:h-24">
-                    <AvatarImage 
-                      src={imagePreview || profileData.avatar} 
-                      alt={profileData.fullName}
-                    />
-                    <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
-                      {getInitials(profileData.fullName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                    <Camera className="w-3 h-3 text-white" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                <div className="flex-1">
-                                                      <input                    type="file"                    accept="image/*"                    onChange={handleImageUpload}                    className="hidden"                    id="avatar-upload"                    aria-label="Upload profile photo"                  />
-                  <Label htmlFor="avatar-upload" asChild>
-                    <Button variant="outline" className="w-full sm:w-auto cursor-pointer">
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload a Photo
-                    </Button>
-                  </Label>
-                </div>
-                
-                {(imagePreview || profileData.avatar) && (
-                  <Button 
-                    variant="outline" 
-                    onClick={handleRemovePhoto}
-                    className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Remove Photo
-                  </Button>
-                )}
-              </div>
-            </div>
-
             {/* Form Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {/* Full Name */}
@@ -195,12 +207,12 @@ export default function ProfilePage() {
                     <SelectValue placeholder="Select target range" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Below 100000">Below ₦100,000</SelectItem>
-                    <SelectItem value="100000-500000">₦100,000 - ₦500,000</SelectItem>
-                    <SelectItem value="500000-1000000">₦500,000 - ₦1,000,000</SelectItem>
-                    <SelectItem value="1000000-5000000">₦1,000,000 - ₦5,000,000</SelectItem>
-                    <SelectItem value="Above 5000000">Above ₦5,000,000</SelectItem>
-                    <SelectItem value="Above 6000000">Above ₦6,000,000</SelectItem>
+                    <SelectItem value="Below 50K">Below ₦50,000</SelectItem>
+                    <SelectItem value="RANGE_50K_100K">₦50,000 - ₦100,000</SelectItem>
+                    <SelectItem value="RANGE_100K_200K">₦100,000 - ₦200,000</SelectItem>
+                    <SelectItem value="RANGE_200K_350K">₦200,000 - ₦350,000</SelectItem>
+                    <SelectItem value="RANGE_350K_500K">₦350,000 - ₦500,000</SelectItem>
+                    <SelectItem value="ABOVE_500K">Above ₦500,000</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -258,10 +270,9 @@ export default function ProfilePage() {
                     <SelectValue placeholder="Select frequency" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Daily">Daily</SelectItem>
-                    <SelectItem value="Weekly">Weekly</SelectItem>
-                    <SelectItem value="Monthly">Monthly</SelectItem>
-                    <SelectItem value="Quarterly">Quarterly</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -275,44 +286,6 @@ export default function ProfilePage() {
                 className="w-full sm:w-auto min-w-[140px]"
               >
                 {isLoading ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Additional Settings Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Account Settings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">Change Password</h3>
-                <p className="text-sm text-gray-500">Update your account password</p>
-              </div>
-              <Button variant="outline" className="w-full sm:w-auto">
-                Change Password
-              </Button>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-gray-200 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">Two-Factor Authentication</h3>
-                <p className="text-sm text-gray-500">Add an extra layer of security</p>
-              </div>
-              <Button variant="outline" className="w-full sm:w-auto">
-                Setup 2FA
-              </Button>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-red-200 rounded-lg bg-red-50">
-              <div>
-                <h3 className="font-medium text-red-900">Delete Account</h3>
-                <p className="text-sm text-red-600">Permanently delete your account and data</p>
-              </div>
-              <Button variant="destructive" className="w-full sm:w-auto">
-                Delete Account
               </Button>
             </div>
           </CardContent>

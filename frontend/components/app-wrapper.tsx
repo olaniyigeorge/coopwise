@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { AuthProvider } from '@/lib/auth-context'
+import { NotificationProvider } from '@/lib/notification-context'
 import { Toaster } from '@/components/ui/toaster'
 
 interface AppWrapperProps {
@@ -11,8 +12,10 @@ interface AppWrapperProps {
 export function AppWrapper({ children }: AppWrapperProps) {
   return (
     <AuthProvider>
-      {children}
-      <Toaster />
+      <NotificationProvider>
+        {children}
+        <Toaster />
+      </NotificationProvider>
     </AuthProvider>
   )
 }

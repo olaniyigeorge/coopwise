@@ -42,7 +42,7 @@ export default function Dashboard() {
         <Button 
           variant="default" 
           className="bg-primary hover:bg-primary/90"
-            >
+           onClick={() => router.push('/dashboard/join-group')}>
               Join a Group
             </Button>
         <Button 
