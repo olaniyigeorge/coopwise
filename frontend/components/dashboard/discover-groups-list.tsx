@@ -6,75 +6,70 @@ import { Pagination } from '@/components/ui/pagination'
 import GroupService, { Group } from '@/lib/group-service'
 import { Loader2 } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
+import { useRouter } from 'next/navigation'
 
 interface DiscoverGroupsListProps {
   searchQuery: string
+  suggestedGroups?: Group[]
+  isLoading?: boolean
 }
 
 // Helper to transform API group data to UI format
-const transformGroup = (group: Group) => ({
-  id: group.id,
-  name: group.name,
-  memberCount: group.memberCount || Math.floor(Math.random() * group.max_members) + 1, // Simulate member count
-  maxMembers: group.max_members,
-  contributionAmount: `₦${group.contribution_amount.toLocaleString()}`,
-  frequency: group.contribution_frequency,
-  description: group.description || `A savings group for entrepreneurs`,
-  badge: group.memberCount >= group.max_members ? 'full' as const : 'open' as const,
-});
+const transformGroup = (group: Group) => {
+  // Determine if the group is full based on member count (if available)
+  let badge: 'open' | 'full' = 'open'
+  const memberCount = group.memberCount || Math.floor(Math.random() * group.max_members) + 1
+  if (memberCount >= group.max_members) {
+    badge = 'full'
+  }
+  
+  return {
+    id: group.id,
+    name: group.name,
+    memberCount: memberCount,
+    maxMembers: group.max_members,
+    contributionAmount: `₦${group.contribution_amount.toLocaleString()}`,
+    frequency: group.contribution_frequency,
+    description: group.description || `A savings group for entrepreneurs`,
+    badge
+  };
+};
 
-export default function DiscoverGroupsList({ searchQuery }: DiscoverGroupsListProps) {
+export default function DiscoverGroupsList({ searchQuery, suggestedGroups = [], isLoading = false }: DiscoverGroupsListProps) {
   const [groups, setGroups] = useState<ReturnType<typeof transformGroup>[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [localLoading, setLocalLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const limit = 6 // Number of groups per page
+  const router = useRouter()
   
-  // Fetch groups from API
+  // Process groups from props
   useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        setIsLoading(true);
-        const response = await GroupService.getGroups();
-        
-        // Transform the data for UI
-        const transformedGroups = Array.isArray(response) && response.length > 0
-          ? response.map(group => {
-              // Add memberCount as a random number for demo
-              // In a real app, this would come from the API
-              const memberCount = Math.floor(Math.random() * group.max_members) + 1;
-              return transformGroup({...group, memberCount});
-            })
-          : [];
+    try {
+      setLocalLoading(true);
+      
+      // Transform the data for UI if we have suggestedGroups from props
+      if (Array.isArray(suggestedGroups) && suggestedGroups.length > 0) {
+        const transformedGroups = suggestedGroups.map(group => {
+          return transformGroup(group);
+        });
         
         setGroups(transformedGroups);
-        
-        // If we got groups, set total pages only if more than 10 items
-        if (transformedGroups.length > 0) {
-          setTotalPages(Math.ceil(transformedGroups.length / limit));
-        } else {
-          // If we didn't get groups, use mock data
-          console.log('No groups returned from API, using mock data');
-          setGroups(mockDiscoverGroups);
-          setTotalPages(Math.ceil(mockDiscoverGroups.length / limit));
-        }
-      } catch (error) {
-        console.error('Error fetching groups:', error);
-        toast({
-          title: "Error fetching groups",
-          description: "Could not load groups. Please try again later.",
-          variant: "destructive",
-        });
-        // Use mock data as fallback
-        setGroups(mockDiscoverGroups);
-        setTotalPages(Math.ceil(mockDiscoverGroups.length / limit));
-      } finally {
-        setIsLoading(false);
+        setTotalPages(Math.ceil(transformedGroups.length / limit));
+      } else if (!isLoading) {
+        // If no groups passed from props and not still loading, set empty array
+        setGroups([]);
+        setTotalPages(1);
       }
-    };
-    
-    fetchGroups();
-  }, []);
+    } catch (error) {
+      console.error('Error processing suggested groups data:', error);
+      // Set empty array on error
+      setGroups([]);
+      setTotalPages(1);
+    } finally {
+      setLocalLoading(false);
+    }
+  }, [suggestedGroups, isLoading]);
   
   // Filter groups based on search query
   const filteredGroups = groups.filter(group => 
@@ -88,17 +83,27 @@ export default function DiscoverGroupsList({ searchQuery }: DiscoverGroupsListPr
   );
   
   // Function to handle requesting an invite code
-  const handleRequestInvite = (groupId: string) => {
-    console.log('Request invite for group', groupId)
-    // In a real app, this would open a modal or make an API call
-    toast({
-      title: "Invite code requested",
-      description: `We've sent an invite code request for this group`,
-    })
-  }
+  const handleRequestInvite = async (groupId: string) => {
+    try {
+      toast({
+        title: "Requesting invite code...",
+        description: "Please wait while we generate an invite code",
+      });
+      
+      // Navigate to join group page with the group ID
+      router.push(`/dashboard/join-group?id=${groupId}`);
+    } catch (error) {
+      console.error('Error requesting invite:', error);
+      toast({
+        title: "Error requesting invite",
+        description: "Could not request an invite code. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
   
   // Show loading state
-  if (isLoading) {
+  if (isLoading || localLoading) {
     return (
       <div className="flex justify-center items-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -108,7 +113,7 @@ export default function DiscoverGroupsList({ searchQuery }: DiscoverGroupsListPr
   }
   
   // Show empty state if no groups
-  if (filteredGroups.length === 0 && !isLoading) {
+  if (filteredGroups.length === 0 && !isLoading && !localLoading) {
     return (
       <div className="text-center py-12">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -158,67 +163,3 @@ export default function DiscoverGroupsList({ searchQuery }: DiscoverGroupsListPr
     </div>
   )
 } 
-
-// Mock data for fallback when API fails
-const mockDiscoverGroups = [
-  {
-    id: crypto.randomUUID(),
-    name: 'Charity Association',
-    memberCount: 10,
-    maxMembers: 12,
-    contributionAmount: '₦50,000',
-    frequency: 'monthly',
-    description: 'entrepreneurs',
-    badge: null
-  },
-  {
-    id: crypto.randomUUID(),
-    name: 'Charity Association',
-    memberCount: 10,
-    maxMembers: 12,
-    contributionAmount: '₦50,000',
-    frequency: 'monthly',
-    description: 'entrepreneurs',
-    badge: null
-  },
-  {
-    id: crypto.randomUUID(),
-    name: 'Charity Association',
-    memberCount: 10,
-    maxMembers: 12,
-    contributionAmount: '₦50,000',
-    frequency: 'monthly',
-    description: 'entrepreneurs',
-    badge: null
-  },
-  {
-    id: crypto.randomUUID(),
-    name: 'Charity Association',
-    memberCount: 10,
-    maxMembers: 12,
-    contributionAmount: '₦50,000',
-    frequency: 'monthly',
-    description: 'entrepreneurs',
-    badge: null
-  },
-  {
-    id: crypto.randomUUID(),
-    name: 'Charity Association',
-    memberCount: 12,
-    maxMembers: 15,
-    contributionAmount: '₦50,000',
-    frequency: 'monthly',
-    description: 'entrepreneurs',
-    badge: null
-  },
-  {
-    id: crypto.randomUUID(),
-    name: 'Charity Association',
-    memberCount: 12,
-    maxMembers: 15,
-    contributionAmount: '₦50,000',
-    frequency: 'monthly',
-    description: 'entrepreneurs',
-    badge: null
-  }
-]; 

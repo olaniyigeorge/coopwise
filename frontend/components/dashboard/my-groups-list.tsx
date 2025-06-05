@@ -14,6 +14,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 interface MyGroupsListProps {
   hasGroups: boolean | null
   searchQuery: string
+  userGroups?: Group[]
+  isLoading?: boolean
 }
 
 // Helper to transform API group data to UI format for My Groups
@@ -89,7 +91,7 @@ function getNextPayoutDate(frequency: string): string {
   return payoutDate.toLocaleDateString('en-NG', { month: 'short', day: 'numeric' });
 }
 
-export default function MyGroupsList({ hasGroups, searchQuery }: MyGroupsListProps) {
+export default function MyGroupsList({ hasGroups, searchQuery, userGroups = [], isLoading = false }: MyGroupsListProps) {
   const [groups, setGroups] = useState<Array<{
     id: string;
     name: string;
@@ -109,65 +111,42 @@ export default function MyGroupsList({ hasGroups, searchQuery }: MyGroupsListPro
       date: string;
     };
   }>>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [localLoading, setLocalLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const limit = 4 // Number of groups per page
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  // Fetch groups from API
+  // Process groups from props
   useEffect(() => {
-    const fetchMyGroups = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Use the getMyGroups method which calls /api/v1/cooperatives/me
-        const response = await GroupService.getMyGroups();
-        
-        // Transform the data for UI
-        const transformedGroups = Array.isArray(response) && response.length > 0
-          ? response.map(group => {
-              // Add memberCount as a random number for demo
-              // In a real app, this would come from the API
-              const memberCount = Math.floor(Math.random() * group.max_members) + 1;
-              return transformMyGroup({...group, memberCount});
-            })
-          : [];
-        
-        if (transformedGroups.length > 0) {
-          setGroups(transformedGroups);
-          setTotalPages(Math.ceil(transformedGroups.length / limit));
-        } else {
-          // If no groups, set empty array
-          setGroups([]);
-          setTotalPages(1);
-        }
-      } catch (error) {
-        console.error('Error fetching my groups:', error);
-        toast({
-          title: "Error fetching groups",
-          description: "Could not load your groups. Please try again later.",
-          variant: "destructive",
+    try {
+      setLocalLoading(true);
+      
+      // Transform the data for UI if we have userGroups from props
+      if (Array.isArray(userGroups) && userGroups.length > 0) {
+        const transformedGroups = userGroups.map(group => {
+          // Add memberCount as a random number for demo if not provided
+          const memberCount = group.memberCount || Math.floor(Math.random() * group.max_members) + 1;
+          return transformMyGroup({...group, memberCount});
         });
-        // Set empty array on error
+        
+        setGroups(transformedGroups);
+        setTotalPages(Math.ceil(transformedGroups.length / limit));
+      } else if (!isLoading) {
+        // If no groups passed from props and not still loading, set empty array
         setGroups([]);
         setTotalPages(1);
-      } finally {
-        setIsLoading(false);
       }
-    };
-    
-    // Only fetch if hasGroups is true
-    if (hasGroups === true) {
-      fetchMyGroups();
-    } else {
-      setIsLoading(false);
+    } catch (error) {
+      console.error('Error processing groups data:', error);
+      // Set empty array on error
+      setGroups([]);
+      setTotalPages(1);
+    } finally {
+      setLocalLoading(false);
     }
-    
-    // Add tab to dependencies to refresh when URL changes (like after group creation)
-    // This ensures newly created groups appear in the list
-  }, [hasGroups, searchParams]);
+  }, [userGroups, isLoading]);
   
   // Filter groups based on search query
   const filteredGroups = groups.filter(group => 
@@ -181,7 +160,7 @@ export default function MyGroupsList({ hasGroups, searchQuery }: MyGroupsListPro
   );
   
   // If still loading user data
-  if (hasGroups === null || isLoading) {
+  if (isLoading || localLoading) {
     return (
       <div className="flex justify-center items-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -191,12 +170,12 @@ export default function MyGroupsList({ hasGroups, searchQuery }: MyGroupsListPro
   }
   
   // If user has no groups
-  if (hasGroups === false) {
+  if (hasGroups === false || (groups.length === 0 && !isLoading && !localLoading)) {
     return <EmptyGroupState />
   }
   
   // If no groups after filtering
-  if (filteredGroups.length === 0 && !isLoading) {
+  if (filteredGroups.length === 0 && !isLoading && !localLoading) {
     return (
       <div className="text-center py-12">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -229,8 +208,8 @@ export default function MyGroupsList({ hasGroups, searchQuery }: MyGroupsListPro
             isMyGroup={true}
             nextContribution={group.nextContribution}
             nextPayout={group.nextPayout}
-            onViewDetails={() => console.log('View details for', group.name)}
-            onRequestInvite={() => console.log('Request code for', group.name)}
+            onViewDetails={() => router.push(`/dashboard/group/${group.id}`)}
+            onRequestInvite={() => router.push(`/dashboard/group/${group.id}/invite`)}
           />
         ))}
       </div>

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Call the real API endpoint
-    const response = await fetch('https://coopwise.onrender.com/api/v1/cooperatives/', {
+    const response = await fetch('https://coopwise.onrender.com/api/v1/dashboard/', {
       method: 'GET',
       headers: {
         'Authorization': authHeader,
@@ -22,12 +22,12 @@ export async function GET(request: NextRequest) {
 
     // Get response as text first to handle potential JSON parsing errors
     const responseText = await response.text();
-    console.log(`Groups API response status: ${response.status}`);
+    console.log(`Dashboard API response status: ${response.status}`);
     
     let data;
     try {
       // Try to parse the response as JSON
-      data = responseText ? JSON.parse(responseText) : [];
+      data = responseText ? JSON.parse(responseText) : {};
     } catch (e) {
       console.error('Error parsing JSON response:', e);
       // If parsing fails, return the raw text
@@ -39,14 +39,14 @@ export async function GET(request: NextRequest) {
 
     // If request was not successful, pass through the error
     if (!response.ok) {
-      console.error('Groups API error response:', data);
+      console.error('Dashboard API error response:', data);
       return NextResponse.json(data, { status: response.status });
     }
 
     // Return the API response
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Groups API error:', error);
+    console.error('Dashboard API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
