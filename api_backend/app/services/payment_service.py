@@ -104,9 +104,24 @@ class PaymentService:
     @staticmethod
     async def pay_with_cashramp(reference: str, amount: Decimal):
         
-        # Get quote
-        # Initiate deposit
-        # confirm deposit
+        # Init Deposit Flow
+        # cashramp_teller = CashRampService.deposit(reference)
+
+        # 1. Get a valid ramp quote
+        # ramp_quote: RampQuote = await cashramp_teller.get_ramp_quote() 
+
+        # 2. Initiate deposit with quote
+        # init_payment_data: PaymentDetails = await cashramp_teller.init_deposit(deposit_data, ramp_quote) 
+
+        # 3. Share payment details with customer
+        # if init_payment_data.status == "pending" return early with payment_details
+
+        # 4. Mark deposit as paid
+        # if init_payment_data.status == "completed"
+        # deposit_data = cashramp_teller.mark_deposit(status="paid") 
+
+        # 5. Receive stablecoin settlement
+        # Check cashramp balance again to confirm
 
         
 
