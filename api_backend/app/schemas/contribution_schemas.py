@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel
 
@@ -24,8 +25,8 @@ class ContributionDetail(BaseModel):
     group_id: UUID
     amount: float
     currency: str = "NGN"
-    due_date: datetime = None
-    fulfilled_at: datetime = None
+    due_date: Optional[datetime] = None
+    fulfilled_at: Optional[datetime]  = None
     note: str = None
     status: ContributionStatus = ContributionStatus.PLEDGED
     created_at: datetime

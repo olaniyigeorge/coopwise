@@ -6,6 +6,7 @@
 
 from datetime import datetime
 from decimal import Decimal
+from uuid import UUID
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -28,7 +29,7 @@ class ContributionService:
     @staticmethod
     async def make_contribution(contribution_data: ContributionCreate, user:AuthenticatedUser, db: AsyncSession) -> ContributionDetail:
         """
-        Makes a contribution to a cooperative group. 
+        Creates a contribution to a cooperative group with provided data. 
         """
 
         # Check if user is a member of the cooperative group
@@ -109,8 +110,38 @@ class ContributionService:
 
         return {"detail": "Contribution paid successfully."}
 
+    @staticmethod
+    async def get_contribution_by_id(db: AsyncSession, contribution_id: UUID) -> ContributionDetail | None:
+        """
+        Fetch a Contribntuon by ID.
+        """
+        try:
+            result = await db.execute(select(Contribution).where(Contribution.id == contribution_id))
+            contribution = result.scalars().first()
+            if not contribution:
+                raise HTTPException(status_code=404, detail="Contribution not found")
+            return contribution
+        except Exception as e:
+            logger.error(f"Failed to fetch contribution by ID: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not fetch contribution"
+            )
 
 
 
-
-
+    @staticmethod
+    async def get_contributions(db: AsyncSession, skip: int = 0, limit: int = 10) -> list[ContributionDetail]:
+        """
+        Fetch a list of contributions with optional pagination.
+        """
+        try:
+            result = await db.execute(select(Contribution).offset(skip).limit(limit))
+            contributions = result.scalars().all()
+        except Exception as e:
+            logger.error(f"Failed to fetch contributions: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not fetch contributions"
+            )
+        return contributions

@@ -1,8 +1,8 @@
-
+from decimal import Decimal
 from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
 from db.models.wallet_models import LocalCurrency
 
@@ -11,22 +11,22 @@ class WalletCreate(BaseModel):
     local_currency: Literal["NGN", "GHS", "KES"]  # match LocalCurrency enum
 
 class WalletDeposit(BaseModel):
-    local_amount: float  # e.g. 5000.00
+    local_amount: Decimal 
     currency: Literal["NGN", "GHS", "KES"]
 
 class WalletWithdraw(BaseModel):
-    stable_amount: float  # how much stable coin to withdraw
+    local_amount: Decimal
 
 class WalletBalance(BaseModel):
-    stable_coin_balance: float
+    stable_coin_balance: Decimal
     local_currency: str
-    local_currency_balance: float  # derived via rate
+    local_currency_balance: float 
     as_of: datetime
 
 class WalletDetail(BaseModel):
     id: UUID
     user_id: UUID
-    stable_coin_balance: int
+    stable_coin_balance: Decimal
     local_currency: LocalCurrency
     created_at: datetime
     updated_at: datetime

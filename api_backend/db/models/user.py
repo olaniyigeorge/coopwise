@@ -106,3 +106,18 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    # ai_chats = relationship(
+    #     "ChatWithAI",        
+    #     back_populates="user",
+    #     cascade="all, delete-orphan",
+    #     lazy="selectin"
+    # )
+
+
+from db.models.ai_chat_model import ChatWithAI
+
+User.ai_chats = relationship(
+    "ChatWithAI",
+    back_populates="user",
+    cascade="all, delete-orphan"
+)

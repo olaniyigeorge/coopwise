@@ -9,6 +9,31 @@ from sqlalchemy import JSON
 from db.models.payment_model import PaymentGateway, PaymentStatus
 
 
+
+# --------------- CashRamp Schemas ---------------
+
+
+class CashrampDepositInput(BaseModel):
+    paymentType: str  # e.g., "deposit"
+    amount: str       # decimal string, e.g. "100.50"
+    currency: str     # "usd" or "local_currency"
+    countryCode: str  # ISO-3166 code, e.g. "NG"
+    reference: str
+    metadata: Optional[dict]
+    redirectUrl: Optional[str]
+    firstName: str
+    lastName: str
+    email: str
+
+
+class CashrampDepositResponse(BaseModel):
+    id: str
+    hostedLink: str
+    status: str  # one of "created", "picked_up", "completed", "canceled"
+
+
+
+
 class SubAccount(BaseModel):
     id: str
 

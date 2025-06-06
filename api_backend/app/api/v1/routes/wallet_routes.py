@@ -12,16 +12,16 @@ router = APIRouter(
     tags=["Wallet"]
     )
 
-@router.post("/deposit", response_model=WalletBalance)
+@router.post("/deposit", response_model=WalletDetail, summary="Deposit money into your coopwise account")
 async def deposit(
     data: WalletDeposit,
-    user: AuthenticatedUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db_session),
+    user: AuthenticatedUser = Depends(get_current_user),
     redis: Redis = Depends(get_redis)
 ):
-    return await WalletService.deposit(user, data, db, redis)
+    return await WalletService.deposit(data, db, user, redis)
 
-@router.get("/get-wallet") # , response_model=WalletDetail
+@router.get("/get-wallet", response_model=WalletDetail)
 async def get_wallet(
     db: AsyncSession = Depends(get_async_db_session), 
     user: AuthenticatedUser = Depends(get_current_user),
@@ -30,19 +30,11 @@ async def get_wallet(
 
     return await WalletService.get_wallet(db, user, redis)
 
-@router.post("/withdraw", response_model=WalletBalance)
+@router.post("/withdraw")
 async def withdraw(
     data: WalletWithdraw,
-    user: AuthenticatedUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db_session),
+    user: AuthenticatedUser = Depends(get_current_user),
     redis: Redis = Depends(get_redis)
 ):
-    return await WalletService.withdraw(user, data, db, redis)
-
-@router.get("/balance", response_model=WalletBalance)
-async def balance(
-    user: AuthenticatedUser = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db_session),
-    redis: Redis = Depends(get_redis)
-):
-    return await WalletService.get_balance(user, db, redis)
+    return await WalletService.withdraw(data, db, user, redis)

@@ -15,11 +15,6 @@ from redis.asyncio import Redis
 from app.utils.cache import get_cache, update_cache
 
 
-
-
-ACCURUE_STAGING_URL = "https://staging.api.useaccrue.com/cashramp/api/graphql"
-ACCURUE_PROD_URL = "https://api.useaccrue.com/cashramp/api/graphql"
-
 class WalletService:
 
     # @staticmethod
@@ -51,17 +46,18 @@ class WalletService:
 
     @staticmethod
     async def deposit(
-        user: AuthenticatedUser,
         data: WalletDeposit,
         db: AsyncSession,
+        user: AuthenticatedUser,    
         redis: Redis
-    ) -> WalletBalance:
+    ) -> WalletDetail:
         """
         User deposits `local_amount` in their local currency. We:
-         1. Fetch current exchange rate local → stable
-         2. credit stable_coin_balance
-         3. record ledger
-         4. return updated balances
+         1. Get user's wallet
+         2. Fetch current exchange rate from Accurue Cashramp GraphQL API and calc deposit amount in stable coin currency
+         3. Credit user's wallet(stable_coin_balance) with stable_coin amount after exchange
+         4. Record ledger
+         5. Return User's wallet details
         """
         # 1. Fetch the user’s wallet
         stmt = select(Wallet).where(Wallet.user_id == user.id)
@@ -69,10 +65,10 @@ class WalletService:
         wallet = result.scalar_one_or_none()
         if not wallet:
             raise HTTPException(status_code=404, detail="Wallet not found")
-
-        # 2. Fetch rate via GraphQL
-        rate = await fetch_exchange_rate(data.currency, "USDC")  # assume "USDC" is stable code
-
+        
+        
+        # 2. Fetch exchange rate quote from CashRamp GraphQL API
+        rate = 1 / 1600 # TODO (use actual exchangre rate func) await fetch_exchange_rate(user.id, data.currency, "USDC")  ---  mock rate 1 USDC == 1600 NGN(local currency) 
         stable_amt = Decimal(data.local_amount) * Decimal(rate)
 
         # 3. Credit the wallet
@@ -92,83 +88,28 @@ class WalletService:
         db.add(ledger)
         await db.commit()
 
-        # 5. Invalidate cached balance
-        balance_cache_key = f"wallet_balance:{user.id}"
-        await redis.delete(balance_cache_key)
-
-        return await WalletService.get_balance(user, db, redis)
+        # 5. TODO (Invalidate or update cached wallet if previously cached)
+        wallet_data = WalletDetail.model_validate(wallet)
+        await update_cache(f"wallet_detail:{user.id}", wallet_data.model_dump_json(), ttl=300)
+        
+        return  WalletDetail.model_validate(wallet)
 
     @staticmethod
     async def withdraw(
-        user: AuthenticatedUser,
         data: WalletWithdraw,
         db: AsyncSession,
-        redis: Redis
-    ) -> WalletBalance:
-        """
-        User withdraws `stable_amount` from their wallet into local currency.
-        1. Get current rate
-        2. Debit stable_coin_balance
-        3. record ledger
-        4. return updated balances
-        """
-        stmt = select(Wallet).where(Wallet.user_id == user.id)
-        result = await db.execute(stmt)
-        wallet = result.scalar_one_or_none()
-        if not wallet:
-            raise HTTPException(status_code=404, detail="Wallet not found")
-
-        if wallet.stable_coin_balance < Decimal(data.stable_amount):
-            raise HTTPException(status_code=400, detail="Insufficient stable coin balance")
-
-        # 1. Rate is local ← stable, so invert fetch if needed
-        local_currency = wallet.local_currency.value  # e.g. "NGN"
-        rate = await fetch_exchange_rate("USDC", local_currency)  # how many NGN per 1 USDC
-
-        local_amt = Decimal(data.stable_amount) * Decimal(rate)
-
-        # 2. Debit stable coin
-        wallet.stable_coin_balance -= Decimal(data.stable_amount)
-        await db.commit()
-        await db.refresh(wallet)
-
-        # 3. Add ledger entry
-        ledger = WalletLedger(
-            wallet_id=wallet.id,
-            type=LedgerType.WITHDRAWAL,
-            stable_amount=Decimal(data.stable_amount),
-            local_amount=local_amt,
-            local_currency=local_currency,
-            exchange_rate=Decimal(rate)
-        )
-        db.add(ledger)
-        await db.commit()
-
-        # 4. Invalidate cache
-        balance_cache_key = f"wallet_balance:{user.id}"
-        await redis.delete(balance_cache_key)
-
-        return await WalletService.get_balance(user, db, redis)
-
-    @staticmethod
-    async def get_balance(
         user: AuthenticatedUser,
-        db: AsyncSession,
         redis: Redis
-    ) -> WalletBalance:
+    ) -> dict:
         """
-        Returns:
-         - stable_coin_balance
-         - local_currency
-         - local_currency_balance = stable_coin_balance * rate
-        Uses Redis cache for performance.
+        User withdraws `local_amount` in their local currency. We:
+        1. Fetch user's wallet
+        2. Fetch from Accurue Cashramp (or get from cache) exchange rate for local → stable
+        3. Convert local amount to stable coin and check wallet balance
+        4. Debit stable_coin_balance
+        5. Record ledger
+        6. Return wallet details and success message
         """
-        cache_key = f"wallet_balance:{user.id}"
-        cached = await get_cache(cache_key)
-        if cached:
-            logger.info(f"🔄 Using cached balance for user {user.id}")
-            return WalletBalance.model_validate(cached)
-
         # 1. Fetch wallet
         stmt = select(Wallet).where(Wallet.user_id == user.id)
         result = await db.execute(stmt)
@@ -176,24 +117,48 @@ class WalletService:
         if not wallet:
             raise HTTPException(status_code=404, detail="Wallet not found")
 
-        # 2. Fetch current rate local ↔ stable
-        rate = await fetch_exchange_rate("USDC", wallet.local_currency.value)
+        # 2. Get exchange rate from Redis cache or fetch new
+        cache_key = f"exchange_rate:{wallet.local_currency}:USDC"
+        cached_rate = await get_cache(cache_key)
 
-        # 3. Compute local balance
-        stable_bal = Decimal(wallet.stable_coin_balance)
-        local_bal = stable_bal * Decimal(rate)
+        if cached_rate:
+            rate = Decimal(cached_rate)
+        else:
+            # TODO Replace with actual await fetch_exchange_rate(user.id, wallet.local_currency, "USDC") call
+            rate = Decimal(1) / Decimal(1600)  # mock
+            await update_cache(cache_key, str(rate), ttl=30) # Match the 20 - 50 market votality suggested by Accurue Cashramp 
 
-        balance = WalletBalance(
-            stable_coin_balance=float(stable_bal),
-            local_currency=wallet.local_currency.value,
-            local_currency_balance=float(local_bal),
-            as_of=datetime.now()
+        # 3. Convert local amount → stable coin
+        stable_amt = Decimal(data.local_amount) * rate
+
+        if stable_amt > wallet.stable_coin_balance:
+            raise HTTPException(status_code=400, detail="Insufficient stable coin balance")
+
+        # 4. Debit balance
+        wallet.stable_coin_balance -= stable_amt
+        await db.commit()
+        await db.refresh(wallet)
+
+        # 5. Record ledger
+        ledger = WalletLedger(
+            wallet_id=wallet.id,
+            type=LedgerType.WITHDRAWAL,
+            stable_amount=stable_amt,
+            local_amount=Decimal(data.local_amount),
+            local_currency=wallet.local_currency,
+            exchange_rate=rate
         )
+        db.add(ledger)
+        await db.commit()
 
-        # 4. Cache the result
-        await update_cache(cache_key, balance.model_dump(mode="json"), ttl=300)
-        return balance
-
+        # 6. Return wallet detail and message
+        wallet_data = WalletDetail.model_validate(wallet)
+        await update_cache(f"wallet_detail:{user.id}", wallet_data.model_dump_json(), ttl=300)
+        return {
+            "message": "Withdrawal successful",
+            "wallet": WalletDetail.model_validate(wallet)
+        }
+    
     @staticmethod
     async def get_wallet(
         db: AsyncSession,
@@ -209,7 +174,6 @@ class WalletService:
         cached = await get_cache(cache_key)
         if cached:
             logger.info(f"🔄 Using cached wallet for user {user.id}")
-            print(f"\n{cached}\n")
             if isinstance(cached, str):
                 cached = json.loads(cached) 
             return WalletDetail.model_validate(cached)
@@ -233,20 +197,3 @@ class WalletService:
         await update_cache(cache_key, wallet_data.model_dump_json(), ttl=300)
         return wallet_data
     
-    # @staticmethod
-    # async def get_wallet_by_id(db: AsyncSession, user: UUID) -> UserDetail | None:
-    #     """
-    #     Fetch a single user by ID.
-    #     """
-    #     try:
-    #         result = await db.execute(select(User).where(User.id == user_id))
-    #         user = result.scalars().first()
-    #         if not user:
-    #             raise HTTPException(status_code=404, detail="User not found")
-    #         return user
-    #     except Exception as e:
-    #         logger.error(f"Failed to fetch user by ID: {e}")
-    #         raise HTTPException(
-    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #             detail="Could not fetch user"
-    #         )
