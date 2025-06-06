@@ -1,4 +1,6 @@
 from datetime import datetime
+import json
+from typing import List
 from pydantic import BaseModel, ConfigDict, EmailStr
 from uuid import UUID
 import enum
@@ -20,6 +22,7 @@ class CoopGroupCreate(BaseModel):
     coop_model: CooperativeModel
     target_amount: int = 180000
     status: CooperativeStatus
+    rules: List[dict] | None
 
 class CoopGroupDetails(BaseModel):
     id: UUID
@@ -33,6 +36,8 @@ class CoopGroupDetails(BaseModel):
     max_members: int 
     target_amount: int
     status: CooperativeStatus
+
+    rules: List[dict] | None 
     created_at: datetime
     updated_at: datetime
 

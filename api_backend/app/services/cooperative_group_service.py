@@ -5,6 +5,7 @@
 
 
 from datetime import datetime, timedelta
+import json
 from typing import List, Optional
 from uuid import UUID
 from fastapi.encoders import jsonable_encoder
@@ -32,6 +33,7 @@ class CooperativeGroupService:
     @staticmethod
     async def create_coop(coop_data: CoopGroupCreate, db: AsyncSession):
         try:
+            print("\n\n actual creation....\n")
             new_coop_group = CooperativeGroup(
                 name=coop_data.name,
                 creator_id=coop_data.creator_id,
@@ -39,7 +41,8 @@ class CooperativeGroupService:
                 contribution_frequency=coop_data.contribution_frequency,
                 payout_strategy=coop_data.payout_strategy,
                 target_amount=coop_data.target_amount,
-                status=coop_data.status
+                status=coop_data.status,
+                rules=coop_data.rules if coop_data.rules else None
             )
             db.add(new_coop_group)
             await db.commit()

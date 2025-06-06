@@ -37,7 +37,7 @@ async def create_cooperative_group(
         role="admin",
         status="accepted"
     )
-    print(f"\ncreatung memebership... {membership_data}\n")
+    
     await CooperativeMembershipService.create_membership(
         db,
         membership_data,
@@ -70,7 +70,7 @@ async def create_cooperative_group(
         noti_data, db
     )
 
-    return coop
+    return CoopGroupDetails.model_validate(coop)
 
 
 @router.get("/", response_model=List[CoopGroupDetails])
