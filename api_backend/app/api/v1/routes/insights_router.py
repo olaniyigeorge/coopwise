@@ -1,26 +1,12 @@
-from datetime import datetime
-import json
-from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from redis import Redis
 import requests
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Union
-from pydantic import ValidationError
-
 
 from app.core.config import config
 from app.core.dependencies import get_redis
-from app.schemas.ai_insight_schema import AIInsightCreate, AIInsightDetail
 from app.services.insights_service import InsightEngine
-from app.schemas.notifications_schema import NotificationCreate
-from app.services.notification_service import NotificationService
-from app.services.payment_service import PaymentService
-from app.services.user_service import UserService
-from app.schemas.contribution_schemas import ContributionCreate
 from app.api.v1.routes.auth import get_current_user
-from app.schemas.payments import PaymentCreate, PaystackPayload
-from app.services.contribution_service import ContributionService
 from app.schemas.auth import AuthenticatedUser
 from db.dependencies import get_async_db_session
 from app.utils.logger import logger
