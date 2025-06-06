@@ -7,7 +7,7 @@ import {
   Home, 
   Users, 
   DollarSign, 
-  Brain, 
+  Sparkles, 
   User,
   MessageSquare
 } from 'lucide-react'
@@ -37,9 +37,9 @@ const navigationItems: NavItem[] = [
     icon: <DollarSign className="w-5 h-5" />
   },
   {
-    name: 'AI Insights',
-    href: '/dashboard/ai-insights',
-    icon: <Brain className="w-5 h-5" />
+    name: 'AI Chat',
+    href: '/dashboard/ai-chat',
+    icon: <Sparkles className="w-5 h-5" />
   },
   {
     name: 'Messages',

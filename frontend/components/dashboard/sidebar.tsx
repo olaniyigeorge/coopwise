@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Home, Users, Plus, UserPlus, MessageSquare, HelpCircle, User, LogOut, DollarSign, Brain, X } from 'lucide-react'
+import { Home, Users, Plus, UserPlus, MessageSquare, HelpCircle, User, LogOut, DollarSign, Bot, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface SidebarProps {
@@ -43,6 +43,11 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       href: '/dashboard/messages', 
       icon: MessageSquare,
       badge: 10 
+    },
+    {
+      name: 'AI Assistant',
+      href: '/dashboard/ai-chat',
+      icon: Sparkles
     },
     { 
       name: 'Help & Support', 
@@ -130,7 +135,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       <div className="hidden lg:flex w-[208px] bg-[#06413F] h-screen overflow-y-auto fixed left-0 top-0 flex-col ">
         {/* Logo */}
         <div className="p-4 flex items-center justify-center">
-          <div className="flex gap-6 items-center">
+          <Link href="/" className="flex gap-6 items-center">
             <Image 
               src="/assets/icons/logo.svg" 
               alt="CoopWise Logo" 
@@ -138,7 +143,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               height={36}
             />
             <span className="text-white font-semibold -ml-2 text-lg">CoopWise</span>
-          </div>
+          </Link>
         </div>
         
         {/* Navigation */}

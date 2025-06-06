@@ -9,6 +9,8 @@ import Image from 'next/image'
 import GroupsTabView from '@/components/dashboard/groups-tab-view'
 import { getDashboardData, DashboardData } from '@/lib/dashboard-service'
 import { formatCurrency } from '@/lib/utils'
+import Link from 'next/link'
+import { Bot, MessageSquare, Sparkles } from 'lucide-react'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -126,7 +128,6 @@ export default function Dashboard() {
   const savingsGoalProgress = dashboardData?.savingsGoal?.progress ?? 0
   const savingsGoalRemaining = dashboardData?.savingsGoal?.remaining ?? 0
   const recentActivity = dashboardData?.recentActivity ?? []
-  const hasAiInsights = (dashboardData?.aiInsights?.available && dashboardData?.aiInsights?.insights?.length > 0) ?? false
 
   return (
     <DashboardLayout>
@@ -345,37 +346,53 @@ export default function Dashboard() {
             </Button>
           </div>
 
-          {/* AI Insights Section */}
+          {/* AI Chat Assistant Section */}
           <div className="bg-white rounded-lg shadow p-4 sm:p-5">
-            <h2 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">AI Insights</h2>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-sm sm:text-base font-semibold flex items-center">
+                <Sparkles className="h-4 w-4 mr-2 text-primary" />
+                AI Financial Assistant
+              </h2>
+            </div>
             
-            {hasAiInsights ? (
-              <div className="space-y-3">
-                {dashboardData.aiInsights.insights?.map((insight, index) => (
-                  <div key={index} className="bg-gray-50 p-3 rounded-md">
-                    <h4 className="text-sm font-medium mb-1">{insight.title}</h4>
-                    <p className="text-xs text-gray-600">{insight.description}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4 sm:py-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                  <Image 
-                    src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                    alt="AI Icon" 
-                    width={20} 
-                    height={20}
-                    className="sm:w-6 sm:h-6"
-                  />
+            <div className="rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 p-4 mb-4">
+              <div className="flex items-start">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3 mt-1">
+                  <Bot className="h-4 w-4 text-blue-600" />
                 </div>
-                <h3 className="text-sm sm:text-base font-medium mb-1">No tips yet</h3>
-                <p className="text-xs sm:text-sm text-gray-500 px-2">
-                  Join or create a savings group to start getting smart tips
-                  that help you stay on track.
-                </p>
+                <div>
+                  <p className="text-sm mb-2">
+                    Get personalized financial advice and answers to your savings questions instantly.
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Ask about budgeting, savings strategies, debt management, and more.
+                  </p>
+                </div>
               </div>
-            )}
+            </div>
+            
+            <div className="space-y-2 mb-4">
+              <div className="text-xs font-medium text-gray-500">Popular questions:</div>
+              <div className="bg-gray-50 rounded p-2 text-xs">
+                "How can I save ₦100,000 in 3 months?"
+              </div>
+              <div className="bg-gray-50 rounded p-2 text-xs">
+                "What's the best way to manage my debt?"
+              </div>
+              <div className="bg-gray-50 rounded p-2 text-xs">
+                "How should I budget my monthly income?"
+              </div>
+            </div>
+            
+            <Link href="/dashboard/ai-chat">
+              <Button 
+                variant="default" 
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Chat with AI Assistant
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

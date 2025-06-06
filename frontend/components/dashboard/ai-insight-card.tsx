@@ -1,231 +1,152 @@
-"use client"
-
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import {   CheckCircle,   Play,   X,  ArrowRight,  Clock,  Zap,  DollarSign,  TrendingUp,  BarChart3,  Target,  Calculator,  Flag,  Lightbulb} from 'lucide-react'
-import { AIInsight, ImplementationStatus } from '@/lib/types'
 import { 
-  formatCurrency, 
-  getDifficultyColor, 
-  getDifficultyLabel,
-  getStatusColor,
-  getStatusLabel,
-  getCategoryIcon
-} from '@/lib/insight-utils'
+  LightbulbIcon, 
+  ArrowRightIcon, 
+  CheckCircleIcon, 
+  XCircleIcon,
+  ClockIcon,
+  TrendingUpIcon,
+  SparklesIcon
+} from 'lucide-react'
+import { AIInsight, ImplementationStatus, DifficultyLevel } from '@/lib/types'
+import { formatCurrency } from '@/lib/utils'
 
 interface AIInsightCardProps {
   insight: AIInsight
   onStart?: (insight: AIInsight) => void
   onComplete?: (insight: AIInsight) => void
   onDismiss?: (insight: AIInsight) => void
+  compact?: boolean
 }
 
-export default function AIInsightCard({
-  insight,
-  onStart,
-  onComplete,
-  onDismiss
+export default function AIInsightCard({ 
+  insight, 
+  onStart, 
+  onComplete, 
+  onDismiss,
+  compact = false
 }: AIInsightCardProps) {
   const router = useRouter()
   
-  const difficultyColor = getDifficultyColor(insight.difficulty)
-  const difficultyLabel = getDifficultyLabel(insight.difficulty)
-  const statusColor = getStatusColor(insight.status)
-  const statusLabel = getStatusLabel(insight.status)
-  const categoryIconName = getCategoryIcon(insight.category) as string
-  
-  const iconComponents = {
-    Zap,
-    DollarSign,
-    TrendingUp,
-    BarChart3,
-    Target,
-    Calculator,
-    Flag,
-    Lightbulb
+  // Get status color
+  const getStatusColor = () => {
+    switch (insight.status) {
+      case ImplementationStatus.COMPLETED:
+        return 'bg-green-50 border-green-100 hover:border-green-200'
+      case ImplementationStatus.IN_PROGRESS:
+        return 'bg-blue-50 border-blue-100 hover:border-blue-200'
+      case ImplementationStatus.NOT_STARTED:
+      default:
+        return 'bg-white border-gray-100 hover:border-gray-200'
+    }
   }
   
-  const IconComponent = iconComponents[categoryIconName as keyof typeof iconComponents] || Lightbulb
-
+  // Get difficulty label and color
+  const getDifficultyData = () => {
+    switch (insight.difficulty) {
+      case DifficultyLevel.EASY:
+        return { label: 'Easy', color: 'bg-green-100 text-green-800' }
+      case DifficultyLevel.MEDIUM:
+        return { label: 'Medium', color: 'bg-yellow-100 text-yellow-800' }
+      case DifficultyLevel.HARD:
+        return { label: 'Hard', color: 'bg-red-100 text-red-800' }
+      default:
+        return { label: 'Easy', color: 'bg-green-100 text-green-800' }
+    }
+  }
+  
+  const { label: difficultyLabel, color: difficultyColor } = getDifficultyData()
+  
+  // View insight details
   const handleViewDetails = () => {
     router.push(`/dashboard/ai-insights/${insight.id}`)
   }
-
-  const getProgressValue = () => {
-    switch (insight.status) {
-      case ImplementationStatus.COMPLETED:
-        return 100
-      case ImplementationStatus.IN_PROGRESS:
-        return 50
-      case ImplementationStatus.NOT_STARTED:
-        return 0
-      default:
-        return 0
-    }
-  }
-
-  const getStatusIcon = () => {
-    switch (insight.status) {
-      case ImplementationStatus.COMPLETED:
-        return <CheckCircle className="w-4 h-4 text-emerald-600" />
-      case ImplementationStatus.IN_PROGRESS:
-        return <Clock className="w-4 h-4 text-blue-600" />
-      default:
-        return null
-    }
-  }
-
+  
   return (
-    <Card className="group hover:shadow-xl transition-all duration-300 border border-blue-100 hover:border-blue-300 bg-gradient-to-r from-white to-blue-50/30 cursor-pointer transform hover:scale-[1.02] hover:-translate-y-1">
-      <CardContent className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-start gap-3 flex-1">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-200 flex items-center justify-center flex-shrink-0 group-hover:shadow-md transition-all duration-300 shadow-sm">
-              <IconComponent className="w-6 h-6 text-blue-600 group-hover:text-blue-700 transition-colors duration-300" />
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 text-base leading-tight mb-2 group-hover:text-blue-700 transition-colors">
-                {insight.title}
-              </h3>
-              <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                {insight.description}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Status and Difficulty */}
-        <div className="flex items-center justify-between mb-4">
+    <Card 
+      className={`${getStatusColor()} transition-all duration-200 hover:shadow-md border ${compact ? 'p-0' : 'p-1'}`}
+    >
+      <CardContent className={compact ? 'p-3' : 'p-4'}>
+        <div className="flex justify-between items-start gap-3 mb-2">
           <div className="flex items-center gap-2">
-            {getStatusIcon()}
-            <Badge className={`text-xs ${statusColor}`} variant="secondary">
-              {statusLabel}
+            {insight.status === ImplementationStatus.COMPLETED ? (
+              <CheckCircleIcon className="w-5 h-5 text-green-500" />
+            ) : insight.status === ImplementationStatus.IN_PROGRESS ? (
+              <ClockIcon className="w-5 h-5 text-blue-500" />
+            ) : (
+              <LightbulbIcon className="w-5 h-5 text-amber-500" />
+            )}
+            <Badge className={difficultyColor} variant="secondary">
+              {difficultyLabel}
             </Badge>
           </div>
-          <Badge className={`text-xs ${difficultyColor}`} variant="outline">
-            {difficultyLabel}
-          </Badge>
-        </div>
-
-        {/* Savings */}
-        <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg p-4 mb-4 border border-emerald-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-emerald-600 font-medium mb-1">Potential Savings</p>
-              <p className="text-lg font-bold text-emerald-800">
-                {formatCurrency(insight.estimatedSavings)}
-              </p>
-              <p className="text-xs text-emerald-600">per {insight.timeframe}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-emerald-600 font-medium mb-1">Time to Implement</p>
-              <p className="text-sm font-semibold text-emerald-800">
-                {insight.implementationTime}
-              </p>
-            </div>
+          <div>
+            <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50">
+              {formatCurrency(insight.estimatedSavings)}/{insight.timeframe}
+            </Badge>
           </div>
         </div>
-
-        {/* Progress Bar for In Progress items */}
-        {insight.status === ImplementationStatus.IN_PROGRESS && (
-          <div className="mb-4">
-            <div className="flex justify-between text-xs text-gray-600 mb-2">
-              <span className="font-medium">Implementation Progress</span>
-              <span className="font-semibold text-blue-600">{getProgressValue()}%</span>
+        
+        <h3 className={`font-medium text-gray-900 ${compact ? 'text-sm mb-1' : 'mb-2'}`}>
+          {insight.title}
+        </h3>
+        
+        {!compact && (
+          <p className="text-sm text-gray-600 mb-4">
+            {insight.description}
+          </p>
+        )}
+        
+        <div className={`flex ${compact ? 'justify-end' : 'justify-between'} items-center mt-2`}>
+          {!compact && insight.status !== ImplementationStatus.COMPLETED && (
+            <div className="flex gap-2">
+              {insight.status === ImplementationStatus.NOT_STARTED && onStart && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                  onClick={() => onStart(insight)}
+                >
+                  Start
+                </Button>
+              )}
+              {insight.status === ImplementationStatus.IN_PROGRESS && onComplete && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="text-xs border-green-300 text-green-700 hover:bg-green-50"
+                  onClick={() => onComplete(insight)}
+                >
+                  Complete
+                </Button>
+              )}
+              {onDismiss && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="text-xs border-gray-300 text-gray-700 hover:bg-gray-50"
+                  onClick={() => onDismiss(insight)}
+                >
+                  Dismiss
+                </Button>
+              )}
             </div>
-            <Progress value={getProgressValue()} className="h-3 bg-gray-100" />
-          </div>
-        )}
-
-        {/* Tags */}
-        {insight.tags && insight.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-4">
-            {insight.tags.slice(0, 2).map((tag, index) => (
-              <span 
-                key={index}
-                className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full"
-              >
-                {tag}
-              </span>
-            ))}
-            {insight.tags.length > 2 && (
-              <span className="text-xs text-gray-400 px-2 py-1">
-                +{insight.tags.length - 2} more
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {insight.status === ImplementationStatus.NOT_STARTED && onStart && (
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                onStart(insight)
-              }}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-[1.02]"
-            >
-              <Play className="w-4 h-4 mr-2" />
-              Start
-            </Button>
           )}
           
-          {insight.status === ImplementationStatus.IN_PROGRESS && onComplete && (
-            <Button
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                onComplete(insight)
-              }}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-0 shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-[1.02]"
-            >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Complete
-            </Button>
-          )}
-
-          <Button
+          <Button 
             size="sm"
-            variant="outline"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleViewDetails()
-            }}
-            className="flex-1 border-gray-300 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-[1.02]"
+            variant="ghost"
+            className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex items-center gap-1"
+            onClick={handleViewDetails}
           >
-            View Details
-            <ArrowRight className="w-4 h-4 ml-2" />
+            {compact ? 'Details' : 'View Details'}
+            <ArrowRightIcon className="w-3 h-3 ml-1" />
           </Button>
-
-          {insight.status !== ImplementationStatus.COMPLETED && insight.status !== ImplementationStatus.DISMISSED && onDismiss && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDismiss(insight)
-              }}
-              className="px-3 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 transform hover:scale-[1.05]"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          )}
         </div>
-
-        {/* Footer */}
-        {insight.metadata?.usersImplemented && (
-          <div className="text-xs text-gray-400 text-center pt-4 mt-4 border-t border-gray-100">
-            {insight.metadata.usersImplemented.toLocaleString()} users have tried this insight
-          </div>
-        )}
       </CardContent>
     </Card>
   )

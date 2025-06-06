@@ -93,11 +93,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           showBackButton: false
         }
       
-      case '/dashboard/ai-insights':
+      case '/dashboard/ai-chat':
         return {
-          title: 'AI Insights',
-          subtitle: 'Personalized recommendations for your savings',
-          showBackButton: false
+          title: 'AI Financial Assistant',
+          subtitle: 'Get personalized financial advice and answers',
+          showBackButton: true,
+          backUrl: '/dashboard'
         }
       
       default:

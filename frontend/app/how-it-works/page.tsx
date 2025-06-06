@@ -113,7 +113,7 @@ export default function HowItWorksPage() {
     {
       title: "Group Management",
       description: "Easily manage group members, track contributions, and monitor progress in real-time.",
-      image: "/assets/icons/PhoneBorder.svg"
+      image: "/assets/images/Phone3.png"
     },
     {
       title: "Financial Insights",
