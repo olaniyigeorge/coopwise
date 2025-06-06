@@ -96,8 +96,8 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Mobile hamburger menu - visible only on medium and up screens */}
-          <div className="md:hidden sm:block hidden">
+          {/* Mobile hamburger menu */}
+          <div className="md:hidden">
             <Button 
               variant="ghost" 
               size="icon" 
@@ -111,134 +111,101 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile bottom navigation bar - for small screens */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 sm:hidden">
-        <div className="grid grid-cols-5 h-16">
-          <Link 
-            href="/"
-            className={`flex flex-col items-center justify-center text-xs font-medium ${pathname === '/' ? 'text-primary' : 'text-gray-500'}`}
-          >
-            <Home size={20} className={pathname === '/' ? 'text-primary' : 'text-gray-500'} />
-            <span className="mt-1">Home</span>
-          </Link>
-
-          <Link 
-            href="/how-it-works"
-            className={`flex flex-col items-center justify-center text-xs font-medium ${pathname === '/how-it-works' ? 'text-primary' : 'text-gray-500'}`}
-          >
-            <Info size={20} className={pathname === '/how-it-works' ? 'text-primary' : 'text-gray-500'} />
-            <span className="mt-1">How It Works</span>
-          </Link>
-
-          <div className="flex items-center justify-center">
-            <Button 
-              variant="default" 
-              size="icon" 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="bg-primary hover:bg-primary/90 text-white rounded-full h-12 w-12 shadow-lg"
-              aria-label="Toggle menu"
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </Button>
-          </div>
-
-          <Link 
-            href="/contact"
-            className={`flex flex-col items-center justify-center text-xs font-medium ${pathname === '/contact' ? 'text-primary' : 'text-gray-500'}`}
-          >
-            <Mail size={20} className={pathname === '/contact' ? 'text-primary' : 'text-gray-500'} />
-            <span className="mt-1">Contact</span>
-          </Link>
-
-          <Link 
-            href="/auth/login"
-            className={`flex flex-col items-center justify-center text-xs font-medium ${pathname.includes('/auth/') ? 'text-primary' : 'text-gray-500'}`}
-          >
-            <LogIn size={20} className={pathname.includes('/auth/') ? 'text-primary' : 'text-gray-500'} />
-            <span className="mt-1">Sign In</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Mobile slide-up menu */}
+      {/* Mobile slide-in menu */}
       <AnimatePresence>
         {isMenuOpen && (
-          <motion.div 
-            className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl shadow-2xl md:hidden"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-          >
-            <div className="flex justify-center pt-3">
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
-            </div>
+          <>
+            {/* Backdrop */}
+            <motion.div
+              className="fixed inset-0 bg-black/30 z-40 md:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMenuOpen(false)}
+            />
             
-            <div className="px-6 py-8 flex flex-col space-y-6 max-h-[70vh] overflow-y-auto">
-              <div className="flex flex-col space-y-1">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Navigation</h3>
-                <Link 
-                  href="/" 
-                  className={`flex items-center space-x-3 p-3 rounded-xl ${pathname === '/' ? 'bg-primary/10 text-primary' : 'text-gray-700 hover:bg-gray-100'}`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Home size={18} />
-                  <span className="font-medium">Home</span>
-                </Link>
-                <Link 
-                  href="/how-it-works" 
-                  className={`flex items-center space-x-3 p-3 rounded-xl ${pathname === '/how-it-works' ? 'bg-primary/10 text-primary' : 'text-gray-700 hover:bg-gray-100'}`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Info size={18} />
-                  <span className="font-medium">How It Works</span>
-                </Link>
-                <Link 
-                  href="/contact" 
-                  className={`flex items-center space-x-3 p-3 rounded-xl ${pathname === '/contact' ? 'bg-primary/10 text-primary' : 'text-gray-700 hover:bg-gray-100'}`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Mail size={18} />
-                  <span className="font-medium">Contact Us</span>
-                </Link>
-              </div>
-              
-              <div className="border-t border-gray-200 pt-6">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Account</h3>
-                <div className="flex flex-col space-y-1">
-                  <Link 
-                    href="/auth/login" 
-                    className="flex items-center space-x-3 p-3 rounded-xl text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <LogIn size={18} />
-                    <span className="font-medium">Sign In</span>
-                  </Link>
-                  <Link 
-                    href="/auth/signup" 
-                    className="flex items-center space-x-3 p-3 rounded-xl text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <UserPlus size={18} />
-                    <span className="font-medium">Sign Up</span>
-                  </Link>
+            {/* Menu panel */}
+            <motion.div 
+              className="fixed top-0 right-0 bottom-0 z-50 bg-white w-[80%] max-w-sm shadow-xl md:hidden overflow-y-auto"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", bounce: 0.1, duration: 0.5 }}
+            >
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Image
+                    src="/images/coopwise-logo.svg"
+                    alt="CoopWise Logo"
+                    width={24}
+                    height={24}
+                    className="w-6 h-6"
+                  />
+                  <span className="text-lg font-semibold text-primary">CoopWise</span>
                 </div>
-              </div>
-              
-              <div className="border-t border-gray-200 pt-4 pb-4">
-                <Button
-                  variant="ghost"
-                  className="w-full text-gray-500"
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
                   onClick={() => setIsMenuOpen(false)}
+                  className="text-gray-700 rounded-full"
                 >
-                  Close Menu
+                  <X size={24} />
                 </Button>
               </div>
-            </div>
-            
-            {/* Extra padding for bottom nav */}
-            <div className="h-16 sm:hidden"></div>
-          </motion.div>
+              
+              <div className="px-4 py-6 flex flex-col space-y-6">
+                <div className="flex flex-col space-y-1">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Navigation</h3>
+                  <Link 
+                    href="/" 
+                    className={`flex items-center space-x-3 p-3 rounded-xl ${pathname === '/' ? 'bg-primary/10 text-primary' : 'text-gray-700 hover:bg-gray-100'}`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Home size={18} />
+                    <span className="font-medium">Home</span>
+                  </Link>
+                  <Link 
+                    href="/how-it-works" 
+                    className={`flex items-center space-x-3 p-3 rounded-xl ${pathname === '/how-it-works' ? 'bg-primary/10 text-primary' : 'text-gray-700 hover:bg-gray-100'}`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Info size={18} />
+                    <span className="font-medium">How It Works</span>
+                  </Link>
+                  <Link 
+                    href="/contact" 
+                    className={`flex items-center space-x-3 p-3 rounded-xl ${pathname === '/contact' ? 'bg-primary/10 text-primary' : 'text-gray-700 hover:bg-gray-100'}`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Mail size={18} />
+                    <span className="font-medium">Contact Us</span>
+                  </Link>
+                </div>
+                
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Account</h3>
+                  <div className="flex flex-col space-y-1">
+                    <Link 
+                      href="/auth/login" 
+                      className="flex items-center space-x-3 p-3 rounded-xl text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <LogIn size={18} />
+                      <span className="font-medium">Sign In</span>
+                    </Link>
+                    <Link 
+                      href="/auth/signup" 
+                      className="flex items-center space-x-3 p-3 rounded-xl text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <UserPlus size={18} />
+                      <span className="font-medium">Sign Up</span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
       
