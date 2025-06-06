@@ -1,22 +1,111 @@
 "use client"
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import GroupsTabView from '@/components/dashboard/groups-tab-view'
+import { getDashboardData, DashboardData } from '@/lib/dashboard-service'
+import { formatCurrency } from '@/lib/utils'
+import Link from 'next/link'
+import { Bot, MessageSquare, Sparkles } from 'lucide-react'
 
 export default function Dashboard() {
   const router = useRouter()
   const { user, isAuthenticated } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
+    savings: {
+      total: 0,
+      goal: 0,
+      progress: 0,
+    },
+    wallet: {
+      balance: 0,
+    },
+    nextContribution: {
+      hasUpcoming: false,
+    },
+    nextPayout: {
+      hasUpcoming: false,
+    },
+    recentActivity: [],
+    savingsGoal: {
+      name: '',
+      current: 0,
+      target: 0,
+      progress: 0,
+      remaining: 0,
+    },
+    aiInsights: {
+      available: false,
+      insights: [],
+    },
+  })
 
   // Extract user's first name
   const firstName = user?.full_name?.split(' ')[0] || 'User'
   
-    // Redirect to login if not authenticated
-  React.useEffect(() => {
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (isAuthenticated) {
+        try {
+          const data = await getDashboardData()
+          console.log('Dashboard data received:', data)
+          
+          // Ensure the data has the expected structure
+          const processedData: DashboardData = {
+            savings: {
+              total: data?.savings?.total || 0,
+              goal: data?.savings?.goal || 0,
+              progress: data?.savings?.progress || 0,
+            },
+            wallet: {
+              balance: data?.wallet?.balance || 0,
+            },
+            nextContribution: {
+              groupName: data?.nextContribution?.groupName || '',
+              amount: data?.nextContribution?.amount || 0,
+              dueDate: data?.nextContribution?.dueDate || '',
+              hasUpcoming: data?.nextContribution?.hasUpcoming || false,
+            },
+            nextPayout: {
+              groupName: data?.nextPayout?.groupName || '',
+              amount: data?.nextPayout?.amount || 0,
+              dueDate: data?.nextPayout?.dueDate || '',
+              hasUpcoming: data?.nextPayout?.hasUpcoming || false,
+            },
+            recentActivity: data?.recentActivity || [],
+            savingsGoal: {
+              name: data?.savingsGoal?.name || '',
+              current: data?.savingsGoal?.current || 0,
+              target: data?.savingsGoal?.target || 0,
+              progress: data?.savingsGoal?.progress || 0,
+              remaining: data?.savingsGoal?.remaining || 0,
+            },
+            aiInsights: {
+              available: data?.aiInsights?.available || false,
+              insights: data?.aiInsights?.insights || [],
+            },
+          }
+          
+          setDashboardData(processedData)
+        } catch (error) {
+          console.error('Error fetching dashboard data:', error)
+        } finally {
+          setLoading(false)
+        }
+      }
+    }
+    
+    fetchData()
+  }, [isAuthenticated])
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
     if (!isAuthenticated) {
       router.push('/auth/login')
     }
@@ -26,113 +115,149 @@ export default function Dashboard() {
     return null // Don't render anything while redirecting
   }
 
+  // Safely access nested properties with nullish coalescing
+  const savingsTotal = dashboardData?.savings?.total ?? 0
+  const savingsGoal = dashboardData?.savings?.goal ?? 0
+  const savingsProgress = dashboardData?.savings?.progress ?? 0
+  const walletBalance = dashboardData?.wallet?.balance ?? 0
+  const hasUpcomingContribution = dashboardData?.nextContribution?.hasUpcoming ?? false
+  const hasUpcomingPayout = dashboardData?.nextPayout?.hasUpcoming ?? false
+  const savingsGoalName = dashboardData?.savingsGoal?.name ?? ''
+  const savingsGoalCurrent = dashboardData?.savingsGoal?.current ?? 0
+  const savingsGoalTarget = dashboardData?.savingsGoal?.target ?? 0
+  const savingsGoalProgress = dashboardData?.savingsGoal?.progress ?? 0
+  const savingsGoalRemaining = dashboardData?.savingsGoal?.remaining ?? 0
+  const recentActivity = dashboardData?.recentActivity ?? []
+
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-semibold">
+            Welcome, {firstName}
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-500">Here's an overview of your savings</p>
+        </div>
 
-      <div className="mb-4 sm:mb-6">
-        <h2 className="text-xl sm:text-2xl font-semibold">
-          Welcome, {firstName}
-        </h2>
-        <p className="text-xs sm:text-sm text-gray-500">Here's an overview of your savings</p>
-      </div>
-
-      {/* Top buttons - hide on mobile */}
-      <div className="hidden md:flex justify-end mb-6 space-x-3">
-        <Button 
-          variant="default" 
-          className="bg-primary hover:bg-primary/90"
-           onClick={() => router.push('/dashboard/join-group')}>
+        {/* Top buttons - hide on mobile */}
+        <div className="hidden md:flex justify-end mb-6 space-x-3">
+          <Button 
+            variant="default" 
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => router.push('/dashboard/join-group')}>
               Join a Group
-            </Button>
-        <Button 
-          variant="outline" 
-          className="border-primary text-primary hover:bg-primary hover:text-white"
-          onClick={() => router.push('/dashboard/create-group')}
-        >
+          </Button>
+          <Button 
+            variant="outline" 
+            className="border-primary text-primary hover:bg-primary hover:text-white"
+            onClick={() => router.push('/dashboard/create-group')}
+          >
               Create a Group
-            </Button>
+          </Button>
+        </div>
+      </div>
 
-      </div>
-      </div>
-{/* Stats Overview */}
+      {/* Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
-            <div className="bg-white rounded-lg shadow p-5">
-              <h3 className="text-gray-500 text-sm mb-2">Your savings</h3>
-              <div className="text-2xl font-bold">₦680,000</div>
-              <div className="text-gray-500 text-xs mt-1">Total saved across all groups</div>
-              <div className="mt-4">
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
-                  <span>Progress</span>
-                  <span>0%</span>
-                </div>
-                <div className="relative w-full h-1.5 bg-gray-100 rounded-full">
-                  <div className="absolute left-0 top-0 h-full bg-primary rounded-full" style={{ width: '0%' }}></div>
-                </div>
-                <div className="text-xs text-gray-500 mt-1">Goal: ₦800,000.00</div>
-              </div>
+        <div className="bg-white rounded-lg shadow p-5">
+          <h3 className="text-gray-500 text-sm mb-2">Your savings</h3>
+          <div className="text-2xl font-bold">{formatCurrency(savingsTotal)}</div>
+          <div className="text-gray-500 text-xs mt-1">Total saved across all groups</div>
+          <div className="mt-4">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Progress</span>
+              <span>{savingsProgress}%</span>
             </div>
-
-            <div className="bg-white rounded-lg shadow p-5">
-              <h3 className="text-gray-500 text-sm mb-2">Your Wallet</h3>
-              <div className="flex items-center">
-                <div className="text-2xl font-bold">₦200,000</div>
-            
-              </div>
-              <div className="text-gray-500 text-xs mt-1">Balance available in your wallet for contributions</div>
-              <div className="mt-4">
-                <Button 
-                  variant="default" 
-                  className="bg-primary hover:bg-primary/90 text-xs w-full"
-                >
-                  Add Money
-                </Button>
-              </div>
+            <div className="relative w-full h-1.5 bg-gray-100 rounded-full">
+              <div 
+                className="absolute left-0 top-0 h-full bg-primary rounded-full" 
+                style={{ width: `${savingsProgress}%` }}
+              ></div>
             </div>
+            <div className="text-xs text-gray-500 mt-1">Goal: {formatCurrency(savingsGoal)}</div>
+          </div>
+        </div>
 
-            <div className="bg-white rounded-lg shadow p-5">
-              <h3 className="text-gray-500 text-sm mb-2">Next Contribution</h3>
-              <div className="flex items-start mt-3">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center relative">
-                  <Image 
-                    src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                    alt="Group Icon" 
-                    width={20} 
-                    height={20} 
-                  />
-                </div>
-                <div className="ml-3">
+        <div className="bg-white rounded-lg shadow p-5">
+          <h3 className="text-gray-500 text-sm mb-2">Your Wallet</h3>
+          <div className="flex items-center">
+            <div className="text-2xl font-bold">{formatCurrency(walletBalance)}</div>
+          </div>
+          <div className="text-gray-500 text-xs mt-1">Balance available in your wallet for contributions</div>
+          <div className="mt-4">
+            <Button 
+              variant="default" 
+              className="bg-primary hover:bg-primary/90 text-xs w-full"
+            >
+              Add Money
+            </Button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-5">
+          <h3 className="text-gray-500 text-sm mb-2">Next Contribution</h3>
+          <div className="flex items-start mt-3">
+            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center relative">
+              <Image 
+                src="/assets/icons/fluent_people-community-48-regular (1).svg" 
+                alt="Group Icon" 
+                width={20} 
+                height={20} 
+              />
+            </div>
+            <div className="ml-3">
+              {hasUpcomingContribution ? (
+                <>
+                  <div className="text-base font-medium">{dashboardData?.nextContribution?.groupName}</div>
+                  <div className="text-gray-500 text-xs mt-1">
+                    {formatCurrency(dashboardData?.nextContribution?.amount || 0)} due on {new Date(dashboardData?.nextContribution?.dueDate || '').toLocaleDateString()}
+                  </div>
+                </>
+              ) : (
+                <>
                   <div className="text-base font-medium">No upcoming contribution</div>
                   <div className="text-gray-500 text-xs mt-1">Create a group or join an existing one to start saving together</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-5">
-              <h3 className="text-gray-500 text-sm mb-2">Next Payout</h3>
-              <div className="flex items-start mt-3">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center relative">
-                  <Image 
-                    src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                    alt="Group Icon" 
-                    width={20} 
-                    height={20} 
-                  />
-             
-                </div>
-                <div className="ml-3">
-                  <div className="text-base font-medium">No payout yet!</div>
-                  <div className="text-gray-500 text-xs mt-1">You'll see your payout date here after joining a group</div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
           </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-5">
+          <h3 className="text-gray-500 text-sm mb-2">Next Payout</h3>
+          <div className="flex items-start mt-3">
+            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center relative">
+              <Image 
+                src="/assets/icons/fluent_people-community-48-regular (1).svg" 
+                alt="Group Icon" 
+                width={20} 
+                height={20} 
+              />
+            </div>
+            <div className="ml-3">
+              {hasUpcomingPayout ? (
+                <>
+                  <div className="text-base font-medium">{dashboardData?.nextPayout?.groupName}</div>
+                  <div className="text-gray-500 text-xs mt-1">
+                    {formatCurrency(dashboardData?.nextPayout?.amount || 0)} on {new Date(dashboardData?.nextPayout?.dueDate || '').toLocaleDateString()}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-base font-medium">No payout yet!</div>
+                  <div className="text-gray-500 text-xs mt-1">You'll see your payout date here after joining a group</div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Main content in two columns on desktop, one column on mobile */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 ">
         {/* Left column - takes 2/3 on desktop */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-            {/* Groups Section */}
+          {/* Groups Section */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="p-0">
               <GroupsTabView defaultTab="discover" />
@@ -143,24 +268,51 @@ export default function Dashboard() {
           <div className="bg-white rounded-lg shadow p-4 sm:p-5">
             <h2 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Recent Activity</h2>
             
-            <div className="text-center py-4 sm:py-6">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Image 
-                  src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                  alt="Activity Icon" 
-                  width={20} 
-                  height={20}
-                  className="sm:w-6 sm:h-6"
-                />
-                </div>
-              <h3 className="text-sm sm:text-base font-medium mb-1">No activity to show</h3>
-              <p className="text-xs sm:text-sm text-gray-500 px-2">
-                You don't have any transactions and updates. Create a
-                group or join an existing one to start saving together
-              </p>
+            {recentActivity.length > 0 ? (
+              <div className="space-y-3">
+                {recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-start border-b border-gray-100 pb-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                      <Image 
+                        src="/assets/icons/fluent_people-community-48-regular (1).svg" 
+                        alt="Activity Icon" 
+                        width={16} 
+                        height={16}
+                      />
                     </div>
+                    <div className="ml-3 flex-1">
+                      <div className="flex justify-between">
+                        <div className="text-sm font-medium">{activity.type}</div>
+                        {activity.amount && (
+                          <div className="text-sm font-medium">{formatCurrency(activity.amount)}</div>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500">{activity.description}</div>
+                      <div className="text-xs text-gray-400 mt-1">{new Date(activity.date).toLocaleDateString()}</div>
                     </div>
                   </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 sm:py-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                  <Image 
+                    src="/assets/icons/fluent_people-community-48-regular (1).svg" 
+                    alt="Activity Icon" 
+                    width={20} 
+                    height={20}
+                    className="sm:w-6 sm:h-6"
+                  />
+                </div>
+                <h3 className="text-sm sm:text-base font-medium mb-1">No activity to show</h3>
+                <p className="text-xs sm:text-sm text-gray-500 px-2">
+                  You don't have any transactions and updates. Create a
+                  group or join an existing one to start saving together
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Right column - takes 1/3 on desktop */}
         <div className="space-y-4 sm:space-y-6">
@@ -170,16 +322,19 @@ export default function Dashboard() {
             
             <div className="mb-3 sm:mb-4">
               <div className="flex justify-between text-xs sm:text-sm text-gray-600 mb-2">
-                <span>House Rent: ₦0.00 of ₦500,000</span>
+                <span>{savingsGoalName}: {formatCurrency(savingsGoalCurrent)} of {formatCurrency(savingsGoalTarget)}</span>
               </div>
 
               <div className="w-full h-2 bg-gray-100 rounded-full mb-2">
-                <div className="h-full bg-primary rounded-full w-0"></div>
-                </div>
+                <div 
+                  className="h-full bg-primary rounded-full" 
+                  style={{ width: `${savingsGoalProgress}%` }}
+                ></div>
+              </div>
 
               <div className="flex justify-between text-xs sm:text-sm">
-                <span>0% complete</span>
-                <span>₦500,000 to go</span>
+                <span>{savingsGoalProgress}% complete</span>
+                <span>{formatCurrency(savingsGoalRemaining)} to go</span>
               </div>
             </div>
             
@@ -191,26 +346,53 @@ export default function Dashboard() {
             </Button>
           </div>
 
-          {/* AI Insights Section */}
+          {/* AI Chat Assistant Section */}
           <div className="bg-white rounded-lg shadow p-4 sm:p-5">
-            <h2 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">AI Insights</h2>
-            
-            <div className="text-center py-4 sm:py-6">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Image 
-                  src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                  alt="AI Icon" 
-                  width={20} 
-                  height={20}
-                  className="sm:w-6 sm:h-6"
-                />
-              </div>
-              <h3 className="text-sm sm:text-base font-medium mb-1">No tips yet</h3>
-              <p className="text-xs sm:text-sm text-gray-500 px-2">
-                Join or create a savings group to start getting smart tips
-                that help you stay on track.
-              </p>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-sm sm:text-base font-semibold flex items-center">
+                <Sparkles className="h-4 w-4 mr-2 text-primary" />
+                AI Financial Assistant
+              </h2>
             </div>
+            
+            <div className="rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 p-4 mb-4">
+              <div className="flex items-start">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3 mt-1">
+                  <Bot className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm mb-2">
+                    Get personalized financial advice and answers to your savings questions instantly.
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Ask about budgeting, savings strategies, debt management, and more.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2 mb-4">
+              <div className="text-xs font-medium text-gray-500">Popular questions:</div>
+              <div className="bg-gray-50 rounded p-2 text-xs">
+                "How can I save ₦100,000 in 3 months?"
+              </div>
+              <div className="bg-gray-50 rounded p-2 text-xs">
+                "What's the best way to manage my debt?"
+              </div>
+              <div className="bg-gray-50 rounded p-2 text-xs">
+                "How should I budget my monthly income?"
+              </div>
+            </div>
+            
+            <Link href="/dashboard/ai-chat">
+              <Button 
+                variant="default" 
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Chat with AI Assistant
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

@@ -12,6 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
+import ComingSoonWrapper from '@/components/ui/coming-soon-wrapper'
 import { 
   Mail, 
   Phone, 
@@ -60,7 +61,40 @@ export default function ContactPage() {
     }
   ]
 
-    const faqData = [    {      question: "How does CoopWise keep my money safe?",      answer: "Your financial security is our top priority. CoopWise employs multiple layers of protection: bank-level 256-bit SSL encryption for all data transmission, partnerships with FDIC-insured financial institutions to safeguard your funds, and we never store your banking credentials on our servers. All transactions are monitored 24/7 for suspicious activity, and we use multi-factor authentication to protect your account. Your money is held in segregated accounts, separate from CoopWise operational funds, ensuring it's always available when you need it."    },    {      question: "What happens if someone in my group doesn't pay?",      answer: "We've designed CoopWise with built-in protection systems to handle this situation fairly. First, our system sends automatic reminders to group members before contribution deadlines. If someone misses a payment, we offer flexible options like payment plans or deadline extensions. Group admins can set grace periods and penalty policies. If persistent issues arise, our mediation team can step in to help resolve conflicts and find solutions that work for everyone. In extreme cases, the group can vote to remove non-contributing members while protecting the interests of committed savers."    },    {      question: "Can I leave a savings group once I've joined?",      answer: "Yes, you have the freedom to leave any savings group at any time. However, we recommend following these steps: 1) Discuss your decision with group members first, as it may affect their savings plans. 2) Check your group's agreed-upon exit policies regarding pending contributions or withdrawals. 3) Ensure any outstanding contributions are settled. 4) Use our 'Leave Group' feature in your account settings. Your past contributions will be handled according to your group's rules - you may receive your proportional share immediately or according to the original payout schedule, depending on what your group agreed upon."    },    {      question: "How much does CoopWise cost?",      answer: "CoopWise is completely free for basic savings groups, which includes creating groups, inviting unlimited members, making contributions, tracking progress, and receiving basic support. We believe everyone should have access to community-powered savings tools. For larger organizations or groups wanting premium features like advanced analytics, priority customer support, custom contribution schedules, or white-label solutions, we offer affordable premium plans starting at $9.99/month. All fees are clearly disclosed upfront with no hidden charges."    },    {      question: "Is there a minimum or maximum group size?",      answer: "CoopWise accommodates groups of all sizes to fit different saving goals and social dynamics. Minimum: 2 people (perfect for couples, friends, or small partnerships). Maximum: 50 people (ideal for large families, organizations, or communities). Sweet spot: 5-15 members, which our data shows provides optimal social support, accountability, and manageable group dynamics. Smaller groups offer intimacy and trust, while larger groups can pool bigger contributions for substantial savings goals. You can always start small and invite more members later as your group grows."    },    {      question: "How do I invite people to my savings group?",      answer: "Inviting members to your savings group is simple and secure: 1) Go to your group dashboard and click 'Invite Members'. 2) Choose from three invitation methods: share your unique group link via text, email, or social media; provide your group's invite code for manual entry; or send direct invitations through the CoopWise app. 3) As the group creator or admin, you can approve or decline join requests to maintain group integrity. 4) New members will receive an invitation with group details, rules, and contribution requirements before they can join. You maintain full control over who joins your savings community."    },    {      question: "What if I need to change my contribution amount?",      answer: "Life circumstances change, and CoopWise provides flexibility to adjust your contribution amount: 1) Submit a change request through your group dashboard, explaining the reason for the adjustment. 2) Your request goes to the group admin and other members for approval via a voting system. 3) If approved, the change takes effect from the next contribution period. 4) All changes are logged transparently so everyone stays informed. 5) You can request increases, decreases, or temporary pauses. This collaborative approach ensures fairness while allowing necessary flexibility for members facing financial changes."    },    {      question: "How do withdrawals work?",      answer: "Withdrawal processes depend on your group's chosen structure, all clearly defined when you join: **Rotating Payout Groups**: Members take turns receiving the total pot according to a predetermined schedule. Each member contributes regularly and receives the full amount once during the cycle. **Individual Savings Groups**: Members can withdraw their personal contributions plus any interest/returns at any time, subject to agreed-upon notice periods. **Goal-Based Groups**: Withdrawals happen when specific savings targets are met. All withdrawal requests are processed within 1-3 business days, and every transaction is logged transparently for all members to see, maintaining trust and accountability."    }  ]
+  const faqData = [
+    {
+      question: "How does CoopWise keep my money safe?",
+      answer: "We keep your money in stable digital currency (like USDT) to protect it from market ups and downs. It stays secure and steady until you're ready to use it."
+    },
+    {
+      question: "What happens if someone in my group doesn't pay?",
+      answer: "The \"group admin\" can remove them. If they've received money before, CoopWise may auto-deduct what they owe. It's best to only invite people you trust."
+    },
+    {
+      question: "Can I leave a savings group?",
+      answer: "Yes, as long as you don't owe the group any money (outstanding loans and unpaid contributions). If you've paid up, you're free to leave anytime."
+    },
+    {
+      question: "How much does CoopWise cost?",
+      answer: "We charge a small fee (2–5%) only when payouts happen. No monthly fees, no hidden charges."
+    },
+    {
+      question: "Is there a group size limit?",
+      answer: "No. You can save solo or with as many people as you want. It's totally up to you. A tip will be to join small groups with trusted members."
+    },
+    {
+      question: "How do I invite people to my group?",
+      answer: "Click on \"share invite\" in your group to get a the invite code, send them your invite code. They click, view the group, and join if they want."
+    },
+    {
+      question: "Can I change my contribution amount?",
+      answer: "It depends on your group's rules. Some allow it, others don't. If needed, you can always join or create a group that fits your budget."
+    },
+    {
+      question: "How do withdrawals work?",
+      answer: "When you request a withdrawal, we send the money straight to your bank account. Group payouts work the same, just confirm and get paid."
+    }
+  ]
 
   const supportTopics = [
     {
@@ -159,12 +193,37 @@ export default function ContactPage() {
                 <CardContent className="pt-0">
                   <div className="font-semibold text-primary mb-2">{method.contact}</div>
                   <div className="text-sm text-gray-500">{method.availability}</div>
-                  <Button 
-                    className="mt-4 w-full"
-                    variant="outline"
-                  >
-                    {method.title === "Live Chat" ? "Start Chat" : "Contact Now"}
-                  </Button>
+                  {method.title === "Email Support" ? (
+                    <Link href={`mailto:${method.contact}`}>
+                      <Button 
+                        className="mt-4 w-full"
+                        variant="outline"
+                      >
+                        Contact Now
+                      </Button>
+                    </Link>
+                  ) : method.title === "Phone Support" ? (
+                    <Link href={`tel:${method.contact.replace(/\s+/g, '')}`}>
+                      <Button 
+                        className="mt-4 w-full"
+                        variant="outline"
+                      >
+                        Contact Now
+                      </Button>
+                    </Link>
+                  ) : (
+                    <ComingSoonWrapper
+                      title="Live Chat Coming Soon"
+                      description="Our live chat support feature is currently under development. Please use email or phone support in the meantime."
+                    >
+                      <Button 
+                        className="mt-4 w-full"
+                        variant="outline"
+                      >
+                        Start Chat
+                      </Button>
+                    </ComingSoonWrapper>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -338,13 +397,18 @@ export default function ContactPage() {
                 <p className="text-gray-600 mb-4">
                   For urgent issues or account emergencies, our live chat is available 24/7.
                 </p>
-                <Button 
-                  variant="outline" 
-                  className="text-primary border-primary hover:bg-primary hover:text-white"
+                <ComingSoonWrapper
+                  title="Live Chat Coming Soon"
+                  description="Our live chat support feature is currently under development. Please use email or phone support in the meantime."
                 >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Start Live Chat
-                </Button>
+                  <Button 
+                    variant="outline" 
+                    className="text-primary border-primary hover:bg-primary hover:text-white"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Start Live Chat
+                  </Button>
+                </ComingSoonWrapper>
               </div>
             </div>
           </div>

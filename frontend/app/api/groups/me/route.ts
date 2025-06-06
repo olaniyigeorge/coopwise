@@ -5,27 +5,25 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.co
 
 export async function GET(request: NextRequest) {
   try {
-    // Get the authorization header
     const authHeader = request.headers.get('Authorization');
     
-    // If no auth header, return unauthorized
     if (!authHeader) {
       return NextResponse.json(
-        { detail: 'Authentication required' },
+        { error: 'Authorization header is required' },
         { status: 401 }
       );
     }
 
-    // Forward the request to the actual API without pagination parameters
-    const response = await fetch(`${API_URL}/api/v1/cooperatives/me`, {
+    // Call the real API endpoint to get user's cooperatives
+    const response = await fetch('https://coopwise.onrender.com/api/v1/cooperatives/me', {
       method: 'GET',
       headers: {
+        'Authorization': authHeader,
         'Content-Type': 'application/json',
-        'Authorization': authHeader
       },
     });
 
-    // Get the response text to handle potential JSON parsing errors
+    // Get response as text first to handle potential JSON parsing errors
     const responseText = await response.text();
     console.log(`My Groups API response status: ${response.status}`);
     
@@ -35,15 +33,26 @@ export async function GET(request: NextRequest) {
       data = responseText ? JSON.parse(responseText) : [];
     } catch (e) {
       console.error('Error parsing JSON response:', e);
-      // If parsing fails, return an empty array
-      return NextResponse.json([], { status: 200 });
+      // If parsing fails, return the raw text
+      return NextResponse.json(
+        { error: 'Invalid response from server', raw_response: responseText },
+        { status: 500 }
+      );
+    }
+
+    // If request was not successful, pass through the error
+    if (!response.ok) {
+      console.error('My Groups API error response:', data);
+      return NextResponse.json(data, { status: response.status });
     }
 
     // Return the API response
-    return NextResponse.json(data, { status: response.status });
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('My Groups proxy error:', error);
-    // Return empty array on error to prevent UI breaks
-    return NextResponse.json([], { status: 200 });
+    console.error('My Groups API error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 } 

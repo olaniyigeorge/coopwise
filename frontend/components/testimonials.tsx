@@ -14,13 +14,13 @@ export default function Testimonials() {
     {
       name: "Chinedo, Onitsha",
       groupName: "Hustle and Save Gang",
-      avatar: "/assets/images/Ellipse 7.png",
+      avatar: "/assets/images/Ellipse 7a.png",
       quote: "I like that I still save with my guys, but now we have reminders and records. Nobody dey argue payout again."
     },
     {
       name: "Aunty Kemi, Ibadan",
       groupName: "Ireti Savings Circle",
-      avatar: "/assets/images/Ellipse 7.png",
+      avatar: "/assets/images/Ellipse 7b.png",
       quote: "Before CoopWise, we used to forget who had paid. Now we track everything together and there's no confusion."
     }
   ]

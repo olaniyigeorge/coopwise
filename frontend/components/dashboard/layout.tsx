@@ -36,7 +36,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           title: 'Dashboard',
           showBackButton: false
         }
-      
+        case '/dashboard/ai-chat':
+          return {
+            title: '',
+            subtitle: '',
+            showBackButton: true,
+            backUrl: '/dashboard'
+          }
       case '/dashboard/create-group':
         return {
           // Empty title since it's already in the page content
@@ -93,12 +99,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           showBackButton: false
         }
       
-      case '/dashboard/ai-insights':
-        return {
-          title: 'AI Insights',
-          subtitle: 'Personalized recommendations for your savings',
-          showBackButton: false
-        }
+   
       
       default:
         return {

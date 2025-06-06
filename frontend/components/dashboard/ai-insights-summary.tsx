@@ -1,129 +1,101 @@
 "use client"
 
-import React from 'react'
-import Link from 'next/link'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Brain, TrendingUp, DollarSign, Target, ArrowRight, Sparkles } from 'lucide-react'
+import React, { useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { ArrowRightIcon, RefreshCwIcon, LightbulbIcon } from 'lucide-react'
+import Image from 'next/image'
+import { useAuth } from '@/lib/auth-context'
+import { getUserInsights } from '@/lib/insights-mock-data'
+import AIInsightCard from './ai-insight-card'
 
 export default function AIInsightsSummary() {
-  // Mock insights data
-  const insights = [
-    {
-      id: 1,
-      title: "Optimize Monthly Savings",
-      description: "Increase your savings rate by 15% with smart spending pattern analysis",
-      category: "Financial",
-      impact: "High",
-      savings: 25000
-    },
-    {
-      id: 2,
-      title: "Join Energy Savings Group",
-      description: "Save ₦15,000 monthly by joining our energy-focused collective",
-      category: "Groups",
-      impact: "Medium", 
-      savings: 15000
-    }
-  ]
-
-  const getImpactColor = (impact: string) => {
-    switch (impact.toLowerCase()) {
-      case 'high': return 'bg-green-100 text-green-700 border-green-200'
-      case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-200'
-      case 'low': return 'bg-gray-100 text-gray-700 border-gray-200'
-      default: return 'bg-gray-100 text-gray-700 border-gray-200'
-    }
+  const router = useRouter()
+  const { user } = useAuth()
+  
+  // Get a limited set of insights for the dashboard
+  const insights = useMemo(() => {
+    const allInsights = getUserInsights(user?.id || '1')
+    // Return only the first 3 insights
+    return allInsights.slice(0, 3)
+  }, [user?.id])
+  
+  const hasInsights = insights.length > 0
+  
+  const handleRefresh = () => {
+    console.log('Refreshing insights...')
+    // This would refresh insights from the server in a real app
   }
-
-  const formatCurrency = (amount: number) => {
-    return `₦${(amount / 1000).toFixed(0)}k`
+  
+  const handleViewAll = () => {
+    router.push('/dashboard/ai-insights')
   }
-
+  
   return (
-    <Card className="bg-white border-blue-200 hover:shadow-md transition-shadow">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <Brain className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <CardTitle className="text-lg font-semibold text-gray-900">AI Insights</CardTitle>
-              <p className="text-sm text-gray-600">Personalized recommendations</p>
-            </div>
-          </div>
-          <Link href="/dashboard/ai-insights">
-            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-1">
-              <Sparkles className="w-4 h-4 text-blue-600" />
-            </div>
-            <div className="text-lg font-bold text-gray-900">8</div>
-            <div className="text-xs text-gray-600">Active</div>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-1">
-              <DollarSign className="w-4 h-4 text-green-600" />
-            </div>
-            <div className="text-lg font-bold text-gray-900">₦40K</div>
-            <div className="text-xs text-gray-600">Potential</div>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-1">
-              <Target className="w-4 h-4 text-purple-600" />
-            </div>
-            <div className="text-lg font-bold text-gray-900">3</div>
-            <div className="text-xs text-gray-600">Ready</div>
-          </div>
-        </div>
-
-        {/* Top Insights */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-gray-900">Top Recommendations</h4>
-          
-          {insights.map((insight) => (
-            <div key={insight.id} className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h5 className="text-sm font-medium text-gray-900 line-clamp-1 group-hover:text-blue-700 transition-colors">
-                  {insight.title}
-                </h5>
-                <Badge 
-                  variant="outline" 
-                  className={`text-xs flex-shrink-0 ${getImpactColor(insight.impact)}`}
-                >
-                  {formatCurrency(insight.savings)}
-                </Badge>
-              </div>
-              <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-                {insight.description}
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">{insight.category}</span>
-                <span className="text-xs font-medium text-blue-600">{insight.impact} Impact</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <Link href="/dashboard/ai-insights">
-          <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0">
-            <Brain className="w-4 h-4 mr-2" />
-            View All Insights
+    <div className="bg-white rounded-lg shadow p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <h2 className="text-sm sm:text-base font-semibold">AI Savings Insights</h2>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-gray-500 hover:text-gray-700 p-1 sm:p-2 h-auto"
+            onClick={handleRefresh}
+          >
+            <RefreshCwIcon className="w-4 h-4" />
+            <span className="sr-only">Refresh</span>
           </Button>
-        </Link>
-      </CardContent>
-    </Card>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-primary hover:text-primary/80 p-1 sm:p-2 h-auto flex items-center"
+            onClick={handleViewAll}
+          >
+            <span className="text-xs hidden sm:inline mr-1">View All</span>
+            <ArrowRightIcon className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+      
+      {hasInsights ? (
+        <div className="space-y-3">
+          {insights.map((insight) => (
+            <AIInsightCard 
+              key={insight.id} 
+              insight={insight} 
+              compact={true} 
+            />
+          ))}
+          
+          <Button 
+            variant="outline" 
+            className="w-full mt-3 text-primary border-primary hover:bg-primary hover:text-white"
+            onClick={handleViewAll}
+          >
+            See All Insights
+          </Button>
+        </div>
+      ) : (
+        <div className="text-center py-4 sm:py-6">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <LightbulbIcon className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
+          </div>
+          <h3 className="text-sm sm:text-base font-medium mb-1">No tips yet</h3>
+          <p className="text-xs sm:text-sm text-gray-500 px-2">
+            Join or create a savings group to start getting smart tips
+            that help you stay on track.
+          </p>
+          <Button
+            variant="outline"
+            className="mt-4 text-primary border-primary hover:bg-primary hover:text-white"
+            onClick={handleRefresh}
+          >
+            <RefreshCwIcon className="w-4 h-4 mr-2" />
+            Refresh Tips
+          </Button>
+        </div>
+      )}
+    </div>
   )
 } 

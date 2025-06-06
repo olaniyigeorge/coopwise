@@ -257,30 +257,66 @@ export default function ProfileSetupPage() {
         throw new Error('User information is missing')
       }
       
-      // Prepare the data to update
+      // Prepare the exact format expected by the API
       const updateData = {
+        id: user.id,
+        resource_owner_id: user.id,
+        username: user.username,
+        email: user.email,
+        full_name: user.full_name,
+        phone_number: user.phone_number,
+        role: user.role || "user",
         target_savings_amount: targetAmount ? parseFloat(targetAmount) : 0,
-        savings_purpose: purpose || null,
-        income_range: incomeRange || null,
-        saving_frequency: savingFrequency || null
+        savings_purpose: purpose || "",
+        income_range: incomeRange === "BELOW_50K" ? "Below 50K" : 
+                     incomeRange === "RANGE_50K_100K" ? "50K - 100K" :
+                     incomeRange === "RANGE_100K_200K" ? "100K - 200K" :
+                     incomeRange === "RANGE_200K_350K" ? "200K - 350K" :
+                     incomeRange === "RANGE_350K_500K" ? "350K - 500K" :
+                     incomeRange === "ABOVE_500K" ? "Above 500K" : "Below 50K",
+        saving_frequency: savingFrequency || "daily",
+        is_email_verified: user.is_email_verified !== undefined ? user.is_email_verified : false,
+        is_phone_verified: user.is_phone_verified !== undefined ? user.is_phone_verified : false,
+        created_at: user.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
       
       console.log(`Updating user profile for user ID: ${user.id}`, updateData)
       
-      // Use the updateUserProfile function from auth context
-      await updateUserProfile(updateData);
-      
-      toast({
-        title: "Profile Setup Complete",
-        description: "Your profile has been updated successfully!",
-      })
-      
-      // Redirect to dashboard
-      router.push('/dashboard')
+      try {
+        // Use the updateUserProfile function from auth context
+        const result = await updateUserProfile(updateData);
+        console.log("Update result:", result);
+        
+        toast({
+          title: "Profile Setup Complete",
+          description: "Your profile has been updated successfully!",
+        })
+        
+        // Redirect to dashboard
+        router.push('/dashboard')
+      } catch (updateError: any) {
+        console.error("Update error details:", updateError);
+        console.error("Update error response:", updateError.response?.data);
+        throw updateError;
+      }
     } catch (error: any) {
       console.error('Error updating profile:', error)
       
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to update your profile';
+      let errorMessage = 'Failed to update your profile';
+      
+      if (error.response?.data?.detail) {
+        if (Array.isArray(error.response.data.detail)) {
+          errorMessage = error.response.data.detail.map((err: any) => 
+            `${err.loc.join('.')}: ${err.msg}`
+          ).join(', ');
+        } else {
+          errorMessage = error.response.data.detail;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setError(errorMessage)
       
       toast({
