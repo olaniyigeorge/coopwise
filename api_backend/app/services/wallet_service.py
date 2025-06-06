@@ -1,5 +1,6 @@
 # app/services/wallet_service.py
 from datetime import datetime
+import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from db.models.wallet_models import Wallet, LocalCurrency, WalletLedger, LedgerType
@@ -208,7 +209,10 @@ class WalletService:
         cached = await get_cache(cache_key)
         if cached:
             logger.info(f"🔄 Using cached wallet for user {user.id}")
-            return WalletBalance.model_validate(cached)
+            print(f"\n{cached}\n")
+            if isinstance(cached, str):
+                cached = json.loads(cached) 
+            return WalletDetail.model_validate(cached)
 
 
         logger.info(f"📬 Fetching wallet from db for {user.id}")

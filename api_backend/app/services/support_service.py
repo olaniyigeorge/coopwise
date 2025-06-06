@@ -44,10 +44,10 @@ class SupportService:
             result = await db.execute(select(Feedback).offset(skip).limit(limit))
             feedbacks = result.scalars().all()
         except Exception as e:
-            logger.error(f"Failed to fetch users: {e}")
+            logger.error(f"Failed to fetch feedbacks: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Could not fetch users"
+                detail="Could not fetch feedback"
             )
         return feedbacks
     

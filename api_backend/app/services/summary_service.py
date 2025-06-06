@@ -1,9 +1,10 @@
-from typing import Optional
+import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from redis.asyncio import Redis
 from datetime import datetime
 
+from app.services.wallet_service import WalletService
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.cooperative_group import CoopGroupTargetSummary
 from app.schemas.dashboard_schema import Summary, Targets
@@ -29,6 +30,12 @@ class SummaryService:
         cached_summary = await get_cache(key)
         if cached_summary:
             logger.info(f"🔄 Using cached summary for user {user.id}")
+            
+            if isinstance(cached_summary, str):
+                cached_summary = json.loads(cached_summary)  # ✅ convert from JSON to dict
+            if isinstance(cached_summary.get("wallet"), str):
+                cached_summary["wallet"] = json.loads(cached_summary["wallet"])
+
             return cached_summary
 
         async def fetch_summary():
@@ -72,26 +79,30 @@ class SummaryService:
             next_payout, next_payout_group_id = (next_payout_result if next_payout_result else (None, None))
 
             # 5. From that group, get the user’s payout number
-            payout_number: Optional[int] = None
-            if next_payout_group_id:
-                payout_membership_query = await db.execute(
-                    select(GroupMembership.payout_position)
-                    .where(
-                        GroupMembership.user_id == user.id,
-                        GroupMembership.group_id == next_payout_group_id
-                    )
-                )
-                payout_number = payout_membership_query.scalar()
+            # payout_number: Optional[int] = None
+            # if next_payout_group_id:
+            #     payout_membership_query = await db.execute(
+            #         select(GroupMembership.payout_position)
+            #         .where(
+            #             GroupMembership.user_id == user.id,
+            #             GroupMembership.group_id == next_payout_group_id
+            #         )
+            #     )
+            #     payout_number = payout_membership_query.scalar()
 
-            return {
-                "your_savings": float(your_savings),
-                "next_contribution": next_contribution.isoformat() if next_contribution else None,
-                "next_payout": next_payout.isoformat() if next_payout else None,
-                "payout_number": payout_number
-            }
+            # 6 Get user wallet
+            wallet = await WalletService.get_wallet(db, user, redis)
+            
 
-        fresh_summary = await fetch_summary()
-        await update_cache(key, fresh_summary, ttl=300)
+            return Summary(
+                your_savings= float(your_savings),
+                next_contribution= next_contribution.isoformat() if next_contribution else None,
+                next_payout=next_payout.isoformat() if next_payout else None,
+                wallet = wallet
+            )
+
+        fresh_summary: Summary = await fetch_summary()
+        await update_cache(key, fresh_summary.model_dump_json(), ttl=300)
 
         logger.info(f"📦 Cached summary for user {user.id}")
         return fresh_summary

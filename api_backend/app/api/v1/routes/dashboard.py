@@ -16,7 +16,7 @@ router = APIRouter(
 
 @router.get(
         "/", 
-        # response_model=DashboardData,
+        response_model=DashboardData,
         summary="Get full dashboard data for the current user"
     )  
 async def get_dashboard_data(

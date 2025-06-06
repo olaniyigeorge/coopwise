@@ -2,8 +2,13 @@ from datetime import timedelta
 import random
 from typing import List
 from redis import Redis
+import requests
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.schemas.user import UserDetail
+from app.services.activity_service import ActivityService
+from app.core.config import config
+from app.schemas.activity_schemas import ActivityDetail
 from app.services.user_service import UserService
 from app.schemas.ai_insight_schema import AI_INSIGHT_TEMPLATES, AIInsightCreate, AIInsightDetail, InsightMetadata
 from app.schemas.dashboard_schema import DashboardData
@@ -23,6 +28,7 @@ from db.models.ai_insight import AIInsight
 
 
 class InsightEngine:
+    
     @staticmethod
     async def save_user_insight(user_id: str, insight: dict, db: AsyncSession):
         """
@@ -30,6 +36,18 @@ class InsightEngine:
         """
         pass
 
+    @staticmethod
+    async def get_my_insights(db: AsyncSession, skip:int=0, limit:int =10)-> List[AIInsightDetail]:
+        try:
+            result = await db.execute(select(AIInsight).offset(skip).limit(limit))
+            insights = result.scalars().all()
+        except Exception as e:
+            logger.error(f"Failed to fetch insights: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not fetch insights"
+            )
+        return insights
 
   
     @staticmethod
@@ -42,14 +60,14 @@ class InsightEngine:
     ) -> List[AIInsightDetail]:
         cache_key = f"insights:{user.id}:skip:{skip}:limit:{limit}"
         cached = await get_cache(cache_key)
-        # if cached:
-        #     logger.info(f"🔄 Using cached AI insights for user {user.id} (skip={skip}, limit={limit})")
-        #     # Deserialize if values are strings
-        #     deserialized = [
-        #         json.loads(item) if isinstance(item, str) else item
-        #         for item in cached
-        #     ]
-        #     return [AIInsightDetail.model_validate(item) for item in deserialized]
+        if cached:
+            logger.info(f"🔄 Using cached AI insights for user {user.id} (skip={skip}, limit={limit})")
+            # Deserialize if values are strings
+            deserialized = [
+                json.loads(item) if isinstance(item, str) else item
+                for item in cached
+            ]
+            return [AIInsightDetail.model_validate(item) for item in deserialized]
 
         logger.info(f"📬 Fetching AI insights for user {user.id} from database (skip={skip}, limit={limit})")
         await InsightEngine.mock_generate_insight_for_user_if_necessary(db, user, margin=5)
@@ -235,3 +253,100 @@ class InsightEngine:
         # await NotificationService.push_notification_to_user(new_ins.user_id, notification_detail)
         return AIInsightDetail.model_validate(new_ins)
     
+
+    @staticmethod
+    async def get_ai_insights(db: AsyncSession, user: AuthenticatedUser, redis: Redis):
+        if not config.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY is not set in environment variables")
+
+        user = await UserService.get_user_by_id(db, user.id)
+        activities = await ActivityService.get_user_recent_activities(db, user, redis)
+        # Step 1: Build prompt from activity logs
+        prompt = await InsightEngine.build_ai_insight_prompt(user, activities)
+
+        print(f"\n\n Prompt: {prompt}\n\n")
+        # Step 2: Prepare request payload
+        payload = {
+            "contents": [
+                {
+                    "parts": [{"text": prompt}]
+                }
+            ]
+        }
+
+        # Step 3: Make POST request to Gemini API
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={config.GEMINI_API_KEY}"
+
+        try:
+            response = requests.post(
+                url,
+                headers={"Content-Type": "application/json"},
+                json=payload,
+                timeout=10
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            print(f"\n\n {data} \n\n")
+            insight_text = data["candidates"][0]["content"]["parts"][0]["text"]
+            return insight_text
+
+        except requests.RequestException as e:
+            raise RuntimeError(f"Failed to fetch AI insight: {e}")
+
+        except (KeyError, IndexError) as e:
+            raise RuntimeError(f"Unexpected Gemini response format: {e}")
+        
+    
+
+
+    @staticmethod
+    async def build_ai_insight_prompt(user: UserDetail, activities: List[ActivityDetail]) -> str:
+        activity_lines = "\n".join(
+            f"- [{act.created_at.date()}] {act.type.name.replace('_', ' ').title()}: {act.description}"
+            for act in activities
+        )
+        
+        return f"""
+            You are an AI Insight Assistant helping users improve their savings behavior on a cooperative savings platform in Africa.
+
+            User Profile:
+            - Full Name: {user.full_name}
+            - Email: {user.email}
+            - Phone: {user.phone_number}
+            - Role: {user.role}
+            - Verified Email: {user.is_email_verified}
+            - Verified Phone: {user.is_phone_verified}
+            - Target Savings Amount: {user.target_savings_amount}
+            - Savings Purpose: {user.savings_purpose}
+            - Income Range: {user.income_range}
+            - Saving Frequency: {user.saving_frequency}
+
+            Recent Activity:
+            {activity_lines}
+
+            Generate 2 insights in this exact JSON format for the user to help them improve savings or group engagement. Each insight must follow this structure (use realistic values):
+
+            {{
+            "title": "Descriptive title of the insight",
+            "summary": "Short summary of the insight",
+            "description": "Detailed explanation of the insight",
+            "recommended_action": "Suggested user action to improve behavior",
+            "category": "savings | group_engagement | financial_health",
+            "type": "behavioral | strategic | reminder",
+            "difficulty": "easy | medium | hard",
+            "status": "pending | implemented | in_progress",
+            "estimated_savings": 1500.0,
+            "potential_gain": 2000.0,
+            "impact_score": 7.5,
+            "tags": ["group", "payout", "engagement"],
+            "timeframe": "1 month",
+            "implementation_time": 2.5,
+            "insight_metadata": {{
+                "source": "AI Engine",
+                "confidence_score": 0.92
+            }}
+            }}
+
+            Only return a list of two such JSON objects.
+        """

@@ -2,6 +2,7 @@ import enum
 
 from pydantic import BaseModel
 from typing import List, Optional
+from app.schemas.wallet_schemas import WalletDetail
 from app.schemas.activity_schemas import ActivityDetail
 from app.schemas.ai_insight_schema import AIInsightDetail
 from app.schemas.cooperative_group import CoopGroupDetails, CoopGroupTargetSummary
@@ -15,8 +16,8 @@ class Summary(BaseModel):
     next_contribution: Optional[str]  # Next upcoming contribution date across all groups
     next_payout: Optional[str]  # Next payout date across all groups
     #TODO Change this to Wallet balance
-    payout_number: Optional[int]  # User's next payout position across groups
-
+    # payout_number: Optional[int]  # User's next payout position across groups
+    wallet: Optional[WalletDetail] 
 
 class GroupGoal(BaseModel):
     group_id: str

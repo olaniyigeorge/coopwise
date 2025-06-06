@@ -33,10 +33,12 @@ async def write_us_a_feedback(
 @router.get("/",  response_model=List[FeedbackDetail])
 async def get_feedbacks(
         db: AsyncSession = Depends(get_async_db_session),
-        user: AuthenticatedUser = Depends(get_current_user)
+        user: AuthenticatedUser = Depends(get_current_user),
+        skip: int = 0,
+        limit: int =10
         ):
     
-    feedbacks = await SupportService.get_feedbacks(db, user)
+    feedbacks = await SupportService.get_feedbacks(db, skip, limit)
 
     return feedbacks
 

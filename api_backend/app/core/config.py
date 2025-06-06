@@ -16,6 +16,7 @@ class GlobalConfig(BaseSettings):
     REDIS_URL: str
     CASHRAMP_PUBKEY: str
     CASHRAMP_SECKEY: str
+    GEMINI_API_KEY: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -37,6 +38,7 @@ class DevConfig(GlobalConfig):
     REDIS_URL: str
     CASHRAMP_PUBKEY: str
     CASHRAMP_SECKEY: str
+    GEMINI_API_KEY: str
 
     # model_config = SettingsConfigDict(
     #     env_prefix=str = "DEV_"
@@ -57,7 +59,7 @@ class TestConfig(GlobalConfig):
     REDIS_URL: str
     CASHRAMP_PUBKEY: str
     CASHRAMP_SECKEY: str
-
+    GEMINI_API_KEY: str
     # model_config = SettingsConfigDict(
     #     env_prefix=str = "TEST_"
     
@@ -77,6 +79,7 @@ class ProdConfig(GlobalConfig):
     REDIS_URL: str
     CASHRAMP_PUBKEY: str
     CASHRAMP_SECKEY: str
+    GEMINI_API_KEY:str
     
     # model_config = SettingsConfigDict(
     #     env_prefix=str = "PROD_"
