@@ -14,7 +14,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'CoopWise | Smart Cooperative Savings Groups Management Platform',
   description: 'Join CoopWise to create, manage, and grow your savings groups. Track contributions, schedule payouts, and build wealth together with our secure cooperative management platform.',
-  keywords: ['cooperative savings', 'savings groups', 'susu', 'tontine', 'rotating savings', 'financial cooperation', 'group savings', 'community savings', 'money management', 'cooperative finance'],
+  keywords: ['ajo', 'cooperative savings', 'savings groups', 'charas', 'susu', 'tontine', 'rotating savings', 'financial cooperation', 'group savings', 'community savings', 'money management', 'cooperative finance'],
   authors: [{ name: 'CoopWise Team' }],
   creator: 'CoopWise',
   publisher: 'CoopWise',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://coopwise.com'),
+  metadataBase: new URL('https://coopwise-seven.vercel.app'), // coopwise.com
   alternates: {
     canonical: '/',
   },
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://coopwise.com',
+    url: 'https://coopwise-seven.vercel.app', // coopwise.com
     title: 'CoopWise | Smart Cooperative Savings Groups Management Platform',
     description: 'Join CoopWise to create, manage, and grow your savings groups. Track contributions, schedule payouts, and build wealth together with our secure cooperative management platform.',
     siteName: 'CoopWise',

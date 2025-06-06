@@ -10,14 +10,13 @@ from db.models.ai_insight import AIInsight, DifficultyLevel, ImplementationStatu
 
 
 class InsightMetadata(BaseModel):
-    success_rate: Optional[int] = 0
+    success_rate: Optional[float] = 0
     users_implemented: Optional[int] = 0
     average_time_to_complete: Optional[float] = 0  # in seconds
     prerequisites: Optional[List[str]] = []
     related_insights: Optional[List[str]] = []
     source: Optional[str] = ""
-
-
+    confidence_score: Optional[float] = None
 
 
 class AIInsightBase(BaseModel):
@@ -49,8 +48,8 @@ class AIInsightBase(BaseModel):
 
 
 class AIInsightCreate(AIInsightBase):
-    user_id: Optional[UUID]
-    group_id: Optional[UUID]
+    user_id: Optional[UUID] = None
+    group_id: Optional[UUID] =  None
 
 
 class AIInsightDetail(AIInsightBase):

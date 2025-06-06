@@ -24,10 +24,10 @@ class InsightCategory(enum.Enum):
     GOAL_SETTING = "goal_setting"
     OTHER = "other"
 
-class InsightStatus(enum.Enum):
-    ACTIVE = "active"
-    READY = "ready"
-    EXPIRED = "expired"
+# class InsightStatus(enum.Enum):
+#     ACTIVE = "active"
+#     READY = "ready"
+#     EXPIRED = "expired"
 
 class InsightType(enum.Enum):
     PERSONAL = "personal"

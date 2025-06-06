@@ -1,6 +1,7 @@
 from datetime import timedelta
 import random
-from typing import List
+from typing import List, Union
+from pydantic import ValidationError
 from redis import Redis
 import requests
 from sqlalchemy import select
@@ -22,6 +23,7 @@ import json
 from app.utils.logger import logger
 from db.models.ai_insight import AIInsight
 
+import re
 
 
 
@@ -70,7 +72,8 @@ class InsightEngine:
             return [AIInsightDetail.model_validate(item) for item in deserialized]
 
         logger.info(f"📬 Fetching AI insights for user {user.id} from database (skip={skip}, limit={limit})")
-        await InsightEngine.mock_generate_insight_for_user_if_necessary(db, user, margin=5)
+        # await InsightEngine.mock_generate_insight_for_user_if_necessary(db, user, margin=5)
+        await InsightEngine.get_save_new_insight(db, user, redis)
         try:
             stmt = (
                 select(AIInsight)
@@ -93,6 +96,54 @@ class InsightEngine:
         except Exception as e:
             logger.error(e)
             raise e
+
+
+
+    @staticmethod
+    async def get_save_new_insight(db: AsyncSession, user: AuthenticatedUser, redis: Redis):
+        print(f"\n\n creating and saving new insight....... \n\n")
+        try:
+            insight = await InsightEngine.get_ai_insight(db, user, redis)
+        except Exception:
+            print("Oops!! Couldn't generate AI insights for now. Try again later.")
+            return {
+                "status": 400,
+                "message": "Oops!! Couldn't generate AI insights for now. Try again later.",
+                "insights": [],
+            }
+        
+        insight = await clean_ai_insight_response(insight)
+        
+        print(f"\nInsight raw response: {insight}\n")
+        
+        try:
+            print(f"\nParsing AI insight... type: {type(insight)}\n")
+            insight_data = await parse_ai_insight(insight)
+        except Exception as e:
+            print(f"❌ Error formatting AI insight: {e}")
+            insight_data = None
+
+        created_insights = []
+        if insight_data:
+            print("\nSaving AI insight to DB...\n")
+            try:
+                for ins in insight_data:
+                    cr: AIInsightDetail = await InsightEngine.create_ai_insight(ins, db, user)
+                    created_insights.append(cr)
+            except Exception as e:
+                print(f"Could not create AI insight: {e}")
+
+        if created_insights:
+            return {
+                "message": "Insight generated successfully.",
+                "insights": created_insights,
+            }
+        else:
+            return {
+                "message": "Oops! Try requesting insights later.",
+                "insights": [],
+            }
+
 
     @staticmethod
     async def generate_and_store_insights(user: AuthenticatedUser, dashboard_data: DashboardData, db: AsyncSession) -> None:
@@ -158,6 +209,43 @@ class InsightEngine:
             DO NOT mention user name or PII.
             Only return a JSON list of 2 insights in the above structure.
         """
+
+
+    @staticmethod
+    async def create_ai_insight(ai_insight_data: AIInsightCreate, db: AsyncSession, user: AuthenticatedUser) -> AIInsightDetail:
+        try:
+            new_ai_insight = AIInsight(  
+                title = ai_insight_data.title,
+                description = ai_insight_data.description,
+                summary = ai_insight_data.summary,
+                recommended_action = ai_insight_data.recommended_action,
+                user_id = user.id,
+                group_id = None,
+
+                category = ai_insight_data.category,
+                type = ai_insight_data.type,
+                difficulty = ai_insight_data.difficulty,
+                status = ai_insight_data.status,
+
+                estimated_savings = ai_insight_data.estimated_savings,
+                potential_gain = ai_insight_data.potential_gain,
+                impact_score = ai_insight_data.impact_score,
+
+                tags = ai_insight_data.tags,
+                timeframe = ai_insight_data.timeframe,
+                implementation_time = ai_insight_data.implementation_time,
+                insight_metadata = ai_insight_data.insight_metadata.model_dump()
+            )
+            db.add(new_ai_insight)
+            await db.commit()
+            await db.refresh(new_ai_insight)
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail=f"Could not create ai_insight - {str(e)}"
+            )
+        return AIInsightDetail.model_validate(new_ai_insight, from_attributes=True)
 
     @staticmethod
     def parse_insight_response(response: str) -> list[dict]:
@@ -255,7 +343,7 @@ class InsightEngine:
     
 
     @staticmethod
-    async def get_ai_insights(db: AsyncSession, user: AuthenticatedUser, redis: Redis):
+    async def get_ai_insight(db: AsyncSession, user: AuthenticatedUser, redis: Redis):
         if not config.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY is not set in environment variables")
 
@@ -287,7 +375,7 @@ class InsightEngine:
             response.raise_for_status()
 
             data = response.json()
-            print(f"\n\n {data} \n\n")
+            print(f"\n\n ->GOOGLE JSON response {data} GOOGLE JSON response<- \n\n")
             insight_text = data["candidates"][0]["content"]["parts"][0]["text"]
             return insight_text
 
@@ -325,17 +413,17 @@ class InsightEngine:
             Recent Activity:
             {activity_lines}
 
-            Generate 2 insights in this exact JSON format for the user to help them improve savings or group engagement. Each insight must follow this structure (use realistic values):
+            Generate 1 insight in this exact JSON format for the user to help them improve savings or group engagement. Each insight must follow this structure (use realistic values):
 
             {{
             "title": "Descriptive title of the insight",
             "summary": "Short summary of the insight",
             "description": "Detailed explanation of the insight",
             "recommended_action": "Suggested user action to improve behavior",
-            "category": "savings | group_engagement | financial_health",
-            "type": "behavioral | strategic | reminder",
+            "category": "contribution | savings | behavior | group | milestone | energy_saving | financial_optimization | contribution_strategy | spending_analysis | investment_tips | budgeting | goal_setting | other",
+            "type": "personal | group_specific | general | trending",
             "difficulty": "easy | medium | hard",
-            "status": "pending | implemented | in_progress",
+            "status": "not_started | in_progress | completed | dismissed",
             "estimated_savings": 1500.0,
             "potential_gain": 2000.0,
             "impact_score": 7.5,
@@ -344,9 +432,49 @@ class InsightEngine:
             "implementation_time": 2.5,
             "insight_metadata": {{
                 "source": "AI Engine",
+                "success_rate": 0.92,
+                "users_implemented": 250,
+                "average_time_to_complete": 200.5,
+                "prerequisites": ["an account", "some funds"],
+                "related_insights": ["00000", "hbie222"],
                 "confidence_score": 0.92
             }}
             }}
 
-            Only return a list of two such JSON objects.
+            ONLY RETURN THE INSIGHT AS A JSON OBJECT.
         """
+    
+
+
+
+
+async def parse_ai_insight(json_response: Union[str, dict]) -> List[AIInsightCreate]:
+    try:
+        if isinstance(json_response, str):
+            data = json.loads(json_response)
+        elif isinstance(json_response, dict):
+            data = json_response
+        else:
+            raise ValueError(f"Unexpected type for insights: {type(json_response)}")
+        
+        print(f"\nParsed data type: {type(data)}\nParsed data: {data}\n")
+        
+        # Validate and return as a single-item list
+        return [AIInsightCreate.model_validate(data)]
+    except ValidationError as e:
+        raise ValueError(f"Invalid AI insight format: {e}")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Failed to decode JSON from insights response: {e}")
+
+
+
+
+
+
+async def clean_ai_insight_response(raw_str: str) -> str:
+    """
+    Remove markdown-style code block wrappers like ```json ... ``` or ```
+    """
+    # Remove triple backticks with optional language tag
+    cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_str.strip(), flags=re.IGNORECASE)
+    return cleaned
