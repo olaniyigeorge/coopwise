@@ -110,7 +110,7 @@ export default function AIInsightsPage() {
 
     switch (activeTab) {
       case 'reduce-expenses':
-        return (
+  return (
           <Card className="mb-6 bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-start gap-4">
@@ -252,13 +252,13 @@ export default function AIInsightsPage() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
+                <Input
               placeholder="Search tips..."
               className="pl-10 w-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -274,22 +274,22 @@ export default function AIInsightsPage() {
             >
               Easy
             </Button>
-            <Button
+                  <Button
               variant="outline" 
               className={`border-gray-300 ${activeFilter === 'medium' ? 'bg-gray-100' : ''}`}
               onClick={() => setActiveFilter('medium')}
-            >
+                  >
               Medium
             </Button>
             <Button
               variant="outline"
               className={`border-gray-300 ${activeFilter === 'hard' ? 'bg-gray-100' : ''}`}
               onClick={() => setActiveFilter('hard')}
-            >
+                    >
               Hard
-            </Button>
-          </div>
-        </div>
+                  </Button>
+              </div>
+            </div>
 
         <div>
           {filteredInsights.length === 0 ? (
@@ -312,13 +312,13 @@ export default function AIInsightsPage() {
                     {searchQuery && (
                       <Button 
                         variant="outline" 
-                        onClick={() => setSearchQuery('')}
+                        onClick={() => setSearchQuery('')} 
                       >
                         Clear Search
                       </Button>
                     )}
                     <Button 
-                      onClick={handleRefresh}
+                      onClick={handleRefresh} 
                     >
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Refresh Insights
@@ -356,12 +356,12 @@ export default function AIInsightsPage() {
                         <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                           <LightbulbIcon className="w-4 h-4 text-orange-500" />
                         </div>
-                        <div>
+                <div>
                           <h3 className="font-medium text-gray-900 mb-1">{insight.title}</h3>
                           <p className="text-sm text-gray-600">{insight.description}</p>
-                        </div>
-                      </div>
-                      
+                </div>
+              </div>
+
                       <div className="mt-auto pt-3 flex justify-end">
                         <Button
                           variant="ghost"

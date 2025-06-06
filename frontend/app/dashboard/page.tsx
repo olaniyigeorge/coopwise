@@ -188,6 +188,7 @@ export default function Dashboard() {
             <Button 
               variant="default" 
               className="bg-primary hover:bg-primary/90 text-xs w-full"
+              onClick={() => router.push('/dashboard/wallet/fund')}
             >
               Add Money
             </Button>
@@ -369,7 +370,7 @@ export default function Dashboard() {
                   </p>
                 </div>
               </div>
-            </div>
+                  </div>
             
             <div className="space-y-2 mb-4">
               <div className="text-xs font-medium text-gray-500">Popular questions:</div>
@@ -378,7 +379,7 @@ export default function Dashboard() {
               </div>
               <div className="bg-gray-50 rounded p-2 text-xs">
                 "What's the best way to manage my debt?"
-              </div>
+                </div>
               <div className="bg-gray-50 rounded p-2 text-xs">
                 "How should I budget my monthly income?"
               </div>
