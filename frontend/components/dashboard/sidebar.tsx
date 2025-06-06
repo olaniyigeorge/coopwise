@@ -23,6 +23,11 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       href: '/dashboard', 
       icon: Home
     },
+    {
+      name: 'AI Assistant',
+      href: '/dashboard/ai-chat',
+      icon: Sparkles
+    },
     { 
       name: 'My Group', 
       href: '/dashboard/my-group', 
@@ -44,11 +49,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       icon: MessageSquare,
       badge: 10 
     },
-    {
-      name: 'AI Assistant',
-      href: '/dashboard/ai-chat',
-      icon: Sparkles
-    },
+
     { 
       name: 'Help & Support', 
       href: '/dashboard/support', 
