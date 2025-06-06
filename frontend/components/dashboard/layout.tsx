@@ -95,8 +95,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       
       case '/dashboard/ai-chat':
         return {
-          title: 'AI Financial Assistant',
-          subtitle: 'Get personalized financial advice and answers',
+          title: '',
+          subtitle: '',
           showBackButton: true,
           backUrl: '/dashboard'
         }
