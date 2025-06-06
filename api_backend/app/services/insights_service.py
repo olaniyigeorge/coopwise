@@ -90,7 +90,7 @@ class InsightEngine:
                 for i in insights
             ]
 
-            await update_cache(cache_key, serialized, ttl=300)
+            await update_cache(cache_key, serialized, ttl=360)
             return [AIInsightDetail.model_validate(json.loads(i)) for i in serialized]
 
         except Exception as e:

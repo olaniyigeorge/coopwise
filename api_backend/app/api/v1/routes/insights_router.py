@@ -3,11 +3,13 @@ import json
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from redis import Redis
+import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Union
 from pydantic import ValidationError
 
 
+from app.core.config import config
 from app.core.dependencies import get_redis
 from app.schemas.ai_insight_schema import AIInsightCreate, AIInsightDetail
 from app.services.insights_service import InsightEngine
@@ -63,83 +65,74 @@ async def get_mock_insights(
 
 
 @router.get("/get-ai_insight", summary="Get AI Insight")
-async def get_insights(
+async def get_insight(
     db: AsyncSession = Depends(get_async_db_session),
     current_user: AuthenticatedUser = Depends(get_current_user),
     redis: Redis = Depends(get_redis),
 ):
-    try:
-        insight = await InsightEngine.get_ai_insight(db, current_user, redis)
-    except Exception:
-        print("Oops!! Couldn't generate AI insights for now. Try again later.")
-        return {
-            "status": 400,
-            "message": "Oops!! Couldn't generate AI insights for now. Try again later.",
-            "insights": [],
-        }
-    
-    insight = await clean_ai_insight_response(insight)
-    
-    print(f"\nInsight raw response: {insight}\n")
-    
-    try:
-        print(f"\nParsing AI insight... type: {type(insight)}\n")
-        insight_data = await parse_ai_insight(insight)
-    except Exception as e:
-        print(f"❌ Error formatting AI insight: {e}")
-        insight_data = None
-
-    created_insights = []
-    if insight_data:
-        print("\nSaving AI insight to DB...\n")
-        try:
-            for ins in insight_data:
-                cr: AIInsightDetail = await InsightEngine.create_ai_insight(ins, db, current_user)
-                created_insights.append(cr)
-        except Exception as e:
-            print(f"Could not create AI insight: {e}")
-
-    if created_insights:
-        return {
-            "message": "Insight generated successfully.",
-            "insights": created_insights,
-        }
-    else:
-        return {
-            "message": "Oops! Try requesting insights later.",
-            "insights": [],
-        }
-
+    return await InsightEngine.get_save_new_insight(db, current_user, redis)
    
 
-async def parse_ai_insight(json_response: Union[str, dict]) -> List[AIInsightCreate]:
+
+@router.post("/ai-chat", summary="Chat with AI Assistant")
+async def get_immediate_ai_response(
+    db: AsyncSession = Depends(get_async_db_session),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    prompt: str ="",
+    redis: Redis = Depends(get_redis),
+):
+    whole_prompt = f"""
+        You are CoopWise AI assistant. An AI financial assitant working for a cooperative savings app in Nigeria.
+        That helps with savings and financial advices and insights
+
+
+        Provide a helpful, useful and very concise response for this user's message to advice their need
+
+        Message: {prompt}
+    """
     try:
-        if isinstance(json_response, str):
-            data = json.loads(json_response)
-        elif isinstance(json_response, dict):
-            data = json_response
-        else:
-            raise ValueError(f"Unexpected type for insights: {type(json_response)}")
-        
-        print(f"\nParsed data type: {type(data)}\nParsed data: {data}\n")
-        
-        # Validate and return as a single-item list
-        return [AIInsightCreate.model_validate(data)]
-    except ValidationError as e:
-        raise ValueError(f"Invalid AI insight format: {e}")
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Failed to decode JSON from insights response: {e}")
+        response = await ask_google_llm(whole_prompt)
+    except Exception as e:
+        response = f"Something happened. Please try again {e}"
+    
+    return response
+   
 
 
 
 
+async def ask_google_llm(prompt: str):
+    print(f"\n\n Prompt: {prompt}\n\n")
+    # Step 2: Prepare request payload
+    payload = {
+        "contents": [
+            {
+                "parts": [{"text": prompt}]
+            }
+        ]
+    }
 
-import re
+    # Step 3: Make POST request to Gemini API
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={config.GEMINI_API_KEY}"
 
-async def clean_ai_insight_response(raw_str: str) -> str:
-    """
-    Remove markdown-style code block wrappers like ```json ... ``` or ```
-    """
-    # Remove triple backticks with optional language tag
-    cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_str.strip(), flags=re.IGNORECASE)
-    return cleaned
+    try:
+        response = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=10
+        )
+        response.raise_for_status()
+
+        data = response.json()
+        print(f"\n\n ->GOOGLE JSON response {data} GOOGLE JSON response<- \n\n")
+        insight_text = data["candidates"][0]["content"]["parts"][0]["text"]
+        return insight_text
+
+    except requests.RequestException as e:
+        raise RuntimeError(f"Failed to fetch AI insight: {e}")
+
+    except (KeyError, IndexError) as e:
+        raise RuntimeError(f"Unexpected Gemini response format: {e}")
+    
+
