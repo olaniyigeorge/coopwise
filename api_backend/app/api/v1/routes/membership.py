@@ -4,12 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.schemas.auth import AuthenticatedUser
-from app.schemas.cooperative_membership import (
-    MembershipCreate, AcceptMembership, MembershipDetails
-)
+from app.schemas.cooperative_membership import MembershipDetails
 from db.dependencies import get_async_db_session
 from app.services.membership_service import CooperativeMembershipService
-from app.core.dependencies import get_current_user, is_admin_or_owner
+from app.core.dependencies import get_current_user
 
 router = APIRouter(
     prefix="/api/v1/memberships",
