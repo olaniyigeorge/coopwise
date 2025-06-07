@@ -16,7 +16,7 @@ export function PingBackend() {
         .catch((err) => {
           console.error('Ping error:', err)
         })
-    }, 5000) // 5 seconds
+    }, 15000) // 15 seconds
 
     return () => clearInterval(interval)
   }, [])

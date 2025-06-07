@@ -43,7 +43,7 @@ export interface GroupCreateData {
   max_members: number;
   target_amount?: number;
   status?: string;
-  rules?: string[];
+  rules?: { title: string; description: string; }[];
 }
 
 // Define types for group details
@@ -113,8 +113,9 @@ const GroupService = {
         coop_model: data.coop_model || "ajo",
         max_members: data.max_members,
         target_amount: data.target_amount || 0,
-        status: data.status || "active"
+        status: data.status || "active",
         // Explicitly not including rules as they cause 422 errors
+        rules: data.rules || null
       };
       
       console.log('Cleaned data for API:', cleanedData);

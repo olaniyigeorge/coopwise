@@ -159,9 +159,10 @@ export default function CreateGroup() {
         payout_strategy: "rotating", // Default
         coop_model: "ajo", // Changed from "sou" to "ajo" which is a valid enum value
         target_amount: groupData.targetAmount ? parseFloat(groupData.targetAmount.replace(/[^\d.-]/g, '')) : 0,
-        status: "active" // Default
+        status: "active", // Default
         // Removed rules from API payload as it's causing 422 errors
         // The rules are still collected in the UI but not sent to the API
+        rules
       }
       
       console.log('Submitting group data to API:', payload)

@@ -14,7 +14,6 @@ from app.services.payment_service import PaymentService
 from app.services.user_service import UserService
 from app.schemas.contribution_schemas import ContributionCreate, ContributionDetail
 from app.api.v1.routes.auth import get_current_user, is_admin_permissions
-from app.schemas.payments import PaymentCreate, PaystackPayload
 from app.services.contribution_service import ContributionService
 from app.schemas.auth import AuthenticatedUser
 from db.dependencies import get_async_db_session
