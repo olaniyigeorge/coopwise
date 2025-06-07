@@ -240,49 +240,60 @@ export default function SupportPage() {
 
         {/* Quick Actions */}
         <MobileGrid cols={{ base: 1, sm: 2, lg: 4 }} className="mb-8">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mx-auto mb-3">
-                <MessageCircle className="w-6 h-6" />
-              </div>
-              <h3 className="font-medium mb-1">Live Chat</h3>
-              <p className="text-sm text-gray-600 mb-3">Chat with our support team</p>
-              <Badge className="bg-green-100 text-green-800">Available</Badge>
-            </CardContent>
-          </Card>
+          <a href="mailto:hellocoopwise@gmail.com">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mx-auto mb-3">
+                  <MessageCircle className="w-6 h-6" />
+                </div>
+                <h3 className="font-medium mb-1">Live Chat</h3>
+                <p className="text-sm text-gray-600 mb-3">Chat with our support team</p>
+                <Badge className="bg-red-100 text-red-800">Coming Soon</Badge>
+              </CardContent>
+            </Card>
+          </a>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Phone className="w-6 h-6" />
-              </div>
-              <h3 className="font-medium mb-1">Call Support</h3>
-              <p className="text-sm text-gray-600 mb-3">+234 (0) 800 COOP-WISE</p>
-              <Badge className="bg-blue-100 text-blue-800">Mon-Fri 9AM-6PM</Badge>
-            </CardContent>
-          </Card>
+          <a href="tel:+2348144441712">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mx-auto mb-3">
+                  <Phone className="w-6 h-6" />
+                </div>
+                <h3 className="font-medium mb-1">Call Support</h3>
+                <p className="text-sm text-gray-600 mb-3">+234 814 4441 712</p>
+                <Badge className="bg-blue-100 text-blue-800">Mon-Fri 9AM-6PM</Badge>
+              </CardContent>
+            </Card>
+          </a>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Mail className="w-6 h-6" />
-              </div>
-              <h3 className="font-medium mb-1">Email Support</h3>
-              <p className="text-sm text-gray-600 mb-3">support@coopwise.com</p>
-              <Badge className="bg-gray-100 text-gray-800">24-48 hours</Badge>
-            </CardContent>
-          </Card>
+          <a href="mailto:hellocoopwise@gmail.com">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mx-auto mb-3">
+                  <Mail className="w-6 h-6" />
+                </div>
+                <h3 className="font-medium mb-1">Email Support</h3>
+                <p className="text-sm text-gray-600 mb-3">hellocoopwise@gmail.com</p>
+                <Badge className="bg-gray-100 text-gray-800">24-48 hours</Badge>
+              </CardContent>
+            </Card>
+          </a>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mx-auto mb-3">
-                <BookOpen className="w-6 h-6" />
-              </div>
-              <h3 className="font-medium mb-1">Help Center</h3>
-              <p className="text-sm text-gray-600 mb-3">Browse guides & tutorials</p>
-              <Badge className="bg-purple-100 text-purple-800">24/7 Access</Badge>
-            </CardContent>
-          </Card>
+          <a href="mailto:hellocoopwise@gmail.com">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow">
+              <CardContent className="p-6 text-center">
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mx-auto mb-3">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <h3 className="font-medium mb-1">Help Center</h3>
+                <p className="text-sm text-gray-600 mb-3">Browse guides & tutorials</p>
+                <div className="flex gap-2 justify-center">
+                  <Badge className="bg-purple-100 text-purple-800">24/7 Access</Badge>
+                  <Badge className="bg-red-100 text-red-800">Coming Soon</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </a>
         </MobileGrid>
 
         {/* Navigation Tabs */}
@@ -420,7 +431,10 @@ export default function SupportPage() {
         {activeSection === 'contact' && (
           <Card>
             <CardHeader>
-              <CardTitle>Contact Support</CardTitle>
+              <div className="flex items-center gap-3 mb-1">
+                <CardTitle>Contact Support</CardTitle>
+                <Badge className="bg-red-100 text-red-800">Coming Soon</Badge>
+              </div>
               <p className="text-gray-600">
                 Can't find what you're looking for? Send us a message and we'll get back to you.
               </p>

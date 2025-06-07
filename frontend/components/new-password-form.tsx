@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, CheckCircle } from "lucide-react"
 
 export default function NewPasswordForm() {
   const [password, setPassword] = useState("")
@@ -47,7 +47,7 @@ export default function NewPasswordForm() {
     
     // Redirect to login after 2 seconds
     setTimeout(() => {
-      window.location.href = "/auth/login"
+      window.location.href = "/login"
     }, 2000)
   }
 
@@ -55,15 +55,13 @@ export default function NewPasswordForm() {
 
   if (success) {
     return (
-      <div className="bg-white rounded-lg p-6 max-w-screen-sm w-full mx-auto">
+      <div className="p-8 w-full">
         <div className="flex flex-col items-center justify-center mb-6">
-          <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-xl font-semibold text-center text-primary">Password Reset Successful</h2>
-          <p className="text-sm text-center text-secondary mt-1">
+          <h2 className="text-xl font-semibold text-center text-gray-900">Password Reset Successful</h2>
+          <p className="text-sm text-center text-gray-600 mt-2">
             Your password has been reset successfully.
             <br />Redirecting to login page...
           </p>
@@ -73,39 +71,29 @@ export default function NewPasswordForm() {
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 max-w-screen-sm w-full mx-auto">
+    <div className="p-8 w-full">
       <div className="mb-6">
-        <div className="flex justify-start">
-          <Link href="/" className="inline-block mb-4">
-            <button className="text-sm text-secondary flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-              Back to Home
-            </button>
-          </Link>
-        </div>
-        <h2 className="text-xl font-semibold text-center text-primary">New Password</h2>
-        <p className="text-sm text-center text-secondary mt-1">
-          Create a new password to get back into your account.
+        <h2 className="text-xl font-semibold text-center text-gray-900">Create New Password</h2>
+        <p className="text-sm text-center text-gray-600 mt-2">
+          Set a strong password to secure your account.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="password" className="text-sm font-medium text-gray-700">New Password</Label>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Create a new password"
+              placeholder="Enter your new password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value)
                 setError("")
               }}
               required
-              className={`w-full h-10 border ${error && !validatePassword(password) ? 'border-red-500' : 'border-gray-300'} rounded pr-10`}
+              className={`w-full ${error && !validatePassword(password) ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'} pr-10`}
             />
             <button 
               type="button" 
@@ -117,27 +105,25 @@ export default function NewPasswordForm() {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
-          <div className="text-xs text-gray-500 mt-1 max-w-full">
-            <p className="leading-normal md:leading-relaxed">
-              Password must be at least 8 characters, with one capital letter and one lowercase letter.
-            </p>
+          <div className="text-xs text-gray-500 mt-1">
+            <p>Password must be at least 8 characters, with one capital letter and one lowercase letter.</p>
           </div>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirm New Password</Label>
           <div className="relative">
             <Input
               id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
-              placeholder="Re-enter the new password"
+              placeholder="Confirm your new password"
               value={confirmPassword}
               onChange={(e) => {
                 setConfirmPassword(e.target.value)
                 setError("")
               }}
               required
-              className={`w-full h-10 border ${error && (password !== confirmPassword) ? 'border-red-500' : 'border-gray-300'} rounded pr-10`}
+              className={`w-full ${error && (password !== confirmPassword) ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'} pr-10`}
             />
             <button 
               type="button" 
@@ -151,20 +137,22 @@ export default function NewPasswordForm() {
           </div>
         </div>
 
-        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+        {error && <p className="text-xs text-red-500">{error}</p>}
 
         <Button 
           type="submit" 
           disabled={!isFormFilled}
-          className={`w-full h-10 font-medium rounded mt-2 ${
-            isFormFilled 
-            ? "bg-primary hover:bg-primary/90 text-white" 
-            : "bg-gray-200 text-gray-700"
-          }`}
+          className="w-full"
         >
-          Proceed
+          Reset Password
         </Button>
       </form>
+
+      <div className="text-center mt-6 pt-6 border-t border-gray-200">
+        <p className="text-sm text-gray-600">
+          Remember your password? <Link href="/login" className="text-primary hover:text-primary/90 font-medium">Sign in</Link>
+        </p>
+      </div>
     </div>
   )
 } 

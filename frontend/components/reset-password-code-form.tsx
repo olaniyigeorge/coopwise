@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
 
 export default function ResetPasswordCodeForm() {
   const [code, setCode] = useState<string[]>(Array(5).fill(''))
@@ -82,7 +81,7 @@ export default function ResetPasswordCodeForm() {
     console.log({ code: completeCode })
     
     // After verification, proceed to new password creation page
-    window.location.href = "/auth/reset-password"
+    window.location.href = "/reset-password"
   }
 
   const resendCode = () => {
@@ -94,26 +93,16 @@ export default function ResetPasswordCodeForm() {
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 max-w-screen-sm w-full mx-auto">
+    <div className="p-8 w-full">
       <div className="mb-6">
-        <div className="flex justify-start">
-          <Link href="/auth/forgot-password" className="inline-block mb-4">
-            <button className="text-sm text-secondary flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-              Back to Home
-            </button>
-          </Link>
-        </div>
-        <h2 className="text-xl font-semibold text-center text-primary">Enter Verification Code</h2>
-        <p className="text-sm text-center text-secondary mt-1">
-          Please enter the 5-digit code sent to your email or<br />phone number.
+        <h2 className="text-xl font-semibold text-center text-gray-900">Enter Verification Code</h2>
+        <p className="text-sm text-center text-gray-600 mt-2">
+          Please enter the 5-digit code sent to your email
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex justify-center gap-3 my-6" role="group" aria-labelledby="verification-code-label">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex justify-center gap-3 my-8" role="group" aria-labelledby="verification-code-label">
           <span id="verification-code-label" className="sr-only">Verification Code</span>
           {[0, 1, 2, 3, 4].map((index) => (
             <input
@@ -127,31 +116,35 @@ export default function ResetPasswordCodeForm() {
               value={code[index]}
               onChange={(e) => handleInputChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
-              className="w-12 h-12 text-center text-xl border border-gray-300 rounded focus:border-primary focus:outline-none"
+              className="w-12 h-14 text-center text-xl font-semibold border border-gray-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
               required
               aria-label={`Digit ${index + 1} of verification code`}
             />
           ))}
         </div>
         
-        {error && <p className="text-xs text-red-500 text-center mt-1">{error}</p>}
+        {error && <p className="text-xs text-red-500 text-center">{error}</p>}
 
         <Button 
           type="submit" 
           disabled={code.join('').length !== 5}
-          className={`w-full h-10 font-medium rounded mt-2 ${
-            code.join('').length === 5 
-            ? "bg-primary hover:bg-primary/90 text-white" 
-            : "bg-gray-200 text-gray-700"
-          }`}
+          className="w-full"
         >
-          Verify
+          Verify Code
         </Button>
       </form>
 
-      <div className="text-center mt-4">
-        <p className="text-sm text-secondary">
-          Didn't receive code? <button onClick={resendCode} className="text-primary hover:text-primary/90 font-medium">Resend code</button> {timer > 0 && formatTime(timer)}
+      <div className="text-center mt-6 pt-6 border-t border-gray-200">
+        <p className="text-sm text-gray-600">
+          {timer > 0 ? (
+            <>
+              Didn't receive code? You can resend in <span className="font-medium">{formatTime(timer)}</span>
+            </>
+          ) : (
+            <>
+              Didn't receive code? <button onClick={resendCode} className="text-primary hover:text-primary/90 font-medium">Resend code</button>
+            </>
+          )}
         </p>
       </div>
     </div>
