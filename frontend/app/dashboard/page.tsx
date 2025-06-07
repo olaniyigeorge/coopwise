@@ -7,7 +7,7 @@ import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import GroupsTabView from '@/components/dashboard/groups-tab-view'
-import { getDashboardData, DashboardData } from '@/lib/dashboard-service'
+import { getDashboardData, DashboardData, defDashData } from '@/lib/dashboard-service'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { Bot, MessageSquare, Sparkles } from 'lucide-react'
@@ -16,34 +16,7 @@ export default function Dashboard() {
   const router = useRouter()
   const { user, isAuthenticated } = useAuth()
   const [loading, setLoading] = useState(true)
-  const [dashboardData, setDashboardData] = useState<DashboardData>({
-    savings: {
-      total: 0,
-      goal: 0,
-      progress: 0,
-    },
-    wallet: {
-      balance: 0,
-    },
-    nextContribution: {
-      hasUpcoming: false,
-    },
-    nextPayout: {
-      hasUpcoming: false,
-    },
-    recentActivity: [],
-    savingsGoal: {
-      name: '',
-      current: 0,
-      target: 0,
-      progress: 0,
-      remaining: 0,
-    },
-    aiInsights: {
-      available: false,
-      insights: [],
-    },
-  })
+  const [dashboardData, setDashboardData] = useState<DashboardData>(defDashData)
 
   // Extract user's first name
   const firstName = user?.full_name?.split(' ')[0] || 'User'
@@ -57,40 +30,8 @@ export default function Dashboard() {
           console.log('Dashboard data received:', data)
           
           // Ensure the data has the expected structure
-          const processedData: DashboardData = {
-            savings: {
-              total: data?.savings?.total || 0,
-              goal: data?.savings?.goal || 0,
-              progress: data?.savings?.progress || 0,
-            },
-            wallet: {
-              balance: data?.wallet?.balance || 0,
-            },
-            nextContribution: {
-              groupName: data?.nextContribution?.groupName || '',
-              amount: data?.nextContribution?.amount || 0,
-              dueDate: data?.nextContribution?.dueDate || '',
-              hasUpcoming: data?.nextContribution?.hasUpcoming || false,
-            },
-            nextPayout: {
-              groupName: data?.nextPayout?.groupName || '',
-              amount: data?.nextPayout?.amount || 0,
-              dueDate: data?.nextPayout?.dueDate || '',
-              hasUpcoming: data?.nextPayout?.hasUpcoming || false,
-            },
-            recentActivity: data?.recentActivity || [],
-            savingsGoal: {
-              name: data?.savingsGoal?.name || '',
-              current: data?.savingsGoal?.current || 0,
-              target: data?.savingsGoal?.target || 0,
-              progress: data?.savingsGoal?.progress || 0,
-              remaining: data?.savingsGoal?.remaining || 0,
-            },
-            aiInsights: {
-              available: data?.aiInsights?.available || false,
-              insights: data?.aiInsights?.insights || [],
-            },
-          }
+          const processedData: DashboardData = data
+            
           
           setDashboardData(processedData)
         } catch (error) {
@@ -116,18 +57,34 @@ export default function Dashboard() {
   }
 
   // Safely access nested properties with nullish coalescing
-  const savingsTotal = dashboardData?.savings?.total ?? 0
-  const savingsGoal = dashboardData?.savings?.goal ?? 0
-  const savingsProgress = dashboardData?.savings?.progress ?? 0
-  const walletBalance = dashboardData?.wallet?.balance ?? 0
-  const hasUpcomingContribution = dashboardData?.nextContribution?.hasUpcoming ?? false
-  const hasUpcomingPayout = dashboardData?.nextPayout?.hasUpcoming ?? false
-  const savingsGoalName = dashboardData?.savingsGoal?.name ?? ''
-  const savingsGoalCurrent = dashboardData?.savingsGoal?.current ?? 0
-  const savingsGoalTarget = dashboardData?.savingsGoal?.target ?? 0
-  const savingsGoalProgress = dashboardData?.savingsGoal?.progress ?? 0
-  const savingsGoalRemaining = dashboardData?.savingsGoal?.remaining ?? 0
-  const recentActivity = dashboardData?.recentActivity ?? []
+  const savingsTotal = dashboardData?.summary?.yourSavings ?? 0;
+  const savingsGoal = dashboardData?.user?.targetSavingsAmount ?? 0;
+  
+  const savingsProgress = savingsGoal > 0
+    ? savingsTotal / savingsGoal
+    : 0;
+  
+  const walletBalance = dashboardData?.summary?.wallet?.stableCoinBalance ?? 0;
+  
+  const hasUpcomingContribution = !!dashboardData?.summary?.nextContribution;
+  const hasUpcomingPayout = !!dashboardData?.summary?.nextPayout;
+  
+  const groupGoals = dashboardData?.targets?.groupGoals ?? [];
+  const firstGroupGoal = groupGoals[0] ?? {};
+  
+  const savingsGoalName = firstGroupGoal.name ?? '';
+  const savingsGoalCurrent = firstGroupGoal.targetAmount ?? 0;
+  const savingsGoalTarget = dashboardData?.targets?.savingsTarget ?? 0;
+  
+  const ssg = dashboardData?.user?.targetSavingsAmount ?? 0;
+  const sst = dashboardData?.summary?.yourSavings ?? 0;
+
+  const savingsGoalProgress = ssg > 0 ? sst / ssg : 0;
+  // Assuming you want to calculate remaining savings as:
+  // (User savings goal - total savings toward goals)
+  const savingsGoalRemaining = ssg - sst;
+  
+  const recentActivity = dashboardData?.activities ?? [];
 
   return (
     <DashboardLayout>
@@ -178,10 +135,13 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* {formatCurrency(walletBalance)} */}
+
         <div className="bg-white rounded-lg shadow p-5">
           <h3 className="text-gray-500 text-sm mb-2">Your Wallet</h3>
-          <div className="flex items-center">
-            <div className="text-2xl font-bold">{formatCurrency(walletBalance)}</div>
+          <div className="flex items-start justify-between">
+            <div className="text-2xl font-bold">USDC {walletBalance}</div> 
+            <div className="text-xs font-medium">{formatCurrency(walletBalance*(1600))}</div> 
           </div>
           <div className="text-gray-500 text-xs mt-1">Balance available in your wallet for contributions</div>
           <div className="mt-4">
@@ -209,9 +169,10 @@ export default function Dashboard() {
             <div className="ml-3">
               {hasUpcomingContribution ? (
                 <>
-                  <div className="text-base font-medium">{dashboardData?.nextContribution?.groupName}</div>
+                  <div className="text-base font-medium">{dashboardData?.summary.nextContribution}</div>
                   <div className="text-gray-500 text-xs mt-1">
-                    {formatCurrency(dashboardData?.nextContribution?.amount || 0)} due on {new Date(dashboardData?.nextContribution?.dueDate || '').toLocaleDateString()}
+                  {dashboardData?.summary.nextContribution}
+                    {/* {formatCurrency(dashboardData?.nextContribution?.amount || 0)} due on {new Date(dashboardData?.nextContribution?.dueDate || '').toLocaleDateString()} */}
                   </div>
                 </>
               ) : (
@@ -238,9 +199,10 @@ export default function Dashboard() {
             <div className="ml-3">
               {hasUpcomingPayout ? (
                 <>
-                  <div className="text-base font-medium">{dashboardData?.nextPayout?.groupName}</div>
+                  <div className="text-base font-medium">{dashboardData?.summary?.nextPayout}</div>
                   <div className="text-gray-500 text-xs mt-1">
-                    {formatCurrency(dashboardData?.nextPayout?.amount || 0)} on {new Date(dashboardData?.nextPayout?.dueDate || '').toLocaleDateString()}
+                  {dashboardData?.summary?.nextPayout}
+                    {/* {formatCurrency(dashboardData?.nextPayout?.amount || 0)} on {new Date(dashboardData?.nextPayout?.dueDate || '').toLocaleDateString()} */}
                   </div>
                 </>
               ) : (
@@ -286,10 +248,10 @@ export default function Dashboard() {
                         <div className="text-sm font-medium">{activity.type}</div>
                         {activity.amount && (
                           <div className="text-sm font-medium">{formatCurrency(activity.amount)}</div>
-                        )}
+                        )}  
                       </div>
                       <div className="text-xs text-gray-500">{activity.description}</div>
-                      <div className="text-xs text-gray-400 mt-1">{new Date(activity.date).toLocaleDateString()}</div>
+                      <div className="text-xs text-gray-400 mt-1">{new Date(activity.createdAt).toLocaleDateString()}</div>
                     </div>
                   </div>
                 ))}
