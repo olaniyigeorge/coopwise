@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { AppWrapper } from '@/components/app-wrapper'
 import { Toaster } from "@/components/ui/toaster"
+import { PingBackend } from '@/components/keep_alive'
 
 // Load Inter font with subset optimization
 const inter = Inter({
@@ -83,6 +84,7 @@ export default function RootLayout({
       <body className="font-sans" suppressHydrationWarning>
         <AppWrapper>{children}</AppWrapper>
         <Toaster />
+        <PingBackend />
       </body>
     </html>
   )
