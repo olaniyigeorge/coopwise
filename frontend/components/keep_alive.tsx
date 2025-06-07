@@ -2,10 +2,14 @@
 
 import { useEffect } from 'react'
 
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
+
+
 export function PingBackend() {
   useEffect(() => {
     const interval = setInterval(() => {
-      fetch('https://coopwise.onrender.com/ping') 
+      fetch(API_URL) 
         .then((res) => {
           if (!res.ok) throw new Error('Ping failed')
           return res.json()
