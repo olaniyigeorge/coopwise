@@ -119,6 +119,8 @@ const GroupService = {
       };
       
       console.log('Cleaned data for API:', cleanedData);
+
+      console.log(`\nauth service headers: ${JSON.stringify(AuthService.getAuthHeader())}`)
       
       const response = await axios.post(GROUP_ENDPOINTS.CREATE, cleanedData, {
         headers: {

@@ -3,15 +3,13 @@
 
 # Enforce rotation rules and statuses.
 
-
-from datetime import datetime, timedelta
-import json
 from typing import List, Optional
 from uuid import UUID
 from fastapi.encoders import jsonable_encoder
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy import desc
 from jose import jwt, JWTError
 
 from sqlalchemy.orm import joinedload
@@ -33,7 +31,7 @@ class CooperativeGroupService:
     @staticmethod
     async def create_coop(coop_data: CoopGroupCreate, db: AsyncSession):
         try:
-            print("\n\n actual creation....\n")
+            
             new_coop_group = CooperativeGroup(
                 name=coop_data.name,
                 creator_id=coop_data.creator_id,
@@ -47,6 +45,7 @@ class CooperativeGroupService:
             db.add(new_coop_group)
             await db.commit()
             await db.refresh(new_coop_group)
+            print("\n\n coop created....\n")
         except Exception as e:
             logger.error(e)
             raise HTTPException(
@@ -58,7 +57,7 @@ class CooperativeGroupService:
     @staticmethod
     async def get_coop_groups(db: AsyncSession, skip: int = 0, limit: int = 10):
         try:
-            stmt = select(CooperativeGroup).offset(skip).limit(limit)
+            stmt = select(CooperativeGroup).order_by(desc(CooperativeGroup.created_at)).offset(skip).limit(limit)
             result = await db.execute(stmt)
             coop_groups = result.scalars().all()
         except Exception as e:

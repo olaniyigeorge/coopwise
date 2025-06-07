@@ -145,6 +145,9 @@ export default function CreateGroup() {
 
   const handleComplete = async (rules: {title: string, description: string}[]) => {
     if (!groupData) return
+
+
+    console.log(`\nRules: ${rules}\n`)
     
     setIsCreating(true)
     try {
@@ -162,7 +165,7 @@ export default function CreateGroup() {
         status: "active", // Default
         // Removed rules from API payload as it's causing 422 errors
         // The rules are still collected in the UI but not sent to the API
-        rules
+        rules: rules
       }
       
       console.log('Submitting group data to API:', payload)
