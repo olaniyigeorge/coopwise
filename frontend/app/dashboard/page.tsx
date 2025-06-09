@@ -27,12 +27,10 @@ export default function Dashboard() {
       if (isAuthenticated) {
         try {
           const data = await getDashboardData()
-          console.log('Dashboard data received:', data)
-          
+                   
           // Ensure the data has the expected structure
           const processedData: DashboardData = data
-            
-          
+          console.log('Setting Dashboard data:::', data)          
           setDashboardData(processedData)
         } catch (error) {
           console.error('Error fetching dashboard data:', error)
@@ -57,34 +55,35 @@ export default function Dashboard() {
   }
 
   // Safely access nested properties with nullish coalescing
-  const savingsTotal = dashboardData?.summary?.yourSavings ?? 0;
-  const savingsGoal = dashboardData?.user?.targetSavingsAmount ?? 0;
-  
-  const savingsProgress = savingsGoal > 0
-    ? savingsTotal / savingsGoal
-    : 0;
-  
-  const walletBalance = dashboardData?.summary?.wallet?.stableCoinBalance ?? 0;
-  
-  const hasUpcomingContribution = !!dashboardData?.summary?.nextContribution;
-  const hasUpcomingPayout = !!dashboardData?.summary?.nextPayout;
-  
-  const groupGoals = dashboardData?.targets?.groupGoals ?? [];
-  const firstGroupGoal = groupGoals[0] ?? {};
-  
-  const savingsGoalName = firstGroupGoal.name ?? '';
-  const savingsGoalCurrent = firstGroupGoal.targetAmount ?? 0;
-  const savingsGoalTarget = dashboardData?.targets?.savingsTarget ?? 0;
-  
-  const ssg = dashboardData?.user?.targetSavingsAmount ?? 0;
-  const sst = dashboardData?.summary?.yourSavings ?? 0;
+const savingsTotal = dashboardData?.summary?.your_savings ?? 0;
+const savingsGoal = dashboardData?.user?.target_savings_amount ?? 0;
 
-  const savingsGoalProgress = ssg > 0 ? sst / ssg : 0;
-  // Assuming you want to calculate remaining savings as:
-  // (User savings goal - total savings toward goals)
-  const savingsGoalRemaining = ssg - sst;
-  
-  const recentActivity = dashboardData?.activities ?? [];
+const savingsProgress = savingsGoal > 0
+  ? savingsTotal / savingsGoal
+  : 0;
+
+const walletBalance = dashboardData?.summary?.wallet?.stable_coin_balance ?? 0;
+
+const hasUpcomingContribution = !!dashboardData?.summary?.next_contribution;
+const hasUpcomingPayout = !!dashboardData?.summary?.next_payout;
+
+const groupGoals = dashboardData?.targets?.group_goals ?? [];
+const firstGroupGoal = groupGoals[0] ?? {};
+
+const savingsGoalName = firstGroupGoal.name ?? '';
+const savingsGoalCurrent = firstGroupGoal.target_amount ?? 0;
+const savingsGoalTarget = dashboardData?.targets?.savings_target ?? 0;
+
+const ssg = dashboardData?.user?.target_savings_amount ?? 0;
+const sst = dashboardData?.summary?.your_savings ?? 0;
+
+const savingsGoalProgress = ssg > 0 ? sst / ssg : 0;
+const savingsGoalRemaining = ssg - sst;
+
+const recentActivity = dashboardData?.activities ?? [];
+
+
+  console.log(`\n\n 🔁 Your savings:" ${savingsTotal}\n\n`)
 
   return (
     <DashboardLayout>
@@ -139,8 +138,8 @@ export default function Dashboard() {
 
         <div className="bg-white rounded-lg shadow p-5">
           <h3 className="text-gray-500 text-sm mb-2">Your Wallet</h3>
-          <div className="flex items-start justify-between">
-            <div className="text-2xl font-bold">USDC {walletBalance}</div> 
+          <div className="items-start justify-between">
+            <div className="text-2xl font-bold w-full"><span className="text-xl tracking-tighter">USDC</span>  {Number(walletBalance || 0).toFixed(2)}</div> 
             <div className="text-xs font-medium">{formatCurrency(walletBalance*(1600))}</div> 
           </div>
           <div className="text-gray-500 text-xs mt-1">Balance available in your wallet for contributions</div>
@@ -169,9 +168,9 @@ export default function Dashboard() {
             <div className="ml-3">
               {hasUpcomingContribution ? (
                 <>
-                  <div className="text-base font-medium">{dashboardData?.summary.nextContribution}</div>
+                  <div className="text-base font-medium">{dashboardData?.summary.next_contribution}</div>
                   <div className="text-gray-500 text-xs mt-1">
-                  {dashboardData?.summary.nextContribution}
+                  {dashboardData?.summary.next_contribution}
                     {/* {formatCurrency(dashboardData?.nextContribution?.amount || 0)} due on {new Date(dashboardData?.nextContribution?.dueDate || '').toLocaleDateString()} */}
                   </div>
                 </>
@@ -199,9 +198,9 @@ export default function Dashboard() {
             <div className="ml-3">
               {hasUpcomingPayout ? (
                 <>
-                  <div className="text-base font-medium">{dashboardData?.summary?.nextPayout}</div>
+                  <div className="text-base font-medium">{dashboardData?.summary?.next_payout}</div>
                   <div className="text-gray-500 text-xs mt-1">
-                  {dashboardData?.summary?.nextPayout}
+                  {dashboardData?.summary?.next_payout}
                     {/* {formatCurrency(dashboardData?.nextPayout?.amount || 0)} on {new Date(dashboardData?.nextPayout?.dueDate || '').toLocaleDateString()} */}
                   </div>
                 </>
@@ -251,7 +250,7 @@ export default function Dashboard() {
                         )}  
                       </div>
                       <div className="text-xs text-gray-500">{activity.description}</div>
-                      <div className="text-xs text-gray-400 mt-1">{new Date(activity.createdAt).toLocaleDateString()}</div>
+                      <div className="text-xs text-gray-400 mt-1">{new Date(activity.created_at).toLocaleDateString()}</div>
                     </div>
                   </div>
                 ))}

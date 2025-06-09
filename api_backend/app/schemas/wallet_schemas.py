@@ -50,9 +50,11 @@ class WalletDetail(BaseModel):
 class WalletLedgerDetail(BaseModel):
     id: UUID
     wallet_id: UUID
+    type: LedgerType
     stable_amount: int
     local_currency: LocalCurrency
     exchange_rate: float
+    status: LedgerStatus
     created_at: datetime
 
 class WalletLedgerCreate(BaseModel):
