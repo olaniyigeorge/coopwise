@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import '@/styles/markdown.css'
 import { AppWrapper } from '@/components/app-wrapper'
 import { Toaster } from "@/components/ui/toaster"
 import { PingBackend } from '@/components/keep_alive'

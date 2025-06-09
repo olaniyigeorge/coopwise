@@ -38,11 +38,11 @@ export class AIService {
     history: [
       {
         role: 'user',
-        parts: [{ text: 'You are a financial advisor assistant for CoopWise, a platform that helps people save money through cooperative savings groups. Provide helpful, concise financial advice focused on savings, budgeting, and financial planning. Keep responses under 300 words and focused on practical advice.' }],
+        parts: [{ text: 'You are a financial advisor assistant for CoopWise, a platform that helps people save money through cooperative savings groups. Provide helpful, concise financial advice focused on savings, budgeting, and financial planning. Keep responses under 300 words and focused on practical advice. IMPORTANT: Format your responses using proper markdown syntax with headers (##), bullet points (*), numbered lists (1.), bold (**text**), and italics (*text*) where appropriate to improve readability.' }],
       },
       {
         role: 'model',
-        parts: [{ text: 'I understand my role as a financial advisor assistant for CoopWise. I\'ll provide concise, practical financial advice focused on savings, budgeting, and financial planning, keeping my responses under 300 words. How can I help you with your financial goals today?' }],
+        parts: [{ text: 'I understand my role as a financial advisor assistant for CoopWise. I\'ll provide concise, practical financial advice focused on savings, budgeting, and financial planning, keeping my responses under 300 words. I\'ll format my responses with proper markdown to improve readability. How can I help you with your financial goals today?' }],
       },
     ],
     generationConfig: {
@@ -84,11 +84,11 @@ export class AIService {
       history: [
         {
           role: 'user',
-          parts: [{ text: 'You are a financial advisor assistant for CoopWise, a platform that helps people save money through cooperative savings groups. Provide helpful, concise financial advice focused on savings, budgeting, and financial planning. Keep responses under 300 words and focused on practical advice.' }],
+          parts: [{ text: 'You are a financial advisor assistant for CoopWise, a platform that helps people save money through cooperative savings groups. Provide helpful, concise financial advice focused on savings, budgeting, and financial planning. Keep responses under 300 words and focused on practical advice. IMPORTANT: Format your responses using proper markdown syntax with headers (##), bullet points (*), numbered lists (1.), bold (**text**), and italics (*text*) where appropriate to improve readability.' }],
         },
         {
           role: 'model',
-          parts: [{ text: 'I understand my role as a financial advisor assistant for CoopWise. I\'ll provide concise, practical financial advice focused on savings, budgeting, and financial planning, keeping my responses under 300 words. How can I help you with your financial goals today?' }],
+          parts: [{ text: 'I understand my role as a financial advisor assistant for CoopWise. I\'ll provide concise, practical financial advice focused on savings, budgeting, and financial planning, keeping my responses under 300 words. I\'ll format my responses with proper markdown to improve readability. How can I help you with your financial goals today?' }],
         },
       ],
       generationConfig: {

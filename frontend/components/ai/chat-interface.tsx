@@ -11,6 +11,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Send, Sparkles, Bot, User, RefreshCw, ChevronDown } from 'lucide-react'
 import ComingSoonWrapper from '@/components/ui/coming-soon-wrapper'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 type Message = {
   id: string
@@ -289,7 +291,16 @@ export default function AIChatInterface() {
                           : 'bg-muted'
                       }`}
                     >
-                        <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+                        {message.role === 'user' ? (
+                          <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+                        ) : (
+                          <div className="text-sm ai-message-content">
+                            {/* @ts-ignore - React-markdown has TypeScript issues with Next.js */}
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                        )}
                         <div 
                           className={`text-xs mt-1 ${
                             message.role === 'user' 
