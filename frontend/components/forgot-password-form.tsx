@@ -6,9 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Image from "next/image"
+import { CheckCircle } from "lucide-react"
 
-export default function ForgotPasswordForm() {
-  const [phoneOrEmail, setPhoneOrEmail] = useState("")
+interface ForgotPasswordFormProps {
+  emailOnly?: boolean;
+}
+
+export default function ForgotPasswordForm({ emailOnly = false }: ForgotPasswordFormProps) {
+  const [email, setEmail] = useState("")
   const [error, setError] = useState("")
   const [isCodeSent, setIsCodeSent] = useState(false)
 
@@ -16,8 +21,14 @@ export default function ForgotPasswordForm() {
     e.preventDefault()
     
     // Simple validation
-    if (!phoneOrEmail.trim()) {
-      setError("Please enter your phone number or email")
+    if (!email.trim()) {
+      setError(`Please enter your ${emailOnly ? 'email address' : 'phone number or email'}`)
+      return
+    }
+    
+    // Email validation if emailOnly is true
+    if (emailOnly && !email.includes('@')) {
+      setError("Please enter a valid email address")
       return
     }
     
@@ -25,71 +36,74 @@ export default function ForgotPasswordForm() {
     setIsCodeSent(true)
     
     // Handle forgot password logic here
-    console.log({ phoneOrEmail })
+    console.log({ email })
   }
 
-  const isFormFilled = phoneOrEmail.trim() !== ""
+  const isFormFilled = email.trim() !== ""
 
   if (isCodeSent) {
     return (
-      <div className="bg-white rounded-lg p-6 max-w-screen-sm w-full mx-auto">
+      <div className="p-8 w-full">
         <div className="flex flex-col items-center justify-center mb-6">
-          <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-4">
-            <Image src="/assets/icons/Check.svg" alt="Success" width={24} height={24} />
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-xl font-semibold text-center text-primary">Password Reset Code Sent</h2>
-          <p className="text-sm text-center text-secondary mt-1">
-            Reset password link has been sent to xxxxx
-            <br />Enter code to reset your password
+          <h2 className="text-xl font-semibold text-center text-gray-900">Password Reset Link Sent</h2>
+          <p className="text-sm text-center text-gray-600 mt-2">
+            A password reset link has been sent to <strong>{email}</strong>
+            <br />Check your inbox and follow the instructions to reset your password
           </p>
         </div>
 
         <Button 
           type="button" 
-          onClick={() => window.location.href = "/auth/reset-password-code"}
-          className="w-full bg-primary hover:bg-primary/90 text-white font-medium rounded h-10"
+          onClick={() => window.location.href = emailOnly ? "/reset-password" : "/reset-password-code"}
+          className="w-full"
         >
-          Proceed
+          Continue
         </Button>
+        
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-600">
+            Didn't receive the email? <button onClick={() => setIsCodeSent(false)} className="text-primary hover:text-primary/90 font-medium">Try again</button>
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 max-w-screen-sm w-full mx-auto">
+    <div className="p-8 w-full">
       <div className="mb-6">
-        <div className="flex justify-start">
-          <Link href="/" className="inline-block mb-4">
-            <button className="text-sm text-secondary flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-              Back to Home
-            </button>
-          </Link>
-        </div>
-        <h2 className="text-xl font-semibold text-center text-primary">Forgot Password</h2>
-        <p className="text-sm text-center text-secondary mt-1">
-          Enter the phone number or email you signed up with.
-          <br />We will send a code to reset your password
+        <h2 className="text-xl font-semibold text-center text-gray-900">Reset Your Password</h2>
+        <p className="text-sm text-center text-gray-600 mt-2">
+          {emailOnly 
+            ? "Enter your email address to receive a password reset link." 
+            : "Enter the email address or phone number associated with your account."}
+          <br />
+          {emailOnly 
+            ? "We'll send you a link to create a new password." 
+            : "We'll send you a link to reset your password."}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1">
-          <Label htmlFor="phoneOrEmail" className="text-sm font-medium text-gray-700">Phone Number/Email</Label>
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+            {emailOnly ? "Email Address" : "Email or Phone Number"}
+          </Label>
           <div className="relative">
             <Input
-              id="phoneOrEmail"
-              type="text"
-              placeholder="Enter your phone number"
-              value={phoneOrEmail}
+              id="email"
+              type={emailOnly ? "email" : "text"}
+              placeholder={emailOnly ? "Enter your email address" : "Enter your email or phone number"}
+              value={email}
               onChange={(e) => {
-                setPhoneOrEmail(e.target.value)
+                setEmail(e.target.value)
                 setError("")
               }}
               required
-              className={`w-full h-10 border ${error ? 'border-red-500' : 'border-gray-300'} rounded`}
+              className={`w-full ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'}`}
             />
             {error && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -99,26 +113,21 @@ export default function ForgotPasswordForm() {
               </div>
             )}
           </div>
-          {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-          {error && <p className="text-xs text-red-500">Phone number/Email</p>}
+          {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
 
         <Button 
           type="submit" 
           disabled={!isFormFilled}
-          className={`w-full h-10 font-medium rounded mt-2 ${
-            isFormFilled 
-            ? "bg-primary hover:bg-primary/90 text-white" 
-            : "bg-gray-200 text-gray-700"
-          }`}
+          className="w-full"
         >
-          Proceed
+          Reset Password
         </Button>
       </form>
 
-      <div className="text-center mt-4">
-        <p className="text-sm text-secondary">
-          Remember Password? <Link href="/auth/login" className="text-primary hover:text-primary/90 font-medium">Sign in here</Link>
+      <div className="text-center mt-6 pt-6 border-t border-gray-200">
+        <p className="text-sm text-gray-600">
+          Remember your password? <Link href="/login" className="text-primary hover:text-primary/90 font-medium">Sign in</Link>
         </p>
       </div>
     </div>

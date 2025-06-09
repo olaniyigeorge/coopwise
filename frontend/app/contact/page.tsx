@@ -260,9 +260,12 @@ export default function ContactPage() {
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
                 Send us a message
               </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                Fill out the form below and we'll get back to you as soon as possible. We typically respond within 24 hours.
-              </p>
+              <div className="flex items-center gap-3 mb-4">
+                <p className="text-lg text-gray-600">
+                  Fill out the form below and we'll get back to you as soon as possible. We typically respond within 24 hours.
+                </p>
+                <Badge className="bg-red-100 text-red-800 whitespace-nowrap">Coming Soon</Badge>
+              </div>
 
               {submitted && (
                 <Alert className="mb-6 border-green-200 bg-green-50">
@@ -367,7 +370,10 @@ export default function ContactPage() {
                       <MapPin className="w-4 h-4 text-primary" />
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">Visit our office</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-semibold text-gray-900">Visit our office</div>
+                        <Badge className="bg-red-100 text-red-800">Coming Soon</Badge>
+                      </div>
                       <div className="text-gray-600">
                         123 Innovation Drive<br />
                         Lagos State,<br />
