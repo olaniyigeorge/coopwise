@@ -97,7 +97,7 @@ export default function AIInsightCard({
         </h3>
         
         {!compact && (
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-600 mb-4 line-clamp-4">
             {insight.description}
           </p>
         )}

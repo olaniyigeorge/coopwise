@@ -355,7 +355,7 @@ const recentActivity = dashboardData?.activities ?? [];
             </Link>
           </div>
           {/* AI Insights Section */}
-          <div className="bg-white rounded-lg shadow p-4 sm:p-5">
+          <div className="bg-white rounded-lg  shadow p-4 sm:p-5">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h2 className="text-sm sm:text-base font-semibold flex items-center">
                 <Sparkles className="h-4 w-4 mr-2 text-secondary" />
@@ -364,11 +364,13 @@ const recentActivity = dashboardData?.activities ?? [];
             </div>
 
             
-            {dashboardData.ai_insights.slice(0,3).map((insight: AIInsightDetail) => (
-              <AIInsightCard insight={insight} />
-            ))}
 
-            
+
+            <div className="flex-col items-center space-y-4">
+              {dashboardData.ai_insights.slice(0,3).map((insight: AIInsightDetail) => (
+                <AIInsightCard insight={insight} />
+              ))}
+            </div>
             
           </div>
         </div>
