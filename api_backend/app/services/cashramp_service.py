@@ -1,5 +1,7 @@
-from typing import Optional
+from decimal import Decimal
+from typing import Any, Dict, Optional
 import httpx
+from redis import Redis
 from app.schemas.cashramp_schemas import InitiateDepositResponse
 from app.core.config import config  
 
@@ -85,4 +87,52 @@ async def mark_deposit_as_paid(payment_request_id: str, receipt_url: Optional[st
 
 
 
+async def get_ramp_quote(
+    amount: int,
+    currency: str,
+    customer: str,
+    paymentType: str,
+    paymentMethodType: str,
+    redis: Redis,
+    async_client: httpx.AsyncClient
+) -> Dict[str, Any]:
+    """
+    Get current exchange rate from CashRamp GraphQL API.
+    """
+    query = """
+    query GetRampQuote($amount: Int!, $currency: String!, $customer: String!, $paymentType: String!, $paymentMethodType: String!) {
+        rampQuote(
+            amount: $amount,
+            currency: $currency,
+            customer: $customer,
+            paymentType: $paymentType,
+            paymentMethodType: $paymentMethodType
+        ) {
+            id
+            exchangeRate
+            paymentType
+        }
+    }
+    """
 
+    variables = {
+        "amount": amount,
+        "currency": currency,
+        "customer": customer,
+        "paymentType": paymentType,
+        "paymentMethodType": paymentMethodType,
+    }
+
+    headers = {
+        "Authorization": f"Bearer {config.CASHRAMP_SECKEY}",
+        "Content-Type": "application/json"
+    }
+
+    response = await async_client.post(
+        CASHRAMP_API_URL,
+        json={"query": query, "variables": variables},
+        headers=headers
+    )
+
+    data = response.json()
+    return data.get("data", {}).get("rampQuote", {})

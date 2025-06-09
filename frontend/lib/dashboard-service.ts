@@ -48,7 +48,6 @@ import Dashboard from '@/app/dashboard/page';
 // }
 
 
-
 export async function getDashboardData(): Promise<DashboardData> {
   try {
     const token = AuthService.getToken();
@@ -106,212 +105,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     //     insights: [],
     //   },
     // };
-    const defDashData: DashboardData = {
-      user: {
-        id: "00000000-0000-0000-0000-000000000000",
-        username: "user@example.com",
-        email: "user@example.com",
-        fullName: "John Doe",
-        phoneNumber: "+10000000000",
-        role: UserRoles.USER,
-        targetSavingsAmount: 0,
-        savingsPurpose: "",
-        incomeRange: IncomeRange.BELOW_50K,
-        savingFrequency: SavingFrequency.DAILY,
-        isEmailVerified: false,
-        isPhoneVerified: false,
-        createdAt: "2025-06-07T13:00:38.311147",
-        updatedAt: "2025-06-07T13:02:26.133341"
-      },
-      summary: {
-        yourSavings: 0,
-        nextContribution: null,
-        nextPayout: null,
-        wallet: {
-          id: "11111111-1111-1111-1111-111111111111",
-          userId: "00000000-0000-0000-0000-000000000000",
-          stableCoinBalance: 6.25,
-          localCurrency: LocalCurrency.NGN,
-          createdAt: "2025-06-07T13:01:49.344291",
-          updatedAt: "2025-06-07T15:48:05.178271"
-        }
-      },
-      targets: {
-        savingsTarget: 0,
-        groupGoals: [
-          {
-            id: "22222222-2222-2222-2222-222222222222",
-            name: "Community Savings Fund",
-            contributionAmount: 15000,
-            targetAmount: 180000,
-          }
-        ]
-      },
-      groups: {
-        userGroups: [
-          {
-            id: "22222222-2222-2222-2222-222222222222",
-            name: "Community Savings Fund",
-            creatorId: "00000000-0000-0000-0000-000000000000",
-            description: null,
-            contributionAmount: 15000,
-            contributionFrequency: ContributionFrequency.WEEKLY,
-            payoutStrategy: PayoutStrategy.ROTATING,
-            coopModel: CooperativeModel.AJO,
-            maxMembers: 12,
-            targetAmount: 180000,
-            status: CooperativeStatus.ACTIVE,
-            rules: [
-              {
-                title: "Contribution Rule",
-                description: "Members must contribute ₦15,000 every week without fail."
-              },
-              {
-                title: "Membership Cap",
-                description: "Group is limited to 12 active members to maintain accountability."
-              },
-              {
-                title: "Payout Decision",
-                description: "Payout will be made when target is reached and members vote on purchase or split."
-              },
-              {
-                title: "Transparency",
-                description: "All wallet balances and transactions are visible to members in real-time."
-              },
-              {
-                title: "AI Nudges",
-                description: "AI will send reminders and savings insights based on your habits."
-              }
-            ],
-            createdAt: "2025-06-07T16:00:25.176801",
-            updatedAt: "2025-06-07T16:00:25.176805"
-          }
-        ],
-        suggestedGroups: []
-      },
-      activities: [
-        {
-          id: "33333333-3333-3333-3333-333333333333",
-          userId: "00000000-0000-0000-0000-000000000000",
-          groupId: "22222222-2222-2222-2222-222222222222",
-          type: ActivityType.CREATED_GROUP,
-          description: "You created a group",
-          entityId: "22222222-2222-2222-2222-222222222222",
-          amount: null,
-          createdAt: "2025-06-07T16:00:25.196647"
-        }
-      ],
-      aiInsights: [
-        {
-          id: "44444444-4444-4444-4444-444444444444",
-          userId: "00000000-0000-0000-0000-000000000000",
-          groupId: null,
-          title: "Start Small, Save Daily: Even Small Amounts Add Up!",
-          description: "Since you prefer saving daily and your income is in the below 50k range, even saving a small amount like ₦100-₦200 each day can make a big difference. Consistent saving, no matter how small, helps build a saving habit and accumulates substantial funds over time.",
-          summary: "Given your daily saving frequency and income range, consistently saving small amounts daily can help you build a significant sum over time.",
-          recommendedAction: "Set a daily savings goal of ₦100-₦200 and automate the transfer to your savings account each day.",
-          category: InsightCategory.GOAL_SETTING,      
-          type: InsightType.GENERAL,           
-          difficulty: DifficultyLevel.MEDIUM,     
-          status: ImplementationStatus.IN_PROGRESS,        
-          estimatedSavings: 7000,
-          potentialGain: 0,
-          impactScore: 8,
-          tags: [
-            "daily savings",
-            "small amounts",
-            "consistency"
-          ],
-          timeframe: "1 month",
-          implementationTime: 0.5,
-          insightMetadata: {
-            success_rate: 0.85,
-            users_implemented: 310,
-            average_time_to_complete: 0.25,
-            prerequisites: [
-              "an account",
-              "a linked bank account"
-            ],
-            related_insights: [],
-            source: "AI Engine",
-            confidence_score: 0.88
-          },
-          createdAt: "2025-06-07T15:58:39.180306",
-          updatedAt: "2025-06-07T15:58:39.180310"
-        }
-      ],
-      notifications: [
-        {
-          id: "55555555-5555-5555-5555-555555555555",
-          title: "New Cooperative Created",
-          message: "Your cooperative, Community Savings Fund was created successfully",
-          eventType: EventType.GROUP, // Add appropriate EventType enum value
-          type: NotificationType.SUCCESS,
-          status: NotificationStatus.UNREAD,
-          isRead: false,
-          readAt: null,
-          user: {
-            id: "00000000-0000-0000-0000-000000000000",
-            username: "user@example.com",
-            email: "user@example.com",
-            fullName: "John Doe",
-            phoneNumber: "+10000000000",
-            role: UserRoles.USER,
-            targetSavingsAmount: 0,
-            savingsPurpose: "",
-            incomeRange: IncomeRange.BELOW_50K,
-            savingFrequency: SavingFrequency.DAILY,
-            isEmailVerified: false,
-            isPhoneVerified: false,
-            createdAt: "2025-06-07T13:00:38.311147",
-            updatedAt: "2025-06-07T13:02:26.133341"
-          },
-          entityUrl: null,
-          createdAt: "2025-06-07T16:00:25.208159"
-        },
-        {
-          id: "66666666-6666-6666-6666-666666666666",
-          title: "Sign up Successful",
-          message: "Welcome to Coopwise",
-          eventType: EventType.GENERAL_ALERT, // Add appropriate EventType enum value
-          type: NotificationType.INFO,
-          status: NotificationStatus.UNREAD,
-          isRead: false,
-          readAt: null,
-          user: {
-            id: "00000000-0000-0000-0000-000000000000",
-            username: "user@example.com",
-            email: "user@example.com",
-            fullName: "John Doe",
-            phoneNumber: "+10000000000",
-            role: UserRoles.USER,
-            targetSavingsAmount: 0,
-            savingsPurpose: "",
-            incomeRange: IncomeRange.BELOW_50K,
-            savingFrequency: SavingFrequency.DAILY,
-            isEmailVerified: false,
-            isPhoneVerified: false,
-            createdAt: "2025-06-07T13:00:38.311147",
-            updatedAt: "2025-06-07T13:02:26.133341"
-          },
-          entityUrl: null,
-          createdAt: "2025-06-07T13:00:38.422020"
-        }
-      ],
-      cooperativeMembers: [
-        {
-          id: 1,
-          userId: "00000000-0000-0000-0000-000000000000",
-          groupId: "22222222-2222-2222-2222-222222222222",
-          role: MembershipRole.ADMIN,
-          invitedBy: "00000000-0000-0000-0000-000000000000",
-          status: MembershipStatus.ACCEPTED,
-          joinedAt: null,
-          createdAt: "2025-06-07T16:00:25.189824",
-          updatedAt: "2025-06-07T16:00:25.189828"
-        }
-      ]
-    };
+    
     
     
     return defDashData;
@@ -636,3 +430,212 @@ export interface DashboardData {
   notifications: NotificationDetail[];
   cooperativeMembers: MembershipDetails[];
 }
+
+
+
+export const defDashData: DashboardData = {
+  user: {
+    id: "00000000-0000-0000-0000-000000000000",
+    username: "user@example.com",
+    email: "user@example.com",
+    fullName: "John Doe",
+    phoneNumber: "+10000000000",
+    role: UserRoles.USER,
+    targetSavingsAmount: 0,
+    savingsPurpose: "",
+    incomeRange: IncomeRange.BELOW_50K,
+    savingFrequency: SavingFrequency.DAILY,
+    isEmailVerified: false,
+    isPhoneVerified: false,
+    createdAt: "2025-06-07T13:00:38.311147",
+    updatedAt: "2025-06-07T13:02:26.133341"
+  },
+  summary: {
+    yourSavings: 0,
+    nextContribution: null,
+    nextPayout: null,
+    wallet: {
+      id: "11111111-1111-1111-1111-111111111111",
+      userId: "00000000-0000-0000-0000-000000000000",
+      stableCoinBalance: 6.25,
+      localCurrency: LocalCurrency.NGN,
+      createdAt: "2025-06-07T13:01:49.344291",
+      updatedAt: "2025-06-07T15:48:05.178271"
+    }
+  },
+  targets: {
+    savingsTarget: 0,
+    groupGoals: [
+      {
+        id: "22222222-2222-2222-2222-222222222222",
+        name: "Community Savings Fund",
+        contributionAmount: 15000,
+        targetAmount: 180000,
+      }
+    ]
+  },
+  groups: {
+    userGroups: [
+      {
+        id: "22222222-2222-2222-2222-222222222222",
+        name: "Community Savings Fund",
+        creatorId: "00000000-0000-0000-0000-000000000000",
+        description: null,
+        contributionAmount: 15000,
+        contributionFrequency: ContributionFrequency.WEEKLY,
+        payoutStrategy: PayoutStrategy.ROTATING,
+        coopModel: CooperativeModel.AJO,
+        maxMembers: 12,
+        targetAmount: 180000,
+        status: CooperativeStatus.ACTIVE,
+        rules: [
+          {
+            title: "Contribution Rule",
+            description: "Members must contribute ₦15,000 every week without fail."
+          },
+          {
+            title: "Membership Cap",
+            description: "Group is limited to 12 active members to maintain accountability."
+          },
+          {
+            title: "Payout Decision",
+            description: "Payout will be made when target is reached and members vote on purchase or split."
+          },
+          {
+            title: "Transparency",
+            description: "All wallet balances and transactions are visible to members in real-time."
+          },
+          {
+            title: "AI Nudges",
+            description: "AI will send reminders and savings insights based on your habits."
+          }
+        ],
+        createdAt: "2025-06-07T16:00:25.176801",
+        updatedAt: "2025-06-07T16:00:25.176805"
+      }
+    ],
+    suggestedGroups: []
+  },
+  activities: [
+    {
+      id: "33333333-3333-3333-3333-333333333333",
+      userId: "00000000-0000-0000-0000-000000000000",
+      groupId: "22222222-2222-2222-2222-222222222222",
+      type: ActivityType.CREATED_GROUP,
+      description: "You created a group",
+      entityId: "22222222-2222-2222-2222-222222222222",
+      amount: null,
+      createdAt: "2025-06-07T16:00:25.196647"
+    }
+  ],
+  aiInsights: [
+    {
+      id: "44444444-4444-4444-4444-444444444444",
+      userId: "00000000-0000-0000-0000-000000000000",
+      groupId: null,
+      title: "Start Small, Save Daily: Even Small Amounts Add Up!",
+      description: "Since you prefer saving daily and your income is in the below 50k range, even saving a small amount like ₦100-₦200 each day can make a big difference. Consistent saving, no matter how small, helps build a saving habit and accumulates substantial funds over time.",
+      summary: "Given your daily saving frequency and income range, consistently saving small amounts daily can help you build a significant sum over time.",
+      recommendedAction: "Set a daily savings goal of ₦100-₦200 and automate the transfer to your savings account each day.",
+      category: InsightCategory.GOAL_SETTING,      
+      type: InsightType.GENERAL,           
+      difficulty: DifficultyLevel.MEDIUM,     
+      status: ImplementationStatus.IN_PROGRESS,        
+      estimatedSavings: 7000,
+      potentialGain: 0,
+      impactScore: 8,
+      tags: [
+        "daily savings",
+        "small amounts",
+        "consistency"
+      ],
+      timeframe: "1 month",
+      implementationTime: 0.5,
+      insightMetadata: {
+        success_rate: 0.85,
+        users_implemented: 310,
+        average_time_to_complete: 0.25,
+        prerequisites: [
+          "an account",
+          "a linked bank account"
+        ],
+        related_insights: [],
+        source: "AI Engine",
+        confidence_score: 0.88
+      },
+      createdAt: "2025-06-07T15:58:39.180306",
+      updatedAt: "2025-06-07T15:58:39.180310"
+    }
+  ],
+  notifications: [
+    {
+      id: "55555555-5555-5555-5555-555555555555",
+      title: "New Cooperative Created",
+      message: "Your cooperative, Community Savings Fund was created successfully",
+      eventType: EventType.GROUP, // Add appropriate EventType enum value
+      type: NotificationType.SUCCESS,
+      status: NotificationStatus.UNREAD,
+      isRead: false,
+      readAt: null,
+      user: {
+        id: "00000000-0000-0000-0000-000000000000",
+        username: "user@example.com",
+        email: "user@example.com",
+        fullName: "John Doe",
+        phoneNumber: "+10000000000",
+        role: UserRoles.USER,
+        targetSavingsAmount: 0,
+        savingsPurpose: "",
+        incomeRange: IncomeRange.BELOW_50K,
+        savingFrequency: SavingFrequency.DAILY,
+        isEmailVerified: false,
+        isPhoneVerified: false,
+        createdAt: "2025-06-07T13:00:38.311147",
+        updatedAt: "2025-06-07T13:02:26.133341"
+      },
+      entityUrl: null,
+      createdAt: "2025-06-07T16:00:25.208159"
+    },
+    {
+      id: "66666666-6666-6666-6666-666666666666",
+      title: "Sign up Successful",
+      message: "Welcome to Coopwise",
+      eventType: EventType.GENERAL_ALERT, // Add appropriate EventType enum value
+      type: NotificationType.INFO,
+      status: NotificationStatus.UNREAD,
+      isRead: false,
+      readAt: null,
+      user: {
+        id: "00000000-0000-0000-0000-000000000000",
+        username: "user@example.com",
+        email: "user@example.com",
+        fullName: "John Doe",
+        phoneNumber: "+10000000000",
+        role: UserRoles.USER,
+        targetSavingsAmount: 0,
+        savingsPurpose: "",
+        incomeRange: IncomeRange.BELOW_50K,
+        savingFrequency: SavingFrequency.DAILY,
+        isEmailVerified: false,
+        isPhoneVerified: false,
+        createdAt: "2025-06-07T13:00:38.311147",
+        updatedAt: "2025-06-07T13:02:26.133341"
+      },
+      entityUrl: null,
+      createdAt: "2025-06-07T13:00:38.422020"
+    }
+  ],
+  cooperativeMembers: [
+    {
+      id: 1,
+      userId: "00000000-0000-0000-0000-000000000000",
+      groupId: "22222222-2222-2222-2222-222222222222",
+      role: MembershipRole.ADMIN,
+      invitedBy: "00000000-0000-0000-0000-000000000000",
+      status: MembershipStatus.ACCEPTED,
+      joinedAt: null,
+      createdAt: "2025-06-07T16:00:25.189824",
+      updatedAt: "2025-06-07T16:00:25.189828"
+    }
+  ]
+};

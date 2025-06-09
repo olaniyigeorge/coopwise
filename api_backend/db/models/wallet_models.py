@@ -56,6 +56,11 @@ class LedgerType(enum.Enum):
     CONTRIBUTION = "contribution"  # when user spends from wallet to pay a coop contribution
     REFUND = "refund"              # e.g. reversed contribution
 
+# class LedgerStatus(enum.Enum):
+#     INITIATED = "initiated"  
+#     PENDING = "pending"      
+#     SETTLED = "settled"      
+#     FAILED = "failed"        
 
 class WalletLedger(Base):
     __tablename__ = "wallet_ledger"
@@ -71,8 +76,10 @@ class WalletLedger(Base):
     local_currency = Column(Enum(LocalCurrency), nullable=False)
     # Exchange rate applied: local_currency → stable coin
     exchange_rate = Column(Numeric(precision=20, scale=8), nullable=False)
+    # status = Column(Enum(LedgerStatus), nullable=False, default=LedgerStatus.INITIATED)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
     wallet = relationship("Wallet", back_populates="ledger_entries", lazy="joined")
 
 

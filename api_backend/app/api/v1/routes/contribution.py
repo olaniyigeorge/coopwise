@@ -64,10 +64,10 @@ async def contribute(
     noti_data = NotificationCreate(
         user_id = contribution.user_id,
         title = "Contribution Successful",
-        message = f"You have successfully made a contribution to your cooperative group.",
+        message = f"You have successfully made a contribution of {contribution.currency}{contribution.amount} to your cooperative group.",
         event_type = "contribution",
         type = "success",
-        entity_url = None
+        entity_url = f"contribution-{contribution.id}"
     )
     await NotificationService.create_and_push_notification_to_user(
         noti_data, db
@@ -105,10 +105,10 @@ async def contribute(
     noti_data = NotificationCreate(
         user_id = contribution.user_id,
         title = "Payment Successful",
-        message = f"You have successfully made a payment for your contribution.",
+        message = f"We settled your payment into {contribution_payment["data"]["amount"]} for your contribution {contribution.id}",
         event_type = "transaction",
         type = "success",
-        entity_url = None
+        entity_url = f"payment-{contribution.user_id}:{contribution.amount}"
     )
     await NotificationService.create_and_push_notification_to_user(
         noti_data, db

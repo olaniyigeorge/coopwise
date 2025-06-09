@@ -18,6 +18,7 @@ class EventType(enum.Enum):
     TRANSACTION = "transaction"
     MEMBERSHIP = "membership"
     CONTRIBUTION = "contribution"
+    # DEPOSIT = "deposit"
     PAYOUT = "payout"
     GENERAL_ALERT = "general_alert"
     SYSTEM = "system"

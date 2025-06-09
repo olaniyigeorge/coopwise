@@ -2,9 +2,9 @@
 from datetime import datetime
 import json
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from db.models.wallet_models import Wallet, LocalCurrency, WalletLedger, LedgerType
-from app.schemas.wallet_schemas import WalletDeposit, WalletDetail, WalletWithdraw, WalletBalance
+from sqlalchemy import select, update
+from db.models.wallet_models import LedgerStatus, Wallet, LocalCurrency, WalletLedger, LedgerType
+from app.schemas.wallet_schemas import WalletDeposit, WalletDetail, WalletLedgerCreate, WalletWithdraw
 from app.schemas.auth import AuthenticatedUser
 from app.utils.exchange_client import fetch_exchange_rate
 from fastapi import HTTPException, status
@@ -166,6 +166,7 @@ class WalletService:
         redis: Redis
     ) -> WalletDetail:
         """
+        Fetch a user's wallet using their ID.
         Returns:
          - Wallet details
         Uses Redis cache for performance.
@@ -175,25 +176,62 @@ class WalletService:
         if cached:
             logger.info(f"🔄 Using cached wallet for user {user.id}")
             if isinstance(cached, str):
-                cached = json.loads(cached) 
+                cached = json.loads(cached)
             return WalletDetail.model_validate(cached)
 
-
-        logger.info(f"📬 Fetching wallet from db for {user.id}")
-        # 1. Fetch wallet
+        logger.info(f"📬 Fetching wallet from db for user {user.id}")
         stmt = select(Wallet).where(Wallet.user_id == user.id)
         result = await db.execute(stmt)
         wallet = result.scalars().first()
+
         if not wallet:
-            logger.info(f"📬 Wallet not found for {user.id}. Creating wallet...\n")
-            wallet = await WalletService.create_user_wallet(
-                user, db
-            )
-            if not wallet:
-                raise HTTPException(status_code=404, detail="Wallet not found")
-          
-        # 4. Cache the result
+            logger.warning(f"⚠️ Wallet not found for user {user.id}")
+            raise HTTPException(status_code=404, detail="Wallet not found")
+
         wallet_data = WalletDetail.model_validate(wallet)
         await update_cache(cache_key, wallet_data.model_dump_json(), ttl=300)
         return wallet_data
+
+
+
+    @staticmethod
+    async def record_ledger_entry(
+        ledger_data: WalletLedgerCreate,
+        db: AsyncSession
+    ) -> WalletLedger:
+        """
+        Record a ledger entry for a wallet operation (deposit, withdrawal, etc.)
+        """
+        ledger = WalletLedger(
+            wallet_id=ledger_data.wallet_id,
+            type=ledger_data.type,
+            stable_amount=ledger_data.stable_amount,
+            local_amount=ledger_data.local_amount,
+            local_currency=ledger_data.local_currency,
+            exchange_rate=ledger_data.exchange_rate,
+            status=LedgerStatus.INITIATED  
+        )
+        db.add(ledger)
+        await db.commit()
+        await db.refresh(ledger)
+        return ledger
     
+    @staticmethod
+    async def update_ledger_status(
+        ledger_id: UUID,
+        status: LedgerStatus,
+        db: AsyncSession
+    ) -> WalletLedger:
+        stmt = (
+            update(WalletLedger)
+            .where(WalletLedger.id == ledger_id)
+            .values(status=status)
+            .execution_options(synchronize_session="fetch")
+        )
+        await db.execute(stmt)
+        await db.commit()
+
+        result = await db.execute(
+            select(WalletLedger).where(WalletLedger.id == ledger_id)
+        )
+        return result.scalar_one_or_none()
