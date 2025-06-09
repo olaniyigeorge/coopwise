@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 // API base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
 
+// Cookie settings
+const COOKIE_NAME = 'auth_token';
+
 export async function POST(request: NextRequest) {
   try {
     // Get request body
@@ -62,20 +65,60 @@ export async function POST(request: NextRequest) {
 
         if (userResponse.ok) {
           const userData = await userResponse.json();
-          // Return both token and user data
-          return NextResponse.json({
+          
+          // Create response with HTTP-only cookie
+          const responseObj = NextResponse.json({
             ...data,
             user: userData,
           });
+          
+          // Set HTTP-only cookie
+          responseObj.cookies.set({
+            name: COOKIE_NAME,
+            value: data.access_token,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+            path: '/'
+          });
+          
+          return responseObj;
         } else {
           // If user fetch fails, still return the token
           console.error('Error fetching user data after login');
-          return NextResponse.json(data);
+          
+          // Create response with HTTP-only cookie
+          const responseObj = NextResponse.json(data);
+          
+          // Set HTTP-only cookie
+          responseObj.cookies.set({
+            name: COOKIE_NAME,
+            value: data.access_token,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+            path: '/'
+          });
+          
+          return responseObj;
         }
       } catch (userError) {
         console.error('Error fetching user after login:', userError);
-        // Still return the token if user fetch fails
-        return NextResponse.json(data);
+        
+        // Create response with HTTP-only cookie
+        const responseObj = NextResponse.json(data);
+        
+        // Set HTTP-only cookie
+        responseObj.cookies.set({
+          name: COOKIE_NAME,
+          value: data.access_token,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+          path: '/'
+        });
+        
+        return responseObj;
       }
     }
 

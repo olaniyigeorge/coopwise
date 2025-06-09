@@ -1,4 +1,5 @@
 import axios from 'axios';
+import CookieService from './cookie-service';
 
 // API base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
@@ -60,12 +61,12 @@ const AuthService = {
       console.log('Login response:', response.data);
       
       if (response.data.access_token) {
-        // Store the token in localStorage
-        localStorage.setItem('token', response.data.access_token);
+        // Store the token in a cookie
+        CookieService.setToken(response.data.access_token);
         
         // If the user data is included in the response, use it
         if (response.data.user) {
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          CookieService.setUser(response.data.user);
           return {
             token: response.data.access_token,
             user: response.data.user
@@ -82,8 +83,8 @@ const AuthService = {
           
           console.log('User details:', userResponse.data);
           
-          // Store user in localStorage
-          localStorage.setItem('user', JSON.stringify(userResponse.data));
+          // Store user in a cookie
+          CookieService.setUser(userResponse.data);
           
           return {
             token: response.data.access_token,
@@ -138,23 +139,26 @@ const AuthService = {
   },
 
   // Logout user
-  logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  async logout() {
+    try {
+      // Call the logout endpoint to clear HTTP-only cookies
+      await axios.post('/api/auth/logout');
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      // Clear client-side cookies
+      CookieService.clearAuth();
+    }
   },
 
   // Get stored token
   getToken() {
-    return localStorage.getItem('token');
+    return CookieService.getToken();
   },
 
   // Get current user
   getCurrentUser() {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      return JSON.parse(userStr);
-    }
-    return null;
+    return CookieService.getUser();
   },
 
   // Check if user is authenticated

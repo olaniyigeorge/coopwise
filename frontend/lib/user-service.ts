@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AuthService from './auth-service';
+import CookieService from './cookie-service';
 
 // Use the backend API URL or the local proxy if not specified
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
@@ -82,11 +83,11 @@ const UserService = {
 
       console.log('User update response:', response.data);
       
-      // Update the user in localStorage
+      // Update the user in cookies
       const currentUser = AuthService.getCurrentUser();
       if (currentUser) {
         const updatedUser = { ...currentUser, ...response.data };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        CookieService.setUser(updatedUser);
       }
       
       return response.data;
@@ -121,9 +122,9 @@ const UserService = {
         }
       });
       
-      // Update local storage with the fresh data
+      // Update cookies with the fresh data
       if (response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data));
+        CookieService.setUser(response.data);
       }
       
       return response.data;
@@ -138,13 +139,13 @@ const UserService = {
     return new Promise((resolve) => {
       // Simulate API delay
       setTimeout(() => {
-        // Get current user from localStorage
+        // Get current user from cookies
         const currentUser = AuthService.getCurrentUser();
         if (currentUser) {
           // Update user data
           const updatedUser = { ...currentUser, ...userData };
-          // Store updated user in localStorage
-          localStorage.setItem('user', JSON.stringify(updatedUser));
+          // Store updated user in cookies
+          CookieService.setUser(updatedUser);
           resolve(updatedUser);
         } else {
           resolve({ id: userId, ...userData });

@@ -4,18 +4,11 @@ import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import MyGroupsList from './my-groups-list'
 import DiscoverGroupsList from './discover-groups-list'
-import { Group } from '@/lib/group-service'
+import { useGroupStore } from '@/lib/hooks/use-app-store'
 import { getDashboardData } from '@/lib/dashboard-service'
 
 interface GroupsTabViewProps {
   defaultTab?: 'my-groups' | 'discover'
-}
-
-interface DashboardGroupsData {
-  groups?: {
-    user_groups?: Group[];
-    suggested_groups?: Group[];
-  }
 }
 
 // Loading component for suspense fallback
@@ -34,6 +27,14 @@ function LoadingFallback() {
 function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { 
+    myGroups, 
+    availableGroups, 
+    fetchMyGroups, 
+    fetchAvailableGroups,
+    isLoading,
+    error
+  } = useGroupStore()
   
   // Check for tab in URL params
   const tabParam = searchParams.get('tab')
@@ -41,9 +42,6 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
   
   const [activeTab, setActiveTab] = useState<string>(initialTab)
   const [searchQuery, setSearchQuery] = useState('')
-  const [hasGroups, setHasGroups] = useState<boolean | null>(null)
-  const [userGroups, setUserGroups] = useState<Group[]>([])
-  const [suggestedGroups, setSuggestedGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   
   useEffect(() => {
@@ -56,56 +54,32 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
   }, [tabParam])
   
   useEffect(() => {
-    // Fetch dashboard data to get groups info
-    const fetchDashboardGroups = async () => {
+    // Use Zustand store to fetch groups
+    const fetchGroups = async () => {
       try {
         setLoading(true)
-        const dashboardData = await getDashboardData() as DashboardGroupsData
-        
-        console.log('Dashboard data for groups:', dashboardData)
-        
-        // Check if the dashboard data contains groups information
-        if (dashboardData && dashboardData.groups) {
-          const groupsData = dashboardData.groups
-          
-          // Set user groups
-          if (groupsData.user_groups && Array.isArray(groupsData.user_groups)) {
-            setUserGroups(groupsData.user_groups)
-            setHasGroups(groupsData.user_groups.length > 0)
-          } else {
-            setUserGroups([])
-            setHasGroups(false)
-          }
-          
-          // Set suggested groups
-          if (groupsData.suggested_groups && Array.isArray(groupsData.suggested_groups)) {
-            setSuggestedGroups(groupsData.suggested_groups)
-          } else {
-            setSuggestedGroups([])
-          }
-        } else {
-          // If no groups data in dashboard, set empty arrays
-          setUserGroups([])
-          setSuggestedGroups([])
-          setHasGroups(false)
-        }
+        // Fetch both types of groups
+        await Promise.all([
+          fetchMyGroups(),
+          fetchAvailableGroups()
+        ]);
       } catch (error) {
-        console.error('Error fetching dashboard groups data:', error)
-        setUserGroups([])
-        setSuggestedGroups([])
-        setHasGroups(false)
+        console.error('Error fetching groups data:', error)
       } finally {
         setLoading(false)
       }
     }
     
-    fetchDashboardGroups()
-  }, [])
+    fetchGroups()
+  }, [fetchMyGroups, fetchAvailableGroups])
   
   // Handle tab change
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
   }
+
+  // Determine if user has groups
+  const hasGroups = myGroups && myGroups.length > 0
 
   return (
     <div className="p-3">
@@ -140,17 +114,15 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
           <MyGroupsList 
             hasGroups={hasGroups} 
             searchQuery={searchQuery}
-            /* @ts-ignore - We're passing the groups from API directly */
-            userGroups={userGroups}
-            isLoading={loading}
+            userGroups={myGroups}
+            isLoading={loading || isLoading}
           />
         )}
         {activeTab === 'discover' && (
           <DiscoverGroupsList 
             searchQuery={searchQuery}
-            /* @ts-ignore - We're passing the groups from API directly */
-            suggestedGroups={suggestedGroups}
-            isLoading={loading}
+            suggestedGroups={availableGroups}
+            isLoading={loading || isLoading}
           />
         )}
       </div>

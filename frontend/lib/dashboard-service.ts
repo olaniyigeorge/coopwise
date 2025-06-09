@@ -52,7 +52,8 @@ export async function getDashboardData(): Promise<DashboardData> {
   try {
     const token = AuthService.getToken();
     if (!token) {
-      throw new Error('No authentication token found');
+      console.warn('No authentication token found, returning default data');
+      return defDashData;
     }
 
     console.log('Fetching dashboard data in service...');
@@ -76,38 +77,6 @@ export async function getDashboardData(): Promise<DashboardData> {
     return data;
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error);
-    // Return default/empty data structure in case of error
-    // return {
-    //   savings: {
-    //     total: 0,
-    //     goal: 0,
-    //     progress: 0,
-    //   },
-    //   wallet: {
-    //     balance: 0,
-    //   },
-    //   nextContribution: {
-    //     hasUpcoming: false,
-    //   },
-    //   nextPayout: {
-    //     hasUpcoming: false,
-    //   },
-    //   recentActivity: [],
-    //   savingsGoal: {
-    //     name: '',
-    //     current: 0,
-    //     target: 0,
-    //     progress: 0,
-    //     remaining: 0,
-    //   },
-    //   aiInsights: {
-    //     available: false,
-    //     insights: [],
-    //   },
-    // };
-    
-    
-    
     return defDashData;
   }
 } 
@@ -456,7 +425,7 @@ export const defDashData: DashboardData = {
     wallet: {
       id: "11111111-1111-1111-1111-111111111111",
       user_id: "00000000-0000-0000-0000-000000000000",
-      stable_coin_balance: 6.25,
+      stable_coin_balance: 0,
       local_currency: LocalCurrency.NGN,
       created_at: "2025-06-07T13:01:49.344291",
       updated_at: "2025-06-07T15:48:05.178271"
