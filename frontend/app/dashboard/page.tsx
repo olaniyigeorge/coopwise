@@ -83,9 +83,6 @@ const savingsGoalRemaining = ssg - sst;
 
 const recentActivity = dashboardData?.activities ?? [];
 
-
-  console.log(`\n\n 🔁 Your savings:" ${savingsTotal}\n\n`)
-
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between">
@@ -367,7 +364,7 @@ const recentActivity = dashboardData?.activities ?? [];
             </div>
 
             
-            {dashboardData.ai_insights.slice(0,5).map((insight: AIInsightDetail) => (
+            {dashboardData.ai_insights.slice(0,3).map((insight: AIInsightDetail) => (
               <AIInsightCard insight={insight} />
             ))}
 
