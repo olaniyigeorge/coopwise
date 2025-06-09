@@ -26,7 +26,7 @@ export default function AIInsightDetailPage() {
   const router = useRouter()
   
   // Find the insight by ID
-  const insight = mockInsights.find(i => i.id === params.id)
+  const insight = mockInsights.find(i => i.id === 'insight-1') //params.id
   
   if (!insight) {
     return (
