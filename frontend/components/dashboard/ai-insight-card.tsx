@@ -14,12 +14,13 @@ import {
 } from 'lucide-react'
 import { AIInsight, ImplementationStatus, DifficultyLevel } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
+import { AIInsightDetail } from '@/lib/dashboard-service'
 
 interface AIInsightCardProps {
-  insight: AIInsight
-  onStart?: (insight: AIInsight) => void
-  onComplete?: (insight: AIInsight) => void
-  onDismiss?: (insight: AIInsight) => void
+  insight: AIInsightDetail // AIInsight
+  onStart?: (insight: AIInsightDetail) => void
+  onComplete?: (insight: AIInsightDetail) => void
+  onDismiss?: (insight: AIInsightDetail) => void
   compact?: boolean
 }
 
@@ -86,7 +87,7 @@ export default function AIInsightCard({
           </div>
           <div>
             <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50">
-              {formatCurrency(insight.estimatedSavings)}/{insight.timeframe}
+              {formatCurrency(insight.estimated_savings)}/{insight.timeframe}
             </Badge>
           </div>
         </div>

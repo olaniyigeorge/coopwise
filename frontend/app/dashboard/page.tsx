@@ -7,10 +7,11 @@ import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import GroupsTabView from '@/components/dashboard/groups-tab-view'
-import { getDashboardData, DashboardData, defDashData } from '@/lib/dashboard-service'
+import { getDashboardData, DashboardData, defDashData, AIInsightDetail } from '@/lib/dashboard-service'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { Bot, MessageSquare, Sparkles } from 'lucide-react'
+import AIInsightCard from '@/components/dashboard/ai-insight-card'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -355,6 +356,23 @@ const recentActivity = dashboardData?.activities ?? [];
                 Chat with AI Assistant
               </Button>
             </Link>
+          </div>
+          {/* AI Insights Section */}
+          <div className="bg-white rounded-lg shadow p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-sm sm:text-base font-semibold flex items-center">
+                <Sparkles className="h-4 w-4 mr-2 text-secondary" />
+                AI Insights
+              </h2>
+            </div>
+
+            
+            {dashboardData.ai_insights.slice(0,5).map((insight: AIInsightDetail) => (
+              <AIInsightCard insight={insight} />
+            ))}
+
+            
+            
           </div>
         </div>
       </div>
