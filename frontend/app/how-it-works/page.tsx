@@ -108,7 +108,7 @@ export default function HowItWorksPage() {
     {
       title: "Smart Notifications",
       description: "Never miss a contribution deadline with intelligent reminders tailored to your schedule.",
-      image: "/assets/icons/PhoneBorder.svg"
+      image: "/assets/images/Phone8.png"
     },
     {
       title: "Group Management",
@@ -118,7 +118,7 @@ export default function HowItWorksPage() {
     {
       title: "Financial Insights",
       description: "Get personalized savings tips and insights based on your group's performance.",
-      image: "/assets/icons/PhoneBorder.svg"
+      image: "/assets/images/Phone7.png"
     }
   ]
 
