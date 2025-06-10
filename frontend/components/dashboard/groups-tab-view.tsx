@@ -99,6 +99,7 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
       }
     }
     
+    
     fetchDashboardGroups()
   }, [])
   
