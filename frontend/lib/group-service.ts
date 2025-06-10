@@ -10,6 +10,8 @@ const GROUP_ENDPOINTS = {
   JOIN: (id: string) => `/api/groups/${id}/join`,
   VERIFY_INVITE: '/api/memberships/invite',
   ACCEPT_INVITE: '/api/memberships/accept-invite',
+  MEMBERS: (id: string) => `/api/groups/${id}/members`,
+  INVITE: '/api/memberships/invite',
 };
 
 // Define types
@@ -51,6 +53,23 @@ export interface GroupDetails extends Group {
   members?: any[];
   contributions?: any[];
   rules?: string[];
+}
+
+export interface GroupMember {
+  id: string;
+  user_id: string;
+  group_id: string;
+  role: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  // Populated fields
+  user?: {
+    id: string;
+    full_name: string;
+    email: string;
+    phone_number: string;
+  };
 }
 
 // Group service
@@ -210,6 +229,67 @@ const GroupService = {
                           'Failed to accept invite code';
       
       throw new Error(errorMessage);
+    }
+  },
+
+  // Methods added for Zustand store integration
+  
+  // Get available groups (alias for getGroups for better naming in Zustand)
+  async getAvailableGroups() {
+    return this.getGroups();
+  },
+  
+  // Get group by ID (alias for getGroupDetails for better naming in Zustand)
+  async getGroupById(id: string) {
+    return this.getGroupDetails(id);
+  },
+  
+  // Get user's groups (alias for getMyGroups for better naming in Zustand)
+  async getUserGroups() {
+    return this.getMyGroups();
+  },
+  
+  // Get members of a group
+  async getGroupMembers(groupId: string) {
+    try {
+      const response = await axios.get(GROUP_ENDPOINTS.MEMBERS(groupId), {
+        headers: AuthService.getAuthHeader()
+      });
+      
+      return response.data || [];
+    } catch (error) {
+      console.error(`Error fetching members for group ${groupId}:`, error);
+      return []; // Return empty array instead of throwing to prevent UI breaks
+    }
+  },
+  
+  // Generate invite code for a group
+  async generateInviteCode(groupId: string) {
+    try {
+      const response = await axios.get(`${GROUP_ENDPOINTS.INVITE}?group_id=${groupId}`, {
+        headers: AuthService.getAuthHeader()
+      });
+      
+      return response.data.invite_code || response.data.code || '';
+    } catch (error) {
+      console.error(`Error generating invite code for group ${groupId}:`, error);
+      throw error;
+    }
+  },
+  
+  // Join a group with invite code
+  async joinGroup(inviteCode: string) {
+    try {
+      // First verify the invite code
+      const verification = await this.verifyInviteCode(inviteCode);
+      
+      // Then accept the invite
+      const result = await this.acceptInviteCode(inviteCode);
+      
+      return result;
+    } catch (error) {
+      console.error(`Error joining group with invite code:`, error);
+      throw error;
     }
   }
 };

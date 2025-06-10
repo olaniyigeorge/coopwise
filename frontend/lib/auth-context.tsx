@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const token = AuthService.getToken();
         if (token) {
-          // Get user from localStorage
+          // Get user from cookies
           const savedUser = AuthService.getCurrentUser();
           if (savedUser) {
             setUser(savedUser);

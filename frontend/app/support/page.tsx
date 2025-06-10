@@ -301,12 +301,12 @@ export default function SupportPage() {
                     </Button>
                   ) : (
                     <a href={option.link} className="w-full">
-                      <Button 
-                        className="w-full"
-                        variant="outline"
-                      >
-                        {option.action}
-                      </Button>
+                    <Button 
+                      className="w-full"
+                      variant="outline"
+                    >
+                      {option.action}
+                    </Button>
                     </a>
                   )}
                 </CardContent>
@@ -395,12 +395,12 @@ export default function SupportPage() {
             <p className="text-gray-600 mb-4">Can't find what you're looking for?</p>
             <div className="flex items-center space-x-4 justify-center">
               <a href="mailto:hellocoopwise@gmail.com">
-                <Button 
-                  variant="outline" 
-                  className="text-primary border-primary hover:bg-primary hover:text-white"
-                >
-                  Contact Support
-                </Button>
+              <Button 
+                variant="outline" 
+                className="text-primary border-primary hover:bg-primary hover:text-white"
+              >
+                Contact Support
+              </Button>
               </a>
               <Button disabled>
                 <MessageCircle className="w-4 h-4 mr-2" />
@@ -457,13 +457,13 @@ export default function SupportPage() {
                   </p>
                   <div className="flex items-center space-x-4">
                     <a href="tel:+2348144441712">
-                      <Button 
-                        size="sm" 
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        <Phone className="w-4 h-4 mr-2" />
-                        Emergency Line
-                      </Button>
+                    <Button 
+                      size="sm" 
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      <Phone className="w-4 h-4 mr-2" />
+                      Emergency Line
+                    </Button>
                     </a>
                     <span className="text-sm text-gray-500">Available 24/7</span>
                   </div>
@@ -494,12 +494,12 @@ export default function SupportPage() {
                 <Badge className="ml-2 bg-red-100 text-red-800">Coming Soon</Badge>
               </Button>
               <a href="mailto:hellocoopwise@gmail.com">
-                <Button 
-                  variant="secondary" 
-                  className="bg-white text-primary hover:bg-gray-100 px-6 py-3 transition-colors duration-200"
-                >
-                  Contact Us
-                </Button>
+              <Button 
+                variant="secondary" 
+                className="bg-white text-primary hover:bg-gray-100 px-6 py-3 transition-colors duration-200"
+              >
+                Contact Us
+              </Button>
               </a>
             </div>
           </div>

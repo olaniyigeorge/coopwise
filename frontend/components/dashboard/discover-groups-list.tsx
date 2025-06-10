@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Copy } from 'lucide-react'
+import AuthService from '@/lib/auth-service'
 
 interface DiscoverGroupsListProps {
   searchQuery: string
@@ -98,7 +99,7 @@ export default function DiscoverGroupsList({ searchQuery, suggestedGroups = [], 
       setShowInviteModal(true);
       
       // Get the token
-      const token = localStorage.getItem('token');
+      const token = AuthService.getToken();
       if (!token) {
         throw new Error('Authentication required');
       }

@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Plus } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import GroupService from '@/lib/group-service'
+import CookieService from '@/lib/cookie-service'
 
 // Step 2: Group Rules
 function GroupRulesForm({ 
@@ -178,7 +179,7 @@ export default function CreateGroup() {
       // Save rules locally if needed for future use
       if (rules && rules.length > 0) {
         try {
-          localStorage.setItem(`group_rules_${response.id}`, JSON.stringify(rules));
+          CookieService.set(`group_rules_${response.id}`, rules, { expires: 30 });
         } catch (e) {
           console.log('Could not save rules locally', e);
         }

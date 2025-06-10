@@ -17,6 +17,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import AuthService from '@/lib/auth-service'
 
 interface GroupDetailsViewProps {
   groupId: string
@@ -105,7 +106,7 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
       // For debugging
       console.log('Generating invite code for group:', groupId);
       
-      const token = localStorage.getItem('token');
+      const token = AuthService.getToken();
       
       if (!token) {
         throw new Error('You must be logged in to generate an invite code');

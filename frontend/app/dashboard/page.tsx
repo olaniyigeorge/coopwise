@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
+import { useAuthStore } from '@/lib/hooks/use-app-store'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
@@ -15,7 +15,7 @@ import AIInsightCard from '@/components/dashboard/ai-insight-card'
 
 export default function Dashboard() {
   const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<DashboardData>(defDashData)
 
@@ -46,12 +46,12 @@ export default function Dashboard() {
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !loading) {
       router.push('/auth/login')
     }
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, router, loading])
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !loading) {
     return null // Don't render anything while redirecting
   }
 
@@ -138,7 +138,7 @@ const recentActivity = dashboardData?.activities ?? [];
           <h3 className="text-gray-500 text-sm mb-2">Your Wallet</h3>
           <div className="items-start justify-between">
             <div className="text-2xl font-bold w-full"><span className="text-xl tracking-tighter">USDC</span>  {Number(walletBalance || 0).toFixed(2)}</div> 
-            <div className="text-xs font-medium">{formatCurrency(walletBalance*(1600))}</div> 
+            <div className="text-xs font-medium">{formatCurrency((walletBalance || 0)*(1600))}</div> 
           </div>
           <div className="text-gray-500 text-xs mt-1">Balance available in your wallet for contributions</div>
           <div className="mt-4">
@@ -362,10 +362,6 @@ const recentActivity = dashboardData?.activities ?? [];
                 AI Insights
               </h2>
             </div>
-
-            
-
-
             <div className="flex-col items-center space-y-4">
               {dashboardData.ai_insights.slice(0,3).map((insight: AIInsightDetail) => (
                 <AIInsightCard insight={insight} />

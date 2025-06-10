@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import CookieService from './cookie-service';
 
 export interface Notification {
   id: number;
@@ -25,13 +26,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [nextId, setNextId] = useState(1);
 
-  // Load notifications from localStorage on mount
+  // Load notifications from cookies on mount
   useEffect(() => {
-    const savedNotifications = localStorage.getItem('notifications');
-    const savedNextId = localStorage.getItem('nextNotificationId');
+    const savedNotifications = CookieService.getNotifications();
+    const savedNextId = CookieService.getNextNotificationId();
     
-    if (savedNotifications) {
-      setNotifications(JSON.parse(savedNotifications));
+    if (savedNotifications && savedNotifications.length > 0) {
+      setNotifications(savedNotifications);
+      setNextId(savedNextId);
     } else {
       // Add some demo notifications if none exist
       setNotifications([
@@ -59,17 +61,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       ]);
       setNextId(4);
     }
-    
-    if (savedNextId) {
-      setNextId(parseInt(savedNextId, 10));
-    }
   }, []);
 
-  // Save notifications to localStorage whenever they change
+  // Save notifications to cookies whenever they change
   useEffect(() => {
     if (notifications.length > 0) {
-      localStorage.setItem('notifications', JSON.stringify(notifications));
-      localStorage.setItem('nextNotificationId', nextId.toString());
+      CookieService.setNotifications(notifications);
+      CookieService.setNextNotificationId(nextId);
     }
   }, [notifications, nextId]);
 
