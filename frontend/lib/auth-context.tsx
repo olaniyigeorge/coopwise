@@ -91,9 +91,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await AuthService.login(credentials);
       setIsAuthenticated(true);
+
+      console.log(`\n In CTX: login res::::  ${response} \n`)
       
       if (response.user) {
         setUser(response.user);
+        console.log("\n User set in state...   \n")
         toast({
           title: "Login Successful",
           description: `Welcome back, ${response.user.full_name}!`,

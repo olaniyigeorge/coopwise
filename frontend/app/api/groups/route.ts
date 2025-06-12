@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+
+
+// API base URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
+
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -12,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Call the real API endpoint
-    const response = await fetch('https://coopwise.onrender.com/api/v1/cooperatives/', {
+    const response = await fetch(`${API_URL}/api/v1/cooperatives/`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,

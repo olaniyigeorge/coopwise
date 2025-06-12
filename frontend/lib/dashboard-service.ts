@@ -57,7 +57,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     }
 
     console.log('Fetching dashboard data in service...');
-    const response = await fetch('/api/dashboard/', {
+    const response = await fetch('/api/dashboard', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

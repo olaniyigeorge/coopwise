@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Call the real API endpoint to get user's cooperatives
-    const response = await fetch('https://coopwise.onrender.com/api/v1/cooperatives/me', {
+    const response = await fetch(`${API_URL}/api/v1/cooperatives/me`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,

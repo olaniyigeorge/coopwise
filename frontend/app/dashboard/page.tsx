@@ -21,7 +21,8 @@ export default function Dashboard() {
 
   // Extract user's first name
   const firstName = user?.full_name?.split(' ')[0] || 'User'
-  
+
+ 
   // Fetch dashboard data
   useEffect(() => {
     const fetchData = async () => {
@@ -42,7 +43,10 @@ export default function Dashboard() {
     }
     
     fetchData()
-  }, [isAuthenticated])
+  }, [])
+  
+  console.log(`\n${JSON.stringify(isAuthenticated)}\n`)
+  
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -367,7 +371,6 @@ const recentActivity = dashboardData?.activities ?? [];
                 <AIInsightCard insight={insight} />
               ))}
             </div>
-            
           </div>
         </div>
       </div>

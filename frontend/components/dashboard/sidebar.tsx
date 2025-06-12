@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Home, Users, Plus, UserPlus, MessageSquare, HelpCircle, User, LogOut, DollarSign, Bot, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
+import useAuthStore from '@/lib/stores/auth-store'
 
 interface SidebarProps {
   isOpen?: boolean
@@ -15,6 +16,7 @@ interface SidebarProps {
 export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const { logout } = useAuthStore()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   
   const navigationItems = [
@@ -89,7 +91,9 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       if (onClose) {
         onClose()
       }
-      
+     
+      logout()
+
       toast.success('Logged out successfully', {
         description: 'You have been securely logged out.'
       })

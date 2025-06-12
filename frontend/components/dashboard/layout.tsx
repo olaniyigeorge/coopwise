@@ -7,6 +7,7 @@ import MobileBottomNav from './mobile-bottom-nav'
 import { usePathname } from 'next/navigation'
 import { Toaster } from 'sonner'
 import { useAuth } from '@/lib/auth-context'
+import useAuthStore from '@/lib/stores/auth-store'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -15,7 +16,8 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { user } = useAuth()
+  // const { user } = useAuth()
+  const { user, isAuthenticated } = useAuthStore()
   
   // Get header configuration based on the current pathname
   const getHeaderConfig = () => {
@@ -24,7 +26,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     // Handle group details pages
     if (path.startsWith('/dashboard/my-group/') && path !== '/dashboard/my-group') {
       return {
-        title: 'Mygroup/details',
+        title: 'Cooperative Groups',
         showBackButton: true,
         backUrl: '/dashboard/my-group'
       }

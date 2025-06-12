@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button"
 import { usePathname } from 'next/navigation'
 import { Menu, X, Home, Info, Mail, LogIn, UserPlus } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useAuth } from '@/lib/auth-context'
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { isAuthenticated }  = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
@@ -80,21 +82,33 @@ export default function Navbar() {
           </div>
           
           {/* Desktop auth buttons */}
-          <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>
-            <Link href="/auth/login">
-              <Button 
-                variant="outline" 
-                className="text-primary border-primary hover:bg-primary hover:text-white transition-colors"
-              >
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/auth/signup">
-              <Button className="bg-primary hover:bg-primary/90 text-white">
-                Sign Up
-              </Button>
-            </Link>
-          </div>
+          {!isAuthenticated ? 
+            <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>
+              <Link href="/auth/login">
+                <Button 
+                  variant="outline" 
+                  className="text-primary border-primary hover:bg-primary hover:text-white transition-colors"
+                >
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/auth/signup">
+                <Button className="bg-primary hover:bg-primary/90 text-white">
+                  Sign Up
+                </Button>
+              </Link>
+            </div>
+          :             <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>
+          <Link href="/dashboard">
+            <Button 
+              variant="outline" 
+              className="text-primary border-primary hover:bg-primary hover:text-white transition-colors"
+            >
+              Dashboard
+            </Button>
+          </Link>
+
+        </div>}
 
           {/* Mobile hamburger menu */}
           <div className="md:hidden">
