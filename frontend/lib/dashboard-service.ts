@@ -50,7 +50,7 @@ import Dashboard from '@/app/dashboard/page';
 
 export async function getDashboardData(): Promise<DashboardData> {
   try {
-    const token = AuthService.getToken();
+    const token = await AuthService.getToken();
     if (!token) {
       console.warn('No authentication token found, returning default data');
       return defDashData;

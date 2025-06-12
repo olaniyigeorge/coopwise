@@ -151,10 +151,28 @@ const AuthService = {
     }
   },
 
-  // Get stored token
-  getToken() {
-    return CookieService.getToken();
+  // Get stored token from cookieserve or server as fallback
+  async getToken(): Promise<string | undefined> {
+    // Try client-side token (set manually via CookieService)
+    const clientToken = CookieService.getToken();
+    if (clientToken) return clientToken;
+
+    // Fallback to API if HttpOnly cookie is used
+    try {
+      const res = await fetch('/api/auth/token');
+      if (!res.ok) return undefined;
+      const data = await res.json();
+      return data.token;
+    } catch (err) {
+      console.error('Error fetching token from API:', err);
+      return undefined;
+    }
   },
+
+
+
+
+
 
   // Get current user
   getCurrentUser() {

@@ -12,8 +12,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useAuth } from '@/lib/auth-context'
 import { useNotifications } from '@/lib/notification-context'
+import useAuthStore from '@/lib/stores/auth-store'
 
 interface HeaderProps {
   title?: string
@@ -34,7 +34,7 @@ export default function Header({
   onMenuClick,
   showMobileMenu = false
 }: HeaderProps) {
-  const { logout, user } = useAuth();
+  const { logout, user } = useAuthStore();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   
   // Function to get the first name

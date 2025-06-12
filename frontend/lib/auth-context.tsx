@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = AuthService.getToken();
+        const token = await AuthService.getToken();
         if (token) {
           // Get user from cookies
           const savedUser = AuthService.getCurrentUser();
@@ -91,12 +91,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await AuthService.login(credentials);
       setIsAuthenticated(true);
-
-      console.log(`\n In CTX: login res::::  ${response} \n`)
-      
       if (response.user) {
         setUser(response.user);
-        console.log("\n User set in state...   \n")
         toast({
           title: "Login Successful",
           description: `Welcome back, ${response.user.full_name}!`,

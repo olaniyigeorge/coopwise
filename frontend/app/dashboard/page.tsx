@@ -12,6 +12,7 @@ import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { Bot, MessageSquare, Sparkles } from 'lucide-react'
 import AIInsightCard from '@/components/dashboard/ai-insight-card'
+import CookieService from '@/lib/cookie-service'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -26,7 +27,9 @@ export default function Dashboard() {
   // Fetch dashboard data
   useEffect(() => {
     const fetchData = async () => {
+      // console.log(`\n Fetching dashboardData ${isAuthenticated} \n`)
       if (isAuthenticated) {
+        console.log('Token from cookie:', CookieService.getToken());
         try {
           const data = await getDashboardData()
                    
@@ -43,10 +46,11 @@ export default function Dashboard() {
     }
     
     fetchData()
-  }, [])
+  }, [isAuthenticated])
   
-  console.log(`\n${JSON.stringify(isAuthenticated)}\n`)
-  
+
+
+
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -368,7 +372,7 @@ const recentActivity = dashboardData?.activities ?? [];
             </div>
             <div className="flex-col items-center space-y-4">
               {dashboardData.ai_insights.slice(0,3).map((insight: AIInsightDetail) => (
-                <AIInsightCard insight={insight} />
+                <AIInsightCard key={insight.id} insight={insight} />
               ))}
             </div>
           </div>
