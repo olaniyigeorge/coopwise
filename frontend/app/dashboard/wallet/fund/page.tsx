@@ -88,7 +88,7 @@ export default function FundWallet() {
       <div className="mb-6">
         <Button
           variant="ghost"
-          className="flex items-center gap-1 px-0 mb-4"
+          className="flex items-center gap-1 px-0 hover:px-2 ease-in-out transitiona-all duration-500 mb-4"
           onClick={() => router.push('/dashboard')}
         >
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard

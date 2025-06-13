@@ -29,15 +29,14 @@ export default function Dashboard() {
     const fetchData = async () => {
       // console.log(`\n Fetching dashboardData ${isAuthenticated} \n`)
       if (isAuthenticated) {
-        console.log('Token from cookie:', CookieService.getToken());
         try {
           const data = await getDashboardData()
                    
           // Ensure the data has the expected structure
           const processedData: DashboardData = data
-          console.log('Setting Dashboard data:::', data)          
+          // console.log('Setting Dashboard data:::', data)          
           setDashboardData(processedData)
-        } catch (error) {
+        } catch (error) {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
           console.error('Error fetching dashboard data:', error)
         } finally {
           setLoading(false)

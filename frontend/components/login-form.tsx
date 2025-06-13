@@ -10,10 +10,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "@/components/ui/use-toast"
+import useAuthStore from "@/lib/stores/auth-store"
 
 export default function LoginForm() {
   const router = useRouter()
-  const { login } = useAuth()
+  // const { login } = useAuth()
+  const { login } = useAuthStore()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
