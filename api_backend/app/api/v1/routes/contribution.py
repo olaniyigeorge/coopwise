@@ -105,7 +105,7 @@ async def contribute(
     noti_data = NotificationCreate(
         user_id = contribution.user_id,
         title = "Payment Successful",
-        message = f"We settled your payment into {contribution_payment["data"]["amount"]} for your contribution {contribution.id}",
+        message = f"We settled your payment into {contribution_payment['data']['amount']} for your contribution {contribution.id}",
         event_type = "transaction",
         type = "success",
         entity_url = f"payment-{contribution.user_id}:{contribution.amount}"
