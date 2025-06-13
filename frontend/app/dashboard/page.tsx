@@ -27,7 +27,7 @@ export default function Dashboard() {
   // Fetch dashboard data
   useEffect(() => {
     const fetchData = async () => {
-      // console.log(`\n Fetching dashboardData ${isAuthenticated} \n`)
+      console.log(`\n Fetching dashboardData ${isAuthenticated} \n`)
       if (isAuthenticated) {
         try {
           const data = await getDashboardData()

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, CheckCircle, CreditCard, Landmark, Phone } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import WalletService from '@/lib/wallet-service';
 
 export default function FundWallet() {
   const router = useRouter();
@@ -24,8 +25,10 @@ export default function FundWallet() {
     setAmount(value);
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    console.log(`\n Adding money....    \n`)
     
     if (!amount || parseInt(amount) < 100) {
       toast({
@@ -39,22 +42,45 @@ export default function FundWallet() {
     setLoading(true);
     
     // Simulate payment processing
-    setTimeout(() => {
-      setLoading(false);
+    // setTimeout(() => {
+    //   setLoading(false);
+    //   setPaymentSuccessful(true);
+      
+    //   // Display success notification
+    //   toast({
+    //     title: "Payment Successful",
+    //     description: `You have successfully added ${formatCurrency(parseInt(amount))} to your wallet.`,
+    //     variant: "default"
+    //   });
+      
+    //   // Reset form after 2 seconds and redirect back to dashboard
+    //   setTimeout(() => {
+    //     router.push('/dashboard');
+    //   }, 2000);
+    // }, 2000);
+
+    setLoading(false);
+
+    const depData = {
+      'local_amount': Number(amount),
+      'currency': "NGN"
+    }
+    console.log(`\n Submitting ${JSON.stringify(depData)}\n`)
+
+    try {
+      const depositResponse = await WalletService.depositInWallet(depData);
+      if (!depositResponse) {
+          toast({
+            title: "Deposit Failed",
+            description: `This deposit attempt failed.`,
+            variant: "destructive"
+          });
+          setPaymentSuccessful(false);
+      }
       setPaymentSuccessful(true);
-      
-      // Display success notification
-      toast({
-        title: "Payment Successful",
-        description: `You have successfully added ${formatCurrency(parseInt(amount))} to your wallet.`,
-        variant: "default"
-      });
-      
-      // Reset form after 2 seconds and redirect back to dashboard
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
-    }, 2000);
+    } catch {
+      setPaymentSuccessful(false);
+    }
   };
 
   if (paymentSuccessful) {
@@ -88,7 +114,7 @@ export default function FundWallet() {
       <div className="mb-6">
         <Button
           variant="ghost"
-          className="flex items-center gap-1 px-0 hover:px-2 ease-in-out transitiona-all duration-500 mb-4"
+          className="flex items-center gap-1 px-0 hover:px-2 ease-in-out transition-all duration-500 mb-4"
           onClick={() => router.push('/dashboard')}
         >
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard

@@ -22,6 +22,11 @@ import AuthService from '@/lib/auth-service'
 interface GroupDetailsViewProps {
   groupId: string
 }
+export type iGroupRule = {
+  title: string
+  description: string
+}
+
 
 // Type definition for the API response
 interface GroupDetails {
@@ -37,6 +42,7 @@ interface GroupDetails {
   target_amount: number;
   status: string;
   created_at: string;
+  rules: iGroupRule[]
   updated_at: string;
   // Additional UI-specific fields that will be calculated
   nextContribution?: {
@@ -641,36 +647,36 @@ const ContributionHistory = () => {
   );
 };
 
+
 // Group Rules Component
-const GroupRules = () => (
-  <div className="bg-white rounded-md p-4">
-    <div className="flex justify-between items-center mb-3">
-      <div>
-        <h2 className="text-base font-medium mb-1">Group Rules</h2>
-        <p className="text-xs text-gray-500">
-          These are the rules set for your group to keep things fair and organized.
-        </p>
-      </div>
-    </div>
-    
-    <div className="space-y-4 mt-3">
-      <div className="border-l-4 border-blue-500 pl-3 py-1">
-        <h3 className="text-sm font-medium mb-1">Rule 1: Contribution Amount</h3>
-        <p className="text-xs text-gray-600">All members must contribute ₦100,000 every month as agreed by the group.</p>
+export function GroupRules(rules: iGroupRule[]) {
+  return (
+    <div className="bg-white rounded-md p-4">
+      <div className="flex justify-between items-center mb-3">
+        <div>
+          <h2 className="text-base font-medium mb-1">Group Rules</h2>
+          <p className="text-xs text-gray-500">
+            These are the rules set for your group to keep things fair and organized.
+          </p>
+        </div>
       </div>
       
-      <div className="border-l-4 border-blue-500 pl-3 py-1">
-        <h3 className="text-sm font-medium mb-1">Rule 2: Payment Rotation</h3>
-        <p className="text-xs text-gray-600">Payouts will follow a set order, based on the number each member selects during group setup.</p>
-      </div>
-      
-      <div className="border-l-4 border-blue-500 pl-3 py-1">
-        <h3 className="text-sm font-medium mb-1">Rule 3: Late Payment Penalty</h3>
-        <p className="text-xs text-gray-600">Members who pay late: the deadline will be charged a ₦500 late fee.</p>
+      <div className="space-y-4 mt-3">
+        {rules.map((rule: iGroupRule) => (
+          
+            <div key={rule.description} className="border-l-4 border-blue-500 pl-3 py-1">
+              <h3 className="text-sm font-medium mb-1">Rule x: {rule.title}</h3>
+              <p className="text-xs text-gray-600">{rule.description}</p>
+            </div>
+            ))
+        }
+        
       </div>
     </div>
-  </div>
-);
+)
+}
+  
+
 
 export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
   const [groupData, setGroupData] = useState<GroupDetails | null>(null);
@@ -694,7 +700,7 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
         // This logs the ID to console but uses the actual groupId param for the API call
         console.log(`Fetching group details for: ${groupId}`);
         
-        const data = await GroupService.getGroupDetails(groupId);
+        const data = await GroupService.getGroupExtDetails(groupId);
         
         if (data) {
           // Calculate additional UI fields
@@ -704,17 +710,17 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
           const enhancedData: GroupDetails = {
             ...data,
             nextContribution: {
-              amount: data.contribution_amount,
+              amount: data.contribution_amount.amount,
               ...nextContribution
             },
             nextPayout: {
-              amount: data.contribution_amount * 3, // Simplified calculation
-              recipient: 'Adams Olive', // Mock data
-              date: 'June 16, 2025' // Mock data
+              amount: data.next_payout.amount, // Simplified calculation
+              recipient: data.next_payout.recipient || 'Adams Olive', // Mock data
+              date: data.next_payout.recipient || 'June 16, 2025'  // Mock data
             },
-            totalSaved: data.contribution_amount * 18, // Mock calculation
-            progress: 60, // Mock percentage
-            memberCount: 10 // Mock count
+            totalSaved: data.total_saved || 0, 
+            progress: data.progress || 1, 
+            memberCount: data.members_count || 1 
           };
           
           setGroupData(enhancedData);
@@ -762,6 +768,7 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
     );
   }
 
+  const rules = groupData.rules
   return (
     <div className="max-w-4xl mx-auto px-4">
       {/* Group Header Component */}
@@ -774,7 +781,7 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
       {/* Group Stats Component */}
       <GroupStats 
         memberCount={groupData.memberCount || 10}
-        totalSaved={groupData.totalSaved || 1800000}
+        totalSaved={groupData.totalSaved || 0}
         progress={groupData.progress || 60}
         targetAmount={groupData.target_amount || 3000000}
         contributionAmount={groupData.contribution_amount || 100000}
@@ -792,8 +799,8 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
         <ContributionHistory />
 
         {/* Group Rules Component */}
-        <GroupRules />
-        
+        {/* <GroupRules {...rules} />
+         */}
         <div className="flex justify-end mb-8">
           <Button variant="outline" className="text-red-600 border-red-600 hover:bg-red-50">
             Leave Group

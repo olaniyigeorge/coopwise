@@ -109,6 +109,17 @@ async def get_coop(coop_id: str, db: AsyncSession = Depends(get_async_db_session
     return coop_group
 
 
+@router.get("/ext/{coop_id}")
+async def get_extended_coop(coop_id: str, db: AsyncSession = Depends(get_async_db_session)):
+    """
+        Get extended data about a cooperative group by ID.
+    """
+    coop_group = await CooperativeGroupService.get_ext_coop_group_by_id(db, coop_id)
+    if not coop_group:
+        raise HTTPException(status_code=404, detail="Cooperative group not found")
+    return coop_group
+
+
 @router.patch("/{coop_id}", response_model=CoopGroupDetails)
 async def update_coop(
     coop_id: str,

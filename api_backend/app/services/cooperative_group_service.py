@@ -3,23 +3,25 @@
 
 # Enforce rotation rules and statuses.
 
+import datetime
 from typing import List, Optional
 from uuid import UUID
 from fastapi.encoders import jsonable_encoder
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy import desc
 from jose import jwt, JWTError
 
 from sqlalchemy.orm import joinedload
 
+from db.models.contribution_model import Contribution, ContributionStatus
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.dashboard_schema import ExploreGroups
 from app.utils.cache import get_cache, update_cache
-from db.models.membership import GroupMembership
+from db.models.membership import GroupMembership, MembershipStatus
 from app.schemas.cooperative_group import CoopGroupCreate, CoopGroupDetails, CoopGroupUpdate
-from db.models.cooperative_group import CooperativeGroup, CooperativeStatus
+from db.models.cooperative_group import ContributionFrequency, CooperativeGroup, CooperativeStatus
 from app.utils.logger import logger
 from app.core.config import config
 from fastapi import HTTPException, status
@@ -75,6 +77,72 @@ class CooperativeGroupService:
             logger.error(e)
             raise e
         return coop_group
+    
+
+    @staticmethod
+    async def get_ext_coop_group_by_id(db: AsyncSession, coop_group_id: str):
+        # 1. Fetch group
+        stmt = select(CooperativeGroup).where(CooperativeGroup.id == coop_group_id)
+        result = await db.execute(stmt)
+        group: CooperativeGroup = result.scalars().first()
+
+        if not group:
+            return None
+
+        # 2. Get active memberships (ACCEPTED)
+        membership_stmt = select(GroupMembership).where(
+            GroupMembership.group_id == coop_group_id,
+            GroupMembership.status == MembershipStatus.ACCEPTED
+        )
+        members_result = await db.execute(membership_stmt)
+        members = members_result.scalars().all()
+        member_ids = [m.user_id for m in members]
+
+        # 3. Get contributions by accepted members (COMPLETED)
+        contrib_stmt = select(func.sum(Contribution.amount)).where(
+            Contribution.group_id == coop_group_id,
+            Contribution.user_id.in_(member_ids),
+            Contribution.status == ContributionStatus.COMPLETED
+        )
+        contrib_result = await db.execute(contrib_stmt)
+        total_saved = contrib_result.scalar() or 0
+
+        # 4. Compute progress
+        progress = float(total_saved) / float(group.target_amount) * 100 if group.target_amount else 0
+
+        # 5. Determine next contribution date
+        today = datetime.datetime.now()
+        freq = group.contribution_frequency
+        next_contrib_date = None
+        if freq == ContributionFrequency.WEEKLY:
+            next_contrib_date = today + datetime.timedelta(weeks=1)
+        elif freq == ContributionFrequency.MONTHLY:
+            next_contrib_date = today + datetime.timedelta(days=30)
+        elif freq == ContributionFrequency.DAILY:
+            next_contrib_date = today + datetime.timedelta(days=1)
+
+        next_contribution = {
+            "amount": float(group.contribution_amount),
+            "due_date": next_contrib_date.isoformat(),
+            "days_left": (next_contrib_date - today).days if next_contrib_date else None
+        }
+
+        # 6. Determine next payout (you can improve logic based on rotation queue)
+        next_payout = {
+            "amount": float(group.contribution_amount) * len(member_ids),
+            "recipient": "TBD",  # Optional: you can find the next in queue by lowest payout_position
+            "date": group.next_payout_date.isoformat() if group.next_payout_date else None
+        }
+
+        # 7. Build final response
+        return {
+            **group.__dict__,
+            "total_saved": float(total_saved),
+            "progress": round(progress, 2),
+            "members_count": len(member_ids),
+            "next_contribution": next_contribution,
+            "next_payout": next_payout,
+        }
 
     @staticmethod
     async def update_coop(db: AsyncSession, coop_group_id: str, coop_group_update_data: CoopGroupUpdate) -> Optional[CooperativeGroup]:

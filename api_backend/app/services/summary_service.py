@@ -9,7 +9,7 @@ from app.schemas.auth import AuthenticatedUser
 from app.schemas.cooperative_group import CoopGroupTargetSummary
 from app.schemas.dashboard_schema import Summary, Targets
 from app.utils.cache import get_cache, update_cache
-from db.models.contribution_model import Contribution
+from db.models.contribution_model import Contribution, ContributionStatus
 from db.models.membership import GroupMembership
 from db.models.cooperative_group import CooperativeGroup
 from app.services.membership_service import CooperativeMembershipService
@@ -42,7 +42,7 @@ class SummaryService:
             # 1. Your savings: sum of contributions
             savings_query = await db.execute(
                 select(func.sum(Contribution.amount))
-                .where(Contribution.user_id == user.id)
+                .where(Contribution.user_id == user.id, Contribution.status == ContributionStatus.COMPLETED)
             )
             your_savings = savings_query.scalar() or 0.0
 

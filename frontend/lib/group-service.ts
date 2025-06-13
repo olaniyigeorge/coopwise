@@ -7,6 +7,7 @@ const GROUP_ENDPOINTS = {
   MY_GROUPS: '/api/groups/me',
   CREATE: '/api/groups/create',
   DETAILS: (id: string) => `/api/groups/${id}`,
+  EXT_DETAILS: (id: string) => `/api/groups/ext/${id}`,
   JOIN: (id: string) => `/api/groups/${id}/join`,
   VERIFY_INVITE: '/api/memberships/invite',
   ACCEPT_INVITE: '/api/memberships/accept-invite',
@@ -112,6 +113,18 @@ const GroupService = {
       return response.data;
     } catch (error) {
       console.error(`Error fetching group ${id}:`, error);
+      return null;
+    }
+  },
+
+  async getGroupExtDetails(id: string) {
+    try {
+      const response = await axios.get(GROUP_ENDPOINTS.EXT_DETAILS(id), {
+        headers: AuthService.getAuthHeader()
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching extended group data ${id}:`, error);
       return null;
     }
   },
@@ -277,21 +290,21 @@ const GroupService = {
     }
   },
   
-  // Join a group with invite code
-  async joinGroup(inviteCode: string) {
-    try {
-      // First verify the invite code
-      const verification = await this.verifyInviteCode(inviteCode);
+  // // Join a group with invite code
+  // async joinGroup(inviteCode: string) {
+  //   try {
+  //     // First verify the invite code
+  //     const verification = await this.verifyInviteCode(inviteCode);
       
-      // Then accept the invite
-      const result = await this.acceptInviteCode(inviteCode);
+  //     // Then accept the invite
+  //     const result = await this.acceptInviteCode(inviteCode);
       
-      return result;
-    } catch (error) {
-      console.error(`Error joining group with invite code:`, error);
-      throw error;
-    }
-  }
+  //     return result;
+  //   } catch (error) {
+  //     console.error(`Error joining group with invite code:`, error);
+  //     throw error;
+  //   }
+  // }
 };
 
 export default GroupService; 
