@@ -18,6 +18,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import AuthService from '@/lib/auth-service'
+import ContributionService from '@/lib/contribution-service'
+import useAuthStore from '@/lib/stores/auth-store'
 
 interface GroupDetailsViewProps {
   groupId: string
@@ -267,6 +269,7 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
 
 // Group Stats Component
 const GroupStats = ({ 
+  groupData,
   memberCount, 
   totalSaved, 
   progress, 
@@ -279,6 +282,7 @@ const GroupStats = ({
   payoutRecipient,
   payoutDate
 }: { 
+  groupData: GroupDetails;
   memberCount: number;
   totalSaved: number;
   progress: number;
@@ -295,6 +299,7 @@ const GroupStats = ({
   const [paymentMethod, setPaymentMethod] = useState('transfer');
   const [countdown, setCountdown] = useState(10 * 60); // 10 minutes in seconds
   
+  const { user, isAuthenticated } = useAuthStore()
   // Format countdown time as mm:ss
   const formatTime = () => {
     const minutes = Math.floor(countdown / 60);
@@ -321,6 +326,46 @@ const GroupStats = ({
     
     return () => clearInterval(timer);
   }, [showContributionModal]);
+
+
+  const handleContribution = async () => {
+    try {
+      if (!user?.id || !groupData?.id || !groupData?.nextContribution?.dueDate) {
+        throw new Error("Missing required contribution data");
+      }
+  
+      const getDueDate = () => {
+        const date = new Date();
+        date.setHours(date.getHours() + 6);
+        return date.toISOString();
+      };
+      const contribution = {
+        user_id: user.id,
+        group_id: groupData.id,
+        amount: contributionAmount,
+        currency: 'NGN',
+        due_date: getDueDate() || groupData.nextContribution.dueDate,
+        note: 'Contribution via dashboard',
+        status: 'pledged' as const
+      };
+      const result = await ContributionService.makeContribution(contribution);
+      
+      
+      toast({
+        title: "Success",
+        description: "Contribution submitted successfully!",
+      });
+      setShowContributionModal(false);
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: "Failed to submit contribution",
+        variant: "destructive"
+      });
+    }
+  };
+  
 
   return (
     <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -414,7 +459,7 @@ const GroupStats = ({
           <DialogHeader>
             <DialogTitle>Make Contribution</DialogTitle>
             <DialogDescription>
-              Get helpful suggestions based on your saving habits.
+              Make a commitment by being consistent with your contributions.
             </DialogDescription>
           </DialogHeader>
           
@@ -489,6 +534,7 @@ const GroupStats = ({
                 <Button 
                   type="button" 
                   className="w-full bg-teal-700 hover:bg-teal-800 text-white"
+                  onClick={handleContribution}
                 >
                   Pay from Wallet
                 </Button>
@@ -498,7 +544,11 @@ const GroupStats = ({
           
           {paymentMethod === 'transfer' && (
             <DialogFooter>
-              <Button type="button" className="w-full bg-teal-700 hover:bg-teal-800">
+              <Button 
+                type="button" 
+                className="w-full bg-teal-700 hover:bg-teal-800"
+                onClick={handleContribution}
+              >
                 Confirm Payment
               </Button>
             </DialogFooter>
@@ -649,7 +699,7 @@ const ContributionHistory = () => {
 
 
 // Group Rules Component
-export function GroupRules(rules: iGroupRule[]) {
+export function GroupRules({ rules }: { rules: iGroupRule[] }) {
   return (
     <div className="bg-white rounded-md p-4">
       <div className="flex justify-between items-center mb-3">
@@ -662,10 +712,10 @@ export function GroupRules(rules: iGroupRule[]) {
       </div>
       
       <div className="space-y-4 mt-3">
-        {rules.map((rule: iGroupRule) => (
+        {rules.map((rule: iGroupRule, index) => (
           
             <div key={rule.description} className="border-l-4 border-blue-500 pl-3 py-1">
-              <h3 className="text-sm font-medium mb-1">Rule x: {rule.title}</h3>
+              <h3 className="text-sm font-medium mb-1">Rule {index + 1}: {rule.title}</h3>
               <p className="text-xs text-gray-600">{rule.description}</p>
             </div>
             ))
@@ -780,12 +830,13 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
       
       {/* Group Stats Component */}
       <GroupStats 
+        groupData={groupData}
         memberCount={groupData.memberCount || 10}
         totalSaved={groupData.totalSaved || 0}
-        progress={groupData.progress || 60}
-        targetAmount={groupData.target_amount || 3000000}
-        contributionAmount={groupData.contribution_amount || 100000}
-        contributionDueDate="May 25"
+        progress={groupData.progress || 0}
+        targetAmount={groupData.target_amount || 0}
+        contributionAmount={groupData.contribution_amount || 9999}
+        contributionDueDate={`${groupData.nextContribution?.daysLeft}` || "May 25"}
         contributionDaysLeft={10}
         contributionFrequency={groupData.contribution_frequency || "Monthly"}
         payoutAmount={groupData.nextPayout?.amount || 300000}
@@ -799,8 +850,8 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
         <ContributionHistory />
 
         {/* Group Rules Component */}
-        {/* <GroupRules {...rules} />
-         */}
+        <GroupRules rules={rules} />
+
         <div className="flex justify-end mb-8">
           <Button variant="outline" className="text-red-600 border-red-600 hover:bg-red-50">
             Leave Group
