@@ -346,15 +346,17 @@ const GroupStats = ({
         currency: 'NGN',
         due_date: getDueDate() || groupData.nextContribution.dueDate,
         note: 'Contribution via dashboard',
-        status: 'pledged' as const
+        status: 'completed' as const // TODO - Set the status according to payment status [pledged]
       };
       const result = await ContributionService.makeContribution(contribution);
       
-      
-      toast({
-        title: "Success",
-        description: "Contribution submitted successfully!",
-      });
+      if (result) {
+          toast({
+            title: "Success",
+            description: "Contribution submitted successfully!",
+            variant: 'default'
+          });
+      }
       setShowContributionModal(false);
     } catch (err) {
       console.error(err);
@@ -848,6 +850,7 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
       <div className="flex flex-col gap-6">
         {/* Contribution History Component */}
         <ContributionHistory />
+        {/* <ContributionHistory contributions={groupData.contributions} /> */} 
 
         {/* Group Rules Component */}
         <GroupRules rules={rules} />

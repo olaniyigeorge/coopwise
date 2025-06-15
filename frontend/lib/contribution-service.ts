@@ -21,12 +21,12 @@ const ContributionService = {
 
     
     async makeContribution(payload: CreateContributionSchema) {
-        const token = AuthService.getToken();
+        const token = await AuthService.getToken();
       
         if (!token) {
-          throw new Error('You must be logged in to generate an invite code');
+          throw new Error('You must be logged in to make a contribution');
         }
-        
+        console.log(`\n${token}\n`)
         const res = await fetch('/api/v1/contributions', {
             method: 'POST',
             headers: {

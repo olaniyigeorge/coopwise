@@ -40,7 +40,7 @@ async def contribute(
         user_id=current_user.id,
         group_id=contribution_data.group_id,
         currency=contribution_data.currency,
-
+        status=contribution_data.status,
         amount=contribution_data.amount,
         note=contribution_data.note,
     )

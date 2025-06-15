@@ -32,9 +32,13 @@ class SummaryService:
             logger.info(f"🔄 Using cached summary for user {user.id}")
             
             if isinstance(cached_summary, str):
-                cached_summary = json.loads(cached_summary)  # ✅ convert from JSON to dict
-            if isinstance(cached_summary.get("wallet"), str):
-                cached_summary["wallet"] = json.loads(cached_summary["wallet"])
+                cached_summary = json.loads(cached_summary)  
+            
+            wallet = await WalletService.get_wallet(db, user, redis)
+            
+            if isinstance(cached_summary.get("wallet"), str): # Doing this because the wallet and it's cache are updated separately 
+                print("\n Setting more recent wallet details.... \n")
+                cached_summary["wallet"] = json.loads(wallet)
 
             return cached_summary
 
@@ -102,7 +106,7 @@ class SummaryService:
             )
 
         fresh_summary: Summary = await fetch_summary()
-        await update_cache(key, fresh_summary.model_dump_json(), ttl=300)
+        await update_cache(key, fresh_summary.model_dump_json(), ttl=180)
 
         logger.info(f"📦 Cached summary for user {user.id}")
         return fresh_summary
