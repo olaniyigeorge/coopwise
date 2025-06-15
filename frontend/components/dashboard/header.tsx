@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useNotifications } from '@/lib/notification-context'
 import useAuthStore from '@/lib/stores/auth-store'
+import { useNotificationListener } from '@/lib/hooks/use-notifications-socket'
 
 interface HeaderProps {
   title?: string
@@ -85,7 +86,14 @@ export default function Header({
     
     return date.toLocaleDateString();
   };
+
   
+
+
+  useNotificationListener()
+
+
+
   return (
     <header className="w-full bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">

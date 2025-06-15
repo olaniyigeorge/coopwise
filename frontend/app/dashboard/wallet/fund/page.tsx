@@ -63,9 +63,8 @@ export default function FundWallet() {
 
     const depData = {
       'local_amount': Number(amount),
-      'currency': "NGN"
+      'currency': "NGN" // TODO Get user's local_currency
     }
-    console.log(`\n Submitting ${JSON.stringify(depData)}\n`)
 
     try {
       const depositResponse = await WalletService.depositInWallet(depData);

@@ -49,5 +49,5 @@ class DashboardService:
             activities=activities,
             ai_insights=ai_insights,
             notifications=notifications,
-                cooperative_members=cooperative_members
+            cooperative_members=cooperative_members
         )

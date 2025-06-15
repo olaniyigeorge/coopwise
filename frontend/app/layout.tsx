@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     siteName: 'CoopWise',
     images: [
       {
-        url: '/images/coopwise-logo.svg',
+        url: '/images/coopwise_home.png',
         width: 1200,
         height: 630,
         alt: 'CoopWise - Cooperative Savings Management Platform',

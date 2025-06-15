@@ -173,12 +173,12 @@ class WalletService:
         Uses Redis cache for performance.
         """
         cache_key = f"wallet_detail:{user.id}"
-        cached = await get_cache(cache_key)
-        if cached:
-            logger.info(f"🔄 Using cached wallet for user {user.id}")
-            if isinstance(cached, str):
-                cached = json.loads(cached)
-            return WalletDetail.model_validate(cached)
+        # cached = await get_cache(cache_key)
+        # if cached:
+        #     logger.info(f"🔄 Using cached wallet for user {user.id}")
+        #     if isinstance(cached, str):
+        #         cached = json.loads(cached)
+        #     return WalletDetail.model_validate(cached)
 
         logger.info(f"📬 Fetching wallet from db for user {user.id}")
         stmt = select(Wallet).where(Wallet.user_id == user.id)

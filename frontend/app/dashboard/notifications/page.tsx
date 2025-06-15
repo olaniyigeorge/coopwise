@@ -1,14 +1,19 @@
 "use client"
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Bell, Check } from 'lucide-react'
 import { useNotifications } from '@/lib/notification-context'
+import useAuthStore from '@/lib/stores/auth-store'
 
 export default function NotificationsPage() {
+  const { user } = useAuthStore()
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+
+
+
 
   // Format date to a more readable format
   const formatDate = (dateString: string) => {

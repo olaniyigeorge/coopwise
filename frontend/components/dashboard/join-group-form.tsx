@@ -218,7 +218,7 @@ export default function JoinGroupForm() {
                     <FormLabel>Invite code</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="e.g. COOPWISE123abc" 
+                        placeholder="e.g. cpw-invite-11111111-1111-1111-1111-111111111111:0000000-0000-0000-0000-00000000000" 
                         {...field} 
                         className="text-base py-6"
                       />

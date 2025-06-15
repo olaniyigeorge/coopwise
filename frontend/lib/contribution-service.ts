@@ -26,7 +26,6 @@ const ContributionService = {
         if (!token) {
           throw new Error('You must be logged in to make a contribution');
         }
-        console.log(`\n${token}\n`)
         const res = await fetch('/api/v1/contributions', {
             method: 'POST',
             headers: {

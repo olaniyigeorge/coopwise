@@ -2,13 +2,12 @@
 
 # Schedule future alerts.from typing import List
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from uuid import UUID
 
 from fastapi import WebSocket
-from pydantic import TypeAdapter
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import joinedload
 from redis.asyncio import Redis
 
@@ -89,6 +88,52 @@ class NotificationService:
         logger.info(f"📦 Cached notifications for user {user.id}")
         return serialized
 
+    @staticmethod
+    async def get_user_notifications(
+        user: AuthenticatedUser,
+        db: AsyncSession,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> Tuple[List[NotificationDetail], int]:
+        """
+        Returns paginated notifications for a given user, ordered by:
+        1. Unread
+        2. Read
+        3. Archived
+        """
+
+        # Define custom order by NotificationStatus
+        status_order = case(
+            (Notification.status == NotificationStatus.UNREAD, 0),
+            (Notification.status == NotificationStatus.READ, 1),
+            (Notification.status == NotificationStatus.ARCHIVED, 2),
+            else_=3
+        )
+
+        stmt = (
+            select(Notification)
+            .where(Notification.user_id == user.id)
+            .order_by(status_order, Notification.created_at.desc())
+            .limit(page_size)
+            .offset((page - 1) * page_size)
+            .options(joinedload(Notification.user))
+        )
+
+        count_stmt = (
+            select(func.count(Notification.id))
+            .where(Notification.user_id == user.id)
+        )
+
+        notifications_result = await db.execute(stmt)
+        notifications = notifications_result.scalars().all()
+
+        count_result = await db.execute(count_stmt)
+        total_count = count_result.scalar_one()
+
+        serialized = [NotificationDetail.model_validate(n) for n in notifications]
+
+        return serialized, total_count
+    
     @staticmethod
     async def mark_all_as_read(user_id: UUID, db: AsyncSession):
         """
