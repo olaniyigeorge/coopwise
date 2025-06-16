@@ -1,0 +1,9 @@
+{
+  "name": "CoopWise",
+  "short_name": "CoopWise",
+  "description": "Cooperative savings platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5"
+} 
