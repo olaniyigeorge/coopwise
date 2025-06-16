@@ -36,6 +36,7 @@ export const useNotificationListener = () => {
           } else {
             notificationData = data;
           }
+          
           // Add notif to store
           addNotification(notificationData);
           

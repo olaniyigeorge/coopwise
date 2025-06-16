@@ -6,7 +6,6 @@ import Header from './header'
 import MobileBottomNav from './mobile-bottom-nav'
 import { usePathname } from 'next/navigation'
 import { Toaster } from 'sonner'
-import { useAuth } from '@/lib/auth-context'
 import useAuthStore from '@/lib/stores/auth-store'
 
 interface DashboardLayoutProps {
@@ -16,7 +15,6 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  // const { user } = useAuth()
   const { user, isAuthenticated } = useAuthStore()
   
   // Get header configuration based on the current pathname
