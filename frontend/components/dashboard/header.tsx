@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react'
 import Link from 'next/link'
-import { Bell, ChevronDown, ArrowLeft, Menu, LogOut, User, Settings } from 'lucide-react'
+import { Bell, ChevronDown, ArrowLeft, Menu, LogOut, User } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { 
   DropdownMenu,
@@ -37,7 +37,6 @@ export default function Header({
   showMobileMenu = false
 }: HeaderProps) {
   const { logout, user } = useAuthStore();
-  // const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const { notifications, markAsRead, markAllAsRead, unreadCount, fetchNotifications } = useNotificationStore()
   // Listening for notification in dashboard(header) 
   useNotificationListener()
@@ -95,13 +94,6 @@ export default function Header({
     
     return date.toLocaleDateString();
   };
-
-
-  console.log(` Notifications ${notifications.length}`)
-  
-
-
-
 
 
   return (
