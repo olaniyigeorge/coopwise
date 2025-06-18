@@ -11,8 +11,9 @@ import { NotificationDetail } from "../stores/notification-store";
 export const useNotificationListener = () => {
   const { auth, notifications } = useAppStore();
   const { user } = auth;
-  const { addNotification, setNotifications } = notifications;
+  const { addNotification, fetchNotifications } = notifications;
 
+  // Set up WebSocket connection for real-time notifications
   useEffect(() => {
     if (!user) {
       console.log("❌ User not authenticated. Skipping WebSocket connection");
@@ -36,24 +37,28 @@ export const useNotificationListener = () => {
           } else {
             notificationData = data;
           }
-          // Add notif to store
+          
+          // Add notification to store
           addNotification(notificationData);
           
-
-          // Toast notif
-          toast.success(
+          // Show toast notification
+          const toastType = notificationData.type === 'success' ? 'success' : 
+                           notificationData.type === 'warning' ? 'warning' :
+                           notificationData.type === 'danger' ? 'error' : 'default';
+          
+          toast[toastType as "success" | "warning" | "error" | "default"](
             notificationData.title || "New Notification",
             {
               description: notificationData.message, 
               duration: 5000,
             }
-          )
+          );
         });
 
-        console.log("✅ Notif listener conn established");
+        console.log("✅ Notification websocket connection established");
         
       } catch (error) {
-        console.error("❌ Failed to connect notif listener:", error);
+        console.error("❌ Failed to connect to notification websocket:", error);
       }
     };
 
@@ -62,25 +67,25 @@ export const useNotificationListener = () => {
     return () => {
       if (socket) {
         console.log("🔌 Closing WebSocket connection");
-        socket.close();
+        socket.close(1000); // Normal closure
       }
     };
 
-  }, [user?.id, addNotification, notifications.notifications.length]);
+  }, [user, addNotification]);
 
   // Fetch initial notifications
   useEffect(() => {
     if (!user) return;
 
-    const fetchInitialNotifications = async () => {
+    const loadInitialNotifications = async () => {
       try {
-        const data = await NotificationService.fetchNotifications(user.id);
-        setNotifications(data.notifications || []);
+        await fetchNotifications();
+        console.log("✅ Initial notifications loaded");
       } catch (error) {
         console.error("❌ Failed to fetch initial notifications:", error);
       }
     };
 
-    fetchInitialNotifications();
-  }, [user?.id, setNotifications]);
+    loadInitialNotifications();
+  }, [user, fetchNotifications]);
 };

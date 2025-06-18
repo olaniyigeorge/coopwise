@@ -6,6 +6,8 @@
 
 body {
   font-family: 'Inter', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
 }
 
 @layer utilities {
@@ -27,6 +29,75 @@ body {
   
   .text-brand-secondary {
     color: #585858;
+  }
+
+  /* Mobile Safe Areas */
+  .h-safe-bottom {
+    height: env(safe-area-inset-bottom, 0);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0.5rem);
+  }
+  
+  /* Touch Target Improvements */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  /* Mobile Fixes */
+  .toast-responsive {
+    max-width: calc(100vw - 2rem);
+  }
+  
+  /* Responsive Text Size Classes */
+  .text-responsive-xs {
+    @apply text-xs sm:text-sm;
+  }
+  
+  .text-responsive-sm {
+    @apply text-sm sm:text-base;
+  }
+  
+  .text-responsive-base {
+    @apply text-base sm:text-lg;
+  }
+  
+  .text-responsive-lg {
+    @apply text-lg sm:text-xl;
+  }
+  
+  .text-responsive-xl {
+    @apply text-xl sm:text-2xl;
+  }
+
+  /* Responsive Spacing */
+  .gap-responsive-sm {
+    @apply gap-1 sm:gap-2;
+  }
+  
+  .gap-responsive-md {
+    @apply gap-2 sm:gap-3 lg:gap-4;
+  }
+  
+  .gap-responsive-lg {
+    @apply gap-3 sm:gap-4 lg:gap-6;
+  }
+
+  .p-responsive-sm {
+    @apply p-2 sm:p-3 lg:p-4;
+  }
+  
+  .p-responsive-md {
+    @apply p-3 sm:p-4 lg:p-5;
+  }
+  
+  .p-responsive-lg {
+    @apply p-4 sm:p-6 lg:p-8;
   }
 }
 
@@ -115,5 +186,27 @@ body {
     background-position: center;
     background-repeat: no-repeat;
   }
+
+  /* Add support for extra small screens */
+  @media (min-width: 400px) {
+    .xs\:inline {
+      display: inline;
+    }
+    .xs\:block {
+      display: block;
+    }
+    .xs\:hidden {
+      display: none;
+    }
+  }
   
+  /* Improve input focus states on mobile */
+  input, textarea, select {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
+  }
+  
+  /* Improve button touch target sizes */
+  button, .button, [type="button"], [type="submit"] {
+    @apply min-h-[40px] min-w-[40px];
+  }
 }

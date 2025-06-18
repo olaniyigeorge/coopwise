@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import AuthService from '@/lib/auth-service';
 
 // Get API key from environment variables or use the provided key
 const getApiKey = (): string => {
@@ -53,6 +54,35 @@ export class AIService {
 
   async sendMessage(message: string): Promise<string> {
     try {
+      // First try to use the backend API
+      const token = await AuthService.getToken();
+      
+      if (token) {
+        try {
+          console.log('Using backend API for AI chat');
+          const response = await fetch('/api/v1/insights/ai-chat', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt: message }),
+          });
+          
+          if (response.ok) {
+            const data = await response.text();
+            console.log('Got response from backend AI chat API');
+            return data;
+          } else {
+            console.warn('Backend AI chat API failed, falling back to direct Gemini API');
+          }
+        } catch (apiError) {
+          console.error('Error using backend AI chat API:', apiError);
+          console.warn('Falling back to direct Gemini API');
+        }
+      }
+      
+      // Fallback to direct Gemini API if backend fails
       // Check if API key is available
       if (!getApiKey()) {
         throw new Error('No API key provided. Please configure the Gemini API key in environment variables.');
@@ -62,7 +92,7 @@ export class AIService {
       const response = result.response;
       return response.text();
     } catch (error: any) {
-      console.error('Error sending message to Gemini API:', error);
+      console.error('Error sending message to AI:', error);
       
       // Provide more specific error messages
       if (error.message?.includes('API key')) {
@@ -98,6 +128,58 @@ export class AIService {
     });
     
     return Promise.resolve();
+  }
+  
+  async getInsights() {
+    try {
+      const token = await AuthService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+      
+      const response = await fetch('/api/v1/insights', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch insights: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching insights:', error);
+      throw error;
+    }
+  }
+  
+  async generateNewInsight() {
+    try {
+      const token = await AuthService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+      
+      const response = await fetch('/api/v1/insights/get-ai_insight', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to generate new insight: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error generating new insight:', error);
+      throw error;
+    }
   }
 }
 

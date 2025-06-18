@@ -4,7 +4,7 @@ import React, { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowRightIcon, RefreshCwIcon, LightbulbIcon } from 'lucide-react'
+import { ArrowRightIcon, RefreshCwIcon, LightbulbIcon, SparklesIcon, TrendingUpIcon } from 'lucide-react'
 import Image from 'next/image'
 import { useAuth } from '@/lib/auth-context'
 import { getUserInsights } from '@/lib/insights-mock-data'
@@ -33,69 +33,90 @@ export default function AIInsightsSummary() {
   }
   
   return (
-    <div className="bg-white rounded-lg shadow p-4 sm:p-5">
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <h2 className="text-sm sm:text-base font-semibold">AI Savings Insights</h2>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-gray-500 hover:text-gray-700 p-1 sm:p-2 h-auto"
-            onClick={handleRefresh}
-          >
-            <RefreshCwIcon className="w-4 h-4" />
-            <span className="sr-only">Refresh</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-primary hover:text-primary/80 p-1 sm:p-2 h-auto flex items-center"
-            onClick={handleViewAll}
-          >
-            <span className="text-xs hidden sm:inline mr-1">View All</span>
-            <ArrowRightIcon className="w-4 h-4" />
-          </Button>
+    <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-xl shadow-sm border border-blue-100/50 overflow-hidden">
+      {/* Header with gradient background */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 sm:px-5 sm:py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-100" />
+            <h2 className="text-sm sm:text-base font-semibold text-white">AI Insights</h2>
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-blue-100 hover:text-white hover:bg-white/10 p-1 h-7 w-7"
+              onClick={handleRefresh}
+            >
+              <RefreshCwIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="sr-only">Refresh</span>
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-blue-100 hover:text-white hover:bg-white/10 p-1 h-7 w-7"
+              onClick={handleViewAll}
+            >
+              <ArrowRightIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="sr-only">View All</span>
+            </Button>
+          </div>
         </div>
       </div>
       
-      {hasInsights ? (
-        <div className="space-y-3">
-          {insights.map((insight) => (
-            <AIInsightCard 
-              key={insight.id} 
-              insight={insight} 
-              compact={true} 
-            />
-          ))}
-          
-          <Button 
-            variant="outline" 
-            className="w-full mt-3 text-primary border-primary hover:bg-primary hover:text-white"
-            onClick={handleViewAll}
-          >
-            See All Insights
-          </Button>
-        </div>
-      ) : (
-        <div className="text-center py-4 sm:py-6">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-            <LightbulbIcon className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
+      {/* Content area */}
+      <div className="p-3 sm:p-4">
+        {hasInsights ? (
+          <div className="space-y-3">
+            {insights.map((insight, index) => (
+              <div 
+                key={insight.id} 
+                className={`transform transition-all duration-300 hover:-translate-y-1 ${
+                  index === 0 ? 'scale-100' : index === 1 ? 'scale-[0.98]' : 'scale-[0.96]'
+                }`}
+              >
+                <AIInsightCard insight={insight} compact={true} />
+              </div>
+            ))}
+            
+            <div className="pt-2">
+              <Button 
+                variant="outline" 
+                className="w-full bg-white/70 backdrop-blur-sm border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 flex items-center justify-center gap-2 group"
+                onClick={handleViewAll}
+              >
+                <span>See All Insights</span>
+                <ArrowRightIcon className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </div>
           </div>
-          <h3 className="text-sm sm:text-base font-medium mb-1">No tips yet</h3>
-          <p className="text-xs sm:text-sm text-gray-500 px-2">
-            Join or create a savings group to start getting smart tips
-            that help you stay on track.
-          </p>
-          <Button
-            variant="outline"
-            className="mt-4 text-primary border-primary hover:bg-primary hover:text-white"
-            onClick={handleRefresh}
-          >
-            <RefreshCwIcon className="w-4 h-4 mr-2" />
-            Refresh Tips
-          </Button>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-6 sm:py-8">
+            <div className="relative">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5">
+                <LightbulbIcon className="w-8 h-8 sm:w-10 sm:h-10 text-blue-500" />
+              </div>
+              <div className="absolute top-0 right-0 w-full h-full flex items-center justify-center opacity-30">
+                <div className="w-full h-full absolute animate-ping bg-blue-200 rounded-full" style={{ animationDuration: '3s' }}></div>
+              </div>
+            </div>
+            
+            <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-2">No insights yet</h3>
+            <p className="text-sm text-gray-600 px-4 sm:px-6 max-w-xs mx-auto">
+              Join or create a savings group to start getting personalized financial insights
+            </p>
+            
+            <Button
+              variant="outline"
+              className="mt-5 border-blue-200 bg-white text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 flex items-center justify-center gap-2"
+              onClick={handleRefresh}
+            >
+              <RefreshCwIcon className="w-4 h-4" />
+              <span>Generate Insights</span>
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   )
 } 

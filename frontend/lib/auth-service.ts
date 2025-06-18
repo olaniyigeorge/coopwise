@@ -157,22 +157,30 @@ const AuthService = {
     const clientToken = CookieService.getToken();
     if (clientToken) return clientToken;
 
-    // Fallback to API if HttpOnly cookie is used
     try {
-      const res = await fetch('/api/auth/token');
+      // Fallback to API if HttpOnly cookie is used
+      const res = await fetch('/api/auth/token', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store'
+      });
+      
       if (!res.ok) return undefined;
+      
       const data = await res.json();
-      return data.token;
+      if (data.token) {
+        // Store the token in client-side cookie for future requests
+        CookieService.setToken(data.token);
+        return data.token;
+      }
+      return undefined;
     } catch (err) {
       console.error('Error fetching token from API:', err);
       return undefined;
     }
   },
-
-
-
-
-
 
   // Get current user
   getCurrentUser() {
@@ -181,12 +189,13 @@ const AuthService = {
 
   // Check if user is authenticated
   isAuthenticated() {
-    return !!this.getToken();
+    const token = CookieService.getToken();
+    return !!token;
   },
 
   // Get auth header
   getAuthHeader(): { Authorization: string } | {} {
-    const token = this.getToken();
+    const token = CookieService.getToken();
     if (token) {
       return { Authorization: `Bearer ${token}` };
     }

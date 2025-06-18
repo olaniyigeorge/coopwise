@@ -8,12 +8,21 @@ import { usePathname } from 'next/navigation'
 import { Toaster } from 'sonner'
 import { useAuth } from '@/lib/auth-context'
 import useAuthStore from '@/lib/stores/auth-store'
+import { cn } from '@/lib/utils'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
+  fullWidth?: boolean
+  noPadding?: boolean
+  className?: string
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout({ 
+  children, 
+  fullWidth = false,
+  noPadding = false,
+  className 
+}: DashboardLayoutProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   // const { user } = useAuth()
@@ -38,13 +47,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           title: 'Dashboard',
           showBackButton: false
         }
-        case '/dashboard/ai-chat':
-          return {
-            title: '',
-            subtitle: '',
-            showBackButton: true,
-            backUrl: '/dashboard'
-          }
+      case '/dashboard/ai-chat':
+        return {
+          title: '',
+          subtitle: '',
+          showBackButton: true,
+          backUrl: '/dashboard'
+        }
       case '/dashboard/create-group':
         return {
           // Empty title since it's already in the page content
@@ -101,8 +110,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           showBackButton: false
         }
       
-   
-      
       default:
         return {
           title: 'Dashboard',
@@ -112,15 +119,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
   const headerConfig = getHeaderConfig()
 
-  
+  const handleCloseSidebar = () => {
+    if (sidebarOpen) {
+      setSidebarOpen(false)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" onClick={handleCloseSidebar}>
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
       
@@ -131,7 +143,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       />
       
       {/* Main Content Area */}
-      <div className="min-h-screen lg:ml-[208px]">
+      <div className={cn(
+        "min-h-screen transition-all duration-200 ease-in-out",
+        "lg:ml-[208px]"
+      )}>
         <Header 
           {...headerConfig} 
           onMenuClick={() => setSidebarOpen(true)}
@@ -139,7 +154,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           userName={user?.full_name || "User"}
         />
         
-        <main className="p-3 sm:p-4 lg:p-6 pb-20 lg:pb-6">
+        <main className={cn(
+          !noPadding && "p-3 sm:p-4 lg:p-6",
+          "pb-20 lg:pb-6", // Bottom padding to account for mobile navigation
+          fullWidth ? "w-full" : "mx-auto",
+          className
+        )}>
           {children}
         </main>
       </div>
@@ -153,6 +173,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         expand={false}
         richColors
         closeButton
+        toastOptions={{
+          style: {
+            fontSize: '14px',
+          },
+          className: 'toast-responsive'
+        }}
       />
     </div>
   )

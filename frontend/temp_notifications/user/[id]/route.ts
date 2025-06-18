@@ -3,15 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 // API base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
 
-interface Params {
-  params: {
-    userId: string;
-  };
-}
-
-export async function GET(request: NextRequest, { params }: Params) {
+export async function GET(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
-    const { userId } = params;
+    const { id } = context.params;
 
     const authHeader = request.headers.get('Authorization');
 
@@ -23,14 +20,22 @@ export async function GET(request: NextRequest, { params }: Params) {
       headers['Authorization'] = authHeader;
     }
 
-    const response = await fetch(`${API_URL}/api/v1/notifications/user/${userId}`, {
+    const response = await fetch(`${API_URL}/api/v1/notifications/user/${id}`, {
       method: 'GET',
       headers,
     });
 
-    const responseText = await response.text();
-    console.log(`Notifications API response status: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error fetching notifications: ${response.status}`, errorText);
+      
+      return NextResponse.json(
+        { detail: `Error fetching notifications: ${response.status}` },
+        { status: response.status }
+      );
+    }
 
+    const responseText = await response.text();
     let data;
     try {
       data = responseText ? JSON.parse(responseText) : {};
@@ -50,4 +55,4 @@ export async function GET(request: NextRequest, { params }: Params) {
       { status: 500 }
     );
   }
-}
+} 

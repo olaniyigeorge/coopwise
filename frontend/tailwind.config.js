@@ -9,6 +9,14 @@ module.exports = {
     "*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
+    screens: {
+      'xs': '400px',
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+    },
     container: {
       center: true,
       padding: "2rem",
@@ -76,5 +84,28 @@ module.exports = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function({ addUtilities }) {
+      const newUtilities = {
+        '.touch-manipulation': {
+          'touch-action': 'manipulation',
+        },
+        '.overscroll-none': {
+          'overscroll-behavior': 'none',
+        },
+        '.no-tap-highlight': {
+          '-webkit-tap-highlight-color': 'transparent',
+        },
+        '.safe-bottom': {
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        },
+        '.safe-top': {
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+        }
+      };
+      
+      addUtilities(newUtilities);
+    }
+  ],
 }

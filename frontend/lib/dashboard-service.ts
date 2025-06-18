@@ -56,18 +56,23 @@ export async function getDashboardData(): Promise<DashboardData> {
       return defDashData;
     }
 
-    // console.log(`Fetching dashboard data in service...`);
+    console.log('Fetching dashboard data with token:', token.substring(0, 10) + '...');
+    
     const response = await fetch('/api/dashboard', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store'
       },
+      cache: 'no-store',
+      next: { revalidate: 0 }
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('Dashboard API error data:', errorData);
+      console.error('Dashboard API error status:', response.status);
       throw new Error(`Error fetching dashboard data: ${response.status}`);
     }
 
