@@ -9,9 +9,14 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/')) {
     // Get the token from the cookies
     const token = request.cookies.get('auth_token')?.value
+    
+    // Check for existing Authorization header
+    const existingAuthHeader = request.headers.get('Authorization')
 
     // If there's a token in the cookies, add it to the authorization header
     if (token) {
+      console.log(`Middleware: Adding token from cookie to request for ${pathname}`)
+      
       // Clone the headers and add/modify the authorization header
       const headers = new Headers(request.headers)
       headers.set('Authorization', `Bearer ${token}`)
@@ -34,6 +39,12 @@ export function middleware(request: NextRequest) {
       return NextResponse.next({
         request: modifiedRequest,
       })
+    } else if (existingAuthHeader) {
+      // If there's already an Authorization header, let it pass through
+      console.log(`Middleware: Using existing Authorization header for ${pathname}`)
+      return NextResponse.next()
+    } else {
+      console.log(`Middleware: No auth token found for ${pathname}`)
     }
   }
 

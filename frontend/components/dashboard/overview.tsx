@@ -196,8 +196,10 @@ export default function DashboardOverview() {
             </Button>
           </div>
           
-          {/* AI Insights Section */}
-          <AIInsightsSummary />
+          {/* AI Insights Section - Using the updated component */}
+          <div className="transform transition-all duration-300 hover:-translate-y-1">
+            <AIInsightsSummary />
+          </div>
         </div>
         </div>
     </div>

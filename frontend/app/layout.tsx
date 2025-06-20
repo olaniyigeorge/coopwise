@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import '@/styles/markdown.css'
@@ -13,6 +13,13 @@ const inter = Inter({
   variable: '--font-inter',
 })
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1, 
+  userScalable: false
+}
+
 export const metadata: Metadata = {
   title: 'CoopWise | Smart Cooperative Savings Groups Management Platform',
   description: 'Join CoopWise to create, manage, and grow your savings groups. Track contributions, schedule payouts, and build wealth together with our secure cooperative management platform.',
@@ -20,7 +27,6 @@ export const metadata: Metadata = {
   authors: [{ name: 'CoopWise Team' }],
   creator: 'CoopWise',
   publisher: 'CoopWise',
-  viewport: 'width=device-width, initial-scale=1',
   formatDetection: {
     email: false,
     address: false,

@@ -3,13 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // API base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // Get pagination parameters from URL
-    const searchParams = request.nextUrl.searchParams;
-    const page = searchParams.get('page') || '1';
-    const page_size = searchParams.get('page_size') || '20';
-
     // Forward auth header
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
@@ -19,6 +14,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Parse request body
+    const requestBody = await request.json();
+
+    // Validate required fields
+    const requiredFields = ['user_id', 'title', 'message', 'event_type', 'type'];
+    for (const field of requiredFields) {
+      if (!requestBody[field]) {
+        return NextResponse.json(
+          { detail: `Missing required field: ${field}` },
+          { status: 400 }
+        );
+      }
+    }
+
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': authHeader
@@ -26,20 +35,21 @@ export async function GET(request: NextRequest) {
 
     // Forward the request to the backend
     const response = await fetch(
-      `${API_URL}/api/v1/notifications/me?page=${page}&page_size=${page_size}`, 
+      `${API_URL}/api/v1/notifications/create_and_push`,
       {
-        method: 'GET',
+        method: 'POST',
         headers,
+        body: JSON.stringify(requestBody)
       }
     );
 
     // Handle various response cases
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error fetching notifications: ${response.status}`, errorText);
+      console.error(`Error creating notification: ${response.status}`, errorText);
       
       return NextResponse.json(
-        { detail: `Error fetching notifications: ${response.status}` },
+        { detail: `Error creating notification: ${response.status}` },
         { status: response.status }
       );
     }
@@ -50,6 +60,11 @@ export async function GET(request: NextRequest) {
     try {
       data = responseText ? JSON.parse(responseText) : {};
     } catch (e) {
+      // If it's just a string response, return it directly
+      if (responseText) {
+        return NextResponse.json({ message: responseText }, { status: 200 });
+      }
+      
       console.error('Error parsing JSON response:', e);
       return NextResponse.json(
         { detail: 'Invalid response from server' },
@@ -61,7 +76,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Notifications API error:', error);
     return NextResponse.json(
-      { detail: 'An error occurred while fetching notifications' },
+      { detail: 'An error occurred while creating notification' },
       { status: 500 }
     );
   }

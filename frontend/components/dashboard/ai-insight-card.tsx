@@ -10,7 +10,8 @@ import {
   XCircleIcon,
   ClockIcon,
   TrendingUpIcon,
-  SparklesIcon
+  SparklesIcon,
+  ChevronRightIcon
 } from 'lucide-react'
 import { AIInsight, ImplementationStatus, DifficultyLevel } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
@@ -33,16 +34,34 @@ export default function AIInsightCard({
 }: AIInsightCardProps) {
   const router = useRouter()
   
-  // Get status color
-  const getStatusColor = () => {
+  // Get status color and icon
+  const getStatusData = () => {
     switch (insight.status) {
       case ImplementationStatus.COMPLETED:
-        return 'bg-green-50 border-green-100 hover:border-green-200'
+        return { 
+          bgColor: 'bg-green-50/80',
+          borderColor: 'border-green-200',
+          hoverBorder: 'hover:border-green-300',
+          icon: <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />,
+          iconBg: 'bg-green-100'
+        }
       case ImplementationStatus.IN_PROGRESS:
-        return 'bg-blue-50 border-blue-100 hover:border-blue-200'
+        return { 
+          bgColor: 'bg-blue-50/80',
+          borderColor: 'border-blue-200',
+          hoverBorder: 'hover:border-blue-300',
+          icon: <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />,
+          iconBg: 'bg-blue-100'
+        }
       case ImplementationStatus.NOT_STARTED:
       default:
-        return 'bg-white border-gray-100 hover:border-gray-200'
+        return { 
+          bgColor: 'bg-white',
+          borderColor: 'border-slate-200',
+          hoverBorder: 'hover:border-blue-200',
+          icon: <LightbulbIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />,
+          iconBg: 'bg-amber-100'
+        }
     }
   }
   
@@ -50,16 +69,29 @@ export default function AIInsightCard({
   const getDifficultyData = () => {
     switch (insight.difficulty) {
       case DifficultyLevel.EASY:
-        return { label: 'Easy', color: 'bg-green-100 text-green-800' }
+        return { 
+          label: 'Easy', 
+          color: 'bg-emerald-100 text-emerald-800 border-emerald-200' 
+        }
       case DifficultyLevel.MEDIUM:
-        return { label: 'Medium', color: 'bg-yellow-100 text-yellow-800' }
+        return { 
+          label: 'Medium', 
+          color: 'bg-amber-100 text-amber-800 border-amber-200' 
+        }
       case DifficultyLevel.HARD:
-        return { label: 'Hard', color: 'bg-red-100 text-red-800' }
+        return { 
+          label: 'Hard', 
+          color: 'bg-rose-100 text-rose-800 border-rose-200' 
+        }
       default:
-        return { label: 'Easy', color: 'bg-green-100 text-green-800' }
+        return { 
+          label: 'Easy', 
+          color: 'bg-emerald-100 text-emerald-800 border-emerald-200' 
+        }
     }
   }
   
+  const { bgColor, borderColor, hoverBorder, icon, iconBg } = getStatusData()
   const { label: difficultyLabel, color: difficultyColor } = getDifficultyData()
   
   // View insight details
@@ -69,47 +101,46 @@ export default function AIInsightCard({
   
   return (
     <Card 
-      className={`${getStatusColor()} transition-all duration-200 hover:shadow-md border ${compact ? 'p-0' : 'p-1'}`}
+      className={`${bgColor} backdrop-blur-sm transition-all duration-300 hover:shadow-md border ${borderColor} ${hoverBorder} rounded-lg overflow-hidden ${compact ? '' : 'hover:translate-y-[-2px]'}`}
     >
-      <CardContent className={compact ? 'p-3' : 'p-4'}>
-        <div className="flex justify-between items-start gap-3 mb-2">
+      <CardContent className={`p-0`}>
+        {/* Card header with icon and badges */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            {insight.status === ImplementationStatus.COMPLETED ? (
-              <CheckCircleIcon className="w-5 h-5 text-green-500" />
-            ) : insight.status === ImplementationStatus.IN_PROGRESS ? (
-              <ClockIcon className="w-5 h-5 text-blue-500" />
-            ) : (
-              <LightbulbIcon className="w-5 h-5 text-amber-500" />
-            )}
-            <Badge className={difficultyColor} variant="secondary">
+            <div className={`${iconBg} w-6 h-6 rounded-full flex items-center justify-center`}>
+              {icon}
+            </div>
+            <Badge className={`${difficultyColor} text-xs px-2 py-0 h-5`} variant="outline">
               {difficultyLabel}
             </Badge>
           </div>
-          <div>
-            <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50">
-              {formatCurrency(insight.estimated_savings)}/{insight.timeframe}
-            </Badge>
-          </div>
+          <Badge variant="outline" className="text-xs text-emerald-700 border-emerald-200 bg-emerald-50/80 px-2 py-0 h-5">
+            {formatCurrency(insight.estimated_savings)}/{insight.timeframe}
+          </Badge>
         </div>
         
-        <h3 className={`font-medium text-gray-900 ${compact ? 'text-sm mb-1' : 'mb-2'}`}>
-          {insight.title}
-        </h3>
+        {/* Card content */}
+        <div className="px-3 py-2">
+          <h3 className={`font-medium text-slate-800 ${compact ? 'text-sm' : 'text-base'} line-clamp-2`}>
+            {insight.title}
+          </h3>
+          
+          {!compact && (
+            <p className="text-sm text-slate-600 mt-2 line-clamp-3">
+              {insight.description}
+            </p>
+          )}
+        </div>
         
-        {!compact && (
-          <p className="text-sm text-gray-600 mb-4 line-clamp-4">
-            {insight.description}
-          </p>
-        )}
-        
-        <div className={`flex ${compact ? 'justify-end' : 'justify-between'} items-center mt-2`}>
+        {/* Card footer */}
+        <div className={`flex items-center ${compact ? 'justify-end px-3 py-2' : 'justify-between px-3 py-2 border-t border-slate-100'}`}>
           {!compact && insight.status !== ImplementationStatus.COMPLETED && (
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               {insight.status === ImplementationStatus.NOT_STARTED && onStart && (
                 <Button 
                   size="sm" 
                   variant="outline"
-                  className="text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                  className="text-xs h-7 px-2.5 border-blue-300 text-blue-700 hover:bg-blue-50"
                   onClick={() => onStart(insight)}
                 >
                   Start
@@ -119,7 +150,7 @@ export default function AIInsightCard({
                 <Button 
                   size="sm" 
                   variant="outline"
-                  className="text-xs border-green-300 text-green-700 hover:bg-green-50"
+                  className="text-xs h-7 px-2.5 border-green-300 text-green-700 hover:bg-green-50"
                   onClick={() => onComplete(insight)}
                 >
                   Complete
@@ -129,7 +160,7 @@ export default function AIInsightCard({
                 <Button 
                   size="sm" 
                   variant="outline"
-                  className="text-xs border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="text-xs h-7 px-2.5 border-slate-300 text-slate-700 hover:bg-slate-50"
                   onClick={() => onDismiss(insight)}
                 >
                   Dismiss
@@ -141,11 +172,11 @@ export default function AIInsightCard({
           <Button 
             size="sm"
             variant="ghost"
-            className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex items-center gap-1"
+            className="text-xs h-7 px-2.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex items-center gap-1 ml-auto group"
             onClick={handleViewDetails}
           >
-            {compact ? 'Details' : 'View Details'}
-            <ArrowRightIcon className="w-3 h-3 ml-1" />
+            {compact ? 'View' : 'View Details'}
+            <ChevronRightIcon className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
           </Button>
         </div>
       </CardContent>

@@ -25,6 +25,9 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
+  // Check if we're on the landing page
+  const isLandingPage = pathname === '/';
+  
   return (
     <>
       <nav 
@@ -82,7 +85,7 @@ export default function Navbar() {
           </div>
           
           {/* Desktop auth buttons */}
-          {!isAuthenticated ? 
+          {isLandingPage || !isAuthenticated ? 
             <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>
               <Link href="/auth/login">
                 <Button 
@@ -98,17 +101,18 @@ export default function Navbar() {
                 </Button>
               </Link>
             </div>
-          :             <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>
-          <Link href="/dashboard">
-            <Button 
-              variant="outline" 
-              className="text-primary border-primary hover:bg-primary hover:text-white transition-colors"
-            >
-              Dashboard
-            </Button>
-          </Link>
-
-        </div>}
+          :
+            <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>
+              <Link href="/dashboard">
+                <Button 
+                  variant="outline" 
+                  className="text-primary border-primary hover:bg-primary hover:text-white transition-colors"
+                >
+                  Dashboard
+                </Button>
+              </Link>
+            </div>
+          }
 
           {/* Mobile hamburger menu */}
           <div className="md:hidden">
@@ -199,22 +203,35 @@ export default function Navbar() {
                 <div className="border-t border-gray-200 pt-6">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Account</h3>
                   <div className="flex flex-col space-y-1">
-                    <Link 
-                      href="/auth/login" 
-                      className="flex items-center space-x-3 p-3 rounded-xl text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <LogIn size={18} />
-                      <span className="font-medium">Sign In</span>
-                    </Link>
-                    <Link 
-                      href="/auth/signup" 
-                      className="flex items-center space-x-3 p-3 rounded-xl text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <UserPlus size={18} />
-                      <span className="font-medium">Sign Up</span>
-                    </Link>
+                    {isLandingPage || !isAuthenticated ? (
+                      <>
+                        <Link 
+                          href="/auth/login" 
+                          className="flex items-center space-x-3 p-3 rounded-xl text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <LogIn size={18} />
+                          <span className="font-medium">Sign In</span>
+                        </Link>
+                        <Link 
+                          href="/auth/signup" 
+                          className="flex items-center space-x-3 p-3 rounded-xl text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <UserPlus size={18} />
+                          <span className="font-medium">Sign Up</span>
+                        </Link>
+                      </>
+                    ) : (
+                      <Link 
+                        href="/dashboard" 
+                        className="flex items-center space-x-3 p-3 rounded-xl text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Home size={18} />
+                        <span className="font-medium">Dashboard</span>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>

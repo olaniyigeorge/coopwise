@@ -3,13 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 // API base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
 
-export async function GET(request: NextRequest) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
-    // Get pagination parameters from URL
-    const searchParams = request.nextUrl.searchParams;
-    const page = searchParams.get('page') || '1';
-    const page_size = searchParams.get('page_size') || '20';
-
+    const { id } = context.params;
+    
     // Forward auth header
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
@@ -26,20 +26,21 @@ export async function GET(request: NextRequest) {
 
     // Forward the request to the backend
     const response = await fetch(
-      `${API_URL}/api/v1/notifications/me?page=${page}&page_size=${page_size}`, 
+      `${API_URL}/api/v1/notifications/${id}/read`,
       {
-        method: 'GET',
+        method: 'PATCH',
         headers,
+        body: JSON.stringify({ status: "read" })
       }
     );
 
     // Handle various response cases
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error fetching notifications: ${response.status}`, errorText);
+      console.error(`Error marking notification as read: ${response.status}`, errorText);
       
       return NextResponse.json(
-        { detail: `Error fetching notifications: ${response.status}` },
+        { detail: `Error marking notification as read: ${response.status}` },
         { status: response.status }
       );
     }
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
     const responseText = await response.text();
     let data;
     try {
-      data = responseText ? JSON.parse(responseText) : {};
+      data = responseText ? JSON.parse(responseText) : { success: true };
     } catch (e) {
       console.error('Error parsing JSON response:', e);
       return NextResponse.json(
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Notifications API error:', error);
     return NextResponse.json(
-      { detail: 'An error occurred while fetching notifications' },
+      { detail: 'An error occurred while marking notification as read' },
       { status: 500 }
     );
   }

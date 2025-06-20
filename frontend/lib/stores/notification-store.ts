@@ -18,21 +18,37 @@ export type NotificationType = "info" | "success" | "warning" | "danger";
 
 export type NotificationStatus = "unread" | "read" | "archived" | "deleted";
 
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  full_name: string;
+  phone_number: string;
+  role: string;
+  target_savings_amount: number;
+  savings_purpose: string;
+  income_range: string;
+  saving_frequency: string;
+  is_email_verified: boolean;
+  is_phone_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface NotificationDetail {
   id: string; // UUID (string)
-  user_id: string;
+  user_id?: string;
   title: string;
   message: string;
   type: NotificationType;
   status: NotificationStatus;
   event_type: EventType;
   entity_url?: string | null;
-
+  user?: User;
   is_read: boolean;
   read_at?: string | null;
-
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 interface NotificationStore {
@@ -40,9 +56,14 @@ interface NotificationStore {
   unreadCount: number;
   isLoading: boolean;
   error: string | null;
+  pagination: {
+    total: number;
+    page: number;
+    pageSize: number;
+  };
   
   // Actions
-  fetchNotifications: () => Promise<void>;
+  fetchNotifications: (page?: number, pageSize?: number) => Promise<void>;
   setNotifications: (notifications: NotificationDetail[]) => void;
   addNotification: (notification: NotificationDetail) => void;
   updateNotification: (notificationId: string, updates: Partial<NotificationDetail>) => void;
@@ -61,6 +82,7 @@ interface NotificationStore {
   getNotificationsByEventType: (eventType: EventType) => NotificationDetail[];
   getUnreadNotifications: () => NotificationDetail[];
   getArchivedNotifications: () => NotificationDetail[];
+  loadNextPage: () => Promise<void>;
 }
 
 const useNotificationStore = create<NotificationStore>()(
@@ -70,23 +92,46 @@ const useNotificationStore = create<NotificationStore>()(
       unreadCount: 0,
       isLoading: false,
       error: null,
+      pagination: {
+        total: 0,
+        page: 1,
+        pageSize: 20,
+      },
 
-      fetchNotifications: async () => {
+      fetchNotifications: async (page = 1, pageSize = 20) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await NotificationService.getNotifications();
-          if (response.notifications) {
-            set({
-              notifications: response.notifications,
-              unreadCount: response.notifications.filter((n: NotificationDetail) => !n.is_read).length,
-              isLoading: false
-            });
-          }
+          const response = await NotificationService.fetchNotifications(page, pageSize);
+          
+          set({
+            notifications: page === 1 
+              ? response.notifications || [] 
+              : [...get().notifications, ...(response.notifications || [])],
+            pagination: {
+              total: response.total || 0,
+              page: response.page || 1,
+              pageSize: response.page_size || 20,
+            },
+            unreadCount: (response.notifications || []).filter((n: NotificationDetail) => !n.is_read).length,
+            isLoading: false
+          });
         } catch (error: any) {
           set({
             error: error.message || 'Failed to fetch notifications',
             isLoading: false
           });
+        }
+      },
+
+      loadNextPage: async () => {
+        const currentPage = get().pagination.page;
+        const pageSize = get().pagination.pageSize;
+        const total = get().pagination.total;
+        const currentCount = get().notifications.length;
+
+        // Only load next page if there are more notifications to load
+        if (currentCount < total) {
+          await get().fetchNotifications(currentPage + 1, pageSize);
         }
       },
 
@@ -98,14 +143,16 @@ const useNotificationStore = create<NotificationStore>()(
       },
 
       addNotification: (notification) => {
-        let updated = [notification, ...get().notifications]; // Attempt on multiple notif toast and duplicate notifs
-        if (get().notifications.includes(notification)) {
-          updated = get().notifications;
+        // Check if notification already exists to avoid duplicates
+        const exists = get().notifications.some(n => n.id === notification.id);
+        
+        if (!exists) {
+          const updated = [notification, ...get().notifications];
+          set({
+            notifications: updated,
+            unreadCount: updated.filter((n) => !n.is_read).length,
+          });
         }
-        set({
-          notifications: updated,
-          unreadCount: updated.filter((n) => !n.is_read).length,
-        });
       },
 
       updateNotification: (notificationId, updates) => {
@@ -257,11 +304,10 @@ const useNotificationStore = create<NotificationStore>()(
       },
     }),
     {
-      name: 'notification-storage',
-      // Only persist non-sensitive data
+      name: 'notifications-storage',
       partialize: (state) => ({
         notifications: state.notifications,
-        unreadCount: state.unreadCount
+        unreadCount: state.unreadCount,
       }),
     }
   )
