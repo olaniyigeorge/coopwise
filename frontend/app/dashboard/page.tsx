@@ -67,7 +67,7 @@ const savingsTotal = dashboardData?.summary?.your_savings ?? 0;
 const savingsGoal = dashboardData?.user?.target_savings_amount ?? 0;
 
 const savingsProgress = savingsGoal > 0
-  ? savingsTotal / savingsGoal
+  ? (savingsTotal / savingsGoal)*100
   : 0;
 
 const walletBalance = dashboardData?.summary?.wallet?.stable_coin_balance ?? 0;
@@ -85,7 +85,7 @@ const savingsGoalTarget = dashboardData?.targets?.savings_target ?? 0;
 const ssg = dashboardData?.user?.target_savings_amount ?? 0;
 const sst = dashboardData?.summary?.your_savings ?? 0;
 
-const savingsGoalProgress = ssg > 0 ? sst / ssg : 0;
+const savingsGoalProgress = ssg > 0 ? (sst / ssg)*100 : 0;
 const savingsGoalRemaining = ssg - sst;
 
 const recentActivity = dashboardData?.activities ?? [];

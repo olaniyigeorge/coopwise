@@ -9,7 +9,7 @@ const NotificationService = {
         throw new Error('You must be logged in to get your notifications');
         }
         
-        const res = await fetch(`/api/v1/notifications/${userId}`, {
+        const res = await fetch(`/api/v1/notifications`, {
                 method: 'GET',
                 headers: {
                 'Content-Type': 'application/json',
@@ -25,9 +25,9 @@ const NotificationService = {
         const token = await AuthService.getToken();
 
         if (!token) {
-        throw new Error('You must be logged in to get your notifications');
+        throw new Error('You must be logged in to update a notification');
         }
-        const res = await fetch(`/api/notifications/${notificationId}/read`, {
+        const res = await fetch(`/api/v1/notifications/${notificationId}`, {
                 method: "PATCH",
                 headers: {
                     'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ const NotificationService = {
             throw new Error('You must be logged in to mark notifications as read');
         }
         
-        const res = await fetch(`/api/v1/notifications/mark-all-read`, {
+        const res = await fetch(`/api/v1/notifications/mark-all-as-read`, {
             method: "PATCH",
             headers: {
                 'Content-Type': 'application/json',

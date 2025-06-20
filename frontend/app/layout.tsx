@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'CoopWise | Smart Cooperative Savings Groups Management Platform',
     description: 'Join CoopWise to create, manage, and grow your savings groups. Track contributions, schedule payouts, and build wealth together.',
-    images: ['/images/coopwise-logo.svg'],
+    images: ['/images/coopwise_home.png'],
     creator: '@coopwise',
   },
   icons: {

@@ -34,3 +34,14 @@ class NotificationCreate(BaseModel):
     entity_url: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class NotificationUpdate(BaseModel):
+
+    title: Optional[str] 
+    message: Optional[str]
+    event_type: Optional[EventType]
+    type: Optional[NotificationType]
+    entity_url: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)

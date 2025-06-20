@@ -35,7 +35,8 @@ class User(Base):
     password = Column(String, unique=True, index=True, nullable=False) 
     full_name = Column(String, nullable=False)  
     phone_number = Column(String(16), unique=True, nullable=False, index=True)
-    
+    profile_picture_url = Column(String, nullable=True)  
+
     role = Column(Enum(UserRoles), default=UserRoles.USER)
 
     # ##### Onboarding & preference

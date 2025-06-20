@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Dict, List, Tuple
 from uuid import UUID
 
-from fastapi import WebSocket
+from fastapi import HTTPException, WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import joinedload
@@ -135,25 +135,29 @@ class NotificationService:
         return serialized, total_count
     
     @staticmethod
-    async def mark_all_as_read(user_id: UUID, db: AsyncSession):
+    async def mark_all_as_read(db: AsyncSession, user: AuthenticatedUser, ):
         """
         Marks all notifications as read for the given user.
         """
-        stmt = (
-            select(Notification)
-            .where(Notification.user_id == user_id, Notification.status == "unread")
-        )
+        try: 
+            stmt = (
+                select(Notification)
+                .where(Notification.user_id == user.id, Notification.status == NotificationStatus.UNREAD)
+            )
 
-        result = await db.execute(stmt)
-        unread_notifications = result.scalars().all()
+            result = await db.execute(stmt)
+            unread_notifications = result.scalars().all()
 
-        for notification in unread_notifications:
-            notification.status = "read"
-            notification.is_read = True
-            notification.read_at = datetime.now()
+            for notification in unread_notifications:
+                notification.status = NotificationStatus.READ
+                notification.is_read = True
+                notification.read_at = datetime.now()
 
-        await db.commit()
-        return {"message": f"{len(unread_notifications)} notifications marked as read."}
+            await db.commit()
+            return {"message": f"{len(unread_notifications)} notifications marked as read."}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
 
     @staticmethod
     async def push_notification_to_user(user_id: int, notification_data: NotificationDetail):
@@ -164,6 +168,7 @@ class NotificationService:
 
     @staticmethod
     async def broadcast_notification(title: str, message: str, payload: dict, db: AsyncSession):
+
         # You can use a background task or queue for this if scale matters
         from app.services.user_service import UserService
 
@@ -176,3 +181,59 @@ class NotificationService:
                 payload=payload,
                 db=db
             )
+
+
+    @staticmethod
+    async def get_notification_by_id(
+        db: AsyncSession,
+        user: AuthenticatedUser,
+        notification_id: int,
+    ) -> NotificationDetail:
+        """
+        Fetches a specific notification by ID for the given user.
+        """
+        stmt = (
+            select(Notification)
+            .where(Notification.id == notification_id, Notification.user_id == user.id)
+            .options(joinedload(Notification.user))
+        )
+
+        result = await db.execute(stmt)
+        notification = result.scalar_one_or_none()
+
+        if not notification:
+            raise ValueError("Notification not found or does not belong to the user.")
+
+        return NotificationDetail.model_validate(notification)
+    
+    @staticmethod
+    async def mark_notification(
+        db: AsyncSession,
+        user: AuthenticatedUser,
+        notification_id: int,
+        status: NotificationStatus
+    ) -> NotificationDetail:
+        """
+        Marks a notification as read, archived, or deleted.
+        """
+        stmt = (
+            select(Notification)
+            .where(Notification.id == notification_id, Notification.user_id == user.id)
+            .options(joinedload(Notification.user))
+        )
+
+        result = await db.execute(stmt)
+        notification = result.scalar_one_or_none()
+
+        if not notification:
+            raise ValueError("Notification not found or does not belong to the user.")
+
+        notification.status = status
+        if status == NotificationStatus.READ:
+            notification.is_read = True
+            notification.read_at = datetime.now()
+        
+        await db.commit()
+        await db.refresh(notification)
+
+        return NotificationDetail.model_validate(notification)

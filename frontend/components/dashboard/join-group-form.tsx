@@ -43,7 +43,7 @@ interface GroupData {
   contributionAmount: string | number;
   frequency: string;
   memberCount: string;
-  rules: string[];
+  rules: Array<Record<string, any>> | null;
 }
 
 export default function JoinGroupForm() {
@@ -85,7 +85,7 @@ export default function JoinGroupForm() {
         const membership = response.membership;
         
         // Check if the user has already joined this group
-        if (membership.status && membership.status.toLowerCase() !== 'clicked') {
+        if (membership.status && membership.status.toLowerCase() == 'accepted') {
           toast({
             title: "Already Joined",
             description: "You have already joined or requested to join this group.",
@@ -284,12 +284,15 @@ export default function JoinGroupForm() {
               <p>{groupData.memberCount}</p>
             </div>
             
-            {groupData.rules.length > 0 && (
+            {groupData.rules && (
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Group Rules:</h3>
                 <ul className="list-disc pl-5 space-y-1 text-sm">
                   {groupData.rules.map((rule, index) => (
-                    <li key={index}>{rule}</li>
+                    <div className='flex items-start space-x-2' key={index}>
+                      <h3 className='text-sm font-medium text-gray-500'>Rule {index + 1}: {rule.title}</h3>
+                      <p className="text-gray-700">{rule.description || "No description provided"}</p>                    
+                    </div>
                   ))}
                 </ul>
               </div>

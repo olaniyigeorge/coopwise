@@ -3,6 +3,13 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
+from app.schemas.activity_schemas import ActivityCreate
+from app.schemas.dashboard_schema import ActivityType
+from app.schemas.notifications_schema import NotificationCreate
+from app.services.activity_service import ActivityService
+from app.services.cooperative_group_service import CooperativeGroupService
+from app.services.notification_service import NotificationService
+from app.services.user_service import UserService
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.cooperative_membership import MembershipDetails
 from db.dependencies import get_async_db_session
@@ -62,7 +69,7 @@ async def accept_invite(
     user: AuthenticatedUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db_session)
 ):
-    print("\n⏩ raw invite_code as FastAPI sees it:", invite_code, "\n")
+    
     """
     Accept a cooperative membership invitation using an invite code.
     """
@@ -73,6 +80,45 @@ async def accept_invite(
     )
     if not membership:
         raise HTTPException(status_code=404, detail="Invite not found or already accepted.")
+
+    auth_user = await UserService.get_user_by_id(db, user.id)
+
+    if not auth_user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    group_data = await CooperativeGroupService.get_coop_group_by_id(db, membership.group_id)
+    
+    if not group_data:
+        raise HTTPException(status_code=404, detail="Group not found.")
+
+  
+    activity_data =  ActivityCreate(
+        user_id=user.id,
+        type=ActivityType.JOINED_GROUP.value,
+        description=f"{auth_user.full_name} accepted an invite to join the cooperative {group_data.name}",
+        group_id=group_data.id,
+        entity_id=str(group_data.id), 
+        amount=None
+    )
+    print(f"\nLogging activity... {activity_data}\n")
+    await ActivityService.log(
+        db,
+        activity_data
+    )
+
+    
+    noti_data = NotificationCreate(
+        user_id = group_data.creator_id,
+        title = "Invited Request Accepted",
+        message = f"{auth_user.full_name} has accepted an invite to join the cooperative {group_data.name}.",
+        event_type = "group",
+        type = "info",
+        entity_url = str(membership.id)
+    )
+    await NotificationService.create_and_push_notification_to_user(
+        noti_data, db
+    )
+
     return membership
 
 

@@ -37,6 +37,7 @@ class NotificationStatus(enum.Enum):
     UNREAD = "unread"
     READ = "read"
     ARCHIVED = "archived"
+    DELETED = "deleted"
 
 
 class Notification(Base):

@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server'
 
+
+// API base URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
+
+
 export async function POST(request: Request) {
   try {
     const data = await request.json()
@@ -7,7 +12,7 @@ export async function POST(request: Request) {
     
     // OPTION 1: Try with the actual backend
     try {
-      const response = await fetch('https://coopwise.onrender.com/api/v1/auth/register', {
+      const response = await fetch(`${API_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,16 +1,31 @@
 "use client"
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Bell, Check } from 'lucide-react'
 import useAuthStore from '@/lib/stores/auth-store'
-import useNotificationStore from '@/lib/stores/notification-store'
+import useNotificationStore, { NotificationDetail } from '@/lib/stores/notification-store'
+import Link from 'next/link'
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 export default function NotificationsPage() {
   const { user } = useAuthStore()
   const { notifications, unreadCount, markAllAsRead, markAsRead,  } = useNotificationStore()
+
+  const [selectedNotification, setSelectedNotification] = useState<NotificationDetail | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const openModal = (notification: any) => {
+    setSelectedNotification(notification)
+    setIsModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setSelectedNotification(null)
+    setIsModalOpen(false)
+  }
 
   // Format date to a more readable format
   const formatDate = (dateString: string) => {
@@ -40,6 +55,44 @@ export default function NotificationsPage() {
 
   return (
     <DashboardLayout>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          {selectedNotification && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedNotification.title}</DialogTitle>
+                <DialogDescription className="text-xs text-gray-500">{formatDate(selectedNotification.created_at)}</DialogDescription>
+              </DialogHeader>
+              <div className="mt-2">{selectedNotification.message}</div>
+                  {getNotificationLink(selectedNotification) && (
+                    <Link href={getNotificationLink(selectedNotification)!} className="text-blue-600 text-sm underline mt-4 block">
+                      {getNotificationActionLabel(selectedNotification)}
+                    </Link>
+                  )}
+              <div className="mt-4 flex justify-end gap-2">
+                {!selectedNotification?.is_read && (
+                  <Button
+                    onClick={() => {
+                      markAsRead(selectedNotification.id)
+                      closeModal()
+                    }}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Mark as Read
+                  </Button>
+                )}
+                <DialogClose asChild>
+                  <Button size="sm" variant="default">
+                    Close
+                  </Button>
+                </DialogClose>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <div className="max-w-4xl mx-auto space-y-6 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -82,24 +135,39 @@ export default function NotificationsPage() {
                       {getNotificationIcon(notification.type)}
                     </div>
                     <div className="flex-1">
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-primary">
                         <p className={`${notification.is_read ? 'font-normal' : 'font-medium'}`}>
-                          {notification.message}
+                          {notification.title}
                         </p>
                         <span className="text-xs text-gray-500 whitespace-nowrap">
                           {formatDate(notification.created_at)}
                         </span>
                       </div>
-                      {!notification.is_read && (
+                      <p className={`${notification.is_read ? 'font-normal' : 'font-medium'}`}>
+                          {notification.message}
+                      </p>
+                      <div className="flex justify-between items--center">
+                        {!notification.is_read && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => markAsRead(notification.id)}
+                            className="mt-2 h-8 text-xs"
+                          >
+                            Mark as read
+                          </Button>
+                        )}
                         <Button 
-                          variant="outline" 
+                          variant="secondary" 
                           size="sm" 
-                          onClick={() => markAsRead(notification.id)}
                           className="mt-2 h-8 text-xs"
+                          onClick={() => openModal(notification)}
                         >
-                          Mark as read
+                          View details
                         </Button>
-                      )}
+                        
+                        </div>
+                      
                     </div>
                   </div>
                 ))
@@ -119,3 +187,44 @@ export default function NotificationsPage() {
     </DashboardLayout>
   )
 } 
+
+
+
+const getNotificationLink = (notification: NotificationDetail) => {
+  const { event_type, entity_url } = notification
+
+  switch (event_type) {
+    case 'group':
+      return entity_url ? `/dashboard/my-group/${entity_url}` : undefined
+    case 'contribution':
+      return entity_url ? `/dashboard/my-group/${entity_url}#contributions` : undefined
+    case 'payout':
+      return entity_url ? `/dashboard/my-group/${entity_url}#payouts` : undefined
+    case 'ai_insight':
+      return entity_url ? `/dashboard/ai-insights/${entity_url}` : undefined
+    default:
+      return undefined
+  }
+}
+const getNotificationActionLabel = (notification: NotificationDetail) => {
+  switch (notification.event_type) {
+    case 'group':
+      return 'View Group'
+    case 'contribution':
+      return 'View Contribution'
+    case 'payout':
+      return 'View Payout'
+    case 'ai_insight':
+      return 'View Insight'
+    case 'membership':
+      return 'View Membership'
+    case 'transaction':
+      return 'View Transaction'
+    case 'general_alert':
+      return 'View Alert'
+    case 'system':
+      return 'View System Update'
+    default:
+      return 'View Details'
+  }
+}

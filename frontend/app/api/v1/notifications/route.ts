@@ -11,8 +11,6 @@ interface Params {
 
 export async function GET(request: NextRequest, { params }: Params) {
   try {
-    const { userId } = params;
-
     const authHeader = request.headers.get('Authorization');
 
     const headers: Record<string, string> = {
@@ -23,7 +21,7 @@ export async function GET(request: NextRequest, { params }: Params) {
       headers['Authorization'] = authHeader;
     }
 
-    const response = await fetch(`${API_URL}/api/v1/notifications/user/${userId}`, {
+    const response = await fetch(`${API_URL}/api/v1/notifications/me`, {
       method: 'GET',
       headers,
     });

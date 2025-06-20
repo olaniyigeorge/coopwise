@@ -1,11 +1,13 @@
+import uuid
 from fastapi import Query, WebSocket, WebSocketDisconnect, Depends
 from fastapi.routing import APIRouter
 from typing import Dict, List, Tuple
 
 from pydantic import BaseModel
+from db.models.notifications import NotificationStatus
 from app.api.v1.routes.auth import get_current_user, get_current_user_ws
 from app.schemas.auth import AuthenticatedUser
-from app.schemas.notifications_schema import NotificationCreate, NotificationDetail
+from app.schemas.notifications_schema import NotificationCreate, NotificationDetail, NotificationUpdate
 from db.dependencies import get_async_db_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.notification_service import active_connections, NotificationService
@@ -73,6 +75,23 @@ async def get_user_notifications(
         "notifications": [n.model_dump(mode="json") for n in notifications],
     }
 
+@router.patch("/mark-all-as-read")
+async def mark_all_notifications_read(
+    db: AsyncSession = Depends(get_async_db_session),
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+     Mark all the auth user unread notifications as read.
+    """
+    mark_response = await NotificationService.mark_all_as_read(
+        db, user
+    )
+    
+    if not mark_response:
+        return {"message": "Couldn't mark Notifications as read."}
+    
+    return mark_response
+
 @router.post("/create_and_push")
 async def create_notification(
     notification_data: NotificationCreate, 
@@ -88,7 +107,6 @@ async def create_notification(
         notification_data, db
     )
     return notification_detail
-
 
 @router.get("/")
 async def send_mock_notification(
@@ -110,4 +128,41 @@ async def send_mock_notification(
     }
     await NotificationService.push_notification_to_user(user_id, new_notification_data)
     return {"message": "Notification sent successfully."}
+
+@router.get("/{notification_id}", response_model=NotificationDetail)
+async def get_notification(
+    notification_id: uuid.UUID,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session)
+):
+    """
+    Get a specific notification by its ID.
+    """
+    notification = await NotificationService.get_notification_by_id(
+        db, user, notification_id
+    )
+    if not notification:
+        return {"message": "Notification not found."}
+    
+    return notification.model_dump(mode="json")
+
+@router.patch("/{notification_id}")
+async def mark_notification(
+    db: AsyncSession = Depends(get_async_db_session),
+    user: AuthenticatedUser = Depends(get_current_user),
+    notification_id: uuid.UUID = "00000000-0000-0000-0000-000000000000",
+    status: NotificationStatus = NotificationStatus.READ
+   
+):
+    """
+    Update a specific notification by its ID.
+    """
+    updated_notification = await NotificationService.mark_notification(
+        db, user, notification_id, status
+    )
+    
+    if not updated_notification:
+        return {"message": "Notification not found."}
+    
+    return updated_notification.model_dump(mode="json")
 

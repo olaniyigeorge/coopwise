@@ -73,3 +73,4 @@ async def get_user(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+
