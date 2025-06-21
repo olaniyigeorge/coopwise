@@ -20,6 +20,9 @@ import { Input } from "@/components/ui/input"
 import AuthService from '@/lib/auth-service'
 import ContributionService from '@/lib/contribution-service'
 import useAuthStore from '@/lib/stores/auth-store'
+import { Contribution } from '@/lib/types'
+import { UserDetail } from '@/lib/dashboard-service'
+import { formatCurrency } from '@/lib/contribution-utils'
 
 interface GroupDetailsViewProps {
   groupId: string
@@ -29,8 +32,55 @@ export type iGroupRule = {
   description: string
 }
 
+export enum MembershipRole {
+  ADMIN = "admin",
+  MEMBER = "member"
+}
 
-// Type definition for the API response
+export enum MembershipStatus {
+  CLICKED = "clicked",
+  ACCEPTED = "accepted",
+  PENDING = "pending",
+  REJECTED = "rejected",
+  CANCELLED = "cancelled"
+}
+
+export interface MembershipDetails {
+  id: number
+  user_id?: string | null       
+  group_id: string            
+  role: MembershipRole
+  invited_by: string         
+  status: MembershipStatus
+  joined_at?: string | null     
+  created_at: string            
+  updated_at: string            
+}
+
+// Extends MembershipDetails with the full user info
+export interface MembershipExtDetails extends MembershipDetails {
+  user: UserDetail
+}
+
+export enum ContributionStatus {
+  PLEDGED = "pledged",
+  COMPLETED = "completed",
+  CANCELLED = "cancelled"
+} 
+export interface ContributionDetail {
+  id: string          
+  user_id: string      
+  group_id: string  
+  amount: number
+  currency?: string    
+  due_date?: string | null   
+  note?: string | null
+  status: ContributionStatus
+  created_at: string    
+  updated_at: string    
+}
+
+// Type definition for extended group details
 interface GroupDetails {
   id: string;
   name: string;
@@ -46,7 +96,11 @@ interface GroupDetails {
   created_at: string;
   rules: iGroupRule[]
   updated_at: string;
-  // Additional UI-specific fields that will be calculated
+
+  contributions: ContributionDetail[]
+  members: MembershipExtDetails[]
+
+  // Additional UI-specific fields
   nextContribution?: {
     amount: number;
     dueDate: string;
@@ -565,7 +619,7 @@ const GroupStats = ({
 type TabType = 'contributions' | 'payouts' | 'members';
 
 // Contribution History Component with Tabs
-const ContributionHistory = () => {
+const ContributionHistory = ({groupData} : {groupData: GroupDetails}) => {
   const [activeTab, setActiveTab] = useState<TabType>('contributions');
   
   return (
@@ -600,83 +654,47 @@ const ContributionHistory = () => {
           </div>
           
           {/* Contribution items */}
-          <div className="space-y-4 mt-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center">
-                <div className="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center mr-3">
-                  <svg className="w-3 h-3 text-teal-700" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 12.75C8.83 12.75 6.25 10.17 6.25 7C6.25 3.83 8.83 1.25 12 1.25C15.17 1.25 17.75 3.83 17.75 7C17.75 10.17 15.17 12.75 12 12.75ZM12 2.75C9.66 2.75 7.75 4.66 7.75 7C7.75 9.34 9.66 11.25 12 11.25C14.34 11.25 16.25 9.34 16.25 7C16.25 4.66 14.34 2.75 12 2.75Z" fill="currentColor"/>
-                    <path d="M3.41 22.75C3 22.75 2.65 22.45 2.65 22C2.65 17.15 6.8 13.15 12 13.15C17.2 13.15 21.35 17.15 21.35 22C21.35 22.45 21 22.75 20.59 22.75C20.18 22.75 19.83 22.45 19.83 22C19.83 17.95 16.3 14.65 12 14.65C7.7 14.65 4.17 17.95 4.17 22C4.17 22.45 3.82 22.75 3.41 22.75Z" fill="currentColor"/>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium">Contribution Made</h4>
-                  <p className="text-xs text-gray-500">Today 5:50 PM</p>
-                </div>
-              </div>
-              <div className="flex flex-col items-end">
-                <div className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded mb-1">Part Payment</div>
-                <p className="text-sm font-semibold">₦50,000</p>
-              </div>
+          {groupData.contributions.length > 0 && (
+            <div className="space-y-4 mt-4">
+              {groupData.contributions.map((contribution) => {
+                const isFullPayment = contribution.amount >= groupData.contribution_amount
+                const badgeClass = isFullPayment
+                  ? "bg-green-100 text-green-800"
+                  : "bg-yellow-100 text-yellow-800"
+                const badgeText = isFullPayment ? "Full Payment" : "Part Payment"
+
+                return (
+                  <div key={contribution.id} className="flex items-center justify-between border-b pb-3">
+                    <div className="flex items-center">
+                      <div className="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center mr-3">
+                        {/* You can swap this with your <Image /> or keep the <svg> */}
+                        <svg className="w-3 h-3 text-teal-700" viewBox="0 0 24 24" fill="none">
+                          <path d="M12 12.75C8.83 12.75 6.25 10.17 6.25 7C6.25 3.83 8.83 1.25 12 1.25C15.17 1.25 17.75 3.83 17.75 7C17.75 10.17 15.17 12.75 12 12.75ZM12 2.75C9.66 2.75 7.75 4.66 7.75 7C7.75 9.34 9.66 11.25 12 11.25C14.34 11.25 16.25 9.34 16.25 7C16.25 4.66 14.34 2.75 12 2.75Z" fill="currentColor"/>
+                          <path d="M3.41 22.75C3 22.75 2.65 22.45 2.65 22C2.65 17.15 6.8 13.15 12 13.15C17.2 13.15 21.35 17.15 21.35 22C21.35 22.45 21 22.75 20.59 22.75C20.18 22.75 19.83 22.45 19.83 22C19.83 17.95 16.3 14.65 12 14.65C7.7 14.65 4.17 17.95 4.17 22C4.17 22.45 3.82 22.75 3.41 22.75Z" fill="currentColor"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium">Contribution Made</h4>
+                        <p className="text-xs text-gray-500">
+                          {new Date(contribution.created_at).toLocaleString("en-US", {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end">
+                      <div className={`${badgeClass} text-xs px-2 py-0.5 rounded mb-1`}>
+                        {badgeText}
+                      </div>
+                      <p className="text-sm font-semibold">{formatCurrency(contribution.amount)}</p>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-            
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center">
-                <div className="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center mr-3">
-                  <svg className="w-3 h-3 text-teal-700" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 12.75C8.83 12.75 6.25 10.17 6.25 7C6.25 3.83 8.83 1.25 12 1.25C15.17 1.25 17.75 3.83 17.75 7C17.75 10.17 15.17 12.75 12 12.75ZM12 2.75C9.66 2.75 7.75 4.66 7.75 7C7.75 9.34 9.66 11.25 12 11.25C14.34 11.25 16.25 9.34 16.25 7C16.25 4.66 14.34 2.75 12 2.75Z" fill="currentColor"/>
-                    <path d="M3.41 22.75C3 22.75 2.65 22.45 2.65 22C2.65 17.15 6.8 13.15 12 13.15C17.2 13.15 21.35 17.15 21.35 22C21.35 22.45 21 22.75 20.59 22.75C20.18 22.75 19.83 22.45 19.83 22C19.83 17.95 16.3 14.65 12 14.65C7.7 14.65 4.17 17.95 4.17 22C4.17 22.45 3.82 22.75 3.41 22.75Z" fill="currentColor"/>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium">Contribution Made</h4>
-                  <p className="text-xs text-gray-500">May 23 2025, 11:20 AM</p>
-                </div>
-              </div>
-              <div className="flex flex-col items-end">
-                <div className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded mb-1">Full Payment</div>
-                <p className="text-sm font-semibold">₦100,000</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center">
-                <div className="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center mr-3">
-                  <svg className="w-3 h-3 text-teal-700" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 12.75C8.83 12.75 6.25 10.17 6.25 7C6.25 3.83 8.83 1.25 12 1.25C15.17 1.25 17.75 3.83 17.75 7C17.75 10.17 15.17 12.75 12 12.75ZM12 2.75C9.66 2.75 7.75 4.66 7.75 7C7.75 9.34 9.66 11.25 12 11.25C14.34 11.25 16.25 9.34 16.25 7C16.25 4.66 14.34 2.75 12 2.75Z" fill="currentColor"/>
-                    <path d="M3.41 22.75C3 22.75 2.65 22.45 2.65 22C2.65 17.15 6.8 13.15 12 13.15C17.2 13.15 21.35 17.15 21.35 22C21.35 22.45 21 22.75 20.59 22.75C20.18 22.75 19.83 22.45 19.83 22C19.83 17.95 16.3 14.65 12 14.65C7.7 14.65 4.17 17.95 4.17 22C4.17 22.45 3.82 22.75 3.41 22.75Z" fill="currentColor"/>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium">Contribution Made</h4>
-                  <p className="text-xs text-gray-500">May 23 2025, 11:20 AM</p>
-                </div>
-              </div>
-              <div className="flex flex-col items-end">
-                <div className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded mb-1">Part Payment</div>
-                <p className="text-sm font-semibold">₦50,000</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center">
-                <div className="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center mr-3">
-                  <svg className="w-3 h-3 text-teal-700" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 12.75C8.83 12.75 6.25 10.17 6.25 7C6.25 3.83 8.83 1.25 12 1.25C15.17 1.25 17.75 3.83 17.75 7C17.75 10.17 15.17 12.75 12 12.75ZM12 2.75C9.66 2.75 7.75 4.66 7.75 7C7.75 9.34 9.66 11.25 12 11.25C14.34 11.25 16.25 9.34 16.25 7C16.25 4.66 14.34 2.75 12 2.75Z" fill="currentColor"/>
-                    <path d="M3.41 22.75C3 22.75 2.65 22.45 2.65 22C2.65 17.15 6.8 13.15 12 13.15C17.2 13.15 21.35 17.15 21.35 22C21.35 22.45 21 22.75 20.59 22.75C20.18 22.75 19.83 22.45 19.83 22C19.83 17.95 16.3 14.65 12 14.65C7.7 14.65 4.17 17.95 4.17 22C4.17 22.45 3.82 22.75 3.41 22.75Z" fill="currentColor"/>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium">Contribution Made</h4>
-                  <p className="text-xs text-gray-500">May 13 2025, 11:20 AM</p>
-                </div>
-              </div>
-              <div className="flex flex-col items-end">
-                <div className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded mb-1">Full Payment</div>
-                <p className="text-sm font-semibold">₦100,000</p>
-              </div>
-            </div>
-          </div>
+          )}
           
           <button className="w-full text-center text-sm text-teal-700 mt-6 py-2 border border-gray-200 rounded-md hover:bg-gray-50">
             View all
@@ -691,10 +709,57 @@ const ContributionHistory = () => {
       )}
       
       {activeTab === 'members' && (
-        <div className="py-8 text-center">
-          <p className="text-gray-500">Group members will be displayed here</p>
+        <div className="space-y-4 mt-6">
+          {groupData.members.length > 0 ? (
+            groupData.members.map((member) => {
+              const { user, role, status } = member
+              const isAdmin = role === 'admin'
+              const badgeClass = isAdmin
+                ? "bg-purple-100 text-purple-800"
+                : "bg-gray-100 text-gray-800"
+
+              return (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between border-b pb-3"
+                >
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                      <span className="text-gray-600 font-medium uppercase">
+                        {user?.full_name?.charAt(0)}
+                      </span>
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-sm font-medium">{user.full_name || user.username}</h4>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end">
+                    <div className={`${badgeClass} text-xs px-2 py-0.5 rounded mb-1 capitalize`}>
+                      {role}
+                    </div>
+                    <div
+                      className={`text-xs px-2 py-0.5 rounded ${
+                        status === 'accepted'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
+                      {status}
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-gray-500">No members have joined this group yet.</p>
+            </div>
+          )}
         </div>
       )}
+
       </div>
   );
 };
@@ -849,7 +914,7 @@ export default function GroupDetailsView({ groupId }: GroupDetailsViewProps) {
       {/* Lower sections in flex column */}
       <div className="flex flex-col gap-6">
         {/* Contribution History Component */}
-        <ContributionHistory />
+          <ContributionHistory groupData={groupData} />
         {/* <ContributionHistory contributions={groupData.contributions} /> */} 
 
         {/* Group Rules Component */}

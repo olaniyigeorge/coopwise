@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from db.models.contribution_model import ContributionStatus
 
@@ -17,6 +17,7 @@ class ContributionCreate(BaseModel):
     note: str = None
     status: ContributionStatus = ContributionStatus.PLEDGED
 
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ContributionDetail(BaseModel):
@@ -31,3 +32,7 @@ class ContributionDetail(BaseModel):
     status: ContributionStatus = ContributionStatus.PLEDGED
     created_at: datetime
     updated_at: datetime
+
+
+
+    model_config = ConfigDict(from_attributes=True)

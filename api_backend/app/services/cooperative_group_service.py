@@ -1,20 +1,15 @@
-
-# Define rules, add/remove members.
-
-# Enforce rotation rules and statuses.
-
 import datetime
 from typing import List, Optional
 from uuid import UUID
 from fastapi.encoders import jsonable_encoder
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select
-from sqlalchemy import desc
-from jose import jwt, JWTError
-
+from sqlalchemy import func, select, desc
 from sqlalchemy.orm import joinedload
+from fastapi import HTTPException, status
 
+from app.schemas.contribution_schemas import ContributionDetail
+from app.schemas.cooperative_membership import MembershipExtDetails
 from db.models.contribution_model import Contribution, ContributionStatus
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.dashboard_schema import ExploreGroups
@@ -24,7 +19,6 @@ from app.schemas.cooperative_group import CoopGroupCreate, CoopGroupDetails, Coo
 from db.models.cooperative_group import ContributionFrequency, CooperativeGroup, CooperativeStatus
 from app.utils.logger import logger
 from app.core.config import config
-from fastapi import HTTPException, status
 
 
 class CooperativeGroupService:
@@ -90,22 +84,29 @@ class CooperativeGroupService:
             return None
 
         # 2. Get active memberships (ACCEPTED)
-        membership_stmt = select(GroupMembership).where(
-            GroupMembership.group_id == coop_group_id,
-            GroupMembership.status == MembershipStatus.ACCEPTED
+        membership_stmt = (
+            select(GroupMembership)
+            .where(
+                GroupMembership.group_id == coop_group_id,
+                GroupMembership.status == MembershipStatus.ACCEPTED
+            )
+            .options(joinedload(GroupMembership.user))
         )
         members_result = await db.execute(membership_stmt)
         members = members_result.scalars().all()
         member_ids = [m.user_id for m in members]
 
         # 3. Get contributions by accepted members (COMPLETED)
-        contrib_stmt = select(func.sum(Contribution.amount)).where(
+        contrib_stmt = select(Contribution).where(
             Contribution.group_id == coop_group_id,
             Contribution.user_id.in_(member_ids),
             Contribution.status == ContributionStatus.COMPLETED
         )
         contrib_result = await db.execute(contrib_stmt)
-        total_saved = contrib_result.scalar() or 0
+        contributions = contrib_result.scalars().all()
+
+        # Calculate total_saved from the contributions you just fetched
+        total_saved = sum(c.amount or 0 for c in contributions)
 
         # 4. Compute progress
         progress = float(total_saved) / float(group.target_amount) * 100 if group.target_amount else 0
@@ -127,10 +128,10 @@ class CooperativeGroupService:
             "days_left": (next_contrib_date - today).days if next_contrib_date else None
         }
 
-        # 6. Determine next payout (you can improve logic based on rotation queue)
+        # 6. Determine next payout 
         next_payout = {
             "amount": float(group.contribution_amount) * len(member_ids),
-            "recipient": "TBD",  # Optional: you can find the next in queue by lowest payout_position
+            "recipient": "TBD",  
             "date": group.next_payout_date.isoformat() if group.next_payout_date else None
         }
 
@@ -139,7 +140,9 @@ class CooperativeGroupService:
             **group.__dict__,
             "total_saved": float(total_saved),
             "progress": round(progress, 2),
+            "members": [MembershipExtDetails.model_validate(m) for m in members],
             "members_count": len(member_ids),
+            "contributions": [ContributionDetail.model_validate(c) for c in contributions],
             "next_contribution": next_contribution,
             "next_payout": next_payout,
         }

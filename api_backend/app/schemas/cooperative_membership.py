@@ -4,6 +4,7 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 
+from app.schemas.user import UserDetail
 from db.models.membership import MembershipRole, MembershipStatus
 
 
@@ -36,4 +37,10 @@ class MembershipDetails(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MembershipExtDetails(MembershipDetails):
+    user: UserDetail
+    
     model_config = ConfigDict(from_attributes=True)
