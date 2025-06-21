@@ -56,10 +56,10 @@ export const metadata: Metadata = {
     siteName: 'CoopWise',
     images: [
       {
-        url: '/images/coopwise_home.png',
+        url: '/assets/images/OG Image_coopwise-1.png',
         width: 1200,
         height: 630,
-        alt: 'CoopWise - Cooperative Savings Management Platform',
+        alt: 'CoopWise - Save Money Together, The Smarter Way',
       },
     ],
   },
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'CoopWise | Smart Cooperative Savings Groups Management Platform',
     description: 'Join CoopWise to create, manage, and grow your savings groups. Track contributions, schedule payouts, and build wealth together.',
-    images: ['/images/coopwise_home.png'],
+    images: ['/assets/images/OG Image_coopwise-1.png'],
     creator: '@coopwise',
   },
   icons: {
