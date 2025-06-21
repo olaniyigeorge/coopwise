@@ -187,7 +187,8 @@ class WalletService:
 
         if not wallet:
             logger.warning(f"⚠️ Wallet not found for user {user.id}")
-            raise HTTPException(status_code=404, detail="Wallet not found")
+            wallet = await WalletService.create_user_wallet(user, db)
+            #raise HTTPException(status_code=404, detail="Wallet not found")
 
         wallet_data = WalletDetail.model_validate(wallet)
         await update_cache(cache_key, wallet_data.model_dump_json(), ttl=60)
