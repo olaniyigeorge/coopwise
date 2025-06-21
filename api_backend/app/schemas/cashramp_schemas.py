@@ -1,24 +1,26 @@
-
-from pydantic import BaseModel, HttpUrl
 from typing import Optional
-from uuid import UUID
-from decimal import Decimal
-from datetime import datetime
+from pydantic import BaseModel, HttpUrl
 
-class InitiateDepositRequest(BaseModel):
-    ramp_quote: str  # quote ID
-    reference: Optional[str] = None  # your custom reference
+class CustomerResponse(BaseModel):
+    id: str
+    email: str
+    firstName: str
+    lastName: str
+
+
+class RampQuoteResponse(BaseModel):
+    id: str
+    exchangeRate: float
+    paymentType: str
+
 
 class InitiateDepositResponse(BaseModel):
     id: str
     status: str
     agent: str
     paymentDetails: str
-    exchangeRate: Decimal
-    amountLocal: Decimal
-    amountUsd: Decimal
-    expiresAt: datetime
+    exchangeRate: float
+    amountLocal: float
+    amountUsd: float
+    expiresAt: str
 
-class MarkDepositAsPaidRequest(BaseModel):
-    paymentRequest: str
-    receipt: Optional[HttpUrl] = None

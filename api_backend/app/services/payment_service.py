@@ -4,9 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
-from app.schemas.cashramp_schemas import InitiateDepositRequest
 from app.core.config import config
-from app.schemas.payments import CashrampDepositInput, CashrampDepositResponse, ChargeResponse, PaymentCreate, PaystackPayload
+from app.schemas.payments import ChargeResponse, PaymentCreate, PaystackPayload
 from app.utils.logger import logger
 from db.models.payment_model import Payment, PaymentGateway, PaymentStatus
 

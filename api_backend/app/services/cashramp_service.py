@@ -1,138 +1,148 @@
-from decimal import Decimal
-from typing import Any, Dict, Optional
-import httpx
+from gql import Client, gql
+from gql.transport.aiohttp import AIOHTTPTransport
 from redis import Redis
-from app.schemas.cashramp_schemas import InitiateDepositResponse
-from app.core.config import config  
+from typing import Optional, Dict, Any
+import json
+
+from app.schemas.cashramp_schemas import CustomerResponse, InitiateDepositResponse, RampQuoteResponse
+from app.core.config import config
+
+
+CASHRAMP_URL = "https://api.useaccrue.com/cashramp/api/graphql" if config.ENV == "dev" else "https://staging.api.useaccrue.com/cashramp/api/graphql"  #TODO Flip this to use staging in dev. CashRamp not providing staging API KEYS
+QUOTE_CACHE_TTL = 60  # Per Cashramp's recommendation, cache quotes of 30 to 180 seconds
+
+
+class CashRampError(Exception):
+    """Custom exception for CashRamp errors."""
+    #TODO Implement error handling while dealing with Accrue Cashramp's graphql API
+    pass
 
 
 
 
+# ----------------------  CASHRAMP SERVICE  ----------------------
 
-ACCURUE_STAGING_URL = "https://staging.api.useaccrue.com/cashramp/api/graphql"
-ACCURUE_PROD_URL = "https://api.useaccrue.com/cashramp/api/graphql"
+class CashRampService:
+    def __init__(self, redis: Redis):
+        self.redis = redis
+        transport = AIOHTTPTransport(url=CASHRAMP_URL, headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {config.CASHRAMP_SECKEY}"
+        })
+        self.client = Client(transport=transport, fetch_schema_from_transport=True)
 
-CASHRAMP_API_URL = ACCURUE_PROD_URL if config.ENV == "prod" else ACCURUE_STAGING_URL
-
-
-
-async_client = httpx.AsyncClient(
-    base_url=CASHRAMP_API_URL,
-    headers={
-        "Authorization": f"Bearer {config.CASHRAMP_SECKEY}",
-        "Content-Type": "application/json",
-    },
-)
-
-
-async def deposit_with_cashramp(quote_id: str, reference: Optional[str] = None) -> InitiateDepositResponse:
-    """
-    Initiates a deposit via CashRamp GraphQL.
-    """
-    query = """
-    mutation InitiateDeposit($rampQuote: ID!, $reference: String) {
-      initiateRampQuoteDeposit(rampQuote: $rampQuote, reference: $reference) {
-        id
-        status
-        agent
-        paymentDetails
-        exchangeRate
-        amountLocal
-        amountUsd
-        expiresAt
-      }
-    }
-    """
-    variables = {
-        "rampQuote": quote_id,
-        "reference": reference
-    }
-
-    async with async_client as client:
-        response = await client.post(
-            CASHRAMP_API_URL,
-            json={"query": query, "variables": variables},
-            headers={"Authorization": f"Bearer {config.CASHRAMP_SECKEY}"}
-        )
-        data = response.json()
-
-    result = data["data"]["initiateRampQuoteDeposit"]
-    return InitiateDepositResponse(**result)
-
-
-async def mark_deposit_as_paid(payment_request_id: str, receipt_url: Optional[str] = None):
-    """
-    Marks a deposit as paid using CashRamp GraphQL.
-    """
-    query = """
-    mutation MarkDepositPaid($paymentRequest: ID!, $receipt: String) {
-      markDepositAsPaid(paymentRequest: $paymentRequest, receipt: $receipt)
-    }
-    """
-    variables = {
-        "paymentRequest": payment_request_id,
-        "receipt": receipt_url
-    }
-
-    async with async_client as client:
-        response = await client.post(
-            CASHRAMP_API_URL,
-            json={"query": query, "variables": variables},
-            headers={"Authorization": f"Bearer {config.CASHRAMP_SECKEY}"}
-        )
-        return response.json()
-
-
-
-
-
-
-async def get_ramp_quote(
-    amount: int,
-    currency: str,
-    customer: str,
-    paymentType: str,
-    paymentMethodType: str,
-    redis: Redis,
-    async_client: httpx.AsyncClient
-) -> Dict[str, Any]:
-    """
-    Get current exchange rate from CashRamp GraphQL API.
-    """
-    query = """
-    query GetRampQuote($amount: Int!, $currency: String!, $customer: String!, $paymentType: String!, $paymentMethodType: String!) {
-        rampQuote(
-            amount: $amount,
-            currency: $currency,
-            customer: $customer,
-            paymentType: $paymentType,
-            paymentMethodType: $paymentMethodType
-        ) {
-            id
-            exchangeRate
-            paymentType
+    async def get_account_info(self) -> Dict:
+        query = """
+        query {
+            account {
+                id
+                accountBalance
+            }
         }
-    }
-    """
+        """
+        # print(f"\nFetching account info from {CASHRAMP_URL} with {query}\n")
+        result = await self.client.execute_async(gql(query))
+        return result.get("account", {})
 
-    variables = {
-        "amount": amount,
-        "currency": currency,
-        "customer": customer,
-        "paymentType": paymentType,
-        "paymentMethodType": paymentMethodType,
-    }
+    async def create_customer(self, email: str, first_name: str, last_name: str, country_id: str) -> CustomerResponse:
+        query = gql("""
+        mutation ($email: String!, $firstName: String!, $lastName: String!, $country: ID!) {
+            createCustomer(email: $email, firstName: $firstName, lastName: $lastName, country: $country) {
+                id
+                email
+                firstName
+                lastName
+            }
+        }
+        """)
+        variables = {
+            "email": email,
+            "firstName": first_name,
+            "lastName": last_name,
+            "country": country_id,
+        }
+        async with self.client as session:
+            result = await session.execute(query, variable_values=variables)
+        return CustomerResponse(**result['createCustomer'])
 
-    headers = {
-        "Authorization": f"Bearer {config.CASHRAMP_SECKEY}",
-        "Content-Type": "application/json"
-    }
+    async def get_ramp_quote(self, amount: float, currency: str, customer_id: str, payment_type: str, payment_method_type: str) -> RampQuoteResponse:
+        cache_key = f"ramp_quote:{customer_id}:{amount}:{currency}:{payment_type}:{payment_method_type}"
+        # cached = await self.redis.get(cache_key)
 
-    response = await async_client.post(
-        CASHRAMP_API_URL,
-        json={"query": query, "variables": variables},
-        headers=headers
-    )
+        # if cached:
+        #     print(f"\n Returning cached ramp quote  {cached}\n")
+        #     return RampQuoteResponse(**json.loads(cached))
 
-    data = response.json()
-    return data.get("data", {}).get("rampQuote", {})
+        query = gql("""
+        query ($amount: Decimal!, $currency: P2PPaymentCurrency!, $customer: ID!, $paymentType: PaymentType!, $paymentMethodType: String!) {
+            rampQuote(amount: $amount, currency: $currency, customer: $customer, paymentType: $paymentType, paymentMethodType: $paymentMethodType) {
+                id
+                exchangeRate
+                paymentType
+            }
+        }
+        """)
+        variables = {
+            "amount": amount,
+            "currency": currency,
+            "customer": customer_id,
+            "paymentType": payment_type,
+            "paymentMethodType": payment_method_type,
+        }
+
+        print(f"\nFetching ramp quote using {self.client} with {query}\n")
+        async with self.client as session:
+            result = await session.execute(query, variable_values=variables)
+        data = RampQuoteResponse(**result['rampQuote'])
+
+        #self.redis.setex(cache_key, QUOTE_CACHE_TTL, json.dumps(data.dict()))
+        return data
+
+    async def initiate_deposit(self, ramp_quote_id: str, reference: Optional[str] = None) -> InitiateDepositResponse:
+        query = gql("""
+        mutation ($rampQuote: ID!, $reference: String) {
+            initiateRampQuoteDeposit(rampQuote: $rampQuote, reference: $reference) {
+                id
+                status
+                agent
+                paymentDetails
+                exchangeRate
+                amountLocal
+                amountUsd
+                expiresAt
+            }
+        }
+        """)
+        variables = {
+            "rampQuote": ramp_quote_id,
+            "reference": reference
+        }
+        async with self.client as session:
+            result = await session.execute(query, variable_values=variables)
+        return InitiateDepositResponse(**result['initiateRampQuoteDeposit'])
+
+    async def mark_deposit_as_paid(self, payment_request_id: str, receipt_url: Optional[str] = None) -> Dict[str, Any]:
+        query = gql("""
+        mutation ($paymentRequest: ID!, $receipt: String) {
+            markDepositAsPaid(paymentRequest: $paymentRequest, receipt: $receipt)
+        }
+        """)
+        variables = {
+            "paymentRequest": payment_request_id,
+            "receipt": receipt_url
+        }
+        async with self.client as session:
+            result = await session.execute(query, variable_values=variables)
+        return result['markDepositAsPaid']
+
+    async def cancel_deposit(self, payment_request_id: str) -> Dict[str, Any]:
+        query = gql("""
+        mutation ($paymentRequest: ID!) {
+            cancelDeposit(paymentRequest: $paymentRequest)
+        }
+        """)
+        variables = {"paymentRequest": payment_request_id}
+
+        async with self.client as session:
+            result = await session.execute(query, variable_values=variables)
+        return result['cancelDeposit']

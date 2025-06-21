@@ -21,7 +21,7 @@ router = APIRouter(
     )  
 async def get_dashboard_data(
     db: AsyncSession = Depends(get_async_db_session),
-    redis: Redis = Depends(get_redis),
+    redis_client: Redis = Depends(get_redis),
     user: AuthenticatedUser = Depends(get_current_user)
 ):
     """
@@ -34,7 +34,7 @@ async def get_dashboard_data(
     - Cooperative members in user's groups
     """
     try:
-        dashboard_data = await DashboardService.get_dashboard_data(db, redis, user)
+        dashboard_data = await DashboardService.get_dashboard_data(db, redis_client, user)
         return dashboard_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

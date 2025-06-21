@@ -28,7 +28,7 @@ async def deposit(
     data: WalletDeposit,
     db: AsyncSession = Depends(get_async_db_session),
     user: AuthenticatedUser = Depends(get_current_user),
-    redis: Redis = Depends(get_redis)
+    redis_client: Redis = Depends(get_redis)
 ):
     # 1. Send user notification about deposit initiation
     noti_data = NotificationCreate(
@@ -75,7 +75,7 @@ async def deposit(
     #     raise HTTPException(status_code=400, detail="Payment failed.")
 
     # 6. Finalize the deposit logic (updates wallet balance)
-    updated_wallet = await WalletService.deposit(data, db, user, redis)
+    updated_wallet = await WalletService.deposit(data, db, user, redis_client)
 
     # 7. Return updated wallet detail
     return updated_wallet
@@ -87,16 +87,16 @@ async def deposit(
 async def get_wallet(
     db: AsyncSession = Depends(get_async_db_session), 
     user: AuthenticatedUser = Depends(get_current_user),
-    redis: Redis = Depends(get_redis)
+    redis_client: Redis = Depends(get_redis)
     ):
 
-    return await WalletService.get_wallet(db, user, redis)
+    return await WalletService.get_wallet(db, user, redis_client)
 
 @router.post("/withdraw")
 async def withdraw(
     data: WalletWithdraw,
     db: AsyncSession = Depends(get_async_db_session),
     user: AuthenticatedUser = Depends(get_current_user),
-    redis: Redis = Depends(get_redis)
+    redis_client: Redis = Depends(get_redis)
 ):
-    return await WalletService.withdraw(data, db, user, redis)
+    return await WalletService.withdraw(data, db, user, redis_client)

@@ -54,9 +54,9 @@ async def get_mock_insights(
 async def get_insight(
     db: AsyncSession = Depends(get_async_db_session),
     current_user: AuthenticatedUser = Depends(get_current_user),
-    redis: Redis = Depends(get_redis),
+    redis_client: Redis = Depends(get_redis),
 ):
-    return await InsightEngine.get_save_new_insight(db, current_user, redis)
+    return await InsightEngine.get_save_new_insight(db, current_user, redis_client)
    
 
 
@@ -65,7 +65,7 @@ async def get_immediate_ai_response(
     db: AsyncSession = Depends(get_async_db_session),
     current_user: AuthenticatedUser = Depends(get_current_user),
     prompt: str ="",
-    redis: Redis = Depends(get_redis),
+    redis_client: Redis = Depends(get_redis),
 ):
     whole_prompt = f"""
         You are CoopWise AI assistant. An AI financial assitant working for a cooperative savings app in Nigeria.
