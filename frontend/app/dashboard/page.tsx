@@ -7,12 +7,12 @@ import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import GroupsTabView from '@/components/dashboard/groups-tab-view'
-import { getDashboardData, DashboardData, defDashData, AIInsightDetail } from '@/lib/dashboard-service'
-import { formatCurrency } from '@/lib/utils'
+import { getDashboardData, DashboardData, defDashData, AIInsightDetail, ActivityDetail, ActivityType } from '@/lib/dashboard-service'
+import { formatCurrency, getActivityDescription } from '@/lib/utils'
 import Link from 'next/link'
 import { Bot, MessageSquare, Sparkles } from 'lucide-react'
 import AIInsightCard from '@/components/dashboard/ai-insight-card'
-import CookieService from '@/lib/cookie-service'
+
 
 export default function Dashboard() {
   const router = useRouter()
@@ -237,28 +237,30 @@ const recentActivity = dashboardData?.activities ?? [];
             
             {recentActivity.length > 0 ? (
               <div className="space-y-3">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start border-b border-gray-100 pb-3">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                      <Image 
-                        src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                        alt="Activity Icon" 
-                        width={16} 
-                        height={16}
-                      />
-                    </div>
-                    <div className="ml-3 flex-1">
-                      <div className="flex justify-between">
-                        <div className="text-sm font-medium">{activity.type}</div>
-                        {activity.amount && (
-                          <div className="text-sm font-medium">{formatCurrency(activity.amount)}</div>
-                        )}  
+               {recentActivity.map((activity) => {
+                    const isOwnActivity = activity.user_id === user?.id
+
+                    return (
+                      <div key={activity.id} className="flex items-start border-b border-gray-100 pb-3">
+                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                          <Image
+                            src="/assets/icons/fluent_people-community-48-regular (1).svg"
+                            alt="Activity Icon"
+                            width={16}
+                            height={16}
+                          />
+                        </div>
+                        <div className="ml-3 flex-1">
+                          <div className="flex justify-between">
+                            <div className="text-sm font-medium">
+                              {getActivityDescription(activity, isOwnActivity)}
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">{new Date(activity.created_at).toLocaleDateString()}</div>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">{activity.description}</div>
-                      <div className="text-xs text-gray-400 mt-1">{new Date(activity.created_at).toLocaleDateString()}</div>
-                    </div>
-                  </div>
-                ))}
+                    )
+                })}
               </div>
             ) : (
               <div className="text-center py-4 sm:py-6">
@@ -380,3 +382,5 @@ const recentActivity = dashboardData?.activities ?? [];
     </DashboardLayout>
   )
 } 
+
+

@@ -9,6 +9,7 @@ import useAuthStore from '@/lib/stores/auth-store'
 import useNotificationStore, { NotificationDetail } from '@/lib/stores/notification-store'
 import Link from 'next/link'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { getNotificationActionLabel, getNotificationLink } from '@/lib/utils'
 
 export default function NotificationsPage() {
   const { user } = useAuthStore()
@@ -188,43 +189,3 @@ export default function NotificationsPage() {
   )
 } 
 
-
-
-const getNotificationLink = (notification: NotificationDetail) => {
-  const { event_type, entity_url } = notification
-
-  switch (event_type) {
-    case 'group':
-      return entity_url ? `/dashboard/my-group/${entity_url}` : undefined
-    case 'contribution':
-      return entity_url ? `/dashboard/my-group/${entity_url}#contributions` : undefined
-    case 'payout':
-      return entity_url ? `/dashboard/my-group/${entity_url}#payouts` : undefined
-    case 'ai_insight':
-      return entity_url ? `/dashboard/ai-insights/${entity_url}` : undefined
-    default:
-      return undefined
-  }
-}
-const getNotificationActionLabel = (notification: NotificationDetail) => {
-  switch (notification.event_type) {
-    case 'group':
-      return 'View Group'
-    case 'contribution':
-      return 'View Contribution'
-    case 'payout':
-      return 'View Payout'
-    case 'ai_insight':
-      return 'View Insight'
-    case 'membership':
-      return 'View Membership'
-    case 'transaction':
-      return 'View Transaction'
-    case 'general_alert':
-      return 'View Alert'
-    case 'system':
-      return 'View System Update'
-    default:
-      return 'View Details'
-  }
-}

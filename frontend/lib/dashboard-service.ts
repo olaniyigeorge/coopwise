@@ -140,11 +140,15 @@ export enum CooperativeStatus {
 }
 
 export enum ActivityType {
-  CONTRIBUTION = "contribution",
-  PAYOUT = "payout",
   JOINED_GROUP = "joined_group",
+  LEFT_GROUP = "left_group",
+  MADE_CONTRIBUTION = "made_contribution",
+  RECEIVED_PAYOUT = "received_payout",
+  DECLINED_INVITE = "declined_invite",
+  ACCEPTED_INVITE = "accepted_invite",
   CREATED_GROUP = "created_group",
 }
+
 
 export enum InsightCategory {
   CONTRIBUTION = "contribution",
@@ -377,6 +381,8 @@ export interface NotificationDetail {
   entity_url?: string | null;
   created_at: string;
 }
+
+
 
 // Membership Details
 export interface MembershipDetails {
