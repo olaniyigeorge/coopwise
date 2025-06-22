@@ -58,7 +58,7 @@ async def deposit(
     # stable_amount = Decimal(ramp_quote["exchangeRate"]) * Decimal(data.local_amount)
     # ledger_data = WalletLedger(
     #     wallet_id=user_wallet.id,
-    #     type=LedgerType.DEPOSIT,
+    #     type=LedgerType.deposit,
     #     stable_amount=stable_amount,
     #     local_amount=Decimal(data.local_amount),
     #     local_currency=data.currency,

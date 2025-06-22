@@ -67,7 +67,7 @@ class WalletService:
         # 4. Add ledger entry
         ledger = WalletLedger(
             wallet_id=wallet.id,
-            type=LedgerType.DEPOSIT,
+            type=LedgerType.deposit,
             stable_amount=stable_amt,
             local_amount=Decimal(data.local_amount),
             local_currency=data.currency,

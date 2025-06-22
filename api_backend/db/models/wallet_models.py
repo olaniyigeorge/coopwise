@@ -52,25 +52,25 @@ class Wallet(Base):
 # ----------------- wallet_ledger(tnx record) -----------
 
 class PaymentGateway(enum.Enum):
-    PAYSTACK = "paystack"
-    FLUTTERWAVE = "flutterwave"
-    CASHRAMP = 'cashramp'
-    ON_CHAIN_CASHRAMP = "on_chain_cashramp"
-    ON_CHAIN_SOLANA = "on_chain_solana"
-    CASH = "cash"
+    paystack = "paystack"
+    flutterwave = "flutterwave"
+    cashramp = "cashramp"
+    on_chain_cashramp = "on_chain_cashramp"
+    on_chain_solana = "on_chain_solana"
+    cash = "cash"
 
 
 class LedgerType(enum.Enum):
-    DEPOSIT = "deposit" # + wallet
-    WITHDRAWAL = "withdrawal" # - wallet
-    CONTRIBUTION = "contribution"  # - wallet
-    REFUND = "refund"    # + wallet e.g. reversed contribution
+    deposit = "deposit" # + wallet
+    withdrawal = "withdrawal" # - wallet
+    contribution = "contribution"  # - wallet
+    refund = "refund"    # + wallet e.g. reversed contribution
 
 class LedgerStatus(enum.Enum):
-    INITIATED = "initiated"  
-    PENDING = "pending"      
-    SETTLED = "settled"      
-    FAILED = "failed"        
+    initiated = "initiated"  
+    pending = "pending"      
+    settled = "settled"      
+    failed = "failed"        
 
 class WalletLedger(Base): # TNX RECORD
     __tablename__ = "wallet_ledger"
@@ -80,17 +80,17 @@ class WalletLedger(Base): # TNX RECORD
     contribution_id = Column(PGUUID(as_uuid=True), ForeignKey("contributions.id"), nullable=True)
     
     note = Column(String, nullable=True)
-    gateway = Column(Enum(PaymentGateway), default=PaymentGateway.CASHRAMP, nullable=False) # Gateway default support: cashramp(off_chain), on_chain_cashramp, on_chain_solana  
+    gateway = Column(Enum(PaymentGateway), default=PaymentGateway.cashramp, nullable=False) # Gateway default support: cashramp(off_chain), on_chain_cashramp, on_chain_solana  
 
     type = Column(Enum(LedgerType), nullable=False)
     stable_amount = Column(Numeric(precision=20, scale=8), nullable=False) # Amount in stable coin (e.g. USDC) 
     local_amount = Column(Numeric(precision=20, scale=2), nullable=False)   # Local fiat amount before conversion
     local_currency = Column(Enum(LocalCurrency), nullable=False)
     exchange_rate = Column(Numeric(precision=20, scale=8), nullable=False) # Exchange rate applied: local_currency → stable coin... Set default to local_amount/stable_amount
-    status = Column(Enum(LedgerStatus), default=LedgerStatus.INITIATED, nullable=False)
-    
+    status = Column(Enum(LedgerStatus), default=LedgerStatus.initiated, nullable=False)
+
     created_at = Column(DateTime, default=datetime.now, nullable=False)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
     
     wallet = relationship(
         "Wallet", 
