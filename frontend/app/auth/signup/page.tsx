@@ -55,7 +55,22 @@ export default function SignupPage() {
         username: username || email, // Use email as username if not provided
         role: "user"
       })
-      // Redirect is handled in the auth context
+      
+      // Check for returnUrl or pending invite
+      const searchParams = new URLSearchParams(window.location.search)
+      const returnUrl = searchParams.get('returnUrl')
+      const pendingInvite = localStorage.getItem('pendingInviteCode')
+      
+      if (returnUrl && returnUrl.includes('/invite/')) {
+        // If there's a returnUrl to an invite page, redirect there
+        router.push(returnUrl)
+      } else if (pendingInvite) {
+        // If there's a pending invite, redirect to the invite page
+        router.push(`/invite/${pendingInvite}`)
+      } else {
+        // Default redirect to profile setup
+        router.push('/auth/profile-setup')
+      }
     } catch (err) {
       // Error handling is done in the auth context
       console.error("Registration error:", err)

@@ -30,7 +30,22 @@ export default function LoginForm() {
     
     try {
       await login({ username, password })
-      // Successful login is handled by the auth context (redirects to dashboard)
+      
+      // Check for returnUrl or pending invite
+      const searchParams = new URLSearchParams(window.location.search)
+      const returnUrl = searchParams.get('returnUrl')
+      const pendingInvite = localStorage.getItem('pendingInviteCode')
+      
+      if (returnUrl && returnUrl.includes('/invite/')) {
+        // If there's a returnUrl to an invite page, redirect there
+        router.push(returnUrl)
+      } else if (pendingInvite) {
+        // If there's a pending invite, redirect to the invite page
+        router.push(`/invite/${pendingInvite}`)
+      } else {
+        // Otherwise, the auth context will handle redirection
+        router.push('/dashboard')
+      }
     } catch (err: any) {
       console.error('Login error:', err)
       
