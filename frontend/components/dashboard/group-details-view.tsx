@@ -218,22 +218,20 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(inviteCode);
-      setCopied(true);
+      // Create a shareable URL that will render the OG image when shared
+      const shareableUrl = `${window.location.origin}/invite/${inviteCode}`;
+      await navigator.clipboard.writeText(shareableUrl);
+      
       toast({
-        title: "Success",
-        description: "Invite code copied to clipboard!",
+        title: "Link copied!",
+        description: "Group invite link copied to clipboard",
+        duration: 2000,
       });
       
-      // Reset copied status after 2 seconds
+      setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Error copying to clipboard:', error);
-      toast({
-        title: "Error",
-        description: "Failed to copy to clipboard.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -276,9 +274,17 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
           </DialogHeader>
           <div className="flex items-center space-x-2 mt-4">
             <div className="grid flex-1 gap-2">
+              <label className="text-xs font-medium text-gray-500">
+                Shareable Invite Link
+              </label>
               <div className="flex items-center border rounded-md p-2 bg-gray-50">
-                <span className="text-sm font-medium flex-1">{inviteCode}</span>
+                <span className="text-sm font-medium flex-1 truncate">
+                  {window.location.origin}/invite/{inviteCode}
+                </span>
               </div>
+              <p className="text-xs text-gray-500">
+                Share this link on social media to show group details
+              </p>
             </div>
             <Button 
               type="button" 

@@ -12,6 +12,7 @@ import { Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -55,7 +56,45 @@ export default function SignupPage() {
         username: username || email, // Use email as username if not provided
         role: "user"
       })
-      // Redirect is handled in the auth context
+      
+      // Check for returnUrl or pending invite
+      const searchParams = new URLSearchParams(window.location.search)
+      const returnUrl = searchParams.get('returnUrl')
+      const pendingInvite = localStorage.getItem('pendingInviteCode')
+      const pendingGroupName = localStorage.getItem('pendingGroupName')
+      
+      // If this signup is for a group invite, show a toast notification
+      if (returnUrl?.includes('/invite/') || pendingInvite) {
+        // Success message for joining a group
+        toast({
+          title: "Account created successfully!",
+          description: pendingGroupName 
+            ? `You'll now be redirected to join ${pendingGroupName}`
+            : "You'll now be redirected to complete the group join process",
+          variant: "default",
+          className: "bg-green-50 border-green-200",
+          duration: 3000,
+        });
+      } else {
+        // Regular success message
+        toast({
+          title: "Account created!",
+          description: "Your account has been created successfully.",
+          variant: "default",
+          className: "bg-green-50 border-green-200",
+        });
+      }
+      
+      if (returnUrl && returnUrl.includes('/invite/')) {
+        // If there's a returnUrl to an invite page, redirect there
+        router.push(returnUrl)
+      } else if (pendingInvite) {
+        // If there's a pending invite, redirect to the invite page
+        router.push(`/invite/${pendingInvite}`)
+      } else {
+        // Default redirect to profile setup
+        router.push('/auth/profile-setup')
+      }
     } catch (err) {
       // Error handling is done in the auth context
       console.error("Registration error:", err)

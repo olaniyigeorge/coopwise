@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from '@/lib/auth-context'
-import { Progress } from '@/components/ui/progress'
-import { toast } from '@/components/ui/use-toast'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowLeft, ArrowRight, CheckCircle, PiggyBank, Target, Wallet, Loader2 } from 'lucide-react'
+import { toast } from '@/components/ui/use-toast'
+import { motion, AnimatePresence } from 'framer-motion'
 
 // Define step interfaces
 interface Step1Props {
@@ -37,11 +37,70 @@ interface Step3Props {
   loading: boolean;
 }
 
+// Step indicators component with knots
+const StepIndicator = ({ currentStep }: { currentStep: number }) => {
+  const steps = [
+    { title: "Savings Goal", icon: <Target className="h-4 w-4" /> },
+    { title: "Income Info", icon: <Wallet className="h-4 w-4" /> },
+    { title: "Complete", icon: <CheckCircle className="h-4 w-4" /> },
+  ];
+
+  return (
+    <div className="flex justify-between items-center w-full px-4 py-3">
+      {steps.map((step, index) => {
+        const isActive = currentStep >= index + 1;
+        const isCompleted = currentStep > index + 1;
+        
+        return (
+          <React.Fragment key={index}>
+            {/* Step knot */}
+            <div className="flex flex-col items-center">
+              <div 
+                className={`rounded-full flex items-center justify-center transition-all duration-300 ${
+                  isCompleted 
+                    ? "bg-emerald-500 text-white h-10 w-10" 
+                    : isActive
+                    ? "bg-primary text-white h-10 w-10" 
+                    : "bg-gray-200 text-gray-500 h-8 w-8"
+                }`}
+              >
+                {isCompleted ? (
+                  <CheckCircle className="h-5 w-5" />
+                ) : (
+                  step.icon
+                )}
+              </div>
+              <span className={`text-xs mt-1 ${isActive ? "text-primary font-medium" : "text-gray-500"}`}>
+                {step.title}
+              </span>
+            </div>
+            
+            {/* Connector line between knots */}
+            {index < steps.length - 1 && (
+              <div className="flex-1 mx-2">
+                <div className={`h-1 ${
+                  currentStep > index + 1 ? "bg-emerald-500" : "bg-gray-200"
+                } rounded`}></div>
+              </div>
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+};
+
 // Step 1: Target Amount and Savings Purpose
 const Step1 = ({ targetAmount, setTargetAmount, purpose, setPurpose, onNext }: Step1Props) => {
   const isValid = targetAmount.trim() !== "" && purpose.trim() !== "";
 
   return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
+    >
     <CardContent className="space-y-4 pt-6">
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
@@ -56,7 +115,7 @@ const Step1 = ({ targetAmount, setTargetAmount, purpose, setPurpose, onNext }: S
             placeholder="e.g. 500000"
             value={targetAmount}
             onChange={(e) => setTargetAmount(e.target.value)}
-            className="pl-8"
+              className="pl-8 transition-all focus:ring-2 focus:ring-primary/20"
           />
         </div>
         <p className="text-xs text-gray-500">Set your target savings goal amount (e.g., ₦500,000)</p>
@@ -72,6 +131,7 @@ const Step1 = ({ targetAmount, setTargetAmount, purpose, setPurpose, onNext }: S
           placeholder="e.g. House rent, Education, Business"
           value={purpose}
           onChange={(e) => setPurpose(e.target.value)}
+            className="transition-all focus:ring-2 focus:ring-primary/20"
         />
         <p className="text-xs text-gray-500">What are you saving for?</p>
       </div>
@@ -79,11 +139,12 @@ const Step1 = ({ targetAmount, setTargetAmount, purpose, setPurpose, onNext }: S
       <Button 
         onClick={onNext} 
         disabled={!isValid}
-        className="w-full mt-4"
+          className="w-full mt-4 transition-all hover:scale-[1.02] active:scale-[0.98]"
       >
         Continue <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
     </CardContent>
+    </motion.div>
   )
 }
 
@@ -92,6 +153,12 @@ const Step2 = ({ incomeRange, setIncomeRange, savingFrequency, setSavingFrequenc
   const isValid = incomeRange !== "" && savingFrequency !== "";
 
   return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
+    >
     <CardContent className="space-y-4 pt-6">
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
@@ -99,7 +166,7 @@ const Step2 = ({ incomeRange, setIncomeRange, savingFrequency, setSavingFrequenc
           <Label htmlFor="incomeRange" className="text-base font-medium">Income Range</Label>
         </div>
         <Select value={incomeRange} onValueChange={setIncomeRange}>
-          <SelectTrigger>
+            <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
             <SelectValue placeholder="Select your income range" />
           </SelectTrigger>
           <SelectContent>
@@ -122,7 +189,7 @@ const Step2 = ({ incomeRange, setIncomeRange, savingFrequency, setSavingFrequenc
           <Label htmlFor="savingFrequency" className="text-base font-medium">Preferred Saving Frequency</Label>
         </div>
         <Select value={savingFrequency} onValueChange={setSavingFrequency}>
-          <SelectTrigger>
+            <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
             <SelectValue placeholder="How often do you want to save?" />
           </SelectTrigger>
           <SelectContent>
@@ -135,25 +202,45 @@ const Step2 = ({ incomeRange, setIncomeRange, savingFrequency, setSavingFrequenc
       </div>
 
       <div className="flex space-x-3 mt-4">
-        <Button variant="outline" onClick={onBack} className="flex-1">
+          <Button 
+            variant="outline" 
+            onClick={onBack} 
+            className="flex-1 transition-all hover:bg-gray-100 hover:text-gray-900 border border-gray-300"
+          >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
-        <Button onClick={onNext} disabled={!isValid} className="flex-1">
+          <Button 
+            onClick={onNext} 
+            disabled={!isValid} 
+            className="flex-1 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
           Continue <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
     </CardContent>
+    </motion.div>
   )
 }
 
 // Step 3: Confirmation
 const Step3 = ({ onBack, onComplete, loading }: Step3Props) => {
   return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
+    >
     <CardContent className="pt-6 text-center">
       <div className="flex flex-col items-center justify-center space-y-3">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+          <motion.div 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-600"
+          >
           <CheckCircle className="w-8 h-8" />
-        </div>
+          </motion.div>
         <h3 className="text-xl font-semibold text-gray-800">Almost Done!</h3>
         <p className="text-gray-600 text-sm max-w-md">
           Your profile preferences will be saved. You're now ready to start your saving journey with CoopWise.
@@ -161,44 +248,69 @@ const Step3 = ({ onBack, onComplete, loading }: Step3Props) => {
         
         <div className="mt-6 space-y-3">
           <ul className="space-y-2 text-left">
-            <li className="flex items-start">
+              <motion.li 
+                className="flex items-start"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
               <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               <span className="text-sm">Create or join a savings group</span>
-            </li>
-            <li className="flex items-start">
+              </motion.li>
+              <motion.li 
+                className="flex items-start"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
               <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               <span className="text-sm">Make regular contributions</span>
-            </li>
-            <li className="flex items-start">
+              </motion.li>
+              <motion.li 
+                className="flex items-start"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
               <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               <span className="text-sm">Receive AI-powered financial insights</span>
-            </li>
+              </motion.li>
           </ul>
         </div>
       </div>
 
       <div className="flex space-x-3 mt-8">
-        <Button variant="outline" onClick={onBack} className="flex-1" disabled={loading}>
+          <Button 
+            variant="outline" 
+            onClick={onBack} 
+            className="flex-1 transition-all hover:bg-gray-100 hover:text-gray-900 border border-gray-300" 
+            disabled={loading}
+          >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
-        <Button onClick={onComplete} className="flex-1" disabled={loading}>
+          <Button 
+            onClick={onComplete} 
+            className="flex-1 transition-all hover:scale-[1.02] active:scale-[0.98] bg-green-600 hover:bg-green-700" 
+            disabled={loading}
+          >
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Saving...
             </>
           ) : (
-            "Complete & Go to Dashboard"
+              "Complete Setup"
           )}
         </Button>
       </div>
     </CardContent>
+    </motion.div>
   )
 }
 
@@ -329,29 +441,28 @@ export default function ProfileSetupPage() {
     }
   }
 
-  // Calculate progress
-  const progress = (currentStep / 3) * 100
-
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md overflow-hidden border-0 shadow-lg">
+        <CardHeader className="space-y-1 bg-white border-b pb-4">
           <CardTitle className="text-2xl font-bold text-center">Complete Your Profile</CardTitle>
           <CardDescription className="text-center">
             Help us personalize your CoopWise experience
           </CardDescription>
-          <Progress value={progress} className="h-2 mt-2" />
-          <div className="text-xs text-[#02696F] text-right">Step {currentStep} of 3</div>
+          
+          {/* Step indicator with knots */}
+          <StepIndicator currentStep={currentStep} />
         </CardHeader>
         
         {error && (
-          <div className="px-4">
+          <div className="px-6 pt-4">
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           </div>
         )}
         
+        <AnimatePresence mode="wait">
         {currentStep === 1 && (
           <Step1 
             targetAmount={targetAmount}
@@ -380,6 +491,7 @@ export default function ProfileSetupPage() {
             loading={loading}
           />
         )}
+        </AnimatePresence>
         
         <CardFooter className="flex justify-between border-t pt-4 text-xs text-gray-500">
           <div>Your data is securely stored</div>

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -46,7 +46,12 @@ interface GroupData {
   rules: Array<Record<string, any>> | null;
 }
 
-export default function JoinGroupForm() {
+// Update the component props interface
+interface JoinGroupFormProps {
+  initialCode?: string | null;
+}
+
+export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [verifying, setVerifying] = useState(false)
@@ -66,9 +71,21 @@ export default function JoinGroupForm() {
   const form = useForm<z.infer<typeof inviteCodeSchema>>({
     resolver: zodResolver(inviteCodeSchema),
     defaultValues: {
-      inviteCode: "",
+      inviteCode: initialCode || "",
     },
   })
+  
+  // Auto-verify code if passed via URL
+  useEffect(() => {
+    if (initialCode && initialCode.length >= 6) {
+      form.setValue('inviteCode', initialCode)
+      // Delay verification slightly to ensure form is ready
+      setTimeout(() => {
+        const values = { inviteCode: initialCode }
+        onVerifyCode(values)
+      }, 500)
+    }
+  }, [initialCode, form])
   
   // Function to verify the invite code
   async function onVerifyCode(values: z.infer<typeof inviteCodeSchema>) {
