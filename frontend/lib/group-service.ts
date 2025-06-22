@@ -21,6 +21,7 @@ export interface Group {
   name: string;
   creator_id: string;
   description: string;
+  image_url?: string;
   contribution_amount: number;
   contribution_frequency: string;
   payout_strategy: string;
@@ -39,6 +40,7 @@ export interface GroupCreateData {
   name: string;
   creator_id: string;
   description?: string;
+  image_url?: string;
   contribution_amount: number;
   contribution_frequency: string;
   payout_strategy?: string;
@@ -139,6 +141,7 @@ const GroupService = {
         name: data.name,
         creator_id: data.creator_id,
         description: data.description || "",
+        image_url: data.image_url || "",
         contribution_amount: data.contribution_amount,
         contribution_frequency: data.contribution_frequency,
         payout_strategy: data.payout_strategy || "rotating",

@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useRouter } from 'next/navigation'
+import { Info } from 'lucide-react'
 
 import { Button } from "@/components/ui/button"
 import {
@@ -14,6 +15,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import {
@@ -24,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const createGroupSchema = z.object({
   name: z.string().min(1, "Group name is required"),
@@ -32,6 +35,7 @@ const createGroupSchema = z.object({
   contributionFrequency: z.string().min(1, "Contribution frequency is required"),
   maxMembers: z.string().min(1, "Maximum number of members is required"),
   targetAmount: z.string().optional(),
+  imageUrl: z.string().url("Please enter a valid image URL").optional(),
 })
 
 type FormValues = z.infer<typeof createGroupSchema>
@@ -53,6 +57,7 @@ export default function CreateGroupForm({ onSubmitSuccess }: CreateGroupFormProp
       contributionFrequency: "",
       maxMembers: "10",
       targetAmount: "",
+      imageUrl: "",
     },
   })
   
@@ -104,6 +109,42 @@ export default function CreateGroupForm({ onSubmitSuccess }: CreateGroupFormProp
                       {...field} 
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Group Image URL */}
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center gap-2">
+                    <FormLabel className="text-sm font-medium text-gray-700">
+                      Group Banner Image URL (Optional)
+                    </FormLabel>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="w-[220px] text-xs">This image will be shown when your group invite link is shared on social media</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <FormControl>
+                    <Input
+                      placeholder="https://example.com/group-image.jpg"
+                      type="url"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Use a 1200×630 image for optimal display when sharing
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

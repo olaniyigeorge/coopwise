@@ -135,10 +135,25 @@ export default function CreateGroup() {
   const [groupData, setGroupData] = useState<any>(null)
   const [isCreating, setIsCreating] = useState(false)
 
-  const handleNext = (formData: any) => {
-    setGroupData(formData)
-    setCurrentStep(2)
-  }
+  const handleNext = async (formValues: any) => {
+    try {
+      // Store the form values to use in step 2
+      setGroupData({
+        name: formValues.name,
+        description: formValues.description,
+        contributionAmount: formValues.contributionAmount,
+        contributionFrequency: formValues.contributionFrequency,
+        maxMembers: formValues.maxMembers,
+        targetAmount: formValues.targetAmount,
+        imageUrl: formValues.imageUrl,
+      });
+      
+      // Go to step 2
+      setCurrentStep(2);
+    } catch (error) {
+      console.error('Error processing form data:', error);
+    }
+  };
 
   const handleBack = () => {
     setCurrentStep(1)
@@ -146,7 +161,6 @@ export default function CreateGroup() {
 
   const handleComplete = async (rules: {title: string, description: string}[]) => {
     if (!groupData) return
-
 
     console.log(`\nRules: ${rules}\n`)
     
@@ -157,6 +171,7 @@ export default function CreateGroup() {
         name: groupData.name,
         creator_id: user?.id || "",
         description: groupData.description || "",
+        image_url: groupData.imageUrl || "",
         contribution_amount: parseFloat(groupData.contributionAmount.replace(/[^\d.-]/g, '')) || 0,
         max_members: parseInt(groupData.maxMembers) || 10,
         contribution_frequency: groupData.contributionFrequency || "daily",
