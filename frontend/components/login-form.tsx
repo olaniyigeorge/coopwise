@@ -35,6 +35,20 @@ export default function LoginForm() {
       const searchParams = new URLSearchParams(window.location.search)
       const returnUrl = searchParams.get('returnUrl')
       const pendingInvite = localStorage.getItem('pendingInviteCode')
+      const pendingGroupName = localStorage.getItem('pendingGroupName')
+      
+      // If this login is for a group invite, show a toast notification
+      if (returnUrl?.includes('/invite/') || pendingInvite) {
+        toast({
+          title: "Login successful!",
+          description: pendingGroupName 
+            ? `You'll now be redirected to join ${pendingGroupName}`
+            : "You'll now be redirected to the invite page",
+          variant: "default",
+          className: "bg-green-50 border-green-200",
+          duration: 3000,
+        });
+      }
       
       if (returnUrl && returnUrl.includes('/invite/')) {
         // If there's a returnUrl to an invite page, redirect there

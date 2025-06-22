@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Loader2, Check, UserCheck, AlertTriangle } from 'lucide-react'
+import { Loader2, Check, UserCheck, AlertTriangle, Users, ArrowRight } from 'lucide-react'
 
 interface InviteJoinHandlerProps {
   inviteCode: string
@@ -94,17 +94,18 @@ export default function InviteJoinHandler({ inviteCode, groupName }: InviteJoinH
   return (
     <>
       <Button 
-        className="flex-1 inline-flex justify-center items-center rounded-md bg-primary px-5 py-3 text-sm font-medium text-white hover:bg-primary/90 transition"
+        className="w-full sm:flex-1 rounded-md bg-primary px-5 py-3 text-sm font-medium text-white hover:bg-primary/90 transition flex items-center justify-center gap-2"
         onClick={handleJoinClick}
       >
-        Join Group
+        <Users className="h-4 w-4" />
+        <span>Join Group</span>
       </Button>
       
       <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Join {groupName}</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-md max-w-[95%] rounded-xl p-5 sm:p-6">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-xl">Join {groupName}</DialogTitle>
+            <DialogDescription className="text-sm text-gray-500">
               {isAuthenticated
                 ? "You're about to join this savings group."
                 : "You'll need to log in or create an account to join this group."}
@@ -137,8 +138,8 @@ export default function InviteJoinHandler({ inviteCode, groupName }: InviteJoinH
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center gap-3 p-3 rounded-md bg-primary/5 border border-primary/20">
-                  <UserCheck className="h-5 w-5 text-primary" />
+                <div className="flex items-center gap-3 p-4 rounded-md bg-primary/5 border border-primary/20">
+                  <UserCheck className="h-5 w-5 text-primary flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-900">
                       {isAuthenticated
@@ -152,11 +153,19 @@ export default function InviteJoinHandler({ inviteCode, groupName }: InviteJoinH
                     </p>
                   </div>
                 </div>
+                
+                {!isAuthenticated && (
+                  <div className="flex flex-col space-y-2 text-center text-sm mt-2">
+                    <p className="text-gray-600">
+                      Join over <span className="font-medium">10,000+</span> users already saving together on CoopWise
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
           
-          <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-3">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
             {!joinSuccess && (
               <>
                 {isAuthenticated ? (
@@ -166,6 +175,7 @@ export default function InviteJoinHandler({ inviteCode, groupName }: InviteJoinH
                       variant="outline"
                       onClick={() => setShowJoinDialog(false)}
                       disabled={isJoining}
+                      className="w-full sm:w-auto"
                     >
                       Cancel
                     </Button>
@@ -173,6 +183,7 @@ export default function InviteJoinHandler({ inviteCode, groupName }: InviteJoinH
                       type="button"
                       onClick={handleJoinGroup}
                       disabled={isJoining}
+                      className="w-full sm:w-auto bg-primary hover:bg-primary/90"
                     >
                       {isJoining ? (
                         <>
@@ -180,7 +191,10 @@ export default function InviteJoinHandler({ inviteCode, groupName }: InviteJoinH
                           Joining...
                         </>
                       ) : (
-                        "Join Group"
+                        <>
+                          Join Group
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
                       )}
                     </Button>
                   </>
@@ -190,14 +204,17 @@ export default function InviteJoinHandler({ inviteCode, groupName }: InviteJoinH
                       type="button"
                       variant="outline"
                       onClick={() => setShowJoinDialog(false)}
+                      className="w-full sm:w-auto"
                     >
                       Cancel
                     </Button>
                     <Button
                       type="button"
                       onClick={handleJoinGroup}
+                      className="w-full sm:w-auto bg-primary hover:bg-primary/90"
                     >
                       Log in to Join
+                      <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </>
                 )}
@@ -209,6 +226,7 @@ export default function InviteJoinHandler({ inviteCode, groupName }: InviteJoinH
                 <Button
                   type="button"
                   onClick={handleViewLater}
+                  className="w-full sm:w-auto bg-primary hover:bg-primary/90"
                 >
                   Go to Dashboard
                 </Button>
