@@ -1,19 +1,8 @@
-# Log contributions manually/automatically.
-
-# Validate against group rules (amount, schedule).
-
-# Calculate group savings status.
-
 from datetime import datetime
-from decimal import Decimal
 from uuid import UUID
-from redis import Redis
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-
-from app.schemas.wallet_schemas import WalletWithdraw
-from app.services.wallet_service import WalletService
-from app.utils.exchange_client import fetch_exchange_rate
 from app.schemas.contribution_schemas import ContributionCreate, ContributionDetail
 from app.services.membership_service import CooperativeMembershipService
 from app.schemas.auth import AuthenticatedUser
@@ -64,51 +53,75 @@ class ContributionService:
         return contribution
 
     @staticmethod
-    async def pay_contribution(
-        user: AuthenticatedUser,
-        data: ContributionCreate,
-        db: AsyncSession,
-        redis: Redis
-    ):
+    async def update_contribution_status(db: AsyncSession, contribution_id: UUID, contribution_status: str, paid_at: datetime) -> dict:
         """
-        1. Convert local → stable and debit user's wallet.
-        2. Create ledger entry (handled in WalletService).
-        3. Mark contribution in GroupMembership or Contribution table.
+        Update the status of a contribution.
         """
-        # 1. Debit wallet in stable coin
-        #    Deposit of local→stable handled in wallet_service
-        #    For contribution, we reuse withdraw (in stable), but user sends local currency
-        rate = await fetch_exchange_rate(data.currency, "USDC")
-        stable_amt = Decimal(data.local_amount) * Decimal(rate)
+        try:
+            contribution = await db.get(Contribution, contribution_id)
+            if not contribution:
+                raise HTTPException(status_code=404, detail="Contribution not found")
 
-        # Ensure user has enough balance (or top up if needed)
-        balance = await WalletService.get_balance(user, db, redis)
-        if balance.stable_coin_balance < stable_amt:
-            raise HTTPException(status_code=400, detail="Insufficient wallet balance.")
+            contribution.status = contribution_status
+            contribution.fulfilled_at = datetime.now() if contribution_status == "COMPLETED" else None
+            await db.commit()
+            await db.refresh(contribution)
 
-        # 2. Debit wallet in stable
-        await WalletService.withdraw(
-            user,
-            WalletWithdraw(stable_amount=float(stable_amt)),
-            db,
-            redis
-        )
+            return {"message": f"Contribution marked {contribution_status} successfully."}
 
-        # 3. Mark contribution as paid
-        #    e.g. create a Contribution record, increment group pool, etc.
-        contribution = Contribution(
-            user_id=user.id,
-            group_id=data.group_id,
-            amount_in_local=Decimal(data.local_amount),
-            amount_in_stable=stable_amt,
-            currency=data.currency,
-            paid_at=datetime.now()
-        )
-        db.add(contribution)
-        await db.commit()
-        await db.refresh(contribution)
+        except Exception as e:
+            logger.error(f"Failed to update contribution status: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not update contribution status"
+            )
 
-        return {"detail": "Contribution paid successfully."}
+    # @staticmethod
+    # async def pay_contribution(
+    #     user: AuthenticatedUser,
+    #     data: ContributionCreate,
+    #     db: AsyncSession,
+    #     redis: Redis
+    # ):
+    #     """
+    #     1. Convert local → stable and debit user's wallet.
+    #     2. Create ledger entry (handled in WalletService).
+    #     3. Mark contribution in GroupMembership or Contribution table.
+    #     """
+    #     # 1. Debit wallet in stable coin
+    #     #    Deposit of local→stable handled in wallet_service
+    #     #    For contribution, we reuse withdraw (in stable), but user sends local currency
+    #     rate = await fetch_exchange_rate(data.currency, "USDC")
+    #     stable_amt = Decimal(data.local_amount) * Decimal(rate)
+
+    #     # Ensure user has enough balance (or top up if needed)
+    #     balance = await WalletService.get_balance(user, db, redis)
+    #     if balance.stable_coin_balance < stable_amt:
+    #         raise HTTPException(status_code=400, detail="Insufficient wallet balance.")
+
+    #     # 2. Debit wallet in stable
+    #     await WalletService.withdraw(
+    #         user,
+    #         WalletWithdraw(stable_amount=float(stable_amt)),
+    #         db,
+    #         redis
+    #     )
+
+    #     # 3. Mark contribution as paid
+    #     #    e.g. create a Contribution record, increment group pool, etc.
+    #     contribution = Contribution(
+    #         user_id=user.id,
+    #         group_id=data.group_id,
+    #         amount_in_local=Decimal(data.local_amount),
+    #         amount_in_stable=stable_amt,
+    #         currency=data.currency,
+    #         paid_at=datetime.now()
+    #     )
+    #     db.add(contribution)
+    #     await db.commit()
+    #     await db.refresh(contribution)
+
+    #     return {"detail": "Contribution paid successfully."}
 
     @staticmethod
     async def get_contribution_by_id(db: AsyncSession, contribution_id: UUID) -> ContributionDetail | None:
@@ -127,8 +140,6 @@ class ContributionService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Could not fetch contribution"
             )
-
-
 
     @staticmethod
     async def get_contributions(db: AsyncSession, skip: int = 0, limit: int = 10) -> list[ContributionDetail]:

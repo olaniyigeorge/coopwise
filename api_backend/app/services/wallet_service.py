@@ -17,18 +17,6 @@ from app.utils.cache import get_cache, update_cache
 
 class WalletService:
 
-    # @staticmethod
-    # async def ping_accurue():
-    
-    #     const cashramp = axios.create({
-    #     baseURL: ACCURUE_STAGING_URL,
-    #     headers: {
-    #         Authorization: `Bearer ${process.env.CSHRMP_SECRET_KEY}`,
-    #     },
-    #     });
-    #     return {
-    #         "msg": "Success"
-    #     }
 
     @staticmethod
     async def create_user_wallet(
@@ -173,12 +161,12 @@ class WalletService:
         Uses Redis cache for performance.
         """
         cache_key = f"wallet_detail:{user.id}"
-        # cached = await get_cache(cache_key)
-        # if cached:
-        #     logger.info(f"🔄 Using cached wallet for user {user.id}")
-        #     if isinstance(cached, str):
-        #         cached = json.loads(cached)
-        #     return WalletDetail.model_validate(cached)
+        cached = await get_cache(cache_key)
+        if cached:
+            logger.info(f"🔄 Using cached wallet for user {user.id}")
+            if isinstance(cached, str):
+                cached = json.loads(cached)
+            return WalletDetail.model_validate(cached)
 
         logger.info(f"📬 Fetching wallet from db for user {user.id}")
         stmt = select(Wallet).where(Wallet.user_id == user.id)
@@ -191,10 +179,22 @@ class WalletService:
             #raise HTTPException(status_code=404, detail="Wallet not found")
 
         wallet_data = WalletDetail.model_validate(wallet)
-        await update_cache(cache_key, wallet_data.model_dump_json(), ttl=60)
+        await update_cache(cache_key, wallet_data.model_dump_json(), ttl=30)
         return wallet_data
 
-
+    @staticmethod
+    async def get_wallet_ledger(
+        reference: str,
+        db: AsyncSession
+    ) -> WalletLedger:
+        """
+        Fetch a wallet ledger entry by its reference ID.
+        Returns:
+         - WalletLedger object if found, else None
+        """
+        stmt = select(WalletLedger).where(WalletLedger.id == reference)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
 
     @staticmethod
     async def record_ledger_entry(

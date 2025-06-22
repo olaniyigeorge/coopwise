@@ -2,12 +2,16 @@ from decimal import Decimal
 import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from fastapi import HTTPException, status
+from fastapi import Depends, HTTPException, status
 
+from app.core.dependencies import get_cashramp_service
+from app.services.cashramp_service import CashRampService
+from db.models.wallet_models import LocalCurrency
 from app.core.config import config
-from app.schemas.payments import ChargeResponse, PaymentCreate, PaystackPayload
+from app.schemas.payments import ChargeResponse, PaystackPayload
 from app.utils.logger import logger
-from db.models.payment_model import Payment, PaymentGateway, PaymentStatus
+
+
 
 class PaymentService:
    
@@ -56,68 +60,41 @@ class PaymentService:
         res : ChargeResponse = response.json()
 
         return res
-    
-    @staticmethod
-    async def confirm_payment(db: AsyncSession, user_id: str):
-        """
-        Confirm the payment
-        """
-        pass
-
 
     @staticmethod
-    async def create_payment(db: AsyncSession, payment_data: PaymentCreate):
-        """
-        Create payment object for this transaction.
-        """
-        try:
-            # result = await db.execute(select(Payment).where(Payment.transaction_reference == user_data.email))
-            # if result.scalars().first():
-            #     raise HTTPException(status_code=400, detail="Email already registered")
-
-            new_payment = Payment(
-                user_id=payment_data.user_id,
-                amount=payment_data.amount,
-                currency=payment_data.currency,
-                payment_method=payment_data.payment_method,
-                note=payment_data.note or "",
-                gateway=payment_data.gateway or PaymentGateway.OTHER.value,
-                status=payment_data.status or PaymentStatus.INITIATED.value,
-                transaction_reference=payment_data.transaction_reference or None
-            )
-
-            db.add(new_payment)
-            await db.commit()
-            await db.refresh(new_payment)
-            return new_payment
-
-        except Exception as e:
-            logger.error(f"Payment creation failed: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Could not create payment"
-            )
+    async def pay_with_cashramp(
+        amount: Decimal,
+        currency: LocalCurrency,
+        customer_id: str, 
+        payment_type: str, # "deposit" | "withdraw",
+        payment_method_type: str, #  "bank_transfer_ng" | "kuda_pay" # Dynamic from CashrampGraphQL
+        reference: str,
+        proof_of_payment: str # Flag from proof of payment like receipt_url, agent_decision, network_activity etc 
+    ):
+        #TODO  Open a realtime session 
 
 
-
-    @staticmethod
-    async def pay_with_cashramp(reference: str, amount: Decimal):
+        # Init CashrampServicse Deposit Flow
+        cashramp: CashRampService = Depends(get_cashramp_service)
         
-        # Init Deposit Flow
-        # cashramp_teller = CashRampService.deposit(reference)
-
         # 1. Get a valid ramp quote
-        # ramp_quote: RampQuote = await cashramp_teller.get_ramp_quote() 
+        ramp_quote = await cashramp.get_ramp_quote(amount, currency, customer_id, payment_type, payment_method_type)
 
+    
         # 2. Initiate deposit with quote
-        # init_payment_data: PaymentDetails = await cashramp_teller.init_deposit(deposit_data, ramp_quote) 
+        init_payment_data = await cashramp.initiate_deposit(ramp_quote.id, reference) 
 
         # 3. Share payment details with customer
-        # if init_payment_data.status == "pending" return early with payment_details
+        if init_payment_data.status == "initiated":
+            return init_payment_data
 
-        # 4. Mark deposit as paid
-        # if init_payment_data.status == "completed"
-        # deposit_data = cashramp_teller.mark_deposit(status="paid") 
+        # 4. Verify payment 
+        if init_payment_data.status == "pending": # Or payment verification is triggered
+            check_payment = await cashramp.verify_deposit(payment_request_id=init_payment_data.id, proof=proof_of_payment)
+        
+        # 5. Mark deposit as paid
+        if check_payment.status:
+            deposit_data = cashramp.mark_deposit_as_paid(payment_request_id=init_payment_data.id, receipt_url=str) 
 
         # 5. Receive stablecoin settlement
         # Check cashramp balance again to confirm
@@ -133,3 +110,11 @@ class PaymentService:
                 "reference": reference
             }
         }
+    
+
+    @staticmethod
+    async def confirm_payment(db: AsyncSession, user_id: str):
+        """
+        Confirm the payment
+        """
+        pass

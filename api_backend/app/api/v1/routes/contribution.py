@@ -29,20 +29,17 @@ router = APIRouter(
 async def contribute(
     contribution_data: ContributionCreate,
     db: AsyncSession = Depends(get_async_db_session),
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    payment_gateway: str = "cashramp",  # Cashramp off-ramp as default
 ):
     """
-    Makes a contribution of a specific amount to a cooperatie group 
+    Makes a contribution of a specific amount to a cooperative group
     """
 
 
     contribution_data = ContributionCreate(
         user_id=current_user.id,
-        group_id=contribution_data.group_id,
-        currency=contribution_data.currency,
-        status=contribution_data.status,
-        amount=contribution_data.amount,
-        note=contribution_data.note,
+        **contribution_data
     )
 
     user = await UserService.get_user_by_id(
@@ -73,31 +70,47 @@ async def contribute(
         noti_data, db
     )
     
-    # payment_payload = PaystackPayload(
-    #     amount=contribution.amount * 100,  
-    #     email=user.email,
-    #     currency=contribution.currency,
-    #     tx_ref=str(contribution.id),
-    #     fullname=user.full_name,
-    #     phone_number=user.phone_number,
-    #     client_ip="154.123.220.1",
-    #     device_fingerprint="62wd23423rq324323qew1",
-    #     meta={
-    #         "flightID": "123949494DC",
-    #         "sideNote": contribution.note,
-    #     },
-    #     is_permanent=False
-    # )
-    # contribution_payment = await PaymentService.pay_with_paystack(
-    #     payment_payload
-    # ) 
+    # Choose from a list of payment gateways
+    
 
-
-
+    if payment_gateway == "paystack":
+        from app.schemas.payments import PaystackPayload  # Import if not already
+        payment_payload = PaystackPayload(
+            amount=int(Decimal(contribution.amount) * 100),  # Paystack expects amount in kobo
+            email=user.email,
+            currency=contribution.currency,
+            tx_ref=str(contribution.id),
+            fullname=user.full_name,
+            phone_number=user.phone_number,
+            client_ip="154.123.220.1",  # Replace with actual client IP if available
+            device_fingerprint="62wd23423rq324323qew1",  # Replace with actual fingerprint
+            meta={
+                "sideNote": contribution.note,
+            },
+            is_permanent=False
+        )
+        contribution_payment = await PaymentService.pay_with_paystack(payment_payload)
+    elif payment_gateway == "cashramp":
+        contribution_payment = await PaymentService.pay_with_cashramp(
+            str(contribution.id), Decimal(contribution.amount)
+        )
+    elif payment_gateway == "on-chain_solana":
+        # Implement Solana payment logic here
+        contribution_payment = await PaymentService.pay_with_solana(
+            str(contribution.id), Decimal(contribution.amount)
+        )
+    elif payment_gateway == "coopwise_network_on_solana":
+        # Implement Coopwise network on Solana logic here
+        contribution_payment = await PaymentService.pay_with_coopwise_network(
+            str(contribution.id), Decimal(contribution.amount)
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported payment gateway.")
     contribution_payment = await PaymentService.pay_with_cashramp(
         str(contribution.id), Decimal(contribution.amount)
     ) 
 
+    #TODO Wrap all payment into similar structure to check validity
     if not contribution_payment.get("status", False):
         raise HTTPException(status_code=400, detail="Payment failed.")
     

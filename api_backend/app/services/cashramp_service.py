@@ -1,5 +1,6 @@
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
+from pydantic import BaseModel
 from redis import Redis
 from typing import Optional, Dict, Any
 import json
@@ -18,7 +19,10 @@ class CashRampError(Exception):
     pass
 
 
-
+class PaymentVerificationResponse(BaseModel):
+    status: bool
+    message: str
+    receipt_url: str # url
 
 # ----------------------  CASHRAMP SERVICE  ----------------------
 
@@ -65,13 +69,16 @@ class CashRampService:
             result = await session.execute(query, variable_values=variables)
         return CustomerResponse(**result['createCustomer'])
 
+    async def get_customer(self):
+        pass
+
     async def get_ramp_quote(self, amount: float, currency: str, customer_id: str, payment_type: str, payment_method_type: str) -> RampQuoteResponse:
         cache_key = f"ramp_quote:{customer_id}:{amount}:{currency}:{payment_type}:{payment_method_type}"
-        # cached = await self.redis.get(cache_key)
+        cached = await self.redis.get(cache_key)
 
-        # if cached:
-        #     print(f"\n Returning cached ramp quote  {cached}\n")
-        #     return RampQuoteResponse(**json.loads(cached))
+        if cached:
+            print(f"\n Returning cached ramp quote  {cached}\n")
+            return RampQuoteResponse(**json.loads(cached))
 
         query = gql("""
         query ($amount: Decimal!, $currency: P2PPaymentCurrency!, $customer: ID!, $paymentType: PaymentType!, $paymentMethodType: String!) {
@@ -95,7 +102,7 @@ class CashRampService:
             result = await session.execute(query, variable_values=variables)
         data = RampQuoteResponse(**result['rampQuote'])
 
-        #self.redis.setex(cache_key, QUOTE_CACHE_TTL, json.dumps(data.dict()))
+        self.redis.setex(cache_key, QUOTE_CACHE_TTL, json.dumps(data.model_dump()))
         return data
 
     async def initiate_deposit(self, ramp_quote_id: str, reference: Optional[str] = None) -> InitiateDepositResponse:
@@ -121,6 +128,14 @@ class CashRampService:
             result = await session.execute(query, variable_values=variables)
         return InitiateDepositResponse(**result['initiateRampQuoteDeposit'])
 
+    async def verify_deposit(self, payment_request_id: str, proof: Optional[str] = None) -> PaymentVerificationResponse:
+        # Mock True
+        return {
+            "status": True,
+            "message": "Payment confirmed",
+            "receipt_url": "https:coopwise.vercel.app/receipts/0"
+        }
+    
     async def mark_deposit_as_paid(self, payment_request_id: str, receipt_url: Optional[str] = None) -> Dict[str, Any]:
         query = gql("""
         mutation ($paymentRequest: ID!, $receipt: String) {

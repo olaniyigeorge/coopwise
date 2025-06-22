@@ -25,7 +25,9 @@ class Contribution(Base):
 
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     group_id = Column(PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=False)
-
+    wallet_ledger = Column(PGUUID(as_uuid=True), ForeignKey("wallet_ledgers.id"), nullable=True)   
+    
+     
     amount = Column(Numeric(12, 2), nullable=False)
     currency = Column(String(10), default="NGN", nullable=False)
 
@@ -40,4 +42,4 @@ class Contribution(Base):
 
     user = relationship("User", back_populates="contributions")
     group = relationship("CooperativeGroup", back_populates="contributions")
-    payment = relationship("Payment", back_populates="contribution", uselist=False)
+    wallet_ledger = relationship("WalletLedger", back_populates="contribution", uselist=False)

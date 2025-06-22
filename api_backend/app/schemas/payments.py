@@ -1,35 +1,6 @@
-from datetime import datetime
-import enum
-from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
-from sqlalchemy import JSON
-
-from db.models.payment_model import PaymentGateway, PaymentStatus
-
-
-
-# --------------- CashRamp Schemas ---------------
-
-
-class CashrampDepositInput(BaseModel):
-    paymentType: str  # e.g., "deposit"
-    amount: str       # decimal string, e.g. "100.50"
-    currency: str     # "usd" or "local_currency"
-    countryCode: str  # ISO-3166 code, e.g. "NG"
-    reference: str
-    metadata: Optional[dict]
-    redirectUrl: Optional[str]
-    firstName: str
-    lastName: str
-    email: str
-
-
-class CashrampDepositResponse(BaseModel):
-    id: str
-    hostedLink: str
-    status: str  # one of "created", "picked_up", "completed", "canceled"
 
 
 
@@ -73,60 +44,3 @@ class ChargeResponse(BaseModel):
 
 
 
-
-# ----------       COOPWISE PAYMENT       ----------    
-
-
-class PaymentMethod(enum.Enum):
-  BANK_TRANSFER = 'bank_transfer',
-  CARD = 'card',
-  USSD = 'ussd',
-  MOBILE_MONEY = 'mobile_money',
-  CASH = 'cash'
-
-
-class PaymentCreate(BaseModel):
-    user_id: UUID
-    contribution_id: Optional[UUID]
-    amount: float
-    currency: str
-    note: Optional[str]
-
-    gateway: Optional[PaymentGateway]
-    status: Optional[PaymentStatus]
-    transaction_reference: Optional[str]
-    payment_method: PaymentMethod
-    provider_response: Optional[JSON]
-    payment_metadata: Optional[JSON]
-
-    model_config = ConfigDict(
-        from_attributes=True,
-        arbitrary_types_allowed=True,
-        fields={"metadata": "payment_metadata"}
-    )
-
-class PaymentDetails(BaseModel):
-    """
-    Schema for payment data.
-    """
-    id: UUID
-    user_id: UUID
-    contribution_id: UUID
-    amount: float
-    currency: str
-    note: str
-    gateway: PaymentGateway
-    status: PaymentStatus
-    transaction_reference: str
-    payment_method: PaymentMethod
-    provider_response: JSON
-    payment_metadata: JSON
-    created_at:datetime
-    updated_at : datetime
-
-
-    model_config = ConfigDict(
-        from_attributes=True,
-        arbitrary_types_allowed=True,
-        fields={"metadata": "payment_metadata"}
-    )
