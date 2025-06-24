@@ -98,10 +98,10 @@ class CooperativeGroupService:
 
         # 3. Get contributions by accepted members (completed)
         contrib_stmt = select(Contribution).where(
-            Contribution.group_id == coop_group_id,
-            Contribution.user_id.in_(member_ids),
-            Contribution.status == ContributionStatus.completed
-        )
+                Contribution.group_id == coop_group_id,
+                Contribution.user_id.in_(member_ids),
+                Contribution.status == ContributionStatus.completed
+            )
         contrib_result = await db.execute(contrib_stmt)
         contributions = contrib_result.scalars().all()
 
