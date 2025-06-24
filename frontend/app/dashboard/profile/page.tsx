@@ -22,12 +22,12 @@ interface ProfileData {
 
 // Mapping for income range values to match backend enum
 const incomeRangeMapping: Record<string, string> = {
-  "Below 100000": "BELOW_50K",
-  "100000-500000": "RANGE_100K_200K",
-  "500000-1000000": "RANGE_350K_500K",
-  "1000000-5000000": "ABOVE_500K",
-  "Above 5000000": "ABOVE_500K",
-  "Above 6000000": "ABOVE_500K"
+  "Below 100000": "below_50k",
+  "100000-500000": "range_100k_200k",
+  "500000-1000000": "range_350k_500k",
+  "1000000-5000000": "above_500k",
+  "Above 5000000": "above_500k",
+  "Above 6000000": "above_500k"
 };
 
 // Mapping for saving frequency values to match backend enum
@@ -207,12 +207,12 @@ export default function ProfilePage() {
                     <SelectValue placeholder="Select target range" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Below 50K">Below ₦50,000</SelectItem>
-                    <SelectItem value="RANGE_50K_100K">₦50,000 - ₦100,000</SelectItem>
-                    <SelectItem value="RANGE_100K_200K">₦100,000 - ₦200,000</SelectItem>
-                    <SelectItem value="RANGE_200K_350K">₦200,000 - ₦350,000</SelectItem>
-                    <SelectItem value="RANGE_350K_500K">₦350,000 - ₦500,000</SelectItem>
-                    <SelectItem value="ABOVE_500K">Above ₦500,000</SelectItem>
+                    <SelectItem value="below_50k">Below ₦50,000</SelectItem>
+                    <SelectItem value="range_50k_100k">₦50,000 - ₦100,000</SelectItem>
+                    <SelectItem value="range_100k_200k">₦100,000 - ₦200,000</SelectItem>
+                    <SelectItem value="range_200k_350k">₦200,000 - ₦350,000</SelectItem>
+                    <SelectItem value="range_350k_500k">₦350,000 - ₦500,000</SelectItem>
+                    <SelectItem value="above_500k">Above ₦500,000</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

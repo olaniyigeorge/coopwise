@@ -174,7 +174,10 @@ export default function Header({
                       )}
                     >
                       <div className="flex flex-col w-full">
-                        <Link href={`/dashboard/notifications#${notification.id}`} className="text-sm">{notification.message}</Link>
+                        <Link href={`/dashboard/notifications#${notification.id}`} className="text-sm">{notification.title}</Link>
+                        <span className="text-xs line-clamp-2 font-normal">
+                          {notification.message}
+                        </span>
                         <span className="text-xs text-gray-500 mt-1">
                           {formatDate(notification.created_at)}
                         </span>

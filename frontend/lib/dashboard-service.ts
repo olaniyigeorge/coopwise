@@ -229,12 +229,12 @@ export enum MembershipStatus {
 
 
 export enum IncomeRange {
-  BELOW_50K = "Below 50K",
-  RANGE_50K_100K = "50K - 100K",
-  RANGE_100K_200K = "100K - 200K",
-  RANGE_200K_350K = "200K - 350K",
-  RANGE_350K_500K = "350K - 500K",
-  ABOVE_500K = "500K and above"
+  below_50k = "Below 50K",
+  range_50k_100k = "50K - 100K",
+  range_100k_200k = "100K - 200K",
+  range_200k_350k = "200K - 350K",
+  range_350k_500k = "350K - 500K",
+  above_500k = "500K and above"
 }
 
 export enum SavingFrequency {
@@ -422,7 +422,7 @@ export const defDashData: DashboardData = {
     role: UserRoles.USER,
     target_savings_amount: 0,
     savings_purpose: "",
-    income_range: IncomeRange.BELOW_50K,
+    income_range: IncomeRange.below_50k,
     saving_frequency: SavingFrequency.DAILY,
     is_email_verified: false,
     is_phone_verified: false,
@@ -565,7 +565,7 @@ export const defDashData: DashboardData = {
         role: UserRoles.USER,
         target_savings_amount: 0,
         savings_purpose: "",
-        income_range: IncomeRange.BELOW_50K,
+        income_range: IncomeRange.below_50k,
         saving_frequency: SavingFrequency.DAILY,
         is_email_verified: false,
         is_phone_verified: false,
@@ -593,7 +593,7 @@ export const defDashData: DashboardData = {
         role: UserRoles.USER,
         target_savings_amount: 0,
         savings_purpose: "",
-        income_range: IncomeRange.BELOW_50K,
+        income_range: IncomeRange.below_50k,
         saving_frequency: SavingFrequency.DAILY,
         is_email_verified: false,
         is_phone_verified: false,

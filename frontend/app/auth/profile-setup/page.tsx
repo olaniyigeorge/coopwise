@@ -170,12 +170,12 @@ const Step2 = ({ incomeRange, setIncomeRange, savingFrequency, setSavingFrequenc
             <SelectValue placeholder="Select your income range" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="BELOW_50K">Below ₦50,000</SelectItem>
-            <SelectItem value="RANGE_50K_100K">₦50,000 - ₦100,000</SelectItem>
-            <SelectItem value="RANGE_100K_200K">₦100,000 - ₦200,000</SelectItem>
-            <SelectItem value="RANGE_200K_350K">₦200,000 - ₦350,000</SelectItem>
-            <SelectItem value="RANGE_350K_500K">₦350,000 - ₦500,000</SelectItem>
-            <SelectItem value="ABOVE_500K">Above ₦500,000</SelectItem>
+            <SelectItem value="below_50k">Below ₦50,000</SelectItem>
+            <SelectItem value="range_50k_100k">₦50,000 - ₦100,000</SelectItem>
+            <SelectItem value="range_100k_200k">₦100,000 - ₦200,000</SelectItem>
+            <SelectItem value="range_200k_350k">₦200,000 - ₦350,000</SelectItem>
+            <SelectItem value="range_350k_500k">₦350,000 - ₦500,000</SelectItem>
+            <SelectItem value="above_500k">Above ₦500,000</SelectItem>
           </SelectContent>
         </Select>
         <p className="text-xs text-gray-500">Select your monthly income range</p>
@@ -380,12 +380,12 @@ export default function ProfileSetupPage() {
         role: user.role || "user",
         target_savings_amount: targetAmount ? parseFloat(targetAmount) : 0,
         savings_purpose: purpose || "",
-        income_range: incomeRange === "BELOW_50K" ? "Below 50K" : 
-                     incomeRange === "RANGE_50K_100K" ? "50K - 100K" :
-                     incomeRange === "RANGE_100K_200K" ? "100K - 200K" :
-                     incomeRange === "RANGE_200K_350K" ? "200K - 350K" :
-                     incomeRange === "RANGE_350K_500K" ? "350K - 500K" :
-                     incomeRange === "ABOVE_500K" ? "Above 500K" : "Below 50K",
+        income_range: incomeRange === "below_50K" ? "Below 50K" : 
+                     incomeRange === "range_50k_100k" ? "50K - 100K" :
+                     incomeRange === "range_100k_200k" ? "100K - 200K" :
+                     incomeRange === "range_200k_350k" ? "200K - 350K" :
+                     incomeRange === "range_350k_500k" ? "350K - 500K" :
+                     incomeRange === "above_50k" ? "Above 500K" : "Below 50K",
         saving_frequency: savingFrequency || "daily",
         is_email_verified: user.is_email_verified !== undefined ? user.is_email_verified : false,
         is_phone_verified: user.is_phone_verified !== undefined ? user.is_phone_verified : false,
