@@ -151,7 +151,7 @@ async def mark_notification(
     db: AsyncSession = Depends(get_async_db_session),
     user: AuthenticatedUser = Depends(get_current_user),
     notification_id: uuid.UUID = "00000000-0000-0000-0000-000000000000",
-    status: NotificationStatus = NotificationStatus.READ
+    status: NotificationStatus = NotificationStatus.read
    
 ):
     """

@@ -1,4 +1,3 @@
-import enum
 
 from pydantic import BaseModel
 from typing import List, Optional
@@ -30,12 +29,7 @@ class Targets(BaseModel):
     savings_target: float  # User's personal savings goal
     group_goals: List[CoopGroupTargetSummary]  # Goals for each group user is part of
 
-class ActivityType(enum.Enum):
-    CONTRIBUTION = "contribution"     
-    PAYOUT = "payout"      
-    JOINED_GROUP = "joined_group" 
-    CREATED_GROUP = "created_group"       
- 
+
 
 class ExploreGroups(BaseModel):
     user_groups: List[CoopGroupDetails]

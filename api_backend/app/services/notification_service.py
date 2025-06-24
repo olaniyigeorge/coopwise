@@ -69,7 +69,7 @@ class NotificationService:
         stmt = (
             select(Notification)
             .where(Notification.user_id == user.id)
-            .where(Notification.status == NotificationStatus.UNREAD)
+            .where(Notification.status == NotificationStatus.unread)
             .order_by(Notification.created_at.desc())
             .limit(limit)
             .options(joinedload(Notification.user))
@@ -104,9 +104,9 @@ class NotificationService:
 
         # Define custom order by NotificationStatus
         status_order = case(
-            (Notification.status == NotificationStatus.UNREAD, 0),
-            (Notification.status == NotificationStatus.READ, 1),
-            (Notification.status == NotificationStatus.ARCHIVED, 2),
+            (Notification.status == NotificationStatus.unread, 0),
+            (Notification.status == NotificationStatus.read, 1),
+            (Notification.status == NotificationStatus.archived, 2),
             else_=3
         )
 
@@ -142,14 +142,14 @@ class NotificationService:
         try: 
             stmt = (
                 select(Notification)
-                .where(Notification.user_id == user.id, Notification.status == NotificationStatus.UNREAD)
+                .where(Notification.user_id == user.id, Notification.status == NotificationStatus.unread)
             )
 
             result = await db.execute(stmt)
             unread_notifications = result.scalars().all()
 
             for notification in unread_notifications:
-                notification.status = NotificationStatus.READ
+                notification.status = NotificationStatus.read
                 notification.is_read = True
                 notification.read_at = datetime.now()
 
@@ -229,7 +229,7 @@ class NotificationService:
             raise ValueError("Notification not found or does not belong to the user.")
 
         notification.status = status
-        if status == NotificationStatus.READ:
+        if status == NotificationStatus.read:
             notification.is_read = True
             notification.read_at = datetime.now()
         

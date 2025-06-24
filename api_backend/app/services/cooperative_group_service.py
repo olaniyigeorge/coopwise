@@ -62,7 +62,7 @@ class CooperativeGroupService:
         return coop_groups
 
     @staticmethod
-    async def get_coop_group_by_id(db: AsyncSession, coop_group_id: str) -> Optional[CooperativeGroup]:
+    async def get_coop_group_by_id(db: AsyncSession, coop_group_id: str) -> Optional[CoopGroupDetails]:
         try:
             stmt = select(CooperativeGroup).where(CooperativeGroup.id == coop_group_id)
             result = await db.execute(stmt)
@@ -70,7 +70,7 @@ class CooperativeGroupService:
         except Exception as e:
             logger.error(e)
             raise e
-        return coop_group
+        return CoopGroupDetails.model_validate(coop_group) if coop_group else None
     
 
     @staticmethod
@@ -88,7 +88,7 @@ class CooperativeGroupService:
             select(GroupMembership)
             .where(
                 GroupMembership.group_id == coop_group_id,
-                GroupMembership.status == MembershipStatus.ACCEPTED
+                GroupMembership.status == MembershipStatus.accepted
             )
             .options(joinedload(GroupMembership.user))
         )
@@ -96,11 +96,11 @@ class CooperativeGroupService:
         members = members_result.scalars().all()
         member_ids = [m.user_id for m in members]
 
-        # 3. Get contributions by accepted members (COMPLETED)
+        # 3. Get contributions by accepted members (completed)
         contrib_stmt = select(Contribution).where(
             Contribution.group_id == coop_group_id,
             Contribution.user_id.in_(member_ids),
-            Contribution.status == ContributionStatus.COMPLETED
+            Contribution.status == ContributionStatus.completed
         )
         contrib_result = await db.execute(contrib_stmt)
         contributions = contrib_result.scalars().all()
@@ -115,11 +115,11 @@ class CooperativeGroupService:
         today = datetime.datetime.now()
         freq = group.contribution_frequency
         next_contrib_date = None
-        if freq == ContributionFrequency.WEEKLY:
+        if freq == ContributionFrequency.weekly:
             next_contrib_date = today + datetime.timedelta(weeks=1)
-        elif freq == ContributionFrequency.MONTHLY:
+        elif freq == ContributionFrequency.monthly:
             next_contrib_date = today + datetime.timedelta(days=30)
-        elif freq == ContributionFrequency.DAILY:
+        elif freq == ContributionFrequency.daily:
             next_contrib_date = today + datetime.timedelta(days=1)
 
         next_contribution = {
@@ -239,7 +239,7 @@ class CooperativeGroupService:
         suggested_group_stmt = (
             select(CooperativeGroup)
             .where(
-                CooperativeGroup.status == CooperativeStatus.ACTIVE,
+                CooperativeGroup.status == CooperativeStatus.active,
                 CooperativeGroup.id.notin_(user_group_ids)
             )
             .limit(page_size)

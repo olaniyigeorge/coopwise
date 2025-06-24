@@ -12,10 +12,11 @@ class ContributionCreate(BaseModel):
     user_id: UUID
     group_id: UUID
     amount: float
+    wallet_ledger: Optional[UUID] = None 
     currency: str = "NGN"
     due_date: datetime = None
     note: str = None
-    status: ContributionStatus = ContributionStatus.PLEDGED
+    status: ContributionStatus = ContributionStatus.pledged
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -25,11 +26,12 @@ class ContributionDetail(BaseModel):
     user_id: UUID
     group_id: UUID
     amount: float
+    wallet_ledger: Optional[UUID] = None
     currency: str = "NGN"
     due_date: Optional[datetime] = None
     fulfilled_at: Optional[datetime]  = None
     note: str = None
-    status: ContributionStatus = ContributionStatus.PLEDGED
+    status: ContributionStatus = ContributionStatus.pledged
     created_at: datetime
     updated_at: datetime
 

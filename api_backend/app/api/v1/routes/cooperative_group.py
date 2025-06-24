@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
+from db.models.activity_model import ActivityType
 from app.api.v1.routes.auth import get_current_user
 from app.schemas.activity_schemas import ActivityCreate
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.cooperative_group import CoopGroupCreate, CoopGroupDetails, CoopGroupUpdate
 from app.schemas.cooperative_membership import MembershipCreate
-from app.schemas.dashboard_schema import ActivityType
 from app.schemas.notifications_schema import NotificationCreate
 from app.services.activity_service import ActivityService
 from app.services.notification_service import NotificationService
@@ -46,7 +46,7 @@ async def create_cooperative_group(
 
     activity_data =  ActivityCreate(
         user_id=coop.creator_id,
-        type=ActivityType.CREATED_GROUP.value,
+        type=ActivityType.created_group.value,
         description=f"You created a group",
         group_id=coop.id,
         entity_id=str(coop.id), 

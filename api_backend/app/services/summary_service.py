@@ -46,7 +46,7 @@ class SummaryService:
             # 1. Your savings: sum of contributions
             savings_query = await db.execute(
                 select(func.sum(Contribution.amount))
-                .where(Contribution.user_id == user.id, Contribution.status == ContributionStatus.COMPLETED)
+                .where(Contribution.user_id == user.id, Contribution.status == ContributionStatus.completed)
             )
             your_savings = savings_query.scalar() or 0.0
 

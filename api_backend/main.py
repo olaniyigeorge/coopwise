@@ -30,7 +30,7 @@ from fastapi import Request
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await database.connect()
-    await init_db() # Run db initialization
+    await init_db() 
     yield 
     await database.disconnect()
 

@@ -8,13 +8,13 @@ import uuid
 from db.database import Base
 
 class ActivityType(enum.Enum):
-    JOINED_GROUP = "joined_group"
-    LEFT_GROUP = "left_group"
-    MADE_CONTRIBUTION = "made_contribution"
-    RECEIVED_PAYOUT = "received_payout"
-    DECLINED_INVITE = "declined_invite"
-    ACCEPTED_INVITE = "accepted_invite"
-    CREATED_GROUP = "created_group"
+    joined_group = "joined_group"
+    left_group = "left_group"
+    made_contribution = "made_contribution"
+    received_payout = "received_payout"
+    declined_invite = "declined_invite"
+    accepted_invite = "accepted_invite"
+    created_group = "created_group"
 
  
 class ActivityLog(Base):

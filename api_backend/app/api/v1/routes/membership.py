@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.schemas.activity_schemas import ActivityCreate
-from app.schemas.dashboard_schema import ActivityType
 from app.schemas.notifications_schema import NotificationCreate
 from app.services.activity_service import ActivityService
 from app.services.cooperative_group_service import CooperativeGroupService

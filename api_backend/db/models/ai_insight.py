@@ -10,41 +10,37 @@ import enum
 
 
 class InsightCategory(enum.Enum):
-    CONTRIBUTION = "contribution"
-    SAVINGS = "savings"
-    BEHAVIOR = "behavior"
-    GROUP = "group"
-    MILESTONE = "milestone"
-    ENERGY_SAVING = "energy_saving"
-    FINANCIAL_OPTIMIZATION = "financial_optimization"
-    CONTRIBUTION_STRATEGY = "contribution_strategy"
-    SPENDING_ANALYSIS = "spending_analysis"
-    INVESTMENT_TIPS = "investment_tips"
-    BUDGETING = "budgeting"
-    GOAL_SETTING = "goal_setting"
-    OTHER = "other"
+    contribution = "contribution"
+    savings = "savings"
+    behavior = "behavior"
+    group = "group"
+    milestone = "milestone"
+    energy_saving = "energy_saving"
+    financial_optimization = "financial_optimization"
+    contribution_strategy = "contribution_strategy"
+    spending_analysis = "spending_analysis"
+    investment_tips = "investment_tips"
+    budgeting = "budgeting"
+    goal_setting = "goal_setting"
+    other = "other"
 
-# class InsightStatus(enum.Enum):
-#     ACTIVE = "active"
-#     READY = "ready"
-#     EXPIRED = "expired"
 
 class InsightType(enum.Enum):
-    PERSONAL = "personal"
-    GROUP_SPECIFIC = "group_specific"
-    GENERAL = "general"
-    TRENDING = "trending"
+    personal = "personal"
+    group_specific = "group_specific"
+    general = "general"
+    trending = "trending"
 
 class DifficultyLevel(enum.Enum):
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
+    easy = "easy"
+    medium = "medium"
+    hard = "hard"
 
 class ImplementationStatus(enum.Enum):
-    NOT_STARTED = "not_started"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    DISMISSED = "dismissed"
+    not_started = "not_started"
+    in_progress = "in_progress"
+    completed = "completed"
+    dismissed = "dismissed"
 
 
 class AIInsight(Base):
@@ -59,10 +55,10 @@ class AIInsight(Base):
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     group_id = Column(PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=True)
 
-    category = Column(SQLAlchemyEnum(InsightCategory), default=InsightCategory.OTHER, nullable=False)
-    type = Column(SQLAlchemyEnum(InsightType), default=InsightType.GENERAL, nullable=False)
-    difficulty = Column(SQLAlchemyEnum(DifficultyLevel), default=DifficultyLevel.MEDIUM, nullable=False)
-    status = Column(SQLAlchemyEnum(ImplementationStatus), default=ImplementationStatus.NOT_STARTED)
+    category = Column(SQLAlchemyEnum(InsightCategory), default=InsightCategory.other, nullable=False)
+    type = Column(SQLAlchemyEnum(InsightType), default=InsightType.general, nullable=False)
+    difficulty = Column(SQLAlchemyEnum(DifficultyLevel), default=DifficultyLevel.medium, nullable=False)
+    status = Column(SQLAlchemyEnum(ImplementationStatus), default=ImplementationStatus.not_started)
 
     estimated_savings = Column(Float, default=0.0)
     potential_gain = Column(Float, default=0.0)

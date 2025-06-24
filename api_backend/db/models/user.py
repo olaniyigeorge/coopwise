@@ -9,22 +9,22 @@ import enum
 
 # Enum for User Roles
 class UserRoles(enum.Enum):
-    ADMIN = "admin"
-    USER = "user"
+    admin = "admin"
+    user = "user"
 
 # Enum for Saving Frequency
 class SavingFrequency(enum.Enum):
-    DAILY = "daily"
-    WEEKLY = "weekly"
-    MONTHLY = "monthly"
+    daily = "daily"
+    weekly = "weekly"
+    monthly = "monthly"
 
 class IncomeRange(enum.Enum):
-    BELOW_50K = "Below 50K"
-    RANGE_50K_100K = "50K - 100K"
-    RANGE_100K_200K = "100K - 200K"
-    RANGE_200K_350K = "200K - 350K"
-    RANGE_350K_500K = "350K - 500K"
-    ABOVE_500K = "500K and above"
+    below_50k = "below_50k" 
+    range_50k_100k = "range_50k_100k"
+    range_100k_200k = "range_100k_200k"
+    range_200k_350k = "range_200k_350k"
+    range_350k_500k = "range_350k_500k"
+    above_500k = "above_500k"
 
 
 class User(Base):
@@ -37,7 +37,7 @@ class User(Base):
     phone_number = Column(String(16), unique=True, nullable=False, index=True)
     profile_picture_url = Column(String, nullable=True)  
 
-    role = Column(Enum(UserRoles), default=UserRoles.USER)
+    role = Column(Enum(UserRoles), default=UserRoles.user)
 
     # ##### Onboarding & preference
     target_savings_amount = Column(Float, nullable=True)  # e.g., 500000.0

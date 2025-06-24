@@ -11,28 +11,28 @@ import enum
 
 # Enum for Contribution Frequency
 class ContributionFrequency(enum.Enum):
-    DAILY = "daily"
-    WEEKLY = "weekly"
-    MONTHLY = "monthly"
+    daily = "daily"
+    weekly = "weekly"
+    monthly = "monthly"
 
 
 # Enum for Payout Strategy
 class PayoutStrategy(enum.Enum):
-    ROTATING = "rotating"
-    EQUAL = "equal"
-    PRIORITY = "priority"
+    rotating = "rotating"
+    equal = "equal"
+    priority = "priority"
 
 class CooperativeModel(enum.Enum):
-    AJO = "ajo"
-    COOP = "coop"
+    ajo = "ajo"
+    coop = "coop"
 
 
 
 # Enum for Cooperative Status
 class CooperativeStatus(enum.Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    COMPLETED = "completed"
+    active = "active"
+    inactive = "inactive"
+    completed = "completed"
 
 
 class CooperativeGroup(Base):
@@ -47,9 +47,9 @@ class CooperativeGroup(Base):
     contribution_amount = Column(Numeric, nullable=False)
     contribution_frequency = Column(Enum(ContributionFrequency), nullable=False)
     payout_strategy = Column(Enum(PayoutStrategy), nullable=False)
-    coop_model = Column(Enum(CooperativeModel), default=CooperativeModel.AJO, nullable=False)
+    coop_model = Column(Enum(CooperativeModel), default=CooperativeModel.ajo, nullable=False)
     target_amount = Column(Numeric, nullable=False)
-    status = Column(Enum(CooperativeStatus), default=CooperativeStatus.ACTIVE, nullable=False)
+    status = Column(Enum(CooperativeStatus), default=CooperativeStatus.inactive, nullable=False)
     next_payout_date = Column(DateTime, nullable=True)  # When the next payout is due
     rules = Column(JSON, nullable=True) # Like metatdata that are used to define the rules of the cooperative
 

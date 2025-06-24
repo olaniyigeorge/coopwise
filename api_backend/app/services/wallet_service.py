@@ -50,14 +50,20 @@ class WalletService:
         # 1. Fetch the user’s wallet
         stmt = select(Wallet).where(Wallet.user_id == user.id)
         result = await db.execute(stmt)
-        wallet = result.scalar_one_or_none()
+        wallet = result.scalars().first()
+
         if not wallet:
-            raise HTTPException(status_code=404, detail="Wallet not found")
+            logger.warning(f"⚠️ Wallet not found for user {user.id}")
+            wallet = await WalletService.create_user_wallet(user, db)
+            # raise HTTPException(status_code=404, detail="Wallet not found")
         
         
+        print(f"\n\n\nUser {user.id} is depositing {data.local_amount} {data.currency} into their wallet\n\n\n")
         # 2. Fetch exchange rate quote from CashRamp GraphQL API
         rate = 1 / 1600 # TODO (use actual exchange rate func) await fetch_exchange_rate(user.id, data.currency, "USDC")  ---  mock rate 1 USDC == 1600 NGN(local currency) 
         stable_amt = Decimal(data.local_amount) * Decimal(rate)
+
+        print(f"\n\n\n Stable amount settled into wallet {stable_amt} \n\n\n")
 
         # 3. Credit the wallet
         wallet.stable_coin_balance += stable_amt
@@ -211,7 +217,7 @@ class WalletService:
             local_amount=ledger_data.local_amount,
             local_currency=ledger_data.local_currency,
             exchange_rate=ledger_data.exchange_rate,
-            status=LedgerStatus.INITIATED  
+            status=LedgerStatus.initiated  
         )
         db.add(ledger)
         await db.commit()

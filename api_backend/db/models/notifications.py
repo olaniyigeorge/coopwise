@@ -14,29 +14,33 @@ import enum
 
 
 class EventType(enum.Enum):
-    GROUP = "group"
-    TRANSACTION = "transaction"
-    MEMBERSHIP = "membership"
-    CONTRIBUTION = "contribution"
-    PAYOUT = "payout"
-    GENERAL_ALERT = "general_alert"
-    SYSTEM = "system"
-    AI_INSIGHT = "ai_insight"
-    OTHER = "other"
+    group = "group"
+    transaction = "transaction"
+    membership = "membership"
+    contribution = "contribution"
+    payout = "payout"
+    general_alert = "general_alert"
+    system = "system"
+    ai_insight = "ai_insight"
+    other = "other"
 
 
 class NotificationType(enum.Enum):
-    INFO = "info"
-    SUCCESS = "success"
-    WARNING = "warning"
-    DANGER = "danger"
+    info = "info"
+    success = "success"
+    warning = "warning"
+    error = "error" 
+    ai = 'ai'
+    alert = "alert"
+    system = "system"
+    danger = "danger"
 
 
 class NotificationStatus(enum.Enum):
-    UNREAD = "unread"
-    READ = "read"
-    ARCHIVED = "archived"
-    DELETED = "deleted"
+    unread = "unread"
+    read = "read"
+    archived = "archived"
+    deleted = "deleted"
 
 
 class Notification(Base):
@@ -48,8 +52,8 @@ class Notification(Base):
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
 
-    type = Column(Enum(NotificationType), nullable=False, default=NotificationType.INFO)
-    status = Column(Enum(NotificationStatus), nullable=False, default=NotificationStatus.UNREAD)
+    type = Column(Enum(NotificationType), nullable=False, default=NotificationType.info)
+    status = Column(Enum(NotificationStatus), nullable=False, default=NotificationStatus.unread)
     event_type = Column(Enum(EventType), nullable=False)
 
     entity_url = Column(String(255), nullable=True)  # URL to the related entity (e.g., group, transaction)

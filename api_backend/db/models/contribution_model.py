@@ -11,11 +11,12 @@ from db.database import Base
 
 
 class ContributionStatus(Enum):
-    PLEDGED = "pledged"     
-    PENDING = "pending"      
-    COMPLETED = "completed" 
-    FAILED = "failed"       
-    CANCELLED = "cancelled"  
+    pledged = "pledged"
+    initiated = "initiated"
+    pending = "pending"
+    completed = "completed"
+    failed = "failed"
+    cancelled = "cancelled"
 
 
 class Contribution(Base):
@@ -31,10 +32,10 @@ class Contribution(Base):
     amount = Column(Numeric(12, 2), nullable=False)
     currency = Column(String(10), default="NGN", nullable=False)
 
-    due_date = Column(DateTime, nullable=True)  # for scheduled contributions
-    fulfilled_at = Column(DateTime, nullable=True) 
+    due_date = Column(DateTime(timezone=True), nullable=True)  # for scheduled contributions
+    fulfilled_at = Column(DateTime(timezone=True), nullable=True)
 
-    status = Column(SQLAlchemyEnum(ContributionStatus), default=ContributionStatus.PLEDGED, nullable=False)
+    status = Column(SQLAlchemyEnum(ContributionStatus), default=ContributionStatus.pledged, nullable=False)
     note = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)

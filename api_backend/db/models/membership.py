@@ -9,17 +9,17 @@ import enum
 
 # Enum for Membership role
 class MembershipRole(enum.Enum):
-    ADMIN = "admin"
-    MEMBER = "member"
+    admin = "admin"
+    member = "member"
 
 
 # Enum for Membership status
 class MembershipStatus(enum.Enum):
-    CLICKED = "clicked"
-    ACCEPTED = "accepted"
-    PENDING = "pending"
-    REJECTED = "rejected"
-    CANCELLED = "cancelled"
+    clicked = "clicked"
+    accepted = "accepted"
+    pending = "pending"
+    rejected = "rejected"
+    cancelled = "cancelled"
 
 
 class GroupMembership(Base):
@@ -27,10 +27,10 @@ class GroupMembership(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     group_id = Column(PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=False)
-    role = Column(Enum(MembershipRole), default=MembershipRole.MEMBER, nullable=False)
+    role = Column(Enum(MembershipRole), default=MembershipRole.member, nullable=False)
     invite_code = Column(String, nullable=True)
     invited_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    status = Column(Enum(MembershipStatus), default=MembershipStatus.CLICKED, nullable=False)
+    status = Column(Enum(MembershipStatus), default=MembershipStatus.clicked, nullable=False)
     joined_at = Column(DateTime, default=None, nullable=True)
 
     payout_position = Column(Integer, default=0, nullable=False)  # Position in the payout queue

@@ -148,13 +148,13 @@ class CooperativeMembershipService:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permissions to confirm a membership")
 
             if option == "accepted":
-                membership.status = "ACCEPTED"
+                membership.status = "accepted"
             if option == "rejected":
-                membership.status = "REJECTED"
+                membership.status = "rejected"
             if option == "pending":
-                membership.status = "PENDING"
+                membership.status = "pending"
             if option == "cancelled":
-                membership.status = "CANCELLED"
+                membership.status = "cancelled"
             
             await db.commit()
             await db.refresh(membership)
@@ -207,9 +207,9 @@ class CooperativeMembershipService:
                 new_membership = GroupMembership(
                     user_id = user.id,
                     group_id = group_id,
-                    role = "MEMBER",
+                    role = "member",
                     invited_by = inviter_id,
-                    status = "CLICKED"
+                    status = "clicked"
                 )
 
                 db.add(new_membership)
@@ -228,7 +228,7 @@ class CooperativeMembershipService:
             logger.error(e)
             raise e
 
-        return membership
+    
     
     
     # Accept invite code
@@ -250,7 +250,7 @@ class CooperativeMembershipService:
             if not existing_membership:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invite code not found or already accepted.")
             
-            existing_membership.status = "PENDING"
+            existing_membership.status = "pending"
             await db.commit()
             await db.refresh(existing_membership)
         except Exception as e:
@@ -389,7 +389,7 @@ class CooperativeMembershipService:
                 await db.delete(membership)
                 await db.commit()
             else:
-                membership.status = "CANCELLED"
+                membership.status = "cancelled"
                 await db.commit()
                 await db.refresh(membership)
         except Exception as e:

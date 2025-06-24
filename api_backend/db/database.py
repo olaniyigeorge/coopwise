@@ -33,7 +33,7 @@ AsyncSessionLocal = async_sessionmaker(bind=async_engine, class_=AsyncSession, e
 
 # Asynchronous database instance
 database = databases.Database(
-    DATABASE_URL #force_rollback=config.DB_FORCE_ROLLBACK
+    DATABASE_URL, force_rollback=True if config.ENV == "dev" else False,
 )
  
 # Create all tables

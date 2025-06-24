@@ -33,6 +33,8 @@ class ContributionService:
             )
 
         # Create contribution record
+
+        print("Contribution status being saved:", contribution_data.status.value)
         contribution = Contribution(
             group_id=contribution_data.group_id,
             user_id=user.id,
@@ -40,7 +42,7 @@ class ContributionService:
             currency=contribution_data.currency,
             due_date=contribution_data.due_date or None,
             note=contribution_data.note or None,
-            status=contribution_data.status,
+            status=contribution_data.status.value,
            
         )
 
@@ -63,7 +65,7 @@ class ContributionService:
                 raise HTTPException(status_code=404, detail="Contribution not found")
 
             contribution.status = contribution_status
-            contribution.fulfilled_at = datetime.now() if contribution_status == "COMPLETED" else None
+            contribution.fulfilled_at = datetime.now() if contribution_status == "completed" else None
             await db.commit()
             await db.refresh(contribution)
 

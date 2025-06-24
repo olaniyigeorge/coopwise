@@ -13,7 +13,7 @@ class UserCreate(BaseModel):
     password: Annotated[str, constr(min_length=6)]
     full_name: str
     phone_number: PhoneNumberStr  
-    role: Optional[UserRoles] = UserRoles.USER
+    role: Optional[UserRoles] = UserRoles.user
 
     target_savings_amount: Optional[float] = None
     savings_purpose: Optional[str] = None
@@ -47,6 +47,7 @@ class UserDetail(BaseModel):
     full_name: str
     phone_number: PhoneNumberStr
     role: UserRoles
+    profile_picture_url: Optional[str]
     target_savings_amount: Optional[float] = None
     savings_purpose: Optional[str] = None
     income_range: Optional[IncomeRange] = None
