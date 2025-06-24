@@ -174,7 +174,7 @@ export default function Header({
                       )}
                     >
                       <div className="flex flex-col w-full">
-                        <Link href={`/dashboard/notifications#${notification.id}`} className="text-sm">{notification.title}</Link>
+                        <Link href={`/dashboard/notifications#${notification.id}`} className="text-sm font-medium">{notification.title}</Link>
                         <span className="text-xs line-clamp-2 font-normal">
                           {notification.message}
                         </span>

@@ -16,6 +16,7 @@ class CoopGroupCreate(BaseModel):
     creator_id: UUID
     description: str | None = None
     contribution_amount: int = 15000
+    image_url: str | None = None
     max_members: int = 12
     contribution_frequency: ContributionFrequency
     payout_strategy: PayoutStrategy
@@ -29,6 +30,7 @@ class CoopGroupDetails(BaseModel):
     name: str
     creator_id: UUID
     description: str | None = None
+    image_url: str | None = None
     contribution_amount: int
     contribution_frequency: ContributionFrequency
     payout_strategy: PayoutStrategy
