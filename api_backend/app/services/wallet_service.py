@@ -137,7 +137,7 @@ class WalletService:
         # 5. Record ledger
         ledger = WalletLedger(
             wallet_id=wallet.id,
-            type=LedgerType.WITHDRAWAL,
+            type=LedgerType.withdrawal,
             stable_amount=stable_amt,
             local_amount=Decimal(data.local_amount),
             local_currency=wallet.local_currency,
