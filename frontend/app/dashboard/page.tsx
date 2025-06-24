@@ -12,6 +12,8 @@ import { formatCurrency, getActivityDescription } from '@/lib/utils'
 import Link from 'next/link'
 import { Bot, MessageSquare, Sparkles } from 'lucide-react'
 import AIInsightCard from '@/components/dashboard/ai-insight-card'
+import { formatDate } from '@/lib/contribution-utils'
+// import { formatDate } from '@/lib/insight-utils'
 
 
 export default function Dashboard() {
@@ -173,9 +175,9 @@ const recentActivity = dashboardData?.activities ?? [];
             <div className="ml-3">
               {hasUpcomingContribution ? (
                 <>
-                  <div className="text-base font-medium">{dashboardData?.summary.next_contribution}</div>
+                  <div className="text-base font-medium">{formatDate(dashboardData?.summary.next_contribution || "")}</div>
                   <div className="text-gray-500 text-xs mt-1">
-                  {dashboardData?.summary.next_contribution}
+                  {formatDate(dashboardData?.summary.next_contribution || "")}
                     {/* {formatCurrency(dashboardData?.nextContribution?.amount || 0)} due on {new Date(dashboardData?.nextContribution?.dueDate || '').toLocaleDateString()} */}
                   </div>
                 </>

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
+from db.models.activity_model import ActivityType
 from app.schemas.activity_schemas import ActivityCreate
 from app.schemas.notifications_schema import NotificationCreate
 from app.services.activity_service import ActivityService
@@ -93,7 +94,7 @@ async def accept_invite(
   
     activity_data =  ActivityCreate(
         user_id=user.id,
-        type=ActivityType.JOINED_GROUP.value,
+        type=ActivityType.joined_group.value,
         description=f"{auth_user.full_name} accepted an invite to join the cooperative {group_data.name}",
         group_id=group_data.id,
         entity_id=str(group_data.id), 
