@@ -317,6 +317,7 @@ const Step3 = ({ onBack, onComplete, loading }: Step3Props) => {
 export default function ProfileSetupPage() {
   const router = useRouter()
   const { user, isAuthenticated, updateUserProfile, loading: authLoading } = useAuth()
+  
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -380,12 +381,12 @@ export default function ProfileSetupPage() {
         role: user.role || "user",
         target_savings_amount: targetAmount ? parseFloat(targetAmount) : 0,
         savings_purpose: purpose || "",
-        income_range: incomeRange === "below_50K" ? "Below 50K" : 
-                     incomeRange === "range_50k_100k" ? "50K - 100K" :
-                     incomeRange === "range_100k_200k" ? "100K - 200K" :
-                     incomeRange === "range_200k_350k" ? "200K - 350K" :
-                     incomeRange === "range_350k_500k" ? "350K - 500K" :
-                     incomeRange === "above_50k" ? "Above 500K" : "Below 50K",
+        income_range: incomeRange === "below_50K" ? "below_50K" : 
+                     incomeRange === "range_50k_100k" ? "range_50k_100k" :
+                     incomeRange === "range_100k_200k" ? "range_100k_200k" :
+                     incomeRange === "range_200k_350k" ? "range_200k_350k" :
+                     incomeRange === "range_350k_500k" ? "range_350k_500k" :
+                     incomeRange === "above_50k" ? "above_50k" : "below_50K",
         saving_frequency: savingFrequency || "daily",
         is_email_verified: user.is_email_verified !== undefined ? user.is_email_verified : false,
         is_phone_verified: user.is_phone_verified !== undefined ? user.is_phone_verified : false,

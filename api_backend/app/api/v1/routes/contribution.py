@@ -107,6 +107,12 @@ async def contribute(
                 raise HTTPException(status_code=400, detail="Mock payment is only available in production till 30th of June.")
         print("\nMocking successful payment for contribution:", contribution.id, "\n")
         contribution_payment = {"status": True, "data": {"amount": contribution.amount}}
+    elif payment_gateway == "mock-fail":
+        if config.ENV != "dev" and datetime.now() > CUTOFF_DATE:
+                raise HTTPException(status_code=400, detail="Mock payment is only available in production till 30th of June.")
+        print("\nMocking failed contribution payment \n")
+        contribution_payment = {"status": False, "message": "Payment failed", "data": {"amount": contribution.amount}}
+        raise HTTPException(status_code=400, detail=f"{contribution_payment}")
     else:
         raise HTTPException(status_code=400, detail="Unsupported payment gateway.")
 

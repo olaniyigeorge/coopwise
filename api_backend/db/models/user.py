@@ -39,12 +39,13 @@ class User(Base):
 
     role = Column(Enum(UserRoles), default=UserRoles.user)
 
-    # ##### Onboarding & preference
-    target_savings_amount = Column(Float, nullable=True)  # e.g., 500000.0
-    savings_purpose = Column(String, nullable=True)  # e.g., "Sheila's tuition"
+    #  Onboarding & preference
+    target_savings_amount = Column(Float, nullable=True) 
+    savings_purpose = Column(String, nullable=True)
     income_range = Column(Enum(IncomeRange), nullable=True)
-    saving_frequency = Column(Enum(SavingFrequency), nullable=True)  # e.g., "monthly"
-      
+    saving_frequency = Column(Enum(SavingFrequency), nullable=True) 
+
+  
     # Verification Flags
     is_email_verified = Column(Boolean, default=False)
     is_phone_verified = Column(Boolean, default=False)
@@ -94,6 +95,11 @@ class User(Base):
     )
     activities = relationship(
         "ActivityLog",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    bank_accounts = relationship(
+        "BankAccount",
         back_populates="user",
         cascade="all, delete-orphan"
     )

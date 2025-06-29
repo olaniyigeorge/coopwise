@@ -4,6 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import Depends, HTTPException, status
 
+from app.schemas.auth import AuthenticatedUser
+from app.schemas.wallet_schemas import WalletLedgerCreate
+from app.services.wallet_service import WalletService
 from app.core.dependencies import get_cashramp_service
 from app.services.cashramp_service import CashRampService
 from db.models.wallet_models import LocalCurrency
@@ -11,13 +14,13 @@ from app.core.config import config
 from app.schemas.payments import ChargeResponse, PaystackPayload
 from app.utils.logger import logger
 
-
+COOPWISE_USD_NGN_RATE = 1/1600
 
 class PaymentService:
    
     
     @staticmethod
-    async def pay_with_paystack(payload: PaystackPayload) -> ChargeResponse | None:
+    async def init_pay_with_paystack(payload: PaystackPayload) -> ChargeResponse | None:
         """
         Make a payment through paystack
         """
@@ -38,7 +41,7 @@ class PaymentService:
                 "device_fingerprint": payload.device_fingerprint or "62wd23423rq324323qew1",
                 "meta": {
                     "flightID": payload.tx_ref or "123949494DC",
-                    "sideNote": getattr(payload.meta, "note", "Payment for some form of contribution")
+                    "sideNote": getattr(payload.meta, "note", "Payment on Coopwise through API v1")
                 },
                 "is_permanent": False
             }
@@ -55,12 +58,29 @@ class PaymentService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Payment processing failed"
             )
-        print(f"\n\n{response.text}\n\n")
+        logger.debug(f"\n\n{response.text}\n\n")
 
         res : ChargeResponse = response.json()
 
         return res
 
+    @staticmethod
+    async def init_pay_with_paystack_and_record(db: AsyncSession, user: AuthenticatedUser, payload: PaystackPayload)-> ChargeResponse | None:
+        pay = await PaymentService.pay_with_paystack(payload)
+
+        ledger_create = WalletLedgerCreate(
+            wallet_id=user.id,
+            type="deposit",
+            stable_amount=(payload.amount*COOPWISE_USD_NGN_RATE),
+            local_amount=payload.amount,
+            local_currency="NGN",
+            exchange_rate=COOPWISE_USD_NGN_RATE,
+            status="settled"
+        )
+        ledger = await WalletService.record_ledger_entry(ledger_create, db)
+
+        return ledger
+    
     @staticmethod
     async def pay_with_cashramp(
         amount: Decimal,
@@ -117,4 +137,12 @@ class PaymentService:
         """
         Confirm the payment
         """
+        pass
+
+    @staticmethod
+    async def pay_with_solana():
+        pass
+
+    @staticmethod
+    async def pay_with_coopwise_network():
         pass

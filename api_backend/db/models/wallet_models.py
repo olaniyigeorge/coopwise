@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import uuid4
-from sqlalchemy import Column, Numeric, String, DateTime, ForeignKey, Enum
+from sqlalchemy import Boolean, Column, Numeric, String, DateTime, ForeignKey, Enum
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from db.database import Base
@@ -29,8 +29,10 @@ class Wallet(Base):
     # The user’s default “display” fiat currency. Converts on-the-fly per payment gateway used on trx.
     local_currency = Column(Enum(LocalCurrency), default=LocalCurrency.NGN, nullable=False)
 
+    
+
     created_at = Column(DateTime, default=datetime.now, nullable=False)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
     # Relationship
     user = relationship("User", back_populates="wallet", lazy="joined")
@@ -104,3 +106,21 @@ class WalletLedger(Base): # TNX RECORD
         uselist=False
     )
 
+
+
+# ----------------- FIAT BANK ACCOUNTS -----------
+class BankAccount(Base):
+    __tablename__ = "bank_accounts"
+
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+
+    account_number = Column(String, nullable=False, index=True)
+    bank_name = Column(String, nullable=False)
+    account_name = Column(String, nullable=False)
+    is_primary = Column(Boolean, default=False)
+
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+    user = relationship("User", back_populates="bank_accounts")

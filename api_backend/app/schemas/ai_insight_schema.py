@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from db.models.ai_insight import AIInsight, DifficultyLevel, ImplementationStatus, InsightCategory, InsightType
 
@@ -38,12 +38,11 @@ class AIInsightBase(BaseModel):
     timeframe: Optional[str] = None
     implementation_time: float = 0
 
-    insight_metadata: Optional[InsightMetadata] = None
+    insight_metadata: Optional[InsightMetadata] =  Field(default=None, alias="metadata")
 
     model_config = ConfigDict(
         from_attributes=True,
-        arbitrary_types_allowed=True,
-        fields={"metadata": "insight_metadata"}
+        arbitrary_types_allowed=True
     )
 
 
@@ -61,8 +60,7 @@ class AIInsightDetail(AIInsightBase):
 
     model_config = ConfigDict(
         from_attributes=True,
-        arbitrary_types_allowed=True,
-        fields={"metadata": "insight_metadata"}
+        arbitrary_types_allowed=True
     )
 
 
