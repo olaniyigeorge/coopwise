@@ -16,7 +16,7 @@ export function PingBackend() {
     pingServer()
     
     // Set up interval for subsequent pings
-    const interval = setInterval(pingServer, 30000) // 30 seconds
+    const interval = setInterval(pingServer, 20000) // 20 seconds
     
     return () => clearInterval(interval)
   }, [])

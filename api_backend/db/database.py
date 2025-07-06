@@ -16,7 +16,7 @@ Base = declarative_base()
 # Metadata for table definitions
 metadata = sqlalchemy.MetaData()
 
-DATABASE_URL = config.DATABASE_URL
+DATABASE_URL = config.DATABASE_URL 
 
 
 print(f"\n-> DB URL: {DATABASE_URL} \n")

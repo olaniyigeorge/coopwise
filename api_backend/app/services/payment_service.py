@@ -66,8 +66,9 @@ class PaymentService:
 
     @staticmethod
     async def init_pay_with_paystack_and_record(db: AsyncSession, user: AuthenticatedUser, payload: PaystackPayload)-> ChargeResponse | None:
-        pay = await PaymentService.pay_with_paystack(payload)
+        pay = await PaymentService.init_pay_with_paystack(payload)
 
+        
         ledger_create = WalletLedgerCreate(
             wallet_id=user.id,
             type="deposit",
@@ -75,7 +76,7 @@ class PaymentService:
             local_amount=payload.amount,
             local_currency="NGN",
             exchange_rate=COOPWISE_USD_NGN_RATE,
-            status="settled"
+            status="initiated"
         )
         ledger = await WalletService.record_ledger_entry(ledger_create, db)
 
