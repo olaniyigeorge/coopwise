@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 import random
 from typing import List, Union
 from pydantic import ValidationError
@@ -72,8 +72,7 @@ class InsightEngine:
             return [AIInsightDetail.model_validate(item) for item in deserialized]
 
         logger.info(f"📬 Fetching AI insights for user {user.id} from database (skip={skip}, limit={limit})")
-        # await InsightEngine.mock_generate_insight_for_user_if_necessary(db, user, margin=5)
-        await InsightEngine.get_save_new_insight(db, user, redis)
+   
         try:
             stmt = (
                 select(AIInsight)
@@ -85,11 +84,24 @@ class InsightEngine:
             result = await db.execute(stmt)
             insights = result.scalars().all()
 
+            if insights[-1].created_at < (datetime.now() - timedelta(hours=12)):
+                logger.info(f"🔄 No recent insights for user {user.id}, generating new one")
+                # Generate new insights if none in the last 12 hours
+                await InsightEngine.get_save_new_insight(db, user, redis)
+                result = await db.execute(stmt)
+                insights = result.scalars().all()
+
+            print(f"\n\n Raw Insights: {insights}\n\n")
+            validated_insights = [
+                AIInsightDetail.model_validate(insight, from_attributes=True)
+                for insight in insights
+            ]
             serialized = [
                 json.dumps(AIInsightDetail.model_validate(i).model_dump(mode="json"))
-                for i in insights
+                for i in validated_insights
             ]
 
+            
             await update_cache(cache_key, serialized, ttl=600)
             return [AIInsightDetail.model_validate(json.loads(i)) for i in serialized]
 

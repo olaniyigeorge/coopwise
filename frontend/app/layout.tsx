@@ -29,7 +29,6 @@ export const metadata: Metadata = {
   publisher: 'CoopWise',
   formatDetection: {
     email: false,
-    address: false,
     telephone: false,
   },
   metadataBase: new URL('https://coopwise-seven.vercel.app'), // coopwise.com
