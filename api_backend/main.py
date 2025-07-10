@@ -24,15 +24,15 @@ from contextlib import asynccontextmanager
 from db.database import database, init_db
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from fastapi import Request
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await database.connect()
     await init_db() 
+    # Make migrations and migrate
     yield 
-    await database.disconnect()
 
 
 app = FastAPI(
@@ -70,17 +70,22 @@ app.add_middleware(
 
 templates = Jinja2Templates(directory="app/templates")
 
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     base_url = config.DOMAIN
     
    
-    return templates.TemplateResponse("home.html", {
-        "request": request,
-        "name": "CoopWise Backend",
-        "details": "CoopWise API Backend",
-        "docs": f"{base_url}/api/docs",
-    })
+    return templates.TemplateResponse(
+        request,
+        "home.html",
+        {
+            "name": "CoopWise Backend",
+            "details": "CoopWise API Backend",
+            "docs": f"{base_url}/api/docs",
+        }
+    )
 @app.get("/ping")
 async def home(request: Request):
     return {"message":"Pong"} 

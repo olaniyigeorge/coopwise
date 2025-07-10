@@ -38,7 +38,7 @@ class AIInsightBase(BaseModel):
     timeframe: Optional[str] = None
     implementation_time: float = 0
 
-    insight_metadata: Optional[InsightMetadata] =  Field(default=None, alias="metadata")
+    insight_metadata: Optional[InsightMetadata] =  Field(json_schema_extra={"default":None, "alias":"metadata"})
 
     model_config = ConfigDict(
         from_attributes=True,
