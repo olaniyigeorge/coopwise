@@ -42,7 +42,7 @@ app = FastAPI(
 )
 
 
-# Register Routers
+# Routers
 app.include_router(auth.router)
 app.include_router(cooperative_group.router)
 app.include_router(membership.router)
@@ -55,10 +55,10 @@ app.include_router(wallet_routes.router)
 app.include_router(insights_router.router)
 app.include_router(cashramp_router.router)
 
-# Add Middleware
+# Middleware
 app.add_middleware(BaseHTTPMiddleware, dispatch=app_middleware)
 
-# Add CORS to middleware
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[config.CLIENT_DOMAIN],  

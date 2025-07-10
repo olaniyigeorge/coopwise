@@ -86,7 +86,7 @@ class InsightEngine:
 
             if insights[-1].created_at < (datetime.now() - timedelta(hours=12)):
                 logger.info(f"🔄 No recent insights for user {user.id}, generating new one")
-                # Generate new insights if none in the last 12 hours
+                # Generate new insights if none in the last 12 hours- TODO Update this to generate inteli
                 await InsightEngine.get_save_new_insight(db, user, redis)
                 result = await db.execute(stmt)
                 insights = result.scalars().all()

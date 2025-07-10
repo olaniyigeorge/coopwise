@@ -19,7 +19,7 @@ metadata = sqlalchemy.MetaData()
 DATABASE_URL = config.DATABASE_URL 
 
 
-print(f"\n-> DB URL: {DATABASE_URL} \n")
+# print(f"\n-> DB URL: {DATABASE_URL} \n")
 
 # Define the engine
 async_engine = create_async_engine(
