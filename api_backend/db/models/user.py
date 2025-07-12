@@ -29,7 +29,7 @@ class IncomeRange(enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(PGUUID(as_uuid=True), primary_key=True, default=lambda: str(uuid4()), index=True)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=lambda: uuid4(), index=True)
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)  
     password = Column(String, unique=True, index=True, nullable=False) 
@@ -61,7 +61,8 @@ class User(Base):
     memberships = relationship(
         "GroupMembership", 
         back_populates="user", 
-        foreign_keys="GroupMembership.user_id"
+        foreign_keys="GroupMembership.user_id",
+        overlaps="cooperatives,users"
     )
     cooperatives = relationship(
         "CooperativeGroup",

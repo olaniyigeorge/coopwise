@@ -1,16 +1,13 @@
-from fastapi.testclient import TestClient
-from main import app
-
-client  = TestClient(app)
-
-
-
-
+from httpx import AsyncClient
+import pytest
 
 
 def test_sanity():
-    assert 2 + 2 == 4
+    assert "sane" == "sane"
 
-def test_read_root():
-    response = client.get("/")
+
+
+@pytest.mark.asyncio
+async def test_read_root(async_client: AsyncClient):
+    response = await async_client.get("/")
     assert response.status_code == 200

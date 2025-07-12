@@ -31,7 +31,7 @@ async def get_mock_insights(
         margin
     )
     
-    print(f"\ Insight: {insight}\n")
+    print(f"\n Insight: {insight}\n")
 
  
     if insight:

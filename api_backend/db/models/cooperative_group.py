@@ -59,7 +59,8 @@ class CooperativeGroup(Base):
     memberships = relationship(
         "GroupMembership",
         back_populates="group",
-        foreign_keys=[GroupMembership.group_id]
+        foreign_keys=[GroupMembership.group_id],
+        overlaps="users,cooperatives"
     )
     users = relationship(
         "User",
