@@ -2,7 +2,8 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 
 from main import app as fastapi_app
-from db.database import Base, test_async_db_engine
+from db.database import Base, test_async_db_engine, TestAsyncSessionLocal
+
 from db.dependencies import (
     get_async_db_session, 
     override_get_async_db_session
@@ -11,6 +12,11 @@ from db.dependencies import (
 # Override the DB dependency before tests start
 fastapi_app.dependency_overrides[get_async_db_session] = override_get_async_db_session
 
+
+@pytest.fixture()
+async def async_session():
+    async with TestAsyncSessionLocal() as session:
+        yield session
 
 # Reset test database for each test function
 @pytest.fixture(scope="function", autouse=True)

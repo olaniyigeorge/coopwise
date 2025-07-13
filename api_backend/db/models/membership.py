@@ -41,7 +41,22 @@ class GroupMembership(Base):
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
-    user = relationship("User", back_populates="memberships", foreign_keys=[user_id])
-    inviter = relationship("User", back_populates="invited_memberships", foreign_keys=[invited_by])
-    group = relationship("CooperativeGroup", back_populates="memberships", overlaps="users")
+    user = relationship(
+            "User", 
+            back_populates="memberships", 
+            foreign_keys=[user_id],
+            overlaps="cooperatives,group"
+        )
+    inviter = relationship(
+            "User", 
+            back_populates="invited_memberships", 
+            foreign_keys=[invited_by]
+            )
+
+    group = relationship(
+            "CooperativeGroup", 
+            back_populates="memberships", 
+            overlaps="users,cooperatives"
+            )
+
 

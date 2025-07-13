@@ -39,6 +39,10 @@ TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 test_async_db_engine = create_async_engine(
     url=config.TEST_DATABASE_URL,
+    connect_args={
+        "check_same_thread": True
+    },
+    poolclass =sqlalchemy.StaticPool
 )
 
 TestAsyncSessionLocal = async_sessionmaker(bind=test_async_db_engine, class_=AsyncSession, expire_on_commit=False)

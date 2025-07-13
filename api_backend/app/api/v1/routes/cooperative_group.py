@@ -52,7 +52,7 @@ async def create_cooperative_group(
         entity_id=str(coop.id), 
         amount=None
     )
-    print(f"\Logging activity... {membership_data}\n")
+    print(f"\n Logging activity... {membership_data}\n")
     await ActivityService.log(
         db,
         activity_data
