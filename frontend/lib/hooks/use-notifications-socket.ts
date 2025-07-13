@@ -56,7 +56,7 @@ export const useNotificationListener = () => {
           });
         });
 
-        console.log("✅ Notification websocket connection established");
+        console.log(" Notification websocket connection established");
 
       } catch (error) {
         console.error("❌ Failed to connect to notification websocket:", error);
@@ -82,9 +82,9 @@ export const useNotificationListener = () => {
     const loadInitialNotifications = async () => {
       try {
         await fetchNotifications();
-        console.log("✅ Initial notifications loaded");
+        console.log("Initial notifications loaded");
       } catch (error) {
-        console.error("❌ Failed to fetch initial notifications:", error);
+        console.error("Failed to fetch initial notifications:", error);
       }
     };
 
