@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from jose import jwt, JWTError
@@ -133,8 +134,11 @@ class AuthService:
     async def change_password(token: str, new_password: str, db: AsyncSession):
         try:
             payload = await AuthService.confirm_reset_token(token)
-            user_id = payload.get("id")
+            user_id = UUID(payload.get("id"))
 
+
+
+            
             result = await db.execute(select(User).where(User.id == user_id))
             user = result.scalars().first()
 

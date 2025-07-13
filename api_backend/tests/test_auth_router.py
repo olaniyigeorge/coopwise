@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+# Integration Tests (API Routes)
 
 @pytest.mark.asyncio
 async def test_register_user(async_client: AsyncClient):

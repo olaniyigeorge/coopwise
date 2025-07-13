@@ -71,7 +71,7 @@ class User(Base):
         primaryjoin="User.id == GroupMembership.user_id",
         secondaryjoin="GroupMembership.group_id == CooperativeGroup.id",
         foreign_keys=[GroupMembership.user_id, GroupMembership.group_id],
-        overlaps="memberships,user"
+        overlaps="memberships,group,user"
     )
     invited_memberships = relationship(
         "GroupMembership",
