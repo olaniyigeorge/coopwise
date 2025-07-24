@@ -189,18 +189,23 @@ class WalletService:
         return wallet_data
 
     @staticmethod
-    async def get_wallet_ledger(
+    async def get_wallet_ledger_by_reference(
         reference: str,
         db: AsyncSession
-    ) -> WalletLedger:
+    ) -> WalletLedger | None:
         """
         Fetch a wallet ledger entry by its reference ID.
+
         Returns:
-         - WalletLedger object if found, else None
+            WalletLedger object if found, else None
         """
-        stmt = select(WalletLedger).where(WalletLedger.id == reference)
-        result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+        try:
+            stmt = select(WalletLedger).where(WalletLedger.reference == reference)
+            result = await db.execute(stmt)
+            return result.scalar_one_or_none()
+        except Exception as e:
+            logger.error(f"Failed to fetch wallet ledger by reference: {reference}. Error: {e}")
+            return None
 
     @staticmethod
     async def record_ledger_entry(
@@ -213,11 +218,12 @@ class WalletService:
         ledger = WalletLedger(
             wallet_id=ledger_data.wallet_id,
             type=ledger_data.type,
+            reference=ledger_data.reference,
             stable_amount=ledger_data.stable_amount,
             local_amount=ledger_data.local_amount,
             local_currency=ledger_data.local_currency,
             exchange_rate=ledger_data.exchange_rate,
-            status=LedgerStatus.initiated  
+            status=ledger_data.status or LedgerStatus.initiated  
         )
         db.add(ledger)
         await db.commit()
@@ -243,3 +249,17 @@ class WalletService:
             select(WalletLedger).where(WalletLedger.id == ledger_id)
         )
         return result.scalar_one_or_none()
+    
+    @staticmethod
+    async def deposit_by_reference(reference: str, db: AsyncSession, redis: Redis):
+        # Fetch the ledger
+        ledger = await WalletService.get_wallet_ledger(reference, db)
+        if not ledger:
+            raise HTTPException(status_code=404, detail="Transaction ledger not found.")
+
+        # Fetch wallet and update balance
+        wallet = await WalletService.get_wallet_by_id(ledger.wallet_id, db, redis)
+        wallet.balance += ledger.stable_amount
+        await db.commit()
+
+        return wallet

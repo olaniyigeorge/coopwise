@@ -59,6 +59,7 @@ class PaymentGateway(enum.Enum):
     cashramp = "cashramp"
     on_chain_cashramp = "on_chain_cashramp"
     on_chain_solana = "on_chain_solana"
+    coopwise_network = "coopwise_network"
     cash = "cash"
 
 
@@ -72,24 +73,33 @@ class LedgerStatus(enum.Enum):
     initiated = "initiated"  
     pending = "pending"      
     settled = "settled"      
-    failed = "failed"        
+    failed = "failed"      
+
+class StableCurrency(enum.Enum):
+    usdc = "usdc"
+    usdt = "usdt"
+    cusd = "cusd"  
+    dai = "dai"  
 
 class WalletLedger(Base): # TNX RECORD
     __tablename__ = "wallet_ledger"
 
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    reference = Column(String(128), unique=True, index=True, nullable=False)
+    
     wallet_id = Column(PGUUID(as_uuid=True), ForeignKey("wallets.id"), nullable=False, index=True)
     contribution_id = Column(PGUUID(as_uuid=True), ForeignKey("contributions.id"), nullable=True)
-    
-    note = Column(String, nullable=True)
-    gateway = Column(Enum(PaymentGateway), default=PaymentGateway.cashramp, nullable=False) # Gateway default support: cashramp(off_chain), on_chain_cashramp, on_chain_solana  
-
+        
     type = Column(Enum(LedgerType), nullable=False)
-    stable_amount = Column(Numeric(precision=20, scale=8), nullable=False) # Amount in stable coin (e.g. USDC) 
-    local_amount = Column(Numeric(precision=20, scale=2), nullable=False)   # Local fiat amount before conversion
+    stable_amount = Column(Numeric(precision=20, scale=8), nullable=False)
+    stable_currency = Column(Enum(StableCurrency), nullable=False, default=StableCurrency.usdc)
+    local_amount = Column(Numeric(precision=20, scale=2), nullable=False)
     local_currency = Column(Enum(LocalCurrency), nullable=False)
     exchange_rate = Column(Numeric(precision=20, scale=8), nullable=False) # Exchange rate applied: local_currency → stable coin... Set default to local_amount/stable_amount
+    
+    gateway = Column(Enum(PaymentGateway), default=PaymentGateway.paystack, nullable=False) #TODO move default gateway to on_chain_solana
     status = Column(Enum(LedgerStatus), default=LedgerStatus.initiated, nullable=False)
+    note = Column(String, nullable=True)
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)

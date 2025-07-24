@@ -18,7 +18,6 @@ COOPWISE_USD_NGN_RATE = 1/1600
 
 class PaymentService:
    
-    
     @staticmethod
     async def init_pay_with_paystack(payload: PaystackPayload) -> ChargeResponse | None:
         """
@@ -26,6 +25,61 @@ class PaymentService:
         """
         # Simulate a payment request to Paystack
         logger.info(f"\n\n\n\nProcessing payment with Paystack: {payload}\n\n")
+
+        try:
+            url = "https://api.paystack.co/transaction/initialize"
+        
+            datum = {
+                "amount": payload.amount,
+                "email": payload.email,
+                "currency": payload.currency or "NGN",
+                "tx_ref": payload.tx_ref or "CP-WS-000000000000",
+                "fullname": payload.fullname or "John Doe",
+                "phone_number": payload.phone_number or "08012345678",
+                "client_ip": payload.client_ip or "154.123.220.1",
+                "device_fingerprint": payload.device_fingerprint or "0000000000",
+                "meta": {
+                    "flightID": payload.tx_ref or "0000000",
+                    "sideNote": getattr(payload.meta, "note", "Payment on Coopwise through API v1")
+                },
+                "is_permanent": False
+            }
+            
+            data = {
+                "email": payload.email,
+                "amount": payload.amount,
+                "reference": payload.tx_ref,
+                "callback_url": f"{config.DOMAIN}/api/v1/payments/paystack/callback",
+                "channels": ["bank_transfer"],
+                "metadata": {"currency": f"{payload.currency}", "sideNote": getattr(payload.meta, "note", "Payment on Coopwise through API v1")}
+            }
+            headers = {
+                "accept": "application/json",
+                "Authorization": f"Bearer {config.PAYSTACK_SECRET_KEY}", # FLWSECK_TEST-SANDBOXDEMOKEY-X
+                "Content-Type": "application/json"
+            }
+
+            response = requests.post(url, json=data, headers=headers)
+        except Exception as e:
+            logger.error(f"Error processing payment with Paystack: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Payment processing failed"
+            )
+        logger.debug(f"\n\n{response.text}\n\n")
+
+        # res : ChargeResponse = response.json()
+        res = response.json()
+        return res
+
+
+    @staticmethod
+    async def init_pay_with_flutterwave(payload: PaystackPayload) -> ChargeResponse | None:
+        """
+        Make a payment through Flutterwave
+        """
+        # Simulate a payment request to Flutterwave
+        logger.info(f"\n\n\n\nProcessing payment with Flutterwave: {payload}\n\n")
 
         try:
             url = "https://api.flutterwave.com/v3/charges?type=bank_transfer"
@@ -53,7 +107,7 @@ class PaymentService:
 
             response = requests.post(url, json=data, headers=headers)
         except Exception as e:
-            logger.error(f"Error processing payment with Paystack: {e}")
+            logger.error(f"Error processing payment with Flutterwave: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Payment processing failed"
@@ -81,7 +135,97 @@ class PaymentService:
         ledger = await WalletService.record_ledger_entry(ledger_create, db)
 
         return ledger
-    
+
+    # @staticmethod
+    # async def init_pay_with_paystack(payload: PaystackPayload) -> dict:
+    #     """
+    #     Initialize Paystack transaction and return authorization URL.
+    #     """
+    #     url = "https://api.paystack.co/transaction/initialize"
+        
+    #     data = {
+    #         "email": payload.email,
+    #         "amount": payload.amount,
+    #         "callback_url": payload.callback_url,
+    #         "metadata": {
+    #             "custom_fields": [
+    #                 {
+    #                     "display_name": "Customer Name",
+    #                     "variable_name": "customer_name",
+    #                     "value": payload.fullname
+    #                 },
+    #                 {
+    #                     "display_name": "Phone Number",
+    #                     "variable_name": "phone_number",
+    #                     "value": payload.phone_number
+    #                 },
+    #                 {
+    #                     "display_name": "User ID",
+    #                     "variable_name": "user_id",
+    #                     "value": payload.meta.get("user_id")
+    #                 }
+    #             ],
+    #             **payload.meta
+    #         },
+    #         "reference": payload.tx_ref
+    #     }
+
+    #     headers = {
+    #         "Authorization": f"Bearer {config.PAYSTACK_SECRET_KEY}",
+    #         "Content-Type": "application/json"
+    #     }
+
+    #     try:
+    #         response = requests.post(url, json=data, headers=headers)
+    #         result = response.json()
+
+    #         if not result.get("status"):
+    #             raise HTTPException(
+    #                 status_code=status.HTTP_400_BAD_REQUEST,
+    #                 detail=result.get("message", "Failed to initiate Paystack transaction")
+    #             )
+
+    #         return result
+    #     except Exception as e:
+    #         logger.error(f"Paystack init error: {e}")
+    #         raise HTTPException(
+    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #             detail="Could not initialize Paystack transaction"
+    #         )
+
+
+    @staticmethod
+    async def verify_paystack_transaction(reference: str) -> dict:
+        """
+        Verify transaction status from Paystack.
+        """
+        url = f"https://api.paystack.co/transaction/verify/{reference}"
+
+        headers = {
+            "Authorization": f"Bearer {config.PAYSTACK_SECRET_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            response = requests.get(url, headers=headers)
+            result = response.json()
+
+            if not result.get("status"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=result.get("message", "Failed to verify Paystack transaction")
+                )
+            
+            print(f"\n{result}\n")
+            return result
+        except Exception as e:
+            logger.error(f"Paystack verification error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not verify Paystack transaction"
+            )
+
+
     @staticmethod
     async def pay_with_cashramp(
         amount: Decimal,

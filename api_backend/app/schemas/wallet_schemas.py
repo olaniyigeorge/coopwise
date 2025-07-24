@@ -2,9 +2,9 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
-from db.models.wallet_models import LedgerStatus, LedgerType, LocalCurrency
+from db.models.wallet_models import LedgerStatus, LedgerType, LocalCurrency, PaymentGateway, StableCurrency
 
 class WalletCreate(BaseModel):
     user_id: UUID
@@ -50,19 +50,33 @@ class WalletDetail(BaseModel):
 class WalletLedgerDetail(BaseModel):
     id: UUID
     wallet_id: UUID
+    reference: str
     type: LedgerType
-    stable_amount: int
+    stable_amount: float
+    stable_currency: StableCurrency
+    local_amount: float
     local_currency: LocalCurrency
     exchange_rate: float
+    gateway: PaymentGateway
     status: LedgerStatus
+    note: Optional[str]
     created_at: datetime
+
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+
 
 class WalletLedgerCreate(BaseModel):
     wallet_id: UUID
+    reference: str  
     type: LedgerType
-    stable_amount: int
-    local_amount: int
+    stable_amount: float  
+    stable_currency: StableCurrency = StableCurrency.usdc
+    local_amount: float
     local_currency: LocalCurrency
     exchange_rate: float
-    status: LedgerStatus
-    
+    gateway: PaymentGateway = PaymentGateway.cashramp
+    status: LedgerStatus = LedgerStatus.initiated
+    note: Optional[str] = None

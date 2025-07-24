@@ -73,7 +73,7 @@ const NotificationService = {
         const socket = new WebSocket(ws_notification_endpoint);
     
         socket.onopen = () => {
-            console.log("✅ WebSocket connected");
+            console.log("WebSocket connected");
             console.log("Socket readyState:", socket.readyState);
         };
     
@@ -82,13 +82,13 @@ const NotificationService = {
                 const parsedData = JSON.parse(event.data);
                 onMessage(parsedData);
             } catch (err) {
-                console.error("❌ Invalid WebSocket data", err);
-                console.error("❌ Raw data that failed to parse:", event.data);
+                console.error("Invalid WebSocket data", err);
+                console.error("Raw data that failed to parse:", event.data);
             }
         };
     
         socket.onerror = (error) => {
-            console.error("❌ WebSocket error:", error);
+            console.error("WebSocket error:", error);
         };
     
         socket.onclose = (event) => {
