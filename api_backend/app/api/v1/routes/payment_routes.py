@@ -1,9 +1,12 @@
 import hmac
 import hashlib
 from fastapi import APIRouter, Request, Header, HTTPException, status, Depends
+from fastapi.responses import RedirectResponse
+from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
+from app.core.dependencies import get_redis
 from app.api.v1.routes.auth import get_current_user
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.payments import PaystackPayload
@@ -16,7 +19,7 @@ from app.services.payment_service import PaymentService
 
 router = APIRouter(
     prefix="/api/v1/payments",
-    tags=["Payments & Inter=grations"]
+    tags=["Payments & Integrations"]
 )
 
 PAYSTACK_WHITELIST = ["52.31.139.75", "52.49.173.169", "52.214.14.220"]
@@ -75,7 +78,7 @@ async def paystack_webhook(
         if not payment:
             raise HTTPException(status_code=404, detail="Payment not found.")
 
-        if payment.status == "settled":
+        if payment.status in ["settled", "completed"]:
             return {"message": "Payment already settled."}
 
         # Step 4: Update payment record
@@ -96,3 +99,28 @@ async def paystack_webhook(
     except Exception as e:
         print("Webhook processing error:", str(e))
         raise HTTPException(status_code=500, detail="Webhook processing failed.")
+
+
+
+
+@router.get("/paystack/callback", summary="Paystack Payment Callback")
+async def paystack_callback(
+    request: Request,
+    # reference: str,
+    db: AsyncSession = Depends(get_async_db_session),
+    redis: Redis = Depends(get_redis)
+):
+    reference = request.query_params.get("reference")
+    if not reference:
+        raise HTTPException(status_code=400, detail="Missing transaction reference")
+
+    verification = await PaymentService.verify_paystack_transaction(reference)
+
+    if not verification["status"] or verification["data"]["status"] != "success":
+        # return RedirectResponse(url=f"{config.CLIENT_DOMAIN}/payment?status=failed&ref={reference}")
+        return f"{config.CLIENT_DOMAIN}/payment?status=failed&ref={reference}"
+
+    await WalletService.finalize_deposit(reference, db, redis)
+    #return RedirectResponse(url=f"{config.CLIENT_DOMAIN}?status=success&ref={reference}")
+
+    return f"{config.CLIENT_DOMAIN}?status=success&ref={reference}"

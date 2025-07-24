@@ -15,6 +15,7 @@ from app.api.v1.routes import (
     dashboard, 
     notifications_router, 
     support_router, 
+    payment_routes,
     wallet_routes, 
     insights_router,
     cashramp_router
@@ -51,6 +52,7 @@ app.include_router(contribution.router)
 app.include_router(dashboard.router)
 app.include_router(notifications_router.router)
 app.include_router(support_router.router)
+app.include_router(payment_routes.router)
 app.include_router(wallet_routes.router)
 app.include_router(insights_router.router)
 app.include_router(cashramp_router.router)
