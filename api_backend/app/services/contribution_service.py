@@ -14,22 +14,25 @@ from fastapi import HTTPException, status
 
 class ContributionService:
 
-
     @staticmethod
-    async def make_contribution(contribution_data: ContributionCreate, user:AuthenticatedUser, db: AsyncSession) -> ContributionDetail:
+    async def make_contribution(
+        contribution_data: ContributionCreate, user: AuthenticatedUser, db: AsyncSession
+    ) -> ContributionDetail:
         """
-        Creates a contribution to a cooperative group with provided data. 
+        Creates a contribution to a cooperative group with provided data.
         """
 
         # Check if user is a member of the cooperative group
-        membership = await CooperativeMembershipService.get_membership_by_user_and_group(
-            user_id=user.id, group_id=contribution_data.group_id, db=db
+        membership = (
+            await CooperativeMembershipService.get_membership_by_user_and_group(
+                user_id=user.id, group_id=contribution_data.group_id, db=db
+            )
         )
-        
+
         if not membership:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not a member of this cooperative group."
+                detail="You are not a member of this cooperative group.",
             )
 
         # Create contribution record
@@ -43,7 +46,6 @@ class ContributionService:
             due_date=contribution_data.due_date or None,
             note=contribution_data.note or None,
             status=contribution_data.status.value,
-           
         )
 
         db.add(contribution)
@@ -55,7 +57,12 @@ class ContributionService:
         return contribution
 
     @staticmethod
-    async def update_contribution_status(db: AsyncSession, contribution_id: UUID, contribution_status: str, paid_at: datetime) -> dict:
+    async def update_contribution_status(
+        db: AsyncSession,
+        contribution_id: UUID,
+        contribution_status: str,
+        paid_at: datetime,
+    ) -> dict:
         """
         Update the status of a contribution.
         """
@@ -65,17 +72,21 @@ class ContributionService:
                 raise HTTPException(status_code=404, detail="Contribution not found")
 
             contribution.status = contribution_status
-            contribution.fulfilled_at = datetime.now() if contribution_status == "completed" else None
+            contribution.fulfilled_at = (
+                datetime.now() if contribution_status == "completed" else None
+            )
             await db.commit()
             await db.refresh(contribution)
 
-            return {"message": f"Contribution marked {contribution_status} successfully."}
+            return {
+                "message": f"Contribution marked {contribution_status} successfully."
+            }
 
         except Exception as e:
             logger.error(f"Failed to update contribution status: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Could not update contribution status"
+                detail="Could not update contribution status",
             )
 
     # @staticmethod
@@ -126,12 +137,16 @@ class ContributionService:
     #     return {"detail": "Contribution paid successfully."}
 
     @staticmethod
-    async def get_contribution_by_id(db: AsyncSession, contribution_id: UUID) -> ContributionDetail | None:
+    async def get_contribution_by_id(
+        db: AsyncSession, contribution_id: UUID
+    ) -> ContributionDetail | None:
         """
         Fetch a Contribntuon by ID.
         """
         try:
-            result = await db.execute(select(Contribution).where(Contribution.id == contribution_id))
+            result = await db.execute(
+                select(Contribution).where(Contribution.id == contribution_id)
+            )
             contribution = result.scalars().first()
             if not contribution:
                 raise HTTPException(status_code=404, detail="Contribution not found")
@@ -140,11 +155,13 @@ class ContributionService:
             logger.error(f"Failed to fetch contribution by ID: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Could not fetch contribution"
+                detail="Could not fetch contribution",
             )
 
     @staticmethod
-    async def get_contributions(db: AsyncSession, skip: int = 0, limit: int = 10) -> list[ContributionDetail]:
+    async def get_contributions(
+        db: AsyncSession, skip: int = 0, limit: int = 10
+    ) -> list[ContributionDetail]:
         """
         Fetch a list of contributions with optional pagination.
         """
@@ -155,6 +172,6 @@ class ContributionService:
             logger.error(f"Failed to fetch contributions: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Could not fetch contributions"
+                detail="Could not fetch contributions",
             )
         return contributions

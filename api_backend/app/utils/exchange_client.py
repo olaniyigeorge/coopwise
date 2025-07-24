@@ -1,4 +1,3 @@
-
 import httpx
 import os
 
@@ -11,14 +10,13 @@ ACCURUE_STAGING_URL = "https://staging.api.useaccrue.com/cashramp/api/graphql"
 ACCURUE_PROD_URL = "https://api.useaccrue.com/cashramp/api/graphql"
 
 
-
 async def fetch_exchange_rate(
-        amount: float,
-        customer_id: str,
-        paymentType: str,
-        paymentMethodType: str,
-        from_currency: str = "usd"
-        ) -> float:
+    amount: float,
+    customer_id: str,
+    paymentType: str,
+    paymentMethodType: str,
+    from_currency: str = "usd",
+) -> float:
     """
     Queries the GraphQL endpoint to get the current conversion rate: from_currency → to_currency.
     Returns a float rate (e.g. 0.00024 if 1 NGN = 0.00024 USDC).
@@ -59,7 +57,7 @@ async def fetch_exchange_rate(
             ACCURUE_STAGING_URL,
             json={"query": query, "variables": variables},
             headers=headers,
-            timeout=10.0
+            timeout=10.0,
         )
         resp.raise_for_status()
         data = resp.json()

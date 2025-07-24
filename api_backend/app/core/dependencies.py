@@ -12,8 +12,10 @@ from app.api.v1.routes.auth import get_current_user, is_admin_or_owner
 # ---------------------------- 🔁 Redis Dependency ----------------------------
 redis_client: Redis = redis_async.from_url(config.REDIS_URL)
 
+
 async def get_redis() -> Redis:
     return redis_client
+
 
 # ---------------------------- 💳 CashRamp Service Dependency ----------------------------
 def get_cashramp_service(redis: Redis = Depends(get_redis)) -> CashRampService:
@@ -25,9 +27,8 @@ user_dependency = Depends(get_current_user)
 admin_or_owner_dependency = Depends(is_admin_or_owner)
 
 
-
-
 # ---------------------------- 🧠 Database Session Dependency   ----------------------------
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:

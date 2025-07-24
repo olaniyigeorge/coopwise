@@ -2,11 +2,19 @@ import subprocess
 import sys
 import uvicorn
 
+
 def run_tests():
     print("Running tests before starting the server...\n")
-    result = subprocess.run(["pytest",], stdout=sys.stdout, stderr=sys.stderr)
-    # subprocess.run(["pytest", "-m", "essential"])    ---- Run only essential tests 
+    result = subprocess.run(
+        [
+            "pytest",
+        ],
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+    )
+    # subprocess.run(["pytest", "-m", "essential"])    ---- Run only essential tests
     return result.returncode == 0
+
 
 if __name__ == "__main__":
     if run_tests():

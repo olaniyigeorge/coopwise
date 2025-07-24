@@ -34,7 +34,6 @@ config.config_ini_section = "alembic"
 config.set_main_option("sqlalchemy.url", decoded_url)
 
 
-
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
@@ -106,8 +105,6 @@ def run_migrations_online() -> None:
             )
             async with context.begin_transaction():
                 await connection.run_sync(context.run_migrations)
-
-
 
 
 if context.is_offline_mode():

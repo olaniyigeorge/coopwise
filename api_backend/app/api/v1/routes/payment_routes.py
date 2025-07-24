@@ -17,10 +17,7 @@ from db.dependencies import get_async_db_session
 from db.models.contribution_model import Contribution
 from app.services.payment_service import PaymentService
 
-router = APIRouter(
-    prefix="/api/v1/payments",
-    tags=["Payments & Integrations"]
-)
+router = APIRouter(prefix="/api/v1/payments", tags=["Payments & Integrations"])
 
 PAYSTACK_WHITELIST = ["52.31.139.75", "52.49.173.169", "52.214.14.220"]
 
@@ -30,11 +27,11 @@ async def deposit_with_paystack(
     payload: PaystackPayload,
     db: AsyncSession = Depends(get_async_db_session),
     user: AuthenticatedUser = Depends(get_current_user),
-):  
+):
     """
     Deposit with Paystack .
     """
-    
+
     pass
 
 
@@ -43,7 +40,7 @@ async def paystack_webhook(
     request: Request,
     x_paystack_signature: Optional[str] = Header(None),
     x_forwarded_for: Optional[str] = Header(None),
-    db: AsyncSession = Depends(get_async_db_session)
+    db: AsyncSession = Depends(get_async_db_session),
 ):
     """
     Handles Paystack Webhook notifications and updates the contribution/payment records.
@@ -84,16 +81,21 @@ async def paystack_webhook(
         # Step 4: Update payment record
         payment.status = "settled"
         payment.local_amount = amount
-        payment.stable_amount = amount 
+        payment.stable_amount = amount
         payment.gateway = data.get("channel")
         payment.updated_at = data.get("paid_at")
         await db.commit()
 
         # Step 5: Update related contribution record
         if payment.contribution:
-            await ContributionService.update_contribution_status(db=db, contribution_id=payment.contribution_id, contribution_status="completed", paid_at=payment.updated_at)
+            await ContributionService.update_contribution_status(
+                db=db,
+                contribution_id=payment.contribution_id,
+                contribution_status="completed",
+                paid_at=payment.updated_at,
+            )
             return {"message": "Payment and contribution updated successfully."}
-        
+
         return {"message": "Payment updated successfully."}
 
     except Exception as e:
@@ -101,14 +103,12 @@ async def paystack_webhook(
         raise HTTPException(status_code=500, detail="Webhook processing failed.")
 
 
-
-
 @router.get("/paystack/callback", summary="Paystack Payment Callback")
 async def paystack_callback(
     request: Request,
     # reference: str,
     db: AsyncSession = Depends(get_async_db_session),
-    redis: Redis = Depends(get_redis)
+    redis: Redis = Depends(get_redis),
 ):
     reference = request.query_params.get("reference")
     if not reference:
@@ -121,6 +121,6 @@ async def paystack_callback(
         return f"{config.CLIENT_DOMAIN}/payment?status=failed&ref={reference}"
 
     await WalletService.finalize_deposit(reference, db, redis)
-    #return RedirectResponse(url=f"{config.CLIENT_DOMAIN}?status=success&ref={reference}")
+    # return RedirectResponse(url=f"{config.CLIENT_DOMAIN}?status=success&ref={reference}")
 
     return f"{config.CLIENT_DOMAIN}?status=success&ref={reference}"

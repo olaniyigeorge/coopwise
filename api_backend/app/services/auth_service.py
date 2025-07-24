@@ -18,23 +18,32 @@ class AuthService:
     async def register_user(user_data: UserCreate, db: AsyncSession):
         try:
             # Check if email already exists
-            existing = await db.execute(select(User).where(User.email == user_data.email))
+            existing = await db.execute(
+                select(User).where(User.email == user_data.email)
+            )
             if existing.scalars().first():
                 raise HTTPException(status_code=400, detail="Email already registered")
-            
-            # Also check if username exists (optional but recommended)
-            existing_username = await db.execute(select(User).where(User.username == user_data.username))
-            if existing_username.scalars().first():
-                raise HTTPException(status_code=400, detail="Username already registered")
 
+            # Also check if username exists (optional but recommended)
+            existing_username = await db.execute(
+                select(User).where(User.username == user_data.username)
+            )
+            if existing_username.scalars().first():
+                raise HTTPException(
+                    status_code=400, detail="Username already registered"
+                )
 
             # Also check if phone number exists (optional but recommended)
-            existing_phone = await db.execute(select(User).where(User.phone_number == user_data.phone_number))
+            existing_phone = await db.execute(
+                select(User).where(User.phone_number == user_data.phone_number)
+            )
             if existing_phone.scalars().first():
-                raise HTTPException(status_code=400, detail="Phone number already registered")
+                raise HTTPException(
+                    status_code=400, detail="Phone number already registered"
+                )
 
             new_user = User(
-                username=user_data.username or user_data.email.split('@')[0], 
+                username=user_data.username or user_data.email.split("@")[0],
                 email=user_data.email,
                 password=get_password_hash(user_data.password),
                 full_name=user_data.full_name,
@@ -56,8 +65,8 @@ class AuthService:
         except Exception as e:
             logger.error(f"Error creating user: {e}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
-                detail=f"Could not create user - {str(e)}"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Could not create user - {str(e)}",
             )
 
     @staticmethod
@@ -69,7 +78,9 @@ class AuthService:
         return user
 
     @staticmethod
-    async def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes=30)):
+    async def create_access_token(
+        data: dict, expires_delta: timedelta = timedelta(minutes=30)
+    ):
         to_encode = data.copy()
         expire = datetime.now() + expires_delta
         to_encode.update({"exp": expire})
@@ -78,21 +89,24 @@ class AuthService:
     @staticmethod
     async def decode_token(token: str):
         try:
-            payload = jwt.decode(token, config.APP_SECRET_KEY, algorithms=[config.ALGORITHM])
+            payload = jwt.decode(
+                token, config.APP_SECRET_KEY, algorithms=[config.ALGORITHM]
+            )
             return payload
         except JWTError:
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-
     @staticmethod
-    async def create_password_reset_token(user: User, expires_delta: timedelta = timedelta(seconds=20.0)) -> str:
+    async def create_password_reset_token(
+        user: User, expires_delta: timedelta = timedelta(seconds=20.0)
+    ) -> str:
         data = {
             "sub": user.email,
             "id": str(user.id),
             "username": user.username,
             "full_name": user.full_name,
             "role": user.role.value,
-            "type": "reset"
+            "type": "reset",
         }
         expire = datetime.now() + expires_delta
         print(f"Token will expire at: {expire}")
@@ -104,7 +118,9 @@ class AuthService:
         result = await db.execute(select(User).where(User.email == email))
         user = result.scalars().first()
         if not user:
-            raise HTTPException(status_code=404, detail="User with this email does not exist")
+            raise HTTPException(
+                status_code=404, detail="User with this email does not exist"
+            )
 
         token = await AuthService.create_password_reset_token(user)
         reset_link = f"{config.CLIENT_DOMAIN}/reset-password?token={token}"
@@ -121,10 +137,15 @@ class AuthService:
     @staticmethod
     async def confirm_reset_token(token: str):
         try:
-            payload = jwt.decode(token, config.APP_SECRET_KEY, algorithms=[config.ALGORITHM])
+            payload = jwt.decode(
+                token, config.APP_SECRET_KEY, algorithms=[config.ALGORITHM]
+            )
             if payload.get("type") != "reset":
                 raise HTTPException(status_code=400, detail="Invalid token type")
-            if "exp" in payload and datetime.fromtimestamp(payload["exp"]) < datetime.now():
+            if (
+                "exp" in payload
+                and datetime.fromtimestamp(payload["exp"]) < datetime.now()
+            ):
                 raise HTTPException(status_code=400, detail="Token has expired")
             return payload
         except JWTError as e:
@@ -136,9 +157,6 @@ class AuthService:
             payload = await AuthService.confirm_reset_token(token)
             user_id = UUID(payload.get("id"))
 
-
-
-            
             result = await db.execute(select(User).where(User.id == user_id))
             user = result.scalars().first()
 
@@ -148,10 +166,18 @@ class AuthService:
             user.password = get_password_hash(new_password)
             db.add(user)
             await db.commit()
-            return {"status": "success", "message": "Password changed successfully", "user": user}
+            return {
+                "status": "success",
+                "message": "Password changed successfully",
+                "user": user,
+            }
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"Error changing password: {e}")
-            raise HTTPException(status_code=500, detail="Something went wrong. Try again later.")
+            raise HTTPException(
+                status_code=500, detail="Something went wrong. Try again later."
+            )
+
+
 # Integrates with phone/email OTP if needed later.

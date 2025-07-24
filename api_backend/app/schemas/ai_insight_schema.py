@@ -3,7 +3,13 @@ from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
-from db.models.ai_insight import AIInsight, DifficultyLevel, ImplementationStatus, InsightCategory, InsightType
+from db.models.ai_insight import (
+    AIInsight,
+    DifficultyLevel,
+    ImplementationStatus,
+    InsightCategory,
+    InsightType,
+)
 
 
 #  ------------- AI Insight Schemas -------------
@@ -38,17 +44,16 @@ class AIInsightBase(BaseModel):
     timeframe: Optional[str] = None
     implementation_time: float = 0
 
-    insight_metadata: Optional[InsightMetadata] =  Field(json_schema_extra={"default":None, "alias":"metadata"})
-
-    model_config = ConfigDict(
-        from_attributes=True,
-        arbitrary_types_allowed=True
+    insight_metadata: Optional[InsightMetadata] = Field(
+        json_schema_extra={"default": None, "alias": "metadata"}
     )
+
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 class AIInsightCreate(AIInsightBase):
     user_id: Optional[UUID] = None
-    group_id: Optional[UUID] =  None
+    group_id: Optional[UUID] = None
 
 
 class AIInsightDetail(AIInsightBase):
@@ -58,27 +63,18 @@ class AIInsightDetail(AIInsightBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(
-        from_attributes=True,
-        arbitrary_types_allowed=True
-    )
-
-
-
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 async def to_pydantic(insight: AIInsight) -> AIInsightDetail:
     return AIInsightDetail(
         **insight.__dict__,
-        insight_metadata=InsightMetadata(**insight.insight_metadata) if insight.insight_metadata else None
+        insight_metadata=(
+            InsightMetadata(**insight.insight_metadata)
+            if insight.insight_metadata
+            else None
+        )
     )
-
-
-
-
-
-
-
 
 
 from datetime import timedelta
@@ -100,7 +96,6 @@ AI_INSIGHT_TEMPLATES = [
         "timeframe": "Last 14 days",
         "implementation_time": 3600,
     },
-
     # New user onboarding insights
     {
         "title": "Welcome to CoopWise!",
@@ -147,7 +142,6 @@ AI_INSIGHT_TEMPLATES = [
         "timeframe": "First 7 days",
         "implementation_time": 3600,
     },
-
     # Financial optimization
     {
         "title": "Low Contribution Alert",

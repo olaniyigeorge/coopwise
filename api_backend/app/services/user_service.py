@@ -12,7 +12,9 @@ from app.utils.logger import logger
 class UserService:
 
     @staticmethod
-    async def get_users(db: AsyncSession, skip: int = 0, limit: int = 10) -> list[UserDetail]:
+    async def get_users(
+        db: AsyncSession, skip: int = 0, limit: int = 10
+    ) -> list[UserDetail]:
         """
         Fetch a list of users with optional pagination.
         """
@@ -23,10 +25,10 @@ class UserService:
             logger.error(f"Failed to fetch users: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Could not fetch users"
+                detail="Could not fetch users",
             )
         return users
-    
+
     @staticmethod
     async def get_user_by_id(db: AsyncSession, user_id: UUID) -> UserDetail | None:
         """
@@ -42,11 +44,13 @@ class UserService:
             logger.error(f"Failed to fetch user by ID: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Could not fetch user"
+                detail="Could not fetch user",
             )
 
     @staticmethod
-    async def update_user(db: AsyncSession, user_id: str, user_data: UserUpdate) -> User | None:
+    async def update_user(
+        db: AsyncSession, user_id: str, user_data: UserUpdate
+    ) -> User | None:
         """
         Update a user's details by their ID.
         """
@@ -67,7 +71,7 @@ class UserService:
             logger.error(f"Failed to update user: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Could not update user"
+                detail="Could not update user",
             )
         return user
 
@@ -84,7 +88,7 @@ class UserService:
             new_user = User(
                 username=user_data.username,
                 email=user_data.email,
-                password=get_password_hash(user_data.password)
+                password=get_password_hash(user_data.password),
             )
 
             db.add(new_user)
@@ -95,12 +99,13 @@ class UserService:
         except Exception as e:
             logger.error(f"User registration failed: {e}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Could not create user"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Could not create user"
             )
 
     @staticmethod
-    async def authenticate_user(email: str, password: str, db: AsyncSession) -> User | None:
+    async def authenticate_user(
+        email: str, password: str, db: AsyncSession
+    ) -> User | None:
         """
         Authenticate a user by email and password. Returns user if valid, else None.
         """
@@ -132,70 +137,67 @@ class UserService:
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
 
-            verified = all([
-                user.is_email_verified,
-                user.is_video_verified,
-                user.is_phone_verified,
-                user.wallet_activated
-            ])
+            verified = all(
+                [
+                    user.is_email_verified,
+                    user.is_video_verified,
+                    user.is_phone_verified,
+                    user.wallet_activated,
+                ]
+            )
 
             return verified
         except Exception as e:
             logger.error(f"User verification check failed: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Verification process failed"
-            )
+            raise HTTPException(status_code=500, detail="Verification process failed")
 
     @staticmethod
     async def kyc(
-            user_id: str,
-            db: AsyncSession,
-            *,
-            video_verified: bool = False,
-            email_verified: bool = False,
-            wallet_activated: bool = False
-        ) -> dict:
-            """
-            Perform and update user verification fields as part of KYC.
-            Sets is_verified=True if all criteria are met.
-            """
-            try:
-                result = await db.execute(select(User).where(User.id == user_id))
-                user = result.scalars().first()
+        user_id: str,
+        db: AsyncSession,
+        *,
+        video_verified: bool = False,
+        email_verified: bool = False,
+        wallet_activated: bool = False,
+    ) -> dict:
+        """
+        Perform and update user verification fields as part of KYC.
+        Sets is_verified=True if all criteria are met.
+        """
+        try:
+            result = await db.execute(select(User).where(User.id == user_id))
+            user = result.scalars().first()
 
-                if not user:
-                    raise HTTPException(status_code=404, detail="User not found")
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
 
-                # Update verification flags
-                user.is_video_verified = video_verified or user.is_video_verified
-                user.is_email_verified = email_verified or user.is_email_verified
-                user.wallet_activated = wallet_activated or user.wallet_activated
+            # Update verification flags
+            user.is_video_verified = video_verified or user.is_video_verified
+            user.is_email_verified = email_verified or user.is_email_verified
+            user.wallet_activated = wallet_activated or user.wallet_activated
 
-                # Set overall verification flag
-                user.is_verified = all([
-                    user.is_email_verified,
-                    user.is_video_verified,
-                    user.wallet_activated
-                ])
+            # Set overall verification flag
+            user.is_verified = all(
+                [user.is_email_verified, user.is_video_verified, user.wallet_activated]
+            )
 
-                await db.commit()
-                await db.refresh(user)
+            await db.commit()
+            await db.refresh(user)
 
-                return {
-                    "status": "success",
-                    "is_verified": user.is_verified,
-                    "details": {
-                        "is_email_verified": user.is_email_verified,
-                        "is_video_verified": user.is_video_verified,
-                        "wallet_activated": user.wallet_activated
-                    }
-                }
+            return {
+                "status": "success",
+                "is_verified": user.is_verified,
+                "details": {
+                    "is_email_verified": user.is_email_verified,
+                    "is_video_verified": user.is_video_verified,
+                    "wallet_activated": user.wallet_activated,
+                },
+            }
 
-            except Exception as e:
-                logger.error(f"KYC update failed: {e}")
-                await db.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="KYC update failed"
-                )
+        except Exception as e:
+            logger.error(f"KYC update failed: {e}")
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="KYC update failed",
+            )

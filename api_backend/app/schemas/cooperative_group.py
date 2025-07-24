@@ -5,11 +5,17 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 from uuid import UUID
 import enum
 
-from db.models.cooperative_group import ContributionFrequency, CooperativeModel, CooperativeStatus, PayoutStrategy
+from db.models.cooperative_group import (
+    ContributionFrequency,
+    CooperativeModel,
+    CooperativeStatus,
+    PayoutStrategy,
+)
 
 
 # class CoopGroupBase(BaseModel):
 #     name: str
+
 
 class CoopGroupCreate(BaseModel):
     name: str
@@ -25,6 +31,7 @@ class CoopGroupCreate(BaseModel):
     status: CooperativeStatus
     rules: List[dict] | None
 
+
 class CoopGroupDetails(BaseModel):
     id: UUID
     name: str
@@ -35,11 +42,11 @@ class CoopGroupDetails(BaseModel):
     contribution_frequency: ContributionFrequency
     payout_strategy: PayoutStrategy
     coop_model: CooperativeModel
-    max_members: int 
+    max_members: int
     target_amount: int
     status: CooperativeStatus
 
-    rules: List[dict] | None 
+    rules: List[dict] | None
     created_at: datetime
     updated_at: datetime
 
@@ -51,7 +58,6 @@ class CoopGroupTargetSummary(BaseModel):
     name: str
     contribution_amount: int
     target_amount: int
-
 
     model_config = ConfigDict(from_attributes=True)
 

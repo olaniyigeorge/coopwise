@@ -21,22 +21,22 @@ class SummaryService:
 
     @staticmethod
     async def get_user_summary(
-        user: AuthenticatedUser,
-        db: AsyncSession,
-        redis: Redis
+        user: AuthenticatedUser, db: AsyncSession, redis: Redis
     ) -> Summary:
 
         key = f"summary:{user.id}"
         cached_summary = await get_cache(key)
         if cached_summary:
             logger.info(f"🔄 Using cached summary for user {user.id}")
-            
+
             if isinstance(cached_summary, str):
-                cached_summary = json.loads(cached_summary)  
-            
+                cached_summary = json.loads(cached_summary)
+
             wallet = await WalletService.get_wallet(db, user, redis)
-            
-            if isinstance(cached_summary.get("wallet"), str): # Doing this because the wallet and it's cache are updated separately 
+
+            if isinstance(
+                cached_summary.get("wallet"), str
+            ):  # Doing this because the wallet and it's cache are updated separately
                 print("\n Setting more recent wallet details.... \n")
                 cached_summary["wallet"] = json.loads(wallet)
 
@@ -45,19 +45,21 @@ class SummaryService:
         async def fetch_summary():
             # 1. Your savings: sum of contributions
             savings_query = await db.execute(
-                select(func.sum(Contribution.amount))
-                .where(Contribution.user_id == user.id, Contribution.status == ContributionStatus.completed)
+                select(func.sum(Contribution.amount)).where(
+                    Contribution.user_id == user.id,
+                    Contribution.status == ContributionStatus.completed,
+                )
             )
             your_savings = savings_query.scalar() or 0.0
 
             # 2. Next contribution date
-            # TODO Create a a the contribution for all members on payout 
+            # TODO Create a a the contribution for all members on payout
             next_contrib_query = await db.execute(
                 select(Contribution.due_date)
                 .where(
                     Contribution.user_id == user.id,
                     Contribution.due_date != None,
-                    Contribution.due_date > datetime.now()
+                    Contribution.due_date > datetime.now(),
                 )
                 .order_by(Contribution.due_date.asc())
                 .limit(1)
@@ -65,7 +67,9 @@ class SummaryService:
             next_contribution = next_contrib_query.scalar()
 
             # 3. Get user’s group memberships
-            memberships = await CooperativeMembershipService.get_memberships_by_user(user.id, db)
+            memberships = await CooperativeMembershipService.get_memberships_by_user(
+                user.id, db
+            )
             group_ids = [membership.group_id for membership in memberships]
 
             # 4. Next payout date from all user groups
@@ -74,13 +78,15 @@ class SummaryService:
                 .where(
                     CooperativeGroup.id.in_(group_ids),
                     CooperativeGroup.next_payout_date != None,
-                    CooperativeGroup.next_payout_date > datetime.now()
+                    CooperativeGroup.next_payout_date > datetime.now(),
                 )
                 .order_by(CooperativeGroup.next_payout_date.asc())
                 .limit(1)
             )
             next_payout_result = next_payout_query.first()
-            next_payout, next_payout_group_id = (next_payout_result if next_payout_result else (None, None))
+            next_payout, next_payout_group_id = (
+                next_payout_result if next_payout_result else (None, None)
+            )
 
             # 5. From that group, get the user’s payout number
             # payout_number: Optional[int] = None
@@ -96,13 +102,14 @@ class SummaryService:
 
             # 6 Get user wallet
             wallet = await WalletService.get_wallet(db, user, redis)
-            
 
             return Summary(
-                your_savings= float(your_savings),
-                next_contribution= next_contribution.isoformat() if next_contribution else None,
+                your_savings=float(your_savings),
+                next_contribution=(
+                    next_contribution.isoformat() if next_contribution else None
+                ),
                 next_payout=next_payout.isoformat() if next_payout else None,
-                wallet = wallet
+                wallet=wallet,
             )
 
         fresh_summary: Summary = await fetch_summary()
@@ -113,9 +120,7 @@ class SummaryService:
 
     @staticmethod
     async def get_user_targets(
-        user: AuthenticatedUser,
-        db: AsyncSession,
-        redis: Redis
+        user: AuthenticatedUser, db: AsyncSession, redis: Redis
     ) -> Targets:
         cache_key = f"targets:{user.id}"
         cached = await get_cache(cache_key)
@@ -125,13 +130,20 @@ class SummaryService:
         logger.info(f"Fetching targets for user {user.id} from database")
 
         # Fetch user's target_savings_amount
-        result = await db.execute(select(User.target_savings_amount).where(User.id == user.id))
+        result = await db.execute(
+            select(User.target_savings_amount).where(User.id == user.id)
+        )
         savings_target_row = result.scalar()
         savings_target = savings_target_row or 0.0
 
         # Fetch groups the user is in and their target_amounts
         stmt = (
-            select(CooperativeGroup.id, CooperativeGroup.name, CooperativeGroup.contribution_amount, CooperativeGroup.target_amount)
+            select(
+                CooperativeGroup.id,
+                CooperativeGroup.name,
+                CooperativeGroup.contribution_amount,
+                CooperativeGroup.target_amount,
+            )
             .join(GroupMembership, CooperativeGroup.id == GroupMembership.group_id)
             .where(GroupMembership.user_id == user.id)
         )
@@ -143,16 +155,12 @@ class SummaryService:
                 id=group.id,
                 name=group.name,
                 contribution_amount=group.contribution_amount,
-                target_amount=group.target_amount
+                target_amount=group.target_amount,
             )
             for group in groups
         ]
 
-        targets = Targets(
-            savings_target=float(savings_target),
-            group_goals=group_goals
-        )
+        targets = Targets(savings_target=float(savings_target), group_goals=group_goals)
 
         await update_cache(cache_key, targets.model_dump_json(), ttl=300)
         return targets
-    

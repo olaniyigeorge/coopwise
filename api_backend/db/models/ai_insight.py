@@ -1,6 +1,15 @@
 from datetime import datetime
 from uuid import uuid4, UUID
-from sqlalchemy import JSON, Column, String, Text, Enum as SQLAlchemyEnum, Float, DateTime, ForeignKey
+from sqlalchemy import (
+    JSON,
+    Column,
+    String,
+    Text,
+    Enum as SQLAlchemyEnum,
+    Float,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from db.database import Base
@@ -31,10 +40,12 @@ class InsightType(enum.Enum):
     general = "general"
     trending = "trending"
 
+
 class DifficultyLevel(enum.Enum):
     easy = "easy"
     medium = "medium"
     hard = "hard"
+
 
 class ImplementationStatus(enum.Enum):
     not_started = "not_started"
@@ -53,12 +64,22 @@ class AIInsight(Base):
     recommended_action = Column(Text, nullable=True)
 
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    group_id = Column(PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=True)
+    group_id = Column(
+        PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=True
+    )
 
-    category = Column(SQLAlchemyEnum(InsightCategory), default=InsightCategory.other, nullable=False)
-    type = Column(SQLAlchemyEnum(InsightType), default=InsightType.general, nullable=False)
-    difficulty = Column(SQLAlchemyEnum(DifficultyLevel), default=DifficultyLevel.medium, nullable=False)
-    status = Column(SQLAlchemyEnum(ImplementationStatus), default=ImplementationStatus.not_started)
+    category = Column(
+        SQLAlchemyEnum(InsightCategory), default=InsightCategory.other, nullable=False
+    )
+    type = Column(
+        SQLAlchemyEnum(InsightType), default=InsightType.general, nullable=False
+    )
+    difficulty = Column(
+        SQLAlchemyEnum(DifficultyLevel), default=DifficultyLevel.medium, nullable=False
+    )
+    status = Column(
+        SQLAlchemyEnum(ImplementationStatus), default=ImplementationStatus.not_started
+    )
 
     estimated_savings = Column(Float, default=0.0)
     potential_gain = Column(Float, default=0.0)
@@ -74,6 +95,6 @@ class AIInsight(Base):
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     user = relationship("User", back_populates="ai_insights", lazy="joined")
-    group = relationship("CooperativeGroup", back_populates="ai_insights", lazy="joined")
-
-
+    group = relationship(
+        "CooperativeGroup", back_populates="ai_insights", lazy="joined"
+    )

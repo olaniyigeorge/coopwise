@@ -5,16 +5,14 @@ from typing import Optional
 from db.models.activity_model import ActivityType
 
 
-
-
 class ActivityCreate(BaseModel):
     user_id: UUID
     type: ActivityType
     description: str
     group_id: Optional[UUID] = None
-    entity_id: Optional[str] = None 
+    entity_id: Optional[str] = None
     amount: Optional[float] = None
-    created_at: Optional[datetime] = None 
+    created_at: Optional[datetime] = None
 
 
 class ActivityDetail(BaseModel):
@@ -27,6 +25,4 @@ class ActivityDetail(BaseModel):
     amount: Optional[float]
     created_at: datetime
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = {"from_attributes": True}

@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class GlobalConfig(BaseSettings):
     ENV: str
     PROJECT_NAME: str
@@ -11,18 +12,15 @@ class GlobalConfig(BaseSettings):
     ALGORITHM: str
     APP_SECRET_KEY: str
     PAYSTACK_SECRET_KEY: str
-    PAYSTACK_PUBLIC_KEY:str
+    PAYSTACK_PUBLIC_KEY: str
     REDIS_URL: str
     CASHRAMP_PUBKEY: str
     CASHRAMP_SECKEY: str
     GEMINI_API_KEY: str
     TEST_DATABASE_URL: str
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        extra="ignore"
-    
-    )
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
 
 class DevConfig(GlobalConfig):
     # ENV: str
@@ -43,9 +41,10 @@ class DevConfig(GlobalConfig):
 
     # model_config = SettingsConfigDict(
     #     env_prefix=str = "DEV_"
-    
+
     # )
     pass
+
 
 class TestConfig(GlobalConfig):
     # ENV: str
@@ -66,9 +65,10 @@ class TestConfig(GlobalConfig):
 
     # # model_config = SettingsConfigDict(
     # #     env_prefix=str = "TEST_"
-    
+
     # # )
     pass
+
 
 class ProdConfig(GlobalConfig):
     # ENV: str
@@ -86,10 +86,10 @@ class ProdConfig(GlobalConfig):
     # CASHRAMP_SECKEY: str
     # GEMINI_API_KEY:str
     # TEST_DATABASE_URL: str
-    
+
     # model_config = SettingsConfigDict(
     #     env_prefix=str = "PROD_"
-    
+
     # )
     pass
 

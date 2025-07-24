@@ -10,7 +10,7 @@ from db.models.notifications import EventType, NotificationStatus, NotificationT
 
 class NotificationDetail(BaseModel):
     id: UUID
-    #user_id: UUID
+    # user_id: UUID
     title: Optional[str]
     message: Optional[str]
     event_type: EventType
@@ -38,7 +38,7 @@ class NotificationCreate(BaseModel):
 
 class NotificationUpdate(BaseModel):
 
-    title: Optional[str] 
+    title: Optional[str]
     message: Optional[str]
     event_type: Optional[EventType]
     type: Optional[NotificationType]
