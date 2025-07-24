@@ -2,7 +2,7 @@ name: CI for Coopwise
 
 on:
   push:
-    branches: [main, dev]
+    branches: [dev]
   
 jobs:
   backend:
