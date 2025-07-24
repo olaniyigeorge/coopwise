@@ -12,7 +12,6 @@ class ChatWithAI(Base):
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     body = Column(Text, nullable=False)
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-   
 
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)

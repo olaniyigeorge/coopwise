@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel, HttpUrl
 
+
 class CustomerResponse(BaseModel):
     id: str
     email: str
@@ -23,4 +24,3 @@ class InitiateDepositResponse(BaseModel):
     amountLocal: float
     amountUsd: float
     expiresAt: str
-

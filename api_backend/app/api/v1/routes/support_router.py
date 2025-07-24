@@ -14,32 +14,26 @@ from app.services.notification_service import NotificationService
 from db.dependencies import get_async_db_session
 from app.services.auth_service import AuthService
 
-router = APIRouter(
-    prefix="/api/v1/support", 
-    tags=["Support, Feedback & Reviews"]
-    )
+router = APIRouter(prefix="/api/v1/support", tags=["Support, Feedback & Reviews"])
+
 
 @router.post("/write-us")
 async def write_us_a_feedback(
-    feedback_data: FeedbackCreate,
-    db: AsyncSession = Depends(get_async_db_session)
+    feedback_data: FeedbackCreate, db: AsyncSession = Depends(get_async_db_session)
 ) -> FeedbackDetail:
     feedback = await SupportService.give_feedback(feedback_data, db)
-
 
     return feedback
 
 
-@router.get("/",  response_model=List[FeedbackDetail])
+@router.get("/", response_model=List[FeedbackDetail])
 async def get_feedbacks(
-        db: AsyncSession = Depends(get_async_db_session),
-        user: AuthenticatedUser = Depends(get_current_user),
-        skip: int = 0,
-        limit: int =10
-        ):
-    
+    db: AsyncSession = Depends(get_async_db_session),
+    user: AuthenticatedUser = Depends(get_current_user),
+    skip: int = 0,
+    limit: int = 10,
+):
+
     feedbacks = await SupportService.get_feedbacks(db, skip, limit)
 
     return feedbacks
-
-

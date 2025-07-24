@@ -7,6 +7,7 @@ import uuid
 
 from db.database import Base
 
+
 class ActivityType(enum.Enum):
     joined_group = "joined_group"
     left_group = "left_group"
@@ -16,16 +17,22 @@ class ActivityType(enum.Enum):
     accepted_invite = "accepted_invite"
     created_group = "created_group"
 
- 
+
 class ActivityLog(Base):
     __tablename__ = "activity_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    group_id = Column(UUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=True)
+    group_id = Column(
+        UUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=True
+    )
 
     type = Column(Enum(ActivityType), nullable=False)
-    entity_id = Column(String, nullable=True, doc="Primary key of the related entity (int or UUID), stored as text")
+    entity_id = Column(
+        String,
+        nullable=True,
+        doc="Primary key of the related entity (int or UUID), stored as text",
+    )
     description = Column(String, nullable=False)
     amount = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.now)

@@ -2,23 +2,24 @@ from fastapi import BackgroundTasks, Depends, FastAPI
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-load_dotenv() 
+
+load_dotenv()
 from app.core.middleware import app_middleware
 from app.utils.logger import logger
 from app.core.config import config
 from app.api.v1.routes import (
-    auth, 
-    cooperative_group, 
-    membership, 
-    user, 
-    contribution, 
-    dashboard, 
-    notifications_router, 
-    support_router, 
+    auth,
+    cooperative_group,
+    membership,
+    user,
+    contribution,
+    dashboard,
+    notifications_router,
+    support_router,
     payment_routes,
-    wallet_routes, 
+    wallet_routes,
     insights_router,
-    cashramp_router
+    cashramp_router,
 )
 import uvicorn
 from contextlib import asynccontextmanager
@@ -31,16 +32,12 @@ from fastapi import Request
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db() 
+    await init_db()
     # Make migrations and migrate
-    yield 
+    yield
 
 
-app = FastAPI(
-    title=config.PROJECT_NAME, 
-    docs_url="/api/docs",
-    lifespan=lifespan
-)
+app = FastAPI(title=config.PROJECT_NAME, docs_url="/api/docs", lifespan=lifespan)
 
 
 # Routers
@@ -63,10 +60,10 @@ app.add_middleware(BaseHTTPMiddleware, dispatch=app_middleware)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[config.CLIENT_DOMAIN],  
+    allow_origins=[config.CLIENT_DOMAIN],
     allow_credentials=True,
-    allow_methods=["*"],  
-    allow_headers=["*"], 
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -74,11 +71,11 @@ templates = Jinja2Templates(directory="app/templates")
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     base_url = config.DOMAIN
-    
-   
+
     return templates.TemplateResponse(
         request,
         "home.html",
@@ -86,15 +83,13 @@ async def home(request: Request):
             "name": "CoopWise Backend",
             "details": "CoopWise API Backend",
             "docs": f"{base_url}/api/docs",
-        }
+        },
     )
+
+
 @app.get("/ping")
 async def home(request: Request):
-    return {"message":"Pong"} 
-
-
-
-
+    return {"message": "Pong"}
 
 
 if __name__ == "__main__":

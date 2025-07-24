@@ -3,8 +3,19 @@ from datetime import datetime
 import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from db.models.wallet_models import LedgerStatus, Wallet, LocalCurrency, WalletLedger, LedgerType
-from app.schemas.wallet_schemas import WalletDeposit, WalletDetail, WalletLedgerCreate, WalletWithdraw
+from db.models.wallet_models import (
+    LedgerStatus,
+    Wallet,
+    LocalCurrency,
+    WalletLedger,
+    LedgerType,
+)
+from app.schemas.wallet_schemas import (
+    WalletDeposit,
+    WalletDetail,
+    WalletLedgerCreate,
+    WalletWithdraw,
+)
 from app.schemas.auth import AuthenticatedUser
 from app.utils.exchange_client import fetch_exchange_rate
 from fastapi import HTTPException, status
@@ -17,12 +28,8 @@ from app.utils.cache import get_cache, update_cache
 
 class WalletService:
 
-
     @staticmethod
-    async def create_user_wallet(
-        user: AuthenticatedUser, 
-        db: AsyncSession
-    ) -> Wallet:
+    async def create_user_wallet(user: AuthenticatedUser, db: AsyncSession) -> Wallet:
         """
         Create a wallet entry for a new user. Called at user signup.
         """
@@ -34,10 +41,7 @@ class WalletService:
 
     @staticmethod
     async def deposit(
-        data: WalletDeposit,
-        db: AsyncSession,
-        user: AuthenticatedUser,    
-        redis: Redis
+        data: WalletDeposit, db: AsyncSession, user: AuthenticatedUser, redis: Redis
     ) -> WalletDetail:
         """
         User deposits `local_amount` in their local currency. We:
@@ -56,11 +60,14 @@ class WalletService:
             logger.warning(f"⚠️ Wallet not found for user {user.id}")
             wallet = await WalletService.create_user_wallet(user, db)
             # raise HTTPException(status_code=404, detail="Wallet not found")
-        
-        
-        print(f"\n\n\nUser {user.id} is depositing {data.local_amount} {data.currency} into their wallet\n\n\n")
+
+        print(
+            f"\n\n\nUser {user.id} is depositing {data.local_amount} {data.currency} into their wallet\n\n\n"
+        )
         # 2. Fetch exchange rate quote from CashRamp GraphQL API
-        rate = 1 / 1600 # TODO (use actual exchange rate func) await fetch_exchange_rate(user.id, data.currency, "USDC")  ---  mock rate 1 USDC == 1600 NGN(local currency) 
+        rate = (
+            1 / 1600
+        )  # TODO (use actual exchange rate func) await fetch_exchange_rate(user.id, data.currency, "USDC")  ---  mock rate 1 USDC == 1600 NGN(local currency)
         stable_amt = Decimal(data.local_amount) * Decimal(rate)
 
         print(f"\n\n\n Stable amount settled into wallet {stable_amt} \n\n\n")
@@ -77,7 +84,7 @@ class WalletService:
             stable_amount=stable_amt,
             local_amount=Decimal(data.local_amount),
             local_currency=data.currency,
-            exchange_rate=Decimal(rate)
+            exchange_rate=Decimal(rate),
         )
         db.add(ledger)
         await db.commit()
@@ -85,16 +92,15 @@ class WalletService:
         # 5. TODO (Invalidate or update cached wallet if previously cached)
         wallet_data = WalletDetail.model_validate(wallet)
         print("\n updating cache...\n")
-        await update_cache(f"wallet_detail:{user.id}", wallet_data.model_dump_json(), ttl=300)
-        
-        return  WalletDetail.model_validate(wallet)
+        await update_cache(
+            f"wallet_detail:{user.id}", wallet_data.model_dump_json(), ttl=300
+        )
+
+        return WalletDetail.model_validate(wallet)
 
     @staticmethod
     async def withdraw(
-        data: WalletWithdraw,
-        db: AsyncSession,
-        user: AuthenticatedUser,
-        redis: Redis
+        data: WalletWithdraw, db: AsyncSession, user: AuthenticatedUser, redis: Redis
     ) -> dict:
         """
         User withdraws `local_amount` in their local currency. We:
@@ -121,13 +127,17 @@ class WalletService:
         else:
             # TODO Replace with actual await fetch_exchange_rate(user.id, wallet.local_currency, "USDC") call
             rate = Decimal(1) / Decimal(1600)  # mock
-            await update_cache(cache_key, str(rate), ttl=30) # Match the 20 - 50 market votality suggested by Accurue Cashramp 
+            await update_cache(
+                cache_key, str(rate), ttl=30
+            )  # Match the 20 - 50 market votality suggested by Accurue Cashramp
 
         # 3. Convert local amount → stable coin
         stable_amt = Decimal(data.local_amount) * rate
 
         if stable_amt > wallet.stable_coin_balance:
-            raise HTTPException(status_code=400, detail="Insufficient stable coin balance")
+            raise HTTPException(
+                status_code=400, detail="Insufficient stable coin balance"
+            )
 
         # 4. Debit balance
         wallet.stable_coin_balance -= stable_amt
@@ -141,24 +151,24 @@ class WalletService:
             stable_amount=stable_amt,
             local_amount=Decimal(data.local_amount),
             local_currency=wallet.local_currency,
-            exchange_rate=rate
+            exchange_rate=rate,
         )
         db.add(ledger)
         await db.commit()
 
         # 6. Return wallet detail and message
         wallet_data = WalletDetail.model_validate(wallet)
-        await update_cache(f"wallet_detail:{user.id}", wallet_data.model_dump_json(), ttl=300)
+        await update_cache(
+            f"wallet_detail:{user.id}", wallet_data.model_dump_json(), ttl=300
+        )
         return {
             "message": "Withdrawal successful",
-            "wallet": WalletDetail.model_validate(wallet)
+            "wallet": WalletDetail.model_validate(wallet),
         }
-    
+
     @staticmethod
     async def get_wallet(
-        db: AsyncSession,
-        user: AuthenticatedUser,
-        redis: Redis
+        db: AsyncSession, user: AuthenticatedUser, redis: Redis
     ) -> WalletDetail:
         """
         Fetch a user's wallet using their ID.
@@ -182,7 +192,7 @@ class WalletService:
         if not wallet:
             logger.warning(f"⚠️ Wallet not found for user {user.id}")
             wallet = await WalletService.create_user_wallet(user, db)
-            #raise HTTPException(status_code=404, detail="Wallet not found")
+            # raise HTTPException(status_code=404, detail="Wallet not found")
 
         wallet_data = WalletDetail.model_validate(wallet)
         await update_cache(cache_key, wallet_data.model_dump_json(), ttl=30)
@@ -190,8 +200,7 @@ class WalletService:
 
     @staticmethod
     async def get_wallet_ledger_by_reference(
-        reference: str,
-        db: AsyncSession
+        reference: str, db: AsyncSession
     ) -> WalletLedger | None:
         """
         Fetch a wallet ledger entry by its reference ID.
@@ -204,13 +213,14 @@ class WalletService:
             result = await db.execute(stmt)
             return result.scalar_one_or_none()
         except Exception as e:
-            logger.error(f"Failed to fetch wallet ledger by reference: {reference}. Error: {e}")
+            logger.error(
+                f"Failed to fetch wallet ledger by reference: {reference}. Error: {e}"
+            )
             return None
 
     @staticmethod
     async def record_ledger_entry(
-        ledger_data: WalletLedgerCreate,
-        db: AsyncSession
+        ledger_data: WalletLedgerCreate, db: AsyncSession
     ) -> WalletLedger:
         """
         Record a ledger entry for a wallet operation (deposit, withdrawal, etc.)
@@ -223,18 +233,16 @@ class WalletService:
             local_amount=ledger_data.local_amount,
             local_currency=ledger_data.local_currency,
             exchange_rate=ledger_data.exchange_rate,
-            status=ledger_data.status or LedgerStatus.initiated  
+            status=ledger_data.status or LedgerStatus.initiated,
         )
         db.add(ledger)
         await db.commit()
         await db.refresh(ledger)
         return ledger
-    
+
     @staticmethod
     async def update_ledger_status(
-        ledger_id: UUID,
-        status: LedgerStatus,
-        db: AsyncSession
+        ledger_id: UUID, status: LedgerStatus, db: AsyncSession
     ) -> WalletLedger:
         stmt = (
             update(WalletLedger)
@@ -249,7 +257,7 @@ class WalletService:
             select(WalletLedger).where(WalletLedger.id == ledger_id)
         )
         return result.scalar_one_or_none()
-    
+
     @staticmethod
     async def deposit_by_reference(reference: str, db: AsyncSession, redis: Redis):
         # Fetch the ledger

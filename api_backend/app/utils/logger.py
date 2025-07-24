@@ -8,7 +8,7 @@ os.makedirs("logs", exist_ok=True)
 # Ensure the server.logs file exists
 log_file_path = "logs/server.logs"
 if not os.path.exists(log_file_path):
-    with open(log_file_path, 'w'):
+    with open(log_file_path, "w"):
         pass
 
 # Configure logger

@@ -8,15 +8,12 @@ from app.schemas.user import UserDetail
 from db.models.membership import MembershipRole, MembershipStatus
 
 
-
 class MembershipCreate(BaseModel):
     user_id: Optional[UUID] = None  # UUID as string
     group_id: UUID  # UUID as string
     invited_by: UUID
     role: MembershipRole
     status: MembershipStatus
-
-
 
 
 class AcceptMembership(BaseModel):
@@ -42,5 +39,5 @@ class MembershipDetails(BaseModel):
 
 class MembershipExtDetails(MembershipDetails):
     user: UserDetail
-    
+
     model_config = ConfigDict(from_attributes=True)

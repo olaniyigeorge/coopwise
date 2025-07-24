@@ -3,7 +3,15 @@ from decimal import Decimal
 from enum import Enum
 from uuid import uuid4
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Numeric, Enum as SQLAlchemyEnum, Text
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    String,
+    Numeric,
+    Enum as SQLAlchemyEnum,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 
@@ -25,22 +33,33 @@ class Contribution(Base):
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
 
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    group_id = Column(PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=False)
-    # wallet_ledger_id = Column(PGUUID(as_uuid=True), ForeignKey("wallet_ledgers.id"), nullable=True)   
-    
-     
+    group_id = Column(
+        PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=False
+    )
+    # wallet_ledger_id = Column(PGUUID(as_uuid=True), ForeignKey("wallet_ledgers.id"), nullable=True)
+
     amount = Column(Numeric(12, 2), nullable=False)
     currency = Column(String(10), default="NGN", nullable=False)
 
-    due_date = Column(DateTime(timezone=True), nullable=True)  # for scheduled contributions
+    due_date = Column(
+        DateTime(timezone=True), nullable=True
+    )  # for scheduled contributions
     fulfilled_at = Column(DateTime(timezone=True), nullable=True)
 
-    status = Column(SQLAlchemyEnum(ContributionStatus), default=ContributionStatus.pledged, nullable=False)
+    status = Column(
+        SQLAlchemyEnum(ContributionStatus),
+        default=ContributionStatus.pledged,
+        nullable=False,
+    )
     note = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
+    )
 
     user = relationship("User", back_populates="contributions")
     group = relationship("CooperativeGroup", back_populates="contributions")
-    wallet_ledger = relationship("WalletLedger", back_populates="contribution", uselist=False)
+    wallet_ledger = relationship(
+        "WalletLedger", back_populates="contribution", uselist=False
+    )

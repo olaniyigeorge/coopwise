@@ -5,20 +5,22 @@ from uuid import UUID
 from db.models.user import IncomeRange, SavingFrequency, UserRoles
 
 
-PhoneNumberStr = Annotated[str, constr(pattern=r'^\+\d{7,15}$')]  # E.164 format
+PhoneNumberStr = Annotated[str, constr(pattern=r"^\+\d{7,15}$")]  # E.164 format
+
 
 class UserCreate(BaseModel):
     username: Optional[Annotated[str, constr(min_length=3, max_length=50)]] = None
     email: EmailStr
     password: Annotated[str, constr(min_length=6)]
     full_name: str
-    phone_number: PhoneNumberStr  
+    phone_number: PhoneNumberStr
     role: Optional[UserRoles] = UserRoles.user
 
     target_savings_amount: Optional[float] = None
     savings_purpose: Optional[str] = None
     income_range: Optional[IncomeRange] = None
     saving_frequency: Optional[SavingFrequency] = None
+
 
 class UserUpdate(BaseModel):
     username: Optional[Annotated[str, constr(min_length=3, max_length=50)]] = None
@@ -39,6 +41,7 @@ class UserUpdate(BaseModel):
     # wallet_activated: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class UserDetail(BaseModel):
     id: UUID
@@ -64,6 +67,7 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+
 class AuthUser(BaseModel):
     access_token: str
     user: UserDetail
@@ -75,7 +79,7 @@ class UserKYC(BaseModel):
     is_video_verified: bool = False
     wallet_activated: bool = False
     is_verified: bool = False
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -96,4 +100,3 @@ class UserDetailsAll(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-
