@@ -61,5 +61,5 @@ async def fetch_exchange_rate(
         )
         resp.raise_for_status()
         data = resp.json()
-        print(f"\nACCURE XG Quote Response: {data}\n")
+        logger.info(f"\nACCURE XG Quote Response: {data}\n")
         return float(data["data"]["exchangeRate"]["rate"])

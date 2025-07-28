@@ -2,8 +2,10 @@ import databases
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
-from app.core.config import config
 
+
+from app.core.config import config
+from app.utils.logger import logger
 
 Base = declarative_base()
 
@@ -28,7 +30,7 @@ database = databases.Database(
 async def init_db():
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        print(f"\n-> DB tables initialized \n")
+        logger.info(f"\n-> DB tables initialized \n")
 
 
 # --- Test Setup ---

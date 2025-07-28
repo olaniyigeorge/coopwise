@@ -109,7 +109,7 @@ class AuthService:
             "type": "reset",
         }
         expire = datetime.now() + expires_delta
-        print(f"Token will expire at: {expire}")
+        logger.info(f"Token will expire at: {expire}")
         data.update({"exp": expire})
         return jwt.encode(data, config.APP_SECRET_KEY, algorithm=config.ALGORITHM)
 
@@ -131,7 +131,7 @@ class AuthService:
         #     subject="Reset Your Password",
         #     body=f"Click the link to reset your password: {reset_link}"
         # )
-        print(f"\nToken: {token}\n")
+        logger.info(f"\nToken: {token}\n")
         return {"message": "Password reset link has been sent to your email"}
 
     @staticmethod

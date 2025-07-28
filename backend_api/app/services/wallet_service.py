@@ -61,7 +61,7 @@ class WalletService:
             wallet = await WalletService.create_user_wallet(user, db)
             # raise HTTPException(status_code=404, detail="Wallet not found")
 
-        print(
+        logger.info(
             f"\n\n\nUser {user.id} is depositing {data.local_amount} {data.currency} into their wallet\n\n\n"
         )
         # 2. Fetch exchange rate quote from CashRamp GraphQL API
@@ -70,7 +70,7 @@ class WalletService:
         )  # TODO (use actual exchange rate func) await fetch_exchange_rate(user.id, data.currency, "USDC")  ---  mock rate 1 USDC == 1600 NGN(local currency)
         stable_amt = Decimal(data.local_amount) * Decimal(rate)
 
-        print(f"\n\n\n Stable amount settled into wallet {stable_amt} \n\n\n")
+        logger.info(f"\n\n\n Stable amount settled into wallet {stable_amt} \n\n\n")
 
         # 3. Credit the wallet
         wallet.stable_coin_balance += stable_amt
@@ -91,7 +91,7 @@ class WalletService:
 
         # 5. TODO (Invalidate or update cached wallet if previously cached)
         wallet_data = WalletDetail.model_validate(wallet)
-        print("\n updating cache...\n")
+        logger.info("\n updating cache...\n")
         await update_cache(
             f"wallet_detail:{user.id}", wallet_data.model_dump_json(), ttl=300
         )

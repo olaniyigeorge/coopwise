@@ -49,7 +49,7 @@ class CooperativeGroupService:
             db.add(new_coop_group)
             await db.commit()
             await db.refresh(new_coop_group)
-            print("\n\n coop created....\n")
+            logger.info("\n\n coop created....\n")
         except Exception as e:
             logger.error(e)
             raise HTTPException(

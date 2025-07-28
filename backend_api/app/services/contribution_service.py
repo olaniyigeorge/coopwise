@@ -37,7 +37,7 @@ class ContributionService:
 
         # Create contribution record
 
-        print("Contribution status being saved:", contribution_data.status.value)
+        logger.info("Contribution status being saved:", contribution_data.status.value)
         contribution = Contribution(
             group_id=contribution_data.group_id,
             user_id=user.id,

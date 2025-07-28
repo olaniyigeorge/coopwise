@@ -100,7 +100,7 @@ class InsightEngine:
                 result = await db.execute(stmt)
                 insights = result.scalars().all()
 
-            print(f"\n\n Raw Insights: {insights}\n\n")
+            logger.info(f"\n\n Raw Insights: {insights}\n\n")
             validated_insights = [
                 AIInsightDetail.model_validate(insight, from_attributes=True)
                 for insight in insights
@@ -121,11 +121,11 @@ class InsightEngine:
     async def get_save_new_insight(
         db: AsyncSession, user: AuthenticatedUser, redis: Redis
     ):
-        print(f"\n\n creating and saving new insight....... \n\n")
+        logger.info(f"\n\n creating and saving new insight....... \n\n")
         try:
             insight = await InsightEngine.get_ai_insight(db, user, redis)
         except Exception:
-            print("Oops!! Couldn't generate AI insights for now. Try again later.")
+            logger.info("Oops!! Couldn't generate AI insights for now. Try again later.")
             return {
                 "status": 400,
                 "message": "Oops!! Couldn't generate AI insights for now. Try again later.",
@@ -134,18 +134,18 @@ class InsightEngine:
 
         insight = await clean_ai_insight_response(insight)
 
-        print(f"\nInsight raw response: {insight}\n")
+        logger.info(f"\nInsight raw response: {insight}\n")
 
         try:
-            print(f"\nParsing AI insight... type: {type(insight)}\n")
+            logger.info(f"\nParsing AI insight... type: {type(insight)}\n")
             insight_data = await parse_ai_insight(insight)
         except Exception as e:
-            print(f"❌ Error formatting AI insight: {e}")
+            logger.info(f"❌ Error formatting AI insight: {e}")
             insight_data = None
 
         created_insights = []
         if insight_data:
-            print("\nSaving AI insight to DB...\n")
+            logger.info("\nSaving AI insight to DB...\n")
             try:
                 for ins in insight_data:
                     cr: AIInsightDetail = await InsightEngine.create_ai_insight(
@@ -153,7 +153,7 @@ class InsightEngine:
                     )
                     created_insights.append(cr)
             except Exception as e:
-                print(f"Could not create AI insight: {e}")
+                logger.info(f"Could not create AI insight: {e}")
 
         if created_insights:
             return {
@@ -289,7 +289,7 @@ class InsightEngine:
         db: AsyncSession, user: AuthenticatedUser, margin: int = 4
     ):
         guess = random.randint(0, 10)
-        print(f"\n Guess {guess} -->-- Margin {margin} == {guess > margin}\n")
+        logger.info(f"\n Guess {guess} -->-- Margin {margin} == {guess > margin}\n")
         if guess > margin:
             logger.info(f"\nGenerating insight for user-{user.id}\n")
             insight = await InsightEngine.mock_generate_ai_insight(db, user)
@@ -353,7 +353,7 @@ class InsightEngine:
             implementation_time=aiins.implementation_time,
         )
 
-        print(f"\n{new_ins}\n")
+        logger.info(f"\n{new_ins}\n")
 
         db.add(new_ins)
         await db.commit()
@@ -376,7 +376,7 @@ class InsightEngine:
         # Step 1: Build prompt from activity logs
         prompt = await InsightEngine.build_ai_insight_prompt(user, activities)
 
-        print(f"\n\n Prompt: {prompt}\n\n")
+        logger.info(f"\n\n Prompt: {prompt}\n\n")
         # Step 2: Prepare request payload
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
@@ -393,7 +393,7 @@ class InsightEngine:
             response.raise_for_status()
 
             data = response.json()
-            print(f"\n\n ->GOOGLE JSON response {data} GOOGLE JSON response<- \n\n")
+            logger.info(f"\n\n ->GOOGLE JSON response {data} GOOGLE JSON response<- \n\n")
             insight_text = data["candidates"][0]["content"]["parts"][0]["text"]
             return insight_text
 
@@ -471,7 +471,7 @@ async def parse_ai_insight(json_response: Union[str, dict]) -> List[AIInsightCre
         else:
             raise ValueError(f"Unexpected type for insights: {type(json_response)}")
 
-        print(f"\nParsed data type: {type(data)}\nParsed data: {data}\n")
+        logger.info(f"\nParsed data type: {type(data)}\nParsed data: {data}\n")
 
         # Validate and return as a single-item list
         return [AIInsightCreate.model_validate(data)]

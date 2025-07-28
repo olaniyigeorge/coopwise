@@ -37,7 +37,7 @@ class SummaryService:
             if isinstance(
                 cached_summary.get("wallet"), str
             ):  # Doing this because the wallet and it's cache are updated separately
-                print("\n Setting more recent wallet details.... \n")
+                logger.info("\n Setting more recent wallet details.... \n")
                 cached_summary["wallet"] = json.loads(wallet)
 
             return cached_summary

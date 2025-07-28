@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
+from app.utils.logger import logger
 from db.models.activity_model import ActivityType
 from app.schemas.activity_schemas import ActivityCreate
 from app.schemas.notifications_schema import NotificationCreate
@@ -47,7 +48,7 @@ async def handle_cooperative_invite(
                 status_code=400,
                 detail="Group ID is required to generate an invite code.",
             )
-        print(
+        logger.info(
             f"\nGenerating invite code for group {group_id} and by user {current_user.id}\n"
         )
         invite_code = await CooperativeMembershipService.generate_invite_code(
@@ -98,7 +99,7 @@ async def accept_invite(
         entity_id=str(group_data.id),
         amount=None,
     )
-    print(f"\nLogging activity... {activity_data}\n")
+    logger.info(f"\nLogging activity... {activity_data}\n")
     await ActivityService.log(db, activity_data)
 
     noti_data = NotificationCreate(

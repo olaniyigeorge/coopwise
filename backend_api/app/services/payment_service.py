@@ -230,7 +230,7 @@ class PaymentService:
                     ),
                 )
 
-            print(f"\n{result}\n")
+            logger.info(f"\n{result}\n")
             return result
         except Exception as e:
             logger.error(f"Paystack verification error: {e}")

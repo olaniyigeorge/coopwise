@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models.contribution_model import ContributionStatus
 from app.core.config import config
+from app.utils.logger import logger
 from app.services.cooperative_group_service import CooperativeGroupService
 from app.core.dependencies import get_redis
 from app.schemas.wallet_schemas import WalletDeposit
@@ -21,6 +22,7 @@ from app.api.v1.routes.auth import get_current_user, is_admin_permissions
 from app.services.contribution_service import ContributionService
 from app.schemas.auth import AuthenticatedUser
 from db.dependencies import get_async_db_session
+
 
 
 router = APIRouter(prefix="/api/v1/contributions", tags=["Contributions"])
@@ -50,7 +52,7 @@ async def contribute(
             "status": contribution_data.status or ContributionStatus.PLEDGED,
         }
     )
-    print("\n\n\nContribution data being saved:", data, "\n\n\n")
+    logger.info("\n\n\nContribution data being saved:", data, "\n\n\n")
     contribution_data = ContributionCreate(**data)
 
     contribution = await ContributionService.make_contribution(
@@ -102,7 +104,7 @@ async def contribute(
                 status_code=400,
                 detail="Mock payment is only available in production till 30th of June.",
             )
-        print("\nMocking successful payment for contribution:", contribution.id, "\n")
+        logger.info("\nMocking successful payment for contribution:", contribution.id, "\n")
         contribution_payment = {"status": True, "data": {"amount": contribution.amount}}
     elif payment_gateway == "mock-fail":
         if config.ENV != "dev" and datetime.now() > CUTOFF_DATE:
@@ -110,7 +112,7 @@ async def contribute(
                 status_code=400,
                 detail="Mock payment is only available in production till 30th of June.",
             )
-        print("\nMocking failed contribution payment \n")
+        logger.info("\nMocking failed contribution payment \n")
         contribution_payment = {
             "status": False,
             "message": "Payment failed",

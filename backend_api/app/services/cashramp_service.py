@@ -58,7 +58,7 @@ class CashRampService:
             }
         }
         """
-        # print(f"\nFetching account info from {CASHRAMP_URL} with {query}\n")
+        # logger.info(f"\nFetching account info from {CASHRAMP_URL} with {query}\n")
         result = await self.client.execute_async(gql(query))
         return result.get("account", {})
 
@@ -102,7 +102,7 @@ class CashRampService:
         cached = await self.redis.get(cache_key)
 
         if cached:
-            print(f"\n Returning cached ramp quote  {cached}\n")
+            logger.info(f"\n Returning cached ramp quote  {cached}\n")
             return RampQuoteResponse(**json.loads(cached))
 
         query = gql(
@@ -124,7 +124,7 @@ class CashRampService:
             "paymentMethodType": payment_method_type,
         }
 
-        print(f"\nFetching ramp quote using {self.client} with {query}\n")
+        logger.info(f"\nFetching ramp quote using {self.client} with {query}\n")
         async with self.client as session:
             result = await session.execute(query, variable_values=variables)
         data = RampQuoteResponse(**result["rampQuote"])

@@ -4,6 +4,7 @@ import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import config
+from app.utils.logger import logger
 from app.core.dependencies import get_redis
 from app.services.insights_service import InsightEngine
 from app.api.v1.routes.auth import get_current_user
@@ -26,7 +27,7 @@ async def get_mock_insights(
         db, current_user, margin
     )
 
-    print(f"\n Insight: {insight}\n")
+    logger.info(f"\n Insight: {insight}\n")
 
     if insight:
         return {
@@ -79,7 +80,7 @@ async def get_immediate_ai_response(
 
 
 async def ask_google_llm(prompt: str):
-    print(f"\n\n Prompt: {prompt}\n\n")
+    logger.info(f"\n\n Prompt: {prompt}\n\n")
     # Step 2: Prepare request payload
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
@@ -93,7 +94,7 @@ async def ask_google_llm(prompt: str):
         response.raise_for_status()
 
         data = response.json()
-        print(f"\n\n ->GOOGLE JSON response {data} GOOGLE JSON response<- \n\n")
+        logger.info(f"\n\n ->GOOGLE JSON response {data} GOOGLE JSON response<- \n\n")
         insight_text = data["candidates"][0]["content"]["parts"][0]["text"]
         return insight_text
 
