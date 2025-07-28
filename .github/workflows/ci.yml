@@ -29,6 +29,23 @@ jobs:
       - name: Lint with Black
         run: black --check .
 
+      - name: Create .env file
+        run: |
+          echo "ENV=dev" >> .env
+          echo "PROJECT_NAME=Coopwise" >> .env
+          echo "DATABASE_URL=sqlite+aiosqlite:///:memory:" >> .env
+          echo "APP_SECRET_KEY=secret" >> .env
+          echo "ALGORITHM=HS256" >> .env
+          echo "REDIS_URL=redis://localhost:6379" >> .env
+          echo "PAYSTACK_PUBLIC_KEY=test" >> .env
+          echo "PAYSTACK_SECRET_KEY=test" >> .env
+          echo "CASHRAMP_PUBKEY=test" >> .env
+          echo "CASHRAMP_SECKEY=test" >> .env
+          echo "GEMINI_API_KEY=test" >> .env
+          echo "CLIENT_DOMAIN=http://localhost:3000" >> .env
+          echo "DOMAIN=http://localhost:8000" >> .env
+          echo "INVITE_CODE_PREFIX=XYZ" >> .env
+
       - name: Run tests with Pytest
         run: pytest
 

@@ -19,7 +19,6 @@ class GlobalConfig(BaseSettings):
     CASHRAMP_PUBKEY: str
     CASHRAMP_SECKEY: str
     GEMINI_API_KEY: str
-    TEST_DATABASE_URL: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -39,7 +38,6 @@ class DevConfig(GlobalConfig):
     # CASHRAMP_PUBKEY: str
     # CASHRAMP_SECKEY: str
     # GEMINI_API_KEY: str
-    # TEST_DATABASE_URL: str
 
     # model_config = SettingsConfigDict(
     #     env_prefix=str = "DEV_"
@@ -63,7 +61,6 @@ class TestConfig(GlobalConfig):
     # CASHRAMP_PUBKEY: str
     # CASHRAMP_SECKEY: str
     # GEMINI_API_KEY: str
-    # TEST_DATABASE_URL: str
 
     # # model_config = SettingsConfigDict(
     # #     env_prefix=str = "TEST_"
@@ -87,7 +84,6 @@ class ProdConfig(GlobalConfig):
     # CASHRAMP_PUBKEY: str
     # CASHRAMP_SECKEY: str
     # GEMINI_API_KEY:str
-    # TEST_DATABASE_URL: str
 
     # model_config = SettingsConfigDict(
     #     env_prefix=str = "PROD_"
