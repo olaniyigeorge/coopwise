@@ -2,7 +2,7 @@
   "name": "coopwise-webapp",
   "version": "0.1.0",
   "private": true,
-  "type": "module", 
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -78,6 +78,7 @@
     "@typescript-eslint/parser": "^8.38.0",
     "cors": "^2.8.5",
     "eslint": "^9.32.0",
+    "eslint-config-next": "^15.4.4",
     "express": "^5.1.0",
     "http-proxy-middleware": "^3.0.5",
     "postcss": "^8",
