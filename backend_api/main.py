@@ -1,4 +1,5 @@
 from fastapi import BackgroundTasks, Depends, FastAPI
+import sqlalchemy
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -23,18 +24,44 @@ from app.api.v1.routes import (
 )
 import uvicorn
 from contextlib import asynccontextmanager
-from db.database import database, init_db
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi import Request
 
+from db.database import db_manager
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()
-    # Make migrations and migrate
-    yield
+    """Application lifespan manager"""
+    # Startup
+    try:
+        # Initialize database
+        engine_kwargs = {}
+        if "sqlite" in config.DATABASE_URL:
+            engine_kwargs.update(
+                {
+                    "connect_args": {"check_same_thread": False},
+                    "poolclass": sqlalchemy.StaticPool,
+                }
+            )
+
+        db_manager.initialize(config.DATABASE_URL, **engine_kwargs)
+
+        # Create tables
+        await db_manager.create_tables()
+
+        logger.info("Application startup complete")
+        yield
+
+    except Exception as e:
+        logger.error(f"Startup failed: {e}")
+        raise
+    finally:
+        # Shutdown
+        await db_manager.close()
+        logger.info("Application shutdown complete")
 
 
 app = FastAPI(title=config.PROJECT_NAME, docs_url="/api/docs", lifespan=lifespan)

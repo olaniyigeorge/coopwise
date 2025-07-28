@@ -1,6 +1,5 @@
 from fastapi import HTTPException
 import pytest
-from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta
 from jose import jwt
@@ -12,7 +11,8 @@ from app.core.config import config
 
 
 @pytest.mark.asyncio
-async def test_register_user(async_session: AsyncSession):
+@pytest.mark.essential
+async def test_register_user(test_db_session: AsyncSession):
     user_data = UserCreate(
         full_name="Test User",
         email="testuser1@example.com",
@@ -21,14 +21,14 @@ async def test_register_user(async_session: AsyncSession):
         username="testuser1",
     )
 
-    user = await AuthService.register_user(user_data, async_session)
+    user = await AuthService.register_user(user_data, test_db_session)
     assert user.email == user_data.email
     assert user.username == user_data.username
     assert verify_password("securepass", user.password)
 
 
 @pytest.mark.asyncio
-async def test_duplicate_email_registration(async_session: AsyncSession):
+async def test_duplicate_email_registration(test_db_session: AsyncSession):
     user_data = UserCreate(
         full_name="Test User 2",
         email="testuser2@example.com",
@@ -36,17 +36,18 @@ async def test_duplicate_email_registration(async_session: AsyncSession):
         phone_number="+2348000000002",
         username="testuser2",
     )
-    await AuthService.register_user(user_data, async_session)
+    await AuthService.register_user(user_data, test_db_session)
 
     with pytest.raises(Exception) as exc:
-        await AuthService.register_user(user_data, async_session)
+        await AuthService.register_user(user_data, test_db_session)
     assert "already registered" in str(
         exc.value
     )  # DOing this because I don't have standard format for wrapping response yet
 
 
 @pytest.mark.asyncio
-async def test_authenticate_user_success(async_session: AsyncSession):
+@pytest.mark.essential
+async def test_authenticate_user_success(test_db_session: AsyncSession):
     user_data = UserCreate(
         full_name="Auth Test",
         email="authuser@example.com",
@@ -54,9 +55,9 @@ async def test_authenticate_user_success(async_session: AsyncSession):
         phone_number="+2348000000003",
         username="authuser",
     )
-    await AuthService.register_user(user_data, async_session)
+    await AuthService.register_user(user_data, test_db_session)
     user = await AuthService.authenticate_user(
-        "authuser@example.com", "authpass", async_session
+        "authuser@example.com", "authpass", test_db_session
     )
     assert user is not None
     assert user.email == "authuser@example.com"
@@ -72,7 +73,7 @@ async def test_token_generation_and_decoding():
 
 
 @pytest.mark.asyncio
-async def test_password_reset_token(async_session: AsyncSession):
+async def test_password_reset_token(test_db_session: AsyncSession):
     user_data = UserCreate(
         full_name="Reset Test",
         email="reset@example.com",
@@ -80,7 +81,7 @@ async def test_password_reset_token(async_session: AsyncSession):
         phone_number="+2348000000004",
         username="resetuser",
     )
-    user = await AuthService.register_user(user_data, async_session)
+    user = await AuthService.register_user(user_data, test_db_session)
 
     token = await AuthService.create_password_reset_token(user)
     decoded = jwt.decode(token, config.APP_SECRET_KEY, algorithms=[config.ALGORITHM])
@@ -89,7 +90,7 @@ async def test_password_reset_token(async_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_confirm_reset_token_valid(async_session):
+async def test_confirm_reset_token_valid(test_db_session):
     # Register a user
     user_data = UserCreate(
         full_name="Confirm Token",
@@ -98,7 +99,7 @@ async def test_confirm_reset_token_valid(async_session):
         phone_number="+2348000000006",
         username="tokenuser",
     )
-    user = await AuthService.register_user(user_data, async_session)
+    user = await AuthService.register_user(user_data, test_db_session)
 
     # Generate reset token
     token = await AuthService.create_password_reset_token(user)
@@ -128,7 +129,7 @@ async def test_confirm_reset_token_invalid_type():
 
 
 @pytest.mark.asyncio
-async def test_change_password_flow(async_session: AsyncSession):
+async def test_change_password_flow(test_db_session: AsyncSession):
     user_data = UserCreate(
         full_name="Change Me",
         email="changepass@example.com",
@@ -136,14 +137,14 @@ async def test_change_password_flow(async_session: AsyncSession):
         phone_number="+2348000000005",
         username="changeme",
     )
-    user = await AuthService.register_user(user_data, async_session)
+    user = await AuthService.register_user(user_data, test_db_session)
 
     token = await AuthService.create_password_reset_token(user)
-    result = await AuthService.change_password(token, "newpass123", async_session)
+    result = await AuthService.change_password(token, "newpass123", test_db_session)
     assert result["status"] == "success"
 
     # Ensure login works with new password
     auth_user = await AuthService.authenticate_user(
-        "changepass@example.com", "newpass123", async_session
+        "changepass@example.com", "newpass123", test_db_session
     )
     assert auth_user is not None

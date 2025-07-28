@@ -5,7 +5,7 @@ import redis.asyncio as redis_async
 from redis.asyncio.client import Redis
 
 from app.core.config import config
-from db.database import AsyncSessionLocal
+from db.database import db_manager
 from app.services.cashramp_service import CashRampService
 from app.api.v1.routes.auth import get_current_user, is_admin_or_owner
 
@@ -31,5 +31,5 @@ admin_or_owner_dependency = Depends(is_admin_or_owner)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionLocal() as session:
+    async with db_manager.get_session() as session:
         yield session
