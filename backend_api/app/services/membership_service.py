@@ -180,7 +180,7 @@ class CooperativeMembershipService:
     ) -> Optional[str]:
 
         invite_code = config.INVITE_CODE_PREFIX + str(inviter_id) + ":" + str(group_id)
-        print(f"\n Invite code: {invite_code} \n")
+        logger.info(f"\n Invite code: {invite_code} \n")
         try:
             stmt = select(GroupMembership).where(
                 GroupMembership.group_id == group_id,
@@ -190,7 +190,7 @@ class CooperativeMembershipService:
             existing_membership = result.scalars().first()
 
             if existing_membership:
-                print("Membership exists")
+                logger.info("Membership exists")
         except Exception as e:
             logger.error(e)
             raise e

@@ -1,6 +1,8 @@
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.utils.logger import logger
+
 
 class GlobalConfig(BaseSettings):
     ENV: str
@@ -99,7 +101,7 @@ def get_config():
     configs = {"dev": DevConfig, "prod": ProdConfig, "test": TestConfig}
     if env_state not in configs:
         raise ValueError(f"Invalid ENVT_STATE: {env_state}")
-    print(f"\nUsing {env_state.capitalize()} config...\n")
+    logger.info(f"\nUsing {env_state.capitalize()} config...\n")
     return configs[env_state]()
 
 

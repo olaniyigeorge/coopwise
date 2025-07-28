@@ -61,7 +61,7 @@ class UserService:
                 raise HTTPException(status_code=404, detail="User not found")
 
             # Update user fields
-            print(user_data)
+            logger.info(user_data)
             for field, value in user_data.dict(exclude_unset=True).items():
                 setattr(user, field, value)
 

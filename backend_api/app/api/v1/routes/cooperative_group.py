@@ -4,6 +4,7 @@ from typing import List
 
 from db.models.activity_model import ActivityType
 from app.api.v1.routes.auth import get_current_user
+from app.utils.logger import logger
 from app.schemas.activity_schemas import ActivityCreate
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.cooperative_group import (
@@ -51,7 +52,7 @@ async def create_cooperative_group(
         entity_id=str(coop.id),
         amount=None,
     )
-    print(f"\n Logging activity... {membership_data}\n")
+    logger.info(f"\n Logging activity... {membership_data}\n")
     await ActivityService.log(db, activity_data)
 
     noti_data = NotificationCreate(

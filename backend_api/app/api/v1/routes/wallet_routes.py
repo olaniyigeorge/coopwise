@@ -116,7 +116,7 @@ async def initiate_deposit(
                 status_code=400,
                 detail="Mock payment is only available in production till 30th of June.",
             )
-        print("\nMocking successful deposit payment \n")
+        logger.info("\nMocking successful deposit payment \n")
         init_payment_response = {
             "status": True,
             "message": "Deposit successful",
@@ -146,7 +146,7 @@ async def initiate_deposit(
                 status_code=400,
                 detail="Mock payment is only available in production till 30th of June.",
             )
-        print("\nMocking successful deposit payment \n")
+        logger.info("\nMocking successful deposit payment \n")
         init_payment_response = {
             "status": False,
             "message": "Payment failed",

@@ -6,6 +6,7 @@ from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
+from app.utils.logger import logger
 from app.core.dependencies import get_redis
 from app.api.v1.routes.auth import get_current_user
 from app.schemas.auth import AuthenticatedUser
@@ -99,7 +100,7 @@ async def paystack_webhook(
         return {"message": "Payment updated successfully."}
 
     except Exception as e:
-        print("Webhook processing error:", str(e))
+        logger.info("Webhook processing error:", str(e))
         raise HTTPException(status_code=500, detail="Webhook processing failed.")
 
 
