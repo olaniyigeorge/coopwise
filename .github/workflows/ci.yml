@@ -1,4 +1,5 @@
-name: CI for Coopwise
+name: Coopwise CI
+description: CI workflow for Coopwise project
 
 on:
   push:
