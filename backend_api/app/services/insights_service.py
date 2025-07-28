@@ -125,7 +125,9 @@ class InsightEngine:
         try:
             insight = await InsightEngine.get_ai_insight(db, user, redis)
         except Exception:
-            logger.info("Oops!! Couldn't generate AI insights for now. Try again later.")
+            logger.info(
+                "Oops!! Couldn't generate AI insights for now. Try again later."
+            )
             return {
                 "status": 400,
                 "message": "Oops!! Couldn't generate AI insights for now. Try again later.",
@@ -393,7 +395,9 @@ class InsightEngine:
             response.raise_for_status()
 
             data = response.json()
-            logger.info(f"\n\n ->GOOGLE JSON response {data} GOOGLE JSON response<- \n\n")
+            logger.info(
+                f"\n\n ->GOOGLE JSON response {data} GOOGLE JSON response<- \n\n"
+            )
             insight_text = data["candidates"][0]["content"]["parts"][0]["text"]
             return insight_text
 

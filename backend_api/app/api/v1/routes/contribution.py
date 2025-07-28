@@ -24,7 +24,6 @@ from app.schemas.auth import AuthenticatedUser
 from db.dependencies import get_async_db_session
 
 
-
 router = APIRouter(prefix="/api/v1/contributions", tags=["Contributions"])
 
 CUTOFF_DATE = datetime.fromisoformat("2025-06-30T00:00:00")  # Mock payment cutoff date
@@ -104,7 +103,9 @@ async def contribute(
                 status_code=400,
                 detail="Mock payment is only available in production till 30th of June.",
             )
-        logger.info("\nMocking successful payment for contribution:", contribution.id, "\n")
+        logger.info(
+            "\nMocking successful payment for contribution:", contribution.id, "\n"
+        )
         contribution_payment = {"status": True, "data": {"amount": contribution.amount}}
     elif payment_gateway == "mock-fail":
         if config.ENV != "dev" and datetime.now() > CUTOFF_DATE:
