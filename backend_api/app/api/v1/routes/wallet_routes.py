@@ -187,7 +187,7 @@ async def finalise_deposit(
     redis: Redis = Depends(get_redis),
 ):
     
-    supported_gateways = [
+    supported_gateways = [ # PaymentGateway.__members__
         "mock_success",
         "mock_fail",
         "paystack",
@@ -199,13 +199,13 @@ async def finalise_deposit(
         "cash"
     ]
 
-    if payment_gateway not in supported_gateways: # PaymentGateway.__members__  
+    if payment_gateway not in supported_gateways:  
         raise HTTPException(status_code=400, detail="Unsupported payment method.")
 
     verification_result = False
     ledger_record = None
 
-    # --- Gateway-Specific Verification Logic ---
+    # --- Gateway-Specific Verification Logic 
     if payment_gateway == "mock_success":
         verification_result = True
         ledger_record = await WalletService.get_wallet_ledger_by_reference(reference, db)
@@ -230,10 +230,10 @@ async def finalise_deposit(
     if ledger_record.status != LedgerStatus.initiated:
         raise HTTPException(status_code=400, detail="Transaction already processed or invalid.")
 
-    logger.info(f"\n✅ Payment verified for reference: {reference} by {payment_gateway}. Settling into wallet...\n")
+    logger.info(f"\n Payment verified for reference: {reference} by {payment_gateway}. Settling into wallet...\n")
 
 
-    # Use transaction block to ensure consistency
+    # Settle the payment ledger into the user's wallet
     updated_wallet = await WalletService.settle_payment_ledger_into_wallet(
             ledger_record.id, db, redis
     )
