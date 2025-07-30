@@ -28,6 +28,8 @@ from app.schemas.wallet_schemas import (
     WalletDetail,
 )
 from app.core.dependencies import get_current_user, get_redis
+from app.utils.logger import logger
+
 
 router = APIRouter(prefix="/api/v1/wallet", tags=["Wallet"])
 
@@ -179,52 +181,72 @@ async def initiate_deposit(
 )
 async def finalise_deposit(
     reference: str,
-    payment_method: str,
+    payment_gateway: str,
     db: AsyncSession = Depends(get_async_db_session),
     user: AuthenticatedUser = Depends(get_current_user),
     redis: Redis = Depends(get_redis),
 ):
-    if payment_method not in PaymentGateway.__members__:
+    
+    supported_gateways = [
+        "mock_success",
+        "mock_fail",
+        "paystack",
+        "flutterwave",
+        "cashramp",
+        "on_chain_solana",
+        "on_chain_cashramp"
+        "coopwise_network_on_solana",
+        "cash"
+    ]
+
+    if payment_gateway not in supported_gateways: # PaymentGateway.__members__  
         raise HTTPException(status_code=400, detail="Unsupported payment method.")
 
-    result = None
+    verification_result = False
+    ledger_record = None
 
-    if payment_method == "paystack":
-        result = await PaymentService.verify_paystack_transaction(reference)
-    elif payment_method == "cashramp":
-        # result = await PaymentService.verify_cashramp_transaction(reference)
-        raise HTTPException(
-            status_code=501, detail="Cashramp verification not yet implemented."
-        )
-    else:
-        raise HTTPException(status_code=400, detail="Unsupported payment method.")
+    # --- Gateway-Specific Verification Logic ---
+    if payment_gateway == "mock_success":
+        verification_result = True
+        ledger_record = await WalletService.get_wallet_ledger_by_reference(reference, db)
+    elif payment_gateway == "mock_fail":
+        verification_result = False
+    elif payment_gateway == "paystack":
+        raise HTTPException(status_code=501, detail="Paystack verification not yet implemented.")
+    elif payment_gateway == "cashramp":
+        raise HTTPException(status_code=501, detail="Cashramp verification not yet implemented.")
+    elif payment_gateway == "on_chain_cashramp":
+        raise HTTPException(status_code=501, detail="On-chain Cashramp verification not yet implemented.")
+    elif payment_gateway == "coopwise_network_on_solana":
+        raise HTTPException(status_code=501, detail="Coopwise Network on Solana not yet implemented.")
 
-    if not result["status"] or result["data"]["status"] != "success":
+
+    if not verification_result: # Compress all verification_results into a clear(comparable) return type
         raise HTTPException(status_code=400, detail="Transaction verification failed.")
 
-    ledger_record = await WalletService.get_wallet_ledger_by_reference(reference, db)
-
     if not ledger_record:
-        raise HTTPException(status_code=404, detail="No ledger entry found.")
+        ledger_record = await WalletService.get_wallet_ledger_by_reference(reference, db)
 
-    if ledger_record.status == "settled":
-        return {"message": "Deposit already processed."}
+    if ledger_record.status != LedgerStatus.initiated:
+        raise HTTPException(status_code=400, detail="Transaction already processed or invalid.")
 
-    # Update ledger entry
-    ledger_record.status = "settled"
-    ledger_record.gateway = "paystack"
-    ledger_record.local_amount = Decimal(result["data"]["amount"]) / 100
-    ledger_record.stable_amount = ledger_record.local_amount * Decimal(
-        COOPWISE_USD_NGN_RATE
+    logger.info(f"\n✅ Payment verified for reference: {reference} by {payment_gateway}. Settling into wallet...\n")
+
+
+    # Use transaction block to ensure consistency
+    updated_wallet = await WalletService.settle_payment_ledger_into_wallet(
+            ledger_record.id, db, redis
     )
 
-    await db.commit()
-    await db.refresh(ledger_record)
-
-    await WalletService.deposit_by_reference(reference, db, redis)
-
-    return {"message": "Deposit finalised successfully.", "reference": reference}
-
+    return {
+        "message": "Deposit finalised successfully.",
+        "receipt": {
+            "ledger_id": ledger_record.id,
+            "amount": ledger_record.stable_amount,
+            "status": "settled",
+            "reference": ledger_record.reference,
+        },
+    }
 
 @router.get("/get-wallet", response_model=WalletDetail)
 async def get_wallet(

@@ -1,4 +1,4 @@
-from fastapi import BackgroundTasks, Depends, FastAPI
+from fastapi import FastAPI
 import sqlalchemy
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware

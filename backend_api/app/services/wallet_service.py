@@ -14,6 +14,7 @@ from app.schemas.wallet_schemas import (
     WalletDeposit,
     WalletDetail,
     WalletLedgerCreate,
+    WalletLedgerDetail,
     WalletWithdraw,
 )
 from app.schemas.auth import AuthenticatedUser
@@ -217,6 +218,39 @@ class WalletService:
                 f"Failed to fetch wallet ledger by reference: {reference}. Error: {e}"
             )
             return None
+        
+    @staticmethod
+    async def get_wallet_by_id(wallet_id: str, db: AsyncSession) -> Wallet | None:
+        try:
+            stmt = select(Wallet).where(Wallet.id == wallet_id)
+            result = await db.execute(stmt)
+            return result.scalar_one_or_none() 
+        except Exception as e:
+            logger.error(f"Failed to fetch wallet by ID: {wallet_id}. Error: {e}")
+            return None
+
+
+    @staticmethod
+    async def get_wallet_ledger_record_by_id(
+        ledger_id: str,
+        db: AsyncSession
+    ) -> WalletLedgerDetail | None:
+        """
+        Fetch a wallet ledger record by its ID.
+        """
+        try:
+            stmt = select(WalletLedger).where(WalletLedger.id == ledger_id)
+            result = await db.execute(stmt)
+            ledger = result.scalar_one_or_none()
+            if ledger is None:
+                return None
+            return WalletLedgerDetail.model_validate(ledger)
+        except Exception as e:
+            logger.error(
+                f"Failed to fetch wallet ledger by id: {ledger_id}. Error: {e}"
+            )
+            return None
+
 
     @staticmethod
     async def record_ledger_entry(
@@ -261,13 +295,35 @@ class WalletService:
     @staticmethod
     async def deposit_by_reference(reference: str, db: AsyncSession, redis: Redis):
         # Fetch the ledger
-        ledger = await WalletService.get_wallet_ledger(reference, db)
+        ledger = await WalletService.get_wallet_ledger_by_reference(reference, db)
         if not ledger:
             raise HTTPException(status_code=404, detail="Transaction ledger not found.")
 
         # Fetch wallet and update balance
-        wallet = await WalletService.get_wallet_by_id(ledger.wallet_id, db, redis)
+        wallet = await WalletService.get_wallet(ledger.wallet_id, db, redis)
         wallet.balance += ledger.stable_amount
         await db.commit()
+
+        return wallet
+
+    @staticmethod
+    async def settle_payment_ledger_into_wallet(ledger_id: str, db: AsyncSession, redis: Redis):
+        ledger = await WalletService.get_wallet_ledger_record_by_id(ledger_id, db)
+        if not ledger:
+            raise HTTPException(status_code=404, detail="Transaction ledger not found.")
+        
+        if ledger.status == LedgerStatus.settled:
+            raise HTTPException(status_code=400, detail="Ledger already settled.")
+
+        mark_ledger_record = await WalletService.update_ledger_status(
+            ledger_id, LedgerStatus.settled, db
+        )
+
+        wallet = await WalletService.get_wallet_by_id(mark_ledger_record.wallet_id, db)
+        if not wallet:
+            raise HTTPException(status_code=404, detail="Wallet not found.")
+
+        wallet.stable_coin_balance += mark_ledger_record.stable_amount
+        db.add(wallet)
 
         return wallet
