@@ -186,56 +186,72 @@ async def finalise_deposit(
     user: AuthenticatedUser = Depends(get_current_user),
     redis: Redis = Depends(get_redis),
 ):
-    
-    supported_gateways = [ # PaymentGateway.__members__
+
+    supported_gateways = [  # PaymentGateway.__members__
         "mock_success",
         "mock_fail",
         "paystack",
         "flutterwave",
         "cashramp",
         "on_chain_solana",
-        "on_chain_cashramp"
-        "coopwise_network_on_solana",
-        "cash"
+        "on_chain_cashramp" "coopwise_network_on_solana",
+        "cash",
     ]
 
-    if payment_gateway not in supported_gateways:  
+    if payment_gateway not in supported_gateways:
         raise HTTPException(status_code=400, detail="Unsupported payment method.")
 
     verification_result = False
     ledger_record = None
 
-    # --- Gateway-Specific Verification Logic 
+    # --- Gateway-Specific Verification Logic
     if payment_gateway == "mock_success":
         verification_result = True
-        ledger_record = await WalletService.get_wallet_ledger_by_reference(reference, db)
+        ledger_record = await WalletService.get_wallet_ledger_by_reference(
+            reference, db
+        )
     elif payment_gateway == "mock_fail":
         verification_result = False
     elif payment_gateway == "paystack":
-        raise HTTPException(status_code=501, detail="Paystack verification not yet implemented.")
+        raise HTTPException(
+            status_code=501, detail="Paystack verification not yet implemented."
+        )
     elif payment_gateway == "cashramp":
-        raise HTTPException(status_code=501, detail="Cashramp verification not yet implemented.")
+        raise HTTPException(
+            status_code=501, detail="Cashramp verification not yet implemented."
+        )
     elif payment_gateway == "on_chain_cashramp":
-        raise HTTPException(status_code=501, detail="On-chain Cashramp verification not yet implemented.")
+        raise HTTPException(
+            status_code=501,
+            detail="On-chain Cashramp verification not yet implemented.",
+        )
     elif payment_gateway == "coopwise_network_on_solana":
-        raise HTTPException(status_code=501, detail="Coopwise Network on Solana not yet implemented.")
+        raise HTTPException(
+            status_code=501, detail="Coopwise Network on Solana not yet implemented."
+        )
 
-
-    if not verification_result: # Compress all verification_results into a clear(comparable) return type
+    if (
+        not verification_result
+    ):  # Compress all verification_results into a clear(comparable) return type
         raise HTTPException(status_code=400, detail="Transaction verification failed.")
 
     if not ledger_record:
-        ledger_record = await WalletService.get_wallet_ledger_by_reference(reference, db)
+        ledger_record = await WalletService.get_wallet_ledger_by_reference(
+            reference, db
+        )
 
     if ledger_record.status != LedgerStatus.initiated:
-        raise HTTPException(status_code=400, detail="Transaction already processed or invalid.")
+        raise HTTPException(
+            status_code=400, detail="Transaction already processed or invalid."
+        )
 
-    logger.info(f"\n Payment verified for reference: {reference} by {payment_gateway}. Settling into wallet...\n")
-
+    logger.info(
+        f"\n Payment verified for reference: {reference} by {payment_gateway}. Settling into wallet...\n"
+    )
 
     # Settle the payment ledger into the user's wallet
     updated_wallet = await WalletService.settle_payment_ledger_into_wallet(
-            ledger_record.id, db, redis
+        ledger_record.id, db, redis
     )
 
     return {
@@ -247,6 +263,7 @@ async def finalise_deposit(
             "reference": ledger_record.reference,
         },
     }
+
 
 @router.get("/get-wallet", response_model=WalletDetail)
 async def get_wallet(
