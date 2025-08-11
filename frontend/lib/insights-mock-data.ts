@@ -229,7 +229,7 @@ export const mockInsights: AIInsight[] = [
 ]
 
 // Helper functions to get insights
-export function getUserInsights(userId: string): AIInsight[] {
+export function getUserInsights(): AIInsight[] {
   // In a real app, this would filter insights by user ID
   return mockInsights
 }

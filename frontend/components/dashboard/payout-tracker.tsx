@@ -4,9 +4,7 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Clock } from 'lucide-react'
 
-interface PayoutTrackerProps {
-  groupId: string
-}
+
 
 // Mock payout data
 const mockPayouts = [
@@ -52,12 +50,12 @@ const mockPayouts = [
   }
 ]
 
-export default function PayoutTracker({ groupId }: PayoutTrackerProps) {
+export default function PayoutTracker() {
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold mb-2">Payout Tracker</h2>
-        <p className="text-sm text-gray-600">See who has been paid and who's next.</p>
+        <p className="text-sm text-gray-600">See who has been paid and who&apos;s next.</p>
       </div>
 
       <div className="space-y-4">

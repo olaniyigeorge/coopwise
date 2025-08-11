@@ -152,7 +152,7 @@ const useGroupStore = create<GroupState>()(
       joinGroup: async (inviteCode: string) => {
         set({ isLoading: true, error: null });
         try {
-          const result = await GroupService.joinGroup(inviteCode);
+          await GroupService.joinGroup(inviteCode);
           // Refresh my groups after joining
           await get().fetchMyGroups();
           set({ isLoading: false });

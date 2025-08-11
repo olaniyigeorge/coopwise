@@ -3,14 +3,11 @@
 import React, { useState, useRef, useEffect } from 'react'
 import ApiErrorMessage from './api-error-message'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar } from '@/components/ui/avatar'
+import { Card, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { Send, Sparkles, Bot, User, RefreshCw, ChevronDown } from 'lucide-react'
-import ComingSoonWrapper from '@/components/ui/coming-soon-wrapper'
+import { Send, Sparkles, Bot, User, RefreshCw } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -295,7 +292,7 @@ export default function AIChatInterface() {
                           <div className="whitespace-pre-wrap text-sm">{message.content}</div>
                         ) : (
                           <div className="text-sm ai-message-content">
-                            {/* @ts-ignore - React-markdown has TypeScript issues with Next.js */}
+                            {/* @ts-expect-error - React-markdown has TypeScript issues with Next.js */}
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                               {message.content}
                             </ReactMarkdown>

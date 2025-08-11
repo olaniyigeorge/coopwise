@@ -20,24 +20,6 @@ interface ProfileData {
   savingFrequency: string
 }
 
-// Mapping for income range values to match backend enum
-const incomeRangeMapping: Record<string, string> = {
-  "Below 100000": "below_50k",
-  "100000-500000": "range_100k_200k",
-  "500000-1000000": "range_350k_500k",
-  "1000000-5000000": "above_500k",
-  "Above 5000000": "above_500k",
-  "Above 6000000": "above_500k"
-};
-
-// Mapping for saving frequency values to match backend enum
-const savingFrequencyMapping: Record<string, string> = {
-  "Daily": "daily",
-  "Weekly": "weekly",
-  "Monthly": "monthly",
-  "Quarterly": "monthly" // Backend doesn't have quarterly, default to monthly
-};
-
 export default function ProfilePage() {
   const { user, updateUserProfile, refreshUserData } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData>({

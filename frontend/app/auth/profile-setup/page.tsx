@@ -243,7 +243,7 @@ const Step3 = ({ onBack, onComplete, loading }: Step3Props) => {
           </motion.div>
         <h3 className="text-xl font-semibold text-gray-800">Almost Done!</h3>
         <p className="text-gray-600 text-sm max-w-md">
-          Your profile preferences will be saved. You're now ready to start your saving journey with CoopWise.
+          Your profile preferences will be saved. You&apos;re now ready to start your saving journey with CoopWise.
         </p>
         
         <div className="mt-6 space-y-3">
@@ -316,7 +316,7 @@ const Step3 = ({ onBack, onComplete, loading }: Step3Props) => {
 
 export default function ProfileSetupPage() {
   const router = useRouter()
-  const { user, isAuthenticated, updateUserProfile, loading: authLoading } = useAuth()
+  const { user, isAuthenticated, updateUserProfile } = useAuth()
   
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)

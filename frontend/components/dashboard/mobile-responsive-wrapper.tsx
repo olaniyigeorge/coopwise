@@ -34,7 +34,6 @@ export default function MobileResponsiveWrapper({
   className,
   variant = 'default',
   spacing = 'md',
-  breakpoint = 'lg',
   fullWidth = false
 }: MobileResponsiveWrapperProps) {
   const baseClasses = variantClasses[variant]

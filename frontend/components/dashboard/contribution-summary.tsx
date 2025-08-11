@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge'
 import { 
   TrendingUp, 
   TrendingDown, 
-  DollarSign, 
   CheckCircle, 
   Clock, 
   AlertTriangle,

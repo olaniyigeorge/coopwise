@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
-import { useAuth } from "@/lib/auth-context"
+
 import { toast } from "@/components/ui/use-toast"
 import useAuthStore from "@/lib/stores/auth-store"
 
@@ -196,7 +196,7 @@ export default function LoginForm() {
 
       <div className="text-center mt-4">
         <p className="text-sm text-secondary">
-         Don't have an account? <Link href="/auth/signup" className="text-primary hover:text-primary/90 font-medium">Sign Up</Link>
+         Don&apos;t have an account? <Link href="/auth/signup" className="text-primary hover:text-primary/90 font-medium">Sign Up</Link>
         </p>
       </div>
     </div>

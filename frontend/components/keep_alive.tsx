@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 const ENABLE_KEEP_ALIVE = process.env.NODE_ENV === 'production'
 
 export function PingBackend() {
-  const [pingStatus, setPingStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [, setPingStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   useEffect(() => {
     // Skip ping in development to avoid console errors
@@ -42,7 +42,7 @@ export function PingBackend() {
       }
       
       setPingStatus('success')
-    } catch (err) {
+    } catch {
       // Silently fail - don't log errors to console
       setPingStatus('error')
     }

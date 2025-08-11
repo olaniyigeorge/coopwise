@@ -2,12 +2,7 @@ import axios from 'axios';
 import AuthService from './auth-service';
 import CookieService from './cookie-service';
 
-// Use the backend API URL or the local proxy if not specified
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
 
-// Configuration flags - set to false for production
-const useLocalProxy = process.env.NEXT_PUBLIC_USE_LOCAL_PROXY === 'true' || false;
-const ENABLE_MOCK_FALLBACK = process.env.NEXT_PUBLIC_ENABLE_MOCK_FALLBACK === 'true' || false;
 
 interface UpdateUserData {
   id?: string;

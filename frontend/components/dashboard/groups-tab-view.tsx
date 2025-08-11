@@ -1,11 +1,11 @@
 "use client"
 
 import React, { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import MyGroupsList from './my-groups-list'
 import DiscoverGroupsList from './discover-groups-list'
 import { useGroupStore } from '@/lib/hooks/use-app-store'
-import { getDashboardData } from '@/lib/dashboard-service'
+
 
 interface GroupsTabViewProps {
   defaultTab?: 'my-groups' | 'discover'
@@ -25,15 +25,13 @@ function LoadingFallback() {
 
 // Component that uses search params
 function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const { 
     myGroups, 
     availableGroups, 
     fetchMyGroups, 
     fetchAvailableGroups,
-    isLoading,
-    error
+    isLoading
   } = useGroupStore()
   
   // Check for tab in URL params
@@ -41,7 +39,7 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
   const initialTab = tabParam === 'my' ? 'discover' : tabParam === 'my-groups' ? 'my-groups' : defaultTab
   
   const [activeTab, setActiveTab] = useState<string>(initialTab)
-  const [searchQuery, setSearchQuery] = useState('')
+
   const [loading, setLoading] = useState(true)
   
   useEffect(() => {

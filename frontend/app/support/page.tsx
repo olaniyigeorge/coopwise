@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
-import CTA from '@/components/cta'
 import { 
   HelpCircle, 
   MessageCircle, 
@@ -85,13 +84,13 @@ export default function SupportPage() {
         <div className="space-y-2">
           <p>To reset your password:</p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Go to the CoopWise login page and click 'Forgot Password'.</li>
+            <li>Go to the CoopWise login page and click &apos;Forgot Password&apos;.</li>
             <li>Enter the email address associated with your account.</li>
             <li>Check your email for a secure reset link (also check spam/junk folders).</li>
             <li>Click the link and create a new strong password with at least 8 characters, including uppercase, lowercase, numbers, and symbols.</li>
             <li>Log in with your new password.</li>
           </ol>
-          <p>If you don't receive the email within 10 minutes, contact our support team for immediate assistance.</p>
+          <p>If you don&apos;t receive the email within 10 minutes, contact our support team for immediate assistance.</p>
         </div>
       )
     },    {      
@@ -113,15 +112,15 @@ export default function SupportPage() {
       question: "Can I leave a savings group anytime?",      
       answer: (
         <div className="space-y-2">
-          <p>Yes, you have complete freedom to leave any savings group. Here's the process:</p>
+          <p>Yes, you have complete freedom to leave any savings group. Here&apos;s the process:</p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Navigate to your group settings and select 'Leave Group'.</li>
+            <li>Navigate to your group settings and select &apos;Leave Group&apos;.</li>
             <li>Review any pending contributions or upcoming payouts that might be affected.</li>
             <li>Consider discussing with group members first, as your departure may impact their savings plans.</li>
-            <li>Complete any outstanding financial obligations according to your group's rules.</li>
+            <li>Complete any outstanding financial obligations according to your group&apos;s rules.</li>
             <li>Confirm your departure.</li>
           </ol>
-          <p>Your contribution history remains transparent, and you'll receive your share according to the group's established payout structure.</p>
+          <p>Your contribution history remains transparent, and you&apos;ll receive your share according to the group&apos;s established payout structure.</p>
         </div>
       )
     },    {      
@@ -130,8 +129,8 @@ export default function SupportPage() {
         <div className="space-y-2">
           <p>Inviting members is simple and secure:</p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Access your group dashboard and click 'Manage Members' or 'Invite'.</li>
-            <li>Choose your preferred method: share the unique group link via text, email, or social media; provide the group's invite code for manual entry; or send direct app invitations.</li>
+            <li>Access your group dashboard and click &apos;Manage Members&apos; or &apos;Invite&apos;.</li>
+            <li>Choose your preferred method: share the unique group link via text, email, or social media; provide the group&apos;s invite code for manual entry; or send direct app invitations.</li>
             <li>Set invitation permissions - you can require admin approval for new members.</li>
             <li>Include personalized messages explaining your savings goals.</li>
             <li>Track invitation status and approve/decline requests as needed.</li>
@@ -140,7 +139,7 @@ export default function SupportPage() {
         </div>
       )
     },    {      
-      question: "What happens if someone doesn't pay?",      
+      question: "What happens if someone doesn&apos;t pay?",      
       answer: (
         <div className="space-y-2">
           <p>CoopWise has comprehensive systems to handle missed payments fairly:</p>
@@ -251,7 +250,7 @@ export default function SupportPage() {
             You?
           </h1>
           <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
-            Find answers to common questions, get help with your account, or reach out to our support team. We're here to ensure your CoopWise experience is smooth and successful.
+            Find answers to common questions, get help with your account, or reach out to our support team. We&apos;re here to ensure your CoopWise experience is smooth and successful.
           </p>
         </div>
       </section>
@@ -392,7 +391,7 @@ export default function SupportPage() {
           </Accordion>
 
           <div className="text-center mt-8">
-            <p className="text-gray-600 mb-4">Can't find what you're looking for?</p>
+            <p className="text-gray-600 mb-4">Can&apos;t find what you&apos;re looking for?</p>
             <div className="flex items-center space-x-4 justify-center">
               <a href="mailto:hellocoopwise@gmail.com">
               <Button 
@@ -481,7 +480,7 @@ export default function SupportPage() {
               Still Need Help?
             </h2>
             <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
-              Our support team is standing by to help you succeed with CoopWise. Don't hesitate to reach out.
+              Our support team is standing by to help you succeed with CoopWise. Don&apos;t hesitate to reach out.
             </p>
             <div className="flex items-center space-x-4 justify-center">
               <Button 

@@ -22,7 +22,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [username, setUsername] = useState("")
   const [localError, setLocalError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {

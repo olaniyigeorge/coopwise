@@ -7,14 +7,13 @@ import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import GroupsTabView from '@/components/dashboard/groups-tab-view'
-import { getDashboardData, DashboardData, defDashData, AIInsightDetail, ActivityDetail, ActivityType } from '@/lib/dashboard-service'
+import { getDashboardData, DashboardData, defDashData, AIInsightDetail } from '@/lib/dashboard-service'
 import { formatCurrency, getActivityDescription } from '@/lib/utils'
 import Link from 'next/link'
 import { Bot, MessageSquare, Sparkles } from 'lucide-react'
 import AIInsightCard from '@/components/dashboard/ai-insight-card'
 import { formatDate } from '@/lib/contribution-utils'
 // import { formatDate } from '@/lib/insight-utils'
-
 
 export default function Dashboard() {
   const router = useRouter()
@@ -99,7 +98,7 @@ const recentActivity = dashboardData?.activities ?? [];
           <h2 className="text-xl sm:text-2xl font-semibold">
             Welcome, {firstName}
           </h2>
-          <p className="text-xs sm:text-sm text-gray-500">Here's an overview of your savings</p>
+          <p className="text-xs sm:text-sm text-gray-500">Here&apos;s an overview of your savings</p>
         </div>
 
         {/* Top buttons - hide on mobile */}
@@ -214,7 +213,7 @@ const recentActivity = dashboardData?.activities ?? [];
               ) : (
                 <>
                   <div className="text-base font-medium">No payout yet!</div>
-                  <div className="text-gray-500 text-xs mt-1">You'll see your payout date here after joining a group</div>
+                  <div className="text-gray-500 text-xs mt-1">You&apos;ll see your payout date here after joining a group</div>
                 </>
               )}
             </div>
@@ -277,7 +276,7 @@ const recentActivity = dashboardData?.activities ?? [];
                 </div>
                 <h3 className="text-sm sm:text-base font-medium mb-1">No activity to show</h3>
                 <p className="text-xs sm:text-sm text-gray-500 px-2">
-                  You don't have any transactions and updates. Create a
+                  You don&apos;t have any transactions and updates. Create a
                   group or join an existing one to start saving together
                 </p>
               </div>
@@ -345,13 +344,13 @@ const recentActivity = dashboardData?.activities ?? [];
             <div className="space-y-2 mb-4">
               <div className="text-xs font-medium text-gray-500">Popular questions:</div>
               <div className="bg-gray-50 rounded p-2 text-xs">
-                "How can I save ₦100,000 in 3 months?"
+                &ldquo;How can I save ₦100,000 in 3 months?&rdquo;
               </div>
               <div className="bg-gray-50 rounded p-2 text-xs">
-                "What's the best way to manage my debt?"
-                </div>
+                &ldquo;What&apos;s the best way to manage my debt?&rdquo;
+              </div>
               <div className="bg-gray-50 rounded p-2 text-xs">
-                "How should I budget my monthly income?"
+                &ldquo;How should I budget my monthly income?&rdquo;
               </div>
             </div>
             

@@ -1,17 +1,16 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle2, Info, Loader2 } from 'lucide-react'
+import { CheckCircle2, Info, Loader2 } from 'lucide-react'
 
 import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -85,10 +84,10 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
         onVerifyCode(values)
       }, 500)
     }
-  }, [initialCode, form])
+  }, [initialCode, form, onVerifyCode])
   
   // Function to verify the invite code
-  async function onVerifyCode(values: z.infer<typeof inviteCodeSchema>) {
+  const onVerifyCode = useCallback(async (values: z.infer<typeof inviteCodeSchema>) => {
     setVerifying(true)
     setCurrentInviteCode(values.inviteCode)
     
@@ -156,7 +155,7 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
     } finally {
       setVerifying(false);
     }
-  }
+  }, [toast])
   
   // Function to join the group
   async function onJoinGroup() {
@@ -196,10 +195,7 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
     }
   }
   
-  // Function to go back to the dashboard
-  function goToDashboard() {
-    router.push('/dashboard')
-  }
+
   
   return (
     <div>
@@ -352,7 +348,7 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
             </div>
           </div>
           
-          <DialogTitle className="text-xl">You've joined {groupData.name}!</DialogTitle>
+          <DialogTitle className="text-xl">You&apos;ve joined {groupData.name}!</DialogTitle>
           <DialogDescription className="text-center">
             Your membership is pending approval from the group admin.<br />
             Once approved, you can start saving with others.
@@ -365,9 +361,9 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
             </h4>
             <ul className="text-xs text-blue-800 space-y-2 list-disc ml-4">
               <li>Your request will be reviewed by the group admin</li>
-              <li>Once approved, you'll see your payout position</li>
-              <li>You'll be notified when your membership is approved</li>
-              <li>View your membership status in "My Groups" section</li>
+              <li>Once approved, you&apos;ll see your payout position</li>
+              <li>You&apos;ll be notified when your membership is approved</li>
+              <li>View your membership status in &ldquo;My Groups&rdquo; section</li>
             </ul>
           </div>
           

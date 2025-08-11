@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import DashboardLayout from '@/components/dashboard/layout'
-import { MobileCard, MobileGrid, MobileStack } from '@/components/dashboard/mobile-responsive-wrapper'
+import { MobileGrid } from '@/components/dashboard/mobile-responsive-wrapper'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,29 +10,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { 
-  Search, 
-  ChevronDown, 
-  ChevronRight,
-  MessageCircle, 
   Phone, 
   Mail, 
-  BookOpen,
-  HelpCircle,
+  Clock, 
   Send,
-  ExternalLink,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Star,
+  BookOpen,
+  DollarSign,
+  CreditCard,
+  Users,
+  Shield,
+  User,
+  Search,
+  MessageCircle,
+  HelpCircle,
+  FileText,
+  ChevronDown,
   ThumbsUp,
   ThumbsDown,
-  User,
-  FileText,
-  CreditCard,
-  Settings,
-  Shield,
-  DollarSign,
-  Users,
+  ExternalLink,
   Plus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -69,7 +64,7 @@ const faqData: FAQItem[] = [
   {
     id: '2',
     question: 'When will I receive my payout?',
-    answer: 'Payouts are scheduled based on your group\'s rotation. You can check your payout position and estimated date in the group details page. You\'ll receive notifications 7 days before your payout date.',
+    answer: 'Payouts are scheduled based on your group&apos;s rotation. You can check your payout position and estimated date in the group details page. You&apos;ll receive notifications 7 days before your payout date.',
     category: 'Payouts',
     helpful: 38,
     notHelpful: 1
@@ -85,7 +80,7 @@ const faqData: FAQItem[] = [
   {
     id: '4',
     question: 'What happens if I miss a contribution?',
-    answer: 'If you miss a contribution, you\'ll have a 3-day grace period to make the payment with a small late fee. After this period, you may be removed from the group rotation. Contact your group admin for assistance.',
+    answer: 'If you miss a contribution, you&apos;ll have a 3-day grace period to make the payment with a small late fee. After this period, you may be removed from the group rotation. Contact your group admin for assistance.',
     category: 'Contributions',
     helpful: 29,
     notHelpful: 5
@@ -178,7 +173,7 @@ export default function SupportPage() {
     await new Promise(resolve => setTimeout(resolve, 1500))
     
     toast.success('Support ticket created successfully!', {
-      description: 'We\'ll get back to you within 24 hours.'
+      description: 'We&apos;ll get back to you within 24 hours.'
     })
     
     setContactForm({
@@ -436,7 +431,7 @@ export default function SupportPage() {
                 <Badge className="bg-red-100 text-red-800">Coming Soon</Badge>
               </div>
               <p className="text-gray-600">
-                Can't find what you're looking for? Send us a message and we'll get back to you.
+                Can&apos;t find what you&apos;re looking for? Send us a message and we&apos;ll get back to you.
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -568,7 +563,7 @@ export default function SupportPage() {
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No support tickets</h3>
                   <p className="text-gray-500 mb-4">
-                    You haven't created any support tickets yet.
+                    You haven&apos;t created any support tickets yet.
                   </p>
                   <Button onClick={() => setActiveSection('contact')}>
                     Create Your First Ticket

@@ -3,8 +3,7 @@ import {
   ContributionStatus, 
   ContributionType, 
   PaymentMethod,
-  ContributionSummary,
-  ContributionStats
+  ContributionSummary
 } from './types'
 
 export function formatCurrency(amount: number, currency: string = '₦'): string {

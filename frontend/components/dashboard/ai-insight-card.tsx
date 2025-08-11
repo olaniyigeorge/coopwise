@@ -5,20 +5,16 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
   LightbulbIcon, 
-  ArrowRightIcon, 
   CheckCircleIcon, 
-  XCircleIcon,
   ClockIcon,
-  TrendingUpIcon,
-  SparklesIcon,
   ChevronRightIcon
 } from 'lucide-react'
-import { AIInsight, ImplementationStatus, DifficultyLevel } from '@/lib/types'
+import { ImplementationStatus, DifficultyLevel } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
 import { AIInsightDetail } from '@/lib/dashboard-service'
 
 interface AIInsightCardProps {
-  insight: AIInsightDetail // AIInsight
+  insight: AIInsightDetail
   onStart?: (insight: AIInsightDetail) => void
   onComplete?: (insight: AIInsightDetail) => void
   onDismiss?: (insight: AIInsightDetail) => void

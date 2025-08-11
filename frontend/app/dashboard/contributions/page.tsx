@@ -24,11 +24,9 @@ import {
   Contribution, 
   ContributionStatus, 
   ContributionType,
-  PaymentMethod,
-  ContributionSummary
+  PaymentMethod
 } from '@/lib/types'
 import { 
-  mockContributions, 
   mockGroups, 
   getUserContributions 
 } from '@/lib/mock-data'

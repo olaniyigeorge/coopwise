@@ -1,6 +1,5 @@
 import { UUID } from 'crypto';
 import AuthService from './auth-service';
-import Dashboard from '@/app/dashboard/page';
 
 // export interface DashboardData {
 //   savings: {

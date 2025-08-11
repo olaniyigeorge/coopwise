@@ -10,12 +10,10 @@ import DashboardGroupsSection from './dashboard-groups-section'
 // Stats card component
 const StatsCard = ({ 
   title, 
-  children, 
-  icon 
+  children
 }: { 
   title: string; 
-  children: React.ReactNode; 
-  icon: string
+  children: React.ReactNode
 }) => (
   <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-5 flex flex-col justify-between">
     <h3 className="text-xs sm:text-sm text-gray-500">{title}</h3>
@@ -34,7 +32,7 @@ export default function DashboardOverview() {
       <div className="flex flex-col space-y-4 mb-4 sm:mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Welcome, Mercy</h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">Here's an overview of your savings</p>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">Here&apos;s an overview of your savings</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
@@ -112,7 +110,7 @@ export default function DashboardOverview() {
             <div className="ml-2 sm:ml-3 min-w-0">
               <h4 className="text-sm sm:text-base font-medium">No payout yet!</h4>
               <p className="text-xs text-gray-500 mt-1">
-                You'll see your payout date here after joining a group
+                You&apos;ll see your payout date here after joining a group
               </p>
             </div>
           </div>
@@ -163,7 +161,7 @@ export default function DashboardOverview() {
               </div>
               <h3 className="text-sm sm:text-base font-medium mb-1">No activity to show</h3>
               <p className="text-xs sm:text-sm text-gray-500 px-2">
-                You don't have any transactions and updates. Create a
+                You don&apos;t have any transactions and updates. Create a
                 group or join an existing one to start saving together
               </p>
             </div>

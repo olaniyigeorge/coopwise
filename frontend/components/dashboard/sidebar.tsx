@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Home, Users, Plus, UserPlus, MessageSquare, HelpCircle, User, LogOut, DollarSign, Bot, Sparkles, X } from 'lucide-react'
+import { Home, Users, Plus, UserPlus, MessageSquare, HelpCircle, User, LogOut, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
 import useAuthStore from '@/lib/stores/auth-store'
 

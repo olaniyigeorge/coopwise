@@ -1,13 +1,13 @@
 "use client"
 
 import React from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import {   ArrowLeft,   Brain,  Play,  CheckCircle,  Clock,  X,  TrendingUp,  Target,  Calendar,  Users,  Award,  Zap,  DollarSign,  BarChart3,  Calculator,  Flag,  Lightbulb} from 'lucide-react'
+import {   ArrowLeft,   Brain,  Play,  CheckCircle,  Clock,  X,  TrendingUp,  Target,  Users,  Award,  Zap,  DollarSign,  BarChart3,  Calculator,  Flag,  Lightbulb} from 'lucide-react'
 import { mockInsights } from '@/lib/insights-mock-data'
 import { 
   formatCurrency, 
@@ -22,7 +22,6 @@ import {
 import { ImplementationStatus } from '@/lib/types'
 
 export default function AIInsightDetailPage() {
-  const params = useParams()
   const router = useRouter()
   
   // Find the insight by ID
@@ -38,7 +37,7 @@ export default function AIInsightDetailPage() {
               Insight not found
             </h2>
             <p className="text-gray-600 mb-6">
-              The insight you're looking for doesn't exist or has been removed.
+              The insight you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
             <Button onClick={() => router.push('/dashboard/ai-insights')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -197,7 +196,7 @@ export default function AIInsightDetailPage() {
                     </div>
                     <Progress value={getProgressValue()} className="h-3" />
                     <p className="text-sm text-gray-600">
-                      You're halfway through implementing this insight. Keep going!
+                      You&apos;re halfway through implementing this insight. Keep going!
                     </p>
                   </div>
                 </CardContent>

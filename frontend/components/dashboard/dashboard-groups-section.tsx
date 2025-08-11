@@ -1,7 +1,6 @@
 "use client"
 
 import React from 'react'
-import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { useRouter } from 'next/navigation'
 
@@ -148,7 +147,7 @@ export default function DashboardGroupsSection() {
               </>
             ) : (
               <div className="text-center py-4">
-                <h3 className="text-base font-medium mb-2">You don't have any group yet</h3>
+                <h3 className="text-base font-medium mb-2">You don&apos;t have any group yet</h3>
                 <p className="text-sm text-gray-600 mb-4">Create a group or join an existing one to start saving together</p>
                 
                 <div className="flex flex-col sm:flex-row justify-center gap-2">

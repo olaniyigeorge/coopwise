@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Calendar, Loader2, Share, Check, Copy, Info } from 'lucide-react'
-import Link from 'next/link'
+import { Calendar, Loader2, Share, Check, Copy, Info } from 'lucide-react'
 import GroupService from '@/lib/group-service'
 import { toast } from '@/components/ui/use-toast'
 import {
@@ -16,13 +15,12 @@ import {
 } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
 import AuthService from '@/lib/auth-service'
 import ContributionService from '@/lib/contribution-service'
 import useAuthStore from '@/lib/stores/auth-store'
-import { Contribution } from '@/lib/types'
 import { UserDetail } from '@/lib/dashboard-service'
 import { formatCurrency } from '@/lib/contribution-utils'
+import Link from 'next/link'
 
 interface GroupDetailsViewProps {
   groupId: string
@@ -121,7 +119,7 @@ const formatDate = (dateString: string): string => {
   try {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-NG', { month: 'short', day: 'numeric', year: 'numeric' });
-  } catch (error) {
+  } catch {
     return dateString;
   }
 };
@@ -129,7 +127,7 @@ const formatDate = (dateString: string): string => {
 // Helper function to calculate next contribution date
 const getNextContributionDate = (frequency: string): { dueDate: string, daysLeft: number } => {
   const today = new Date();
-  let nextDate = new Date();
+  const nextDate = new Date();
   
   switch(frequency) {
     case 'daily':
@@ -309,7 +307,7 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
               <ol className="text-xs text-blue-800 mt-2 space-y-1 list-decimal ml-4">
                 <li>Copy the invite code above</li>
                 <li>Share it with the person you want to invite</li>
-                <li>Ask them to go to the "Join Group" page in CoopWise</li>
+                <li>Ask them to go to the &ldquo;Join Group&rdquo; page in CoopWise</li>
                 <li>They should paste this code to join your group</li>
               </ol>
             </div>
@@ -359,7 +357,7 @@ const GroupStats = ({
   const [paymentMethod, setPaymentMethod] = useState('transfer');
   const [countdown, setCountdown] = useState(10 * 60); // 10 minutes in seconds
   
-  const { user, isAuthenticated } = useAuthStore()
+  const { user } = useAuthStore()
   // Format countdown time as mm:ss
   const formatTime = () => {
     const minutes = Math.floor(countdown / 60);

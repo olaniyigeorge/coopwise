@@ -1,15 +1,13 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import GroupCard from './group-card'
 import EmptyGroupState from './empty-group-state'
 import { Pagination } from '@/components/ui/pagination'
-import GroupService, { Group } from '@/lib/group-service'
+import { Group } from '@/lib/group-service'
 import { Loader2 } from 'lucide-react'
-import { toast } from '@/components/ui/use-toast'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
+
 
 interface MyGroupsListProps {
   hasGroups: boolean | null
@@ -42,7 +40,7 @@ const transformMyGroup = (group: Group) => ({
 // Helper functions to simulate next contribution and payout dates
 function getNextContributionDate(frequency: string): string {
   const today = new Date();
-  let nextDate = new Date();
+  const nextDate = new Date();
   
   switch(frequency) {
     case 'daily':
@@ -72,7 +70,7 @@ function getNextContributionDaysLeft(frequency: string): number {
 
 function getNextPayoutDate(frequency: string): string {
   const today = new Date();
-  let payoutDate = new Date();
+  const payoutDate = new Date();
   
   switch(frequency) {
     case 'daily':
@@ -116,7 +114,7 @@ export default function MyGroupsList({ hasGroups, searchQuery, userGroups = [], 
   const [totalPages, setTotalPages] = useState(1)
   const limit = 4 // Number of groups per page
   const router = useRouter()
-  const searchParams = useSearchParams()
+
   
   // Process groups from props
   useEffect(() => {

@@ -64,15 +64,15 @@ export default function ContactPage() {
   const faqData = [
     {
       question: "How does CoopWise keep my money safe?",
-      answer: "We keep your money in stable digital currency (like USDT) to protect it from market ups and downs. It stays secure and steady until you're ready to use it."
+      answer: "We keep your money in stable digital currency (like USDT) to protect it from market ups and downs. It stays secure and steady until you&apos;re ready to use it."
     },
     {
       question: "What happens if someone in my group doesn't pay?",
-      answer: "The \"group admin\" can remove them. If they've received money before, CoopWise may auto-deduct what they owe. It's best to only invite people you trust."
+      answer: "The &quot;group admin&quot; can remove them. If they&apos;ve received money before, CoopWise may auto-deduct what they owe. It&apos;s best to only invite people you trust."
     },
     {
       question: "Can I leave a savings group?",
-      answer: "Yes, as long as you don't owe the group any money (outstanding loans and unpaid contributions). If you've paid up, you're free to leave anytime."
+      answer: "Yes, as long as you don&apos;t owe the group any money (outstanding loans and unpaid contributions). If you&apos;ve paid up, you&apos;re free to leave anytime."
     },
     {
       question: "How much does CoopWise cost?",
@@ -80,7 +80,7 @@ export default function ContactPage() {
     },
     {
       question: "Is there a group size limit?",
-      answer: "No. You can save solo or with as many people as you want. It's totally up to you. A tip will be to join small groups with trusted members."
+      answer: "No. You can save solo or with as many people as you want. It&apos;s totally up to you. A tip will be to join small groups with trusted members."
     },
     {
       question: "How do I invite people to my group?",
@@ -88,7 +88,7 @@ export default function ContactPage() {
     },
     {
       question: "Can I change my contribution amount?",
-      answer: "It depends on your group's rules. Some allow it, others don't. If needed, you can always join or create a group that fits your budget."
+      answer: "It depends on your group&apos;s rules. Some allow it, others don&apos;t. If needed, you can always join or create a group that fits your budget."
     },
     {
       question: "How do withdrawals work?",
@@ -144,7 +144,7 @@ export default function ContactPage() {
         <div className="text-center space-y-4 md:space-y-6">
       
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-            We're Here to{" "}
+            We&apos;re Here to{" "}
             <span className="text-brand-teal relative">
               Help
               <span className="absolute -bottom-2 left-0 w-full">
@@ -172,7 +172,7 @@ export default function ContactPage() {
               Get in Touch
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Choose the contact method that works best for you. We're available through multiple channels to provide the support you need.
+              Choose the contact method that works best for you. We&apos;re available through multiple channels to provide the support you need.
             </p>
           </div>
           
@@ -262,7 +262,7 @@ export default function ContactPage() {
               </h2>
               <div className="flex items-center gap-3 mb-4">
                 <p className="text-lg text-gray-600">
-                Fill out the form below and we'll get back to you as soon as possible. We typically respond within 24 hours.
+                Fill out the form below and we&apos;ll get back to you as soon as possible. We typically respond within 24 hours.
               </p>
                 <Badge className="bg-red-100 text-red-800 whitespace-nowrap">Coming Soon</Badge>
               </div>
@@ -271,7 +271,7 @@ export default function ContactPage() {
                 <Alert className="mb-6 border-green-200 bg-green-50">
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   <AlertDescription className="text-green-700">
-                    Thank you for your message! We've received it and will get back to you within 24 hours.
+                    Thank you for your message! We&apos;ve received it and will get back to you within 24 hours.
                   </AlertDescription>
                 </Alert>
               )}
@@ -432,7 +432,7 @@ export default function ContactPage() {
               </h2>
             </div>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Find quick answers to common questions about CoopWise. Can't find what you're looking for? Contact our support team.
+              Find quick answers to common questions about CoopWise. Can&apos;t find what you&apos;re looking for? Contact our support team.
             </p>
           </div>
 

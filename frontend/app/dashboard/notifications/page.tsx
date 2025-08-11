@@ -1,32 +1,17 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import DashboardLayout from '@/components/dashboard/layout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Bell, Check } from 'lucide-react'
-import useAuthStore from '@/lib/stores/auth-store'
-import useNotificationStore, { NotificationDetail } from '@/lib/stores/notification-store'
-import Link from 'next/link'
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { getNotificationActionLabel, getNotificationLink } from '@/lib/utils'
+import { Card, CardContent } from '@/components/ui/card'
+import { 
+  Bell, 
+  CheckCircle
+} from 'lucide-react'
+import { useNotifications } from '@/lib/notification-context'
 
 export default function NotificationsPage() {
-  const { user } = useAuthStore()
-  const { notifications, unreadCount, markAllAsRead, markAsRead,  } = useNotificationStore()
-
-  const [selectedNotification, setSelectedNotification] = useState<NotificationDetail | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-
-  const openModal = (notification: any) => {
-    setSelectedNotification(notification)
-    setIsModalOpen(true)
-  }
-
-  const closeModal = () => {
-    setSelectedNotification(null)
-    setIsModalOpen(false)
-  }
+  const { notifications, markAsRead, markAllAsRead } = useNotifications()
 
   // Format date to a more readable format
   const formatDate = (dateString: string) => {
@@ -56,71 +41,30 @@ export default function NotificationsPage() {
 
   return (
     <DashboardLayout>
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
-          {selectedNotification && (
-            <>
-              <DialogHeader>
-                <DialogTitle>{selectedNotification.title}</DialogTitle>
-                <DialogDescription className="text-xs text-gray-500">{formatDate(selectedNotification.created_at)}</DialogDescription>
-              </DialogHeader>
-              <div className="mt-2">{selectedNotification.message}</div>
-                  {getNotificationLink(selectedNotification) && (
-                    <Link href={getNotificationLink(selectedNotification)!} className="text-blue-600 text-sm underline mt-4 block">
-                      {getNotificationActionLabel(selectedNotification)}
-                    </Link>
-                  )}
-              <div className="mt-4 flex justify-end gap-2">
-                {!selectedNotification?.is_read && (
-                  <Button
-                    onClick={() => {
-                      markAsRead(selectedNotification.id)
-                      closeModal()
-                    }}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Mark as Read
-                  </Button>
-                )}
-                <DialogClose asChild>
-                  <Button size="sm" variant="default">
-                    Close
-                  </Button>
-                </DialogClose>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
       <div className="max-w-4xl mx-auto space-y-6 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
             <p className="text-muted-foreground">
-              {unreadCount > 0 
-                ? `You have ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`
+              {notifications.length > 0 
+                ? `You have ${notifications.length} notification${notifications.length > 1 ? 's' : ''}`
                 : 'All caught up!'
               }
             </p>
           </div>
-          {unreadCount > 0 && (
+          {notifications.length > 0 && (
             <Button 
               variant="outline" 
               onClick={markAllAsRead}
               className="flex items-center gap-2"
             >
-              <Check className="h-4 w-4" />
+              <CheckCircle className="h-4 w-4" />
               Mark all as read
             </Button>
           )}
         </div>
 
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>All Notifications</CardTitle>
-          </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {notifications.length > 0 ? (
@@ -162,7 +106,6 @@ export default function NotificationsPage() {
                           variant="secondary" 
                           size="sm" 
                           className="mt-2 h-8 text-xs"
-                          onClick={() => openModal(notification)}
                         >
                           View details
                         </Button>
@@ -177,7 +120,7 @@ export default function NotificationsPage() {
                   <Bell className="h-12 w-12 mx-auto text-gray-400" />
                   <h3 className="mt-2 text-lg font-medium">No notifications</h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    You don't have any notifications at the moment.
+                    You don&apos;t have any notifications at the moment.
                   </p>
                 </div>
               )}

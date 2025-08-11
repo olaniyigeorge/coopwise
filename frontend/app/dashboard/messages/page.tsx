@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react'
 import DashboardLayout from '@/components/dashboard/layout'
-import { MobileCard, MobileGrid, MobileStack } from '@/components/dashboard/mobile-responsive-wrapper'
+import { MobileCard } from '@/components/dashboard/mobile-responsive-wrapper'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { 
   Search, 
   Send, 

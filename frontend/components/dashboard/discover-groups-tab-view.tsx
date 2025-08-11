@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
-import Link from "next/link"
+
 import GroupService, { Group } from "@/lib/group-service"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -82,7 +80,7 @@ const GroupCardSkeleton = () => (
 
 export default function DiscoverGroupsTabView({ defaultTab = 'discover' }: DiscoverGroupsTabViewProps) {
   const [activeTab, setActiveTab] = useState<'my-groups' | 'discover'>(defaultTab)
-  const [searchQuery, setSearchQuery] = useState('')
+
   const [myGroups, setMyGroups] = useState<ReturnType<typeof transformGroup>[]>([])
   const [discoverGroups, setDiscoverGroups] = useState<ReturnType<typeof transformGroup>[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -194,7 +192,7 @@ export default function DiscoverGroupsTabView({ defaultTab = 'discover' }: Disco
             ))
           ) : (
             <div className="col-span-3 text-center py-10">
-              <p className="text-gray-500">You haven't joined any groups yet.</p>
+              <p className="text-gray-500">You haven&apos;t joined any groups yet.</p>
             </div>
           )
         ) : (

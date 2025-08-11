@@ -1,8 +1,6 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import AuthService from './auth-service';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
-
 // Create an axios instance with defaults
 const apiClient = axios.create({
   baseURL: '/api', // Use our Next.js API routes as a proxy

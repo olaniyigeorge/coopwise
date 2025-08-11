@@ -36,7 +36,6 @@ export default function GroupCard({
   id,
   name,
   memberCount,
-  maxMembers,
   contributionAmount,
   frequency,
   description,
@@ -44,8 +43,7 @@ export default function GroupCard({
   isMyGroup = false,
   nextContribution,
   nextPayout,
-  onRequestInvite,
-  onViewDetails
+  onRequestInvite
 }: GroupCardProps) {
   
   // Function to render the appropriate badge

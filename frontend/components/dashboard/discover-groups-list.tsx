@@ -3,10 +3,9 @@
 import React, { useState, useEffect } from 'react'
 import GroupCard from './group-card'
 import { Pagination } from '@/components/ui/pagination'
-import GroupService, { Group } from '@/lib/group-service'
+import { Group } from '@/lib/group-service'
 import { Loader2 } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
-import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,9 +47,7 @@ export default function DiscoverGroupsList({ searchQuery, suggestedGroups = [], 
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteCode, setInviteCode] = useState('')
   const [isGeneratingCode, setIsGeneratingCode] = useState(false)
-  const [selectedGroupId, setSelectedGroupId] = useState('')
   const limit = 6 // Number of groups per page
-  const router = useRouter()
   
   // Process groups from props
   useEffect(() => {

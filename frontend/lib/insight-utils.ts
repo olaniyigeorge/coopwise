@@ -1,4 +1,4 @@
-import React from 'react'
+
 import {
   AIInsight,
   InsightCategory,
@@ -298,7 +298,7 @@ export function getInsightsByCategory(insights: AIInsight[], category: InsightCa
   return insights.filter(insight => insight.category === category)
 }
 
-export function getPersonalInsights(insights: AIInsight[], userId: string): AIInsight[] {
+export function getPersonalInsights(insights: AIInsight[]): AIInsight[] {
   return insights.filter(insight => 
     insight.type === InsightType.PERSONAL || 
     insight.type === InsightType.GENERAL

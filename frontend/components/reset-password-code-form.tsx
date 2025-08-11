@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import Link from "next/link"
+
 import { Button } from "@/components/ui/button"
 
 export default function ResetPasswordCodeForm() {
@@ -138,11 +138,11 @@ export default function ResetPasswordCodeForm() {
         <p className="text-sm text-gray-600">
           {timer > 0 ? (
             <>
-              Didn't receive code? You can resend in <span className="font-medium">{formatTime(timer)}</span>
+              Didn&apos;t receive code? You can resend in <span className="font-medium">{formatTime(timer)}</span>
             </>
           ) : (
             <>
-              Didn't receive code? <button onClick={resendCode} className="text-primary hover:text-primary/90 font-medium">Resend code</button>
+              Didn&apos;t receive code? <button onClick={resendCode} className="text-primary hover:text-primary/90 font-medium">Resend code</button>
             </>
           )}
         </p>

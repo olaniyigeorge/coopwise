@@ -1,15 +1,6 @@
 import axios from 'axios';
 import CookieService from './cookie-service';
 
-// API base URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
-
-// Define API URLs - Using relative URLs to work with Next.js API routes
-const AUTH_ENDPOINTS = {
-  LOGIN: `/api/auth/login`,
-  REGISTER: `/api/auth/register`,
-};
-
 // Define types
 export interface LoginCredentials {
   username: string; // Email or phone
@@ -194,7 +185,7 @@ const AuthService = {
   },
 
   // Get auth header
-  getAuthHeader(): { Authorization: string } | {} {
+  getAuthHeader(): { Authorization: string } | Record<string, never> {
     const token = CookieService.getToken();
     if (token) {
       return { Authorization: `Bearer ${token}` };

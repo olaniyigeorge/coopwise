@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, ArrowRightLeft, Copy, Clock, CheckCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -29,7 +28,6 @@ function LoadingFallback() {
 function TransferPaymentContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const groupId = searchParams.get('groupId')
   const amount = searchParams.get('amount') || '100000'
   
   const [timeLeft, setTimeLeft] = useState(600) // 10 minutes in seconds
@@ -210,7 +208,7 @@ function TransferPaymentContent() {
                     <ul className="text-sm text-blue-800 space-y-1">
                       <li>• Use the exact amount shown above</li>
                       <li>• Complete transfer within 10 minutes</li>
-                      <li>• Click "Confirm Payment" after transfer</li>
+                      <li>• Click &quot;Confirm Payment&quot; after transfer</li>
                       <li>• Keep your transfer receipt for records</li>
                     </ul>
                   </div>
@@ -226,7 +224,7 @@ function TransferPaymentContent() {
 
                 {/* Note */}
                 <p className="text-xs text-gray-500 text-center">
-                  Only click "Confirm Payment" after you have completed the bank transfer
+                  Only click &quot;Confirm Payment&quot; after you have completed the bank transfer
                 </p>
               </>
             ) : (

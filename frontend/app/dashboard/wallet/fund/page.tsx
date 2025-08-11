@@ -8,7 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, CheckCircle, CreditCard, Landmark, Phone } from 'lucide-react';
+import { 
+  CreditCard, 
+  Banknote, 
+  Wallet, 
+  ArrowRight,
+  CheckCircle
+} from 'lucide-react'
 import { formatCurrency } from '@/lib/utils';
 import WalletService from '@/lib/wallet-service';
 
@@ -116,7 +122,7 @@ export default function FundWallet() {
           className="flex items-center gap-1 px-0 hover:px-2 ease-in-out transition-all duration-500 mb-4"
           onClick={() => router.push('/dashboard')}
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+          <ArrowRight className="w-4 h-4" /> Back to Dashboard
         </Button>
         <h1 className="text-2xl font-semibold">Fund Your Wallet</h1>
         <p className="text-gray-500 text-sm">Add money to your wallet to make contributions</p>
@@ -154,10 +160,10 @@ export default function FundWallet() {
                 <CreditCard className="w-4 h-4" /> Card
               </TabsTrigger>
               <TabsTrigger value="bank" className="flex items-center gap-2">
-                <Landmark className="w-4 h-4" /> Bank
+                <Banknote className="w-4 h-4" /> Bank
               </TabsTrigger>
               <TabsTrigger value="ussd" className="flex items-center gap-2">
-                <Phone className="w-4 h-4" /> USSD
+                <Wallet className="w-4 h-4" /> USSD
               </TabsTrigger>
             </TabsList>
 

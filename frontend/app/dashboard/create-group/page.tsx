@@ -16,12 +16,10 @@ import CookieService from '@/lib/cookie-service'
 // Step 2: Group Rules
 function GroupRulesForm({ 
   onBack, 
-  onComplete,
-  groupData
+  onComplete
 }: { 
   onBack: () => void, 
-  onComplete: (rules: {title: string, description: string}[]) => void,
-  groupData: any
+  onComplete: (rules: {title: string, description: string}[]) => void
 }) {
   const [rules, setRules] = useState<{title: string, description: string}[]>([
     { 
@@ -41,13 +39,15 @@ function GroupRulesForm({
     setRules([...rules, { title: '', description: '' }])
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     try {
       setIsSubmitting(true)
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
       onComplete(rules)
-    } catch (error) {
-      console.error('Error:', error)
+    } catch {
+      // Handle error silently
+    } finally {
       setIsSubmitting(false)
     }
   }
@@ -133,7 +133,6 @@ export default function CreateGroup() {
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [groupData, setGroupData] = useState<any>(null)
-  const [isCreating, setIsCreating] = useState(false)
 
   const handleNext = async (formValues: any) => {
     try {
@@ -195,8 +194,8 @@ export default function CreateGroup() {
       if (rules && rules.length > 0) {
         try {
           CookieService.set(`group_rules_${response.id}`, rules, { expires: 30 });
-        } catch (e) {
-          console.log('Could not save rules locally', e);
+        } catch {
+          console.log('Could not save rules locally');
         }
       }
       
@@ -232,10 +231,10 @@ export default function CreateGroup() {
             if (errorData.detail) {
               errorMessage = errorData.detail;
             }
-          } catch (e) {
-            // If parsing fails, use the error status
-            errorMessage = `Error ${error.response.status}: ${error.response.statusText}`;
-          }
+                  } catch {
+          // If parsing fails, use the error status
+          errorMessage = `Error ${error.response.status}: ${error.response.statusText}`;
+        }
         }
       }
       
@@ -257,7 +256,6 @@ export default function CreateGroup() {
         <GroupRulesForm 
           onBack={handleBack} 
           onComplete={handleComplete}
-          groupData={groupData}
         />
       )}
     </DashboardLayout>

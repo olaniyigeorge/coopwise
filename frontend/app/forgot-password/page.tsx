@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
               </span>
             </h1>
             <p className="text-gray-600">
-              We'll send a password reset link to your email address
+              We&apos;ll send a password reset link to your email address
             </p>
           </div>
           

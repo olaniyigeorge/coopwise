@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 export default function EmptyGroupState() {
   return (
     <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-      <h3 className="text-lg font-medium mb-3">You don't have any group yet</h3>
+      <h3 className="text-lg font-medium mb-3">You don&apos;t have any group yet</h3>
       <p className="text-sm text-gray-600 mb-6">
         Create a group or join an existing one to start saving together
       </p>

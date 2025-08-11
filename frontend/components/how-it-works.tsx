@@ -1,8 +1,6 @@
 "use client"
 
 import React from 'react'
-import Image from 'next/image'
-import { BulletPoint } from './ui/bullet-point'
 import HowItWorksTimeline from './how-it-works-timeline'
 
 export default function HowItWorks() {

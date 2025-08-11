@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import Image from "next/image"
+
 import { CheckCircle } from "lucide-react"
 
 interface ForgotPasswordFormProps {
@@ -65,7 +65,7 @@ export default function ForgotPasswordForm({ emailOnly = false }: ForgotPassword
         
         <div className="text-center mt-4">
           <p className="text-sm text-gray-600">
-            Didn't receive the email? <button onClick={() => setIsCodeSent(false)} className="text-primary hover:text-primary/90 font-medium">Try again</button>
+            Didn&apos;t receive the email? <button onClick={() => setIsCodeSent(false)} className="text-primary hover:text-primary/90 font-medium">Try again</button>
           </p>
         </div>
       </div>

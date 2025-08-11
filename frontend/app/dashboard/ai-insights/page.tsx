@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/dashboard/layout'
-import AIInsightCard from '@/components/dashboard/ai-insight-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,94 +11,37 @@ import {
   Search, 
   RefreshCw, 
   Brain,
-  Sparkles,
-  TrendingUp,
   LightbulbIcon,
   Wallet,
   PiggyBank,
   DollarSign
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { 
-  AIInsight, 
-  InsightCategory, 
-  ImplementationStatus,
+import {
+  InsightCategory,
   DifficultyLevel
 } from '@/lib/types'
 import { getUserInsights } from '@/lib/insights-mock-data'
-import { calculateInsightSummary, filterInsights } from '@/lib/insight-utils'
+import { filterInsights } from '@/lib/insight-utils'
 
 export default function AIInsightsPage() {
   const router = useRouter()
-  const [activeFilter, setActiveFilter] = useState<string>('all')
+  const [activeTab, setActiveTab] = useState<InsightCategory | 'all'>('all')
+  const [activeFilter, setActiveFilter] = useState<DifficultyLevel | 'all'>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState('all')
 
-  // Get user insights
   const allInsights = useMemo(() => getUserInsights('1'), [])
 
-  // Apply filters
   const filteredInsights = useMemo(() => {
-    let filtered = [...allInsights]
-
-    // Apply search
-    if (searchQuery.trim()) {
-      filtered = filterInsights(filtered, { searchQuery })
-    }
-
-    // Apply tab filter
-    if (activeTab !== 'all') {
-      switch (activeTab) {
-        case 'reduce-expenses':
-          filtered = filtered.filter(i => 
-            i.category === InsightCategory.EXPENSE_REDUCTION
-          )
-          break
-        case 'increase-income':
-          filtered = filtered.filter(i => 
-            i.category === InsightCategory.INCOME_INCREASE
-          )
-          break
-        case 'habits':
-          filtered = filtered.filter(i => 
-            i.category === InsightCategory.FINANCIAL_HABITS
-          )
-          break
-      }
-    }
-
-    // Apply status filter
-    if (activeFilter !== 'all') {
-      switch (activeFilter) {
-        case 'easy':
-          filtered = filtered.filter(i => i.difficulty === DifficultyLevel.EASY)
-          break
-        case 'medium':
-          filtered = filtered.filter(i => i.difficulty === DifficultyLevel.MEDIUM)
-          break
-        case 'hard':
-          filtered = filtered.filter(i => i.difficulty === DifficultyLevel.HARD)
-          break
-      }
-    }
-
-    return filtered
-  }, [allInsights, searchQuery, activeFilter, activeTab])
-
-  // Calculate summary
-  const summary = useMemo(() => 
-    calculateInsightSummary(filteredInsights), 
-    [filteredInsights]
-  )
+    return filterInsights(allInsights, {
+      category: activeTab === 'all' ? undefined : [activeTab as InsightCategory],
+      difficulty: activeFilter === 'all' ? undefined : [activeFilter as DifficultyLevel],
+      searchQuery: searchQuery.trim()
+    })
+  }, [allInsights, activeTab, activeFilter, searchQuery])
 
   const handleRefresh = () => {
     console.log('Refreshing insights...')
     // In a real app, this would fetch new insights
-  }
-
-  const handleInsightAction = (insight: AIInsight, action: string) => {
-    console.log(`${action} insight:`, insight.id)
-    // In a real app, this would update the insight status
   }
 
   // Tab-specific content
@@ -109,7 +51,7 @@ export default function AIInsightsPage() {
     }
 
     switch (activeTab) {
-      case 'reduce-expenses':
+      case InsightCategory.SPENDING_ANALYSIS:
   return (
           <Card className="mb-6 bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
             <CardContent className="p-4 sm:p-6">
@@ -135,7 +77,7 @@ export default function AIInsightsPage() {
           </Card>
         )
       
-      case 'increase-income':
+      case InsightCategory.FINANCIAL_OPTIMIZATION:
         return (
           <Card className="mb-6 bg-gradient-to-r from-green-50 to-green-100 border-green-200">
             <CardContent className="p-4 sm:p-6">
@@ -162,7 +104,7 @@ export default function AIInsightsPage() {
           </Card>
         )
       
-      case 'habits':
+      case InsightCategory.BUDGETING:
         return (
           <Card className="mb-6 bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
             <CardContent className="p-4 sm:p-6">
@@ -224,22 +166,22 @@ export default function AIInsightsPage() {
           </button>
           <button
             className={`px-4 py-2 rounded-md text-sm font-medium flex-shrink-0 transition-colors
-              ${activeTab === 'reduce-expenses' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-            onClick={() => setActiveTab('reduce-expenses')}
+              ${activeTab === InsightCategory.SPENDING_ANALYSIS ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+            onClick={() => setActiveTab(InsightCategory.SPENDING_ANALYSIS)}
           >
             Reduce expenses
           </button>
           <button
             className={`px-4 py-2 rounded-md text-sm font-medium flex-shrink-0 transition-colors
-              ${activeTab === 'increase-income' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-            onClick={() => setActiveTab('increase-income')}
+              ${activeTab === InsightCategory.FINANCIAL_OPTIMIZATION ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+            onClick={() => setActiveTab(InsightCategory.FINANCIAL_OPTIMIZATION)}
           >
             Increase Income
           </button>
           <button
             className={`px-4 py-2 rounded-md text-sm font-medium flex-shrink-0 transition-colors
-              ${activeTab === 'habits' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-            onClick={() => setActiveTab('habits')}
+              ${activeTab === InsightCategory.BUDGETING ? 'bg-white shadow-sm text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+            onClick={() => setActiveTab(InsightCategory.BUDGETING)}
           >
             Habits
           </button>
@@ -269,22 +211,22 @@ export default function AIInsightsPage() {
             </Button>
             <Button
               variant="outline"
-              className={`border-gray-300 ${activeFilter === 'easy' ? 'bg-gray-100' : ''}`}
-              onClick={() => setActiveFilter('easy')}
+              className={`border-gray-300 ${activeFilter === DifficultyLevel.EASY ? 'bg-gray-100' : ''}`}
+              onClick={() => setActiveFilter(DifficultyLevel.EASY)}
             >
               Easy
             </Button>
                   <Button
               variant="outline" 
-              className={`border-gray-300 ${activeFilter === 'medium' ? 'bg-gray-100' : ''}`}
-              onClick={() => setActiveFilter('medium')}
+              className={`border-gray-300 ${activeFilter === DifficultyLevel.MEDIUM ? 'bg-gray-100' : ''}`}
+              onClick={() => setActiveFilter(DifficultyLevel.MEDIUM)}
                   >
               Medium
             </Button>
             <Button
               variant="outline"
-              className={`border-gray-300 ${activeFilter === 'hard' ? 'bg-gray-100' : ''}`}
-              onClick={() => setActiveFilter('hard')}
+              className={`border-gray-300 ${activeFilter === DifficultyLevel.HARD ? 'bg-gray-100' : ''}`}
+              onClick={() => setActiveFilter(DifficultyLevel.HARD)}
                     >
               Hard
                   </Button>

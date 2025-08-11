@@ -3,23 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 // The API base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
 
-// Configuration - set to false for production
-const ENABLE_MOCK_API = process.env.NEXT_PUBLIC_ENABLE_MOCK_API === 'true' || false;
-
-// Mock PATCH response
-const mockPatchResponse = (userId: string, body: any) => {
-  // Create a response with the same data but add an id
-  const responseData = {
-    ...body,
-    id: userId,
-    updated_at: new Date().toISOString()
-  };
-  
-  console.log('Mock API returning:', responseData);
-  
-  return NextResponse.json(responseData);
-};
-
 // PATCH request handler for user update
 export async function PATCH(
   request: NextRequest,

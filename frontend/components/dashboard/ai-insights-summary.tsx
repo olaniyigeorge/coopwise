@@ -2,10 +2,8 @@
 
 import React, { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowRightIcon, RefreshCwIcon, LightbulbIcon, SparklesIcon, TrendingUpIcon } from 'lucide-react'
-import Image from 'next/image'
+import { ArrowRightIcon, RefreshCwIcon, LightbulbIcon, SparklesIcon } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { getUserInsights } from '@/lib/insights-mock-data'
 import AIInsightCard from './ai-insight-card'

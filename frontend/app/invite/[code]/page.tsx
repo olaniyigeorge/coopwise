@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { generateOpenGraphMetadata, generateTwitterMetadata } from '@/lib/og-helpers'
 import InviteJoinHandler from '@/components/invite-join-handler'
 
@@ -241,12 +242,12 @@ export default async function InvitePage({ params }: { params: { code: string } 
             <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3">
               <InviteJoinHandler inviteCode={code} groupName={groupData.name} />
               
-              <a 
+              <Link 
                 href="/"
                 className="flex-1 inline-flex justify-center items-center rounded-md bg-white border border-gray-300 px-4 sm:px-5 py-2.5 sm:py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
               >
                 Learn More About CoopWise
-              </a>
+              </Link>
             </div>
           </div>
         </div>

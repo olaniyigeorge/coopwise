@@ -29,7 +29,6 @@ function LoadingFallback() {
 function CardPaymentContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const groupId = searchParams.get('groupId')
   const amount = searchParams.get('amount') || '100000'
   
   const [cardNumber, setCardNumber] = useState('')

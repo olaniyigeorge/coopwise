@@ -24,7 +24,7 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { user, isAuthenticated } = useAuthStore()
+  const { user } = useAuthStore()
   
   // Get header configuration based on the current pathname
   const getHeaderConfig = () => {

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       try {
         responseData = await response.json()
         console.log('Response data:', responseData)
-      } catch (e) {
+      } catch {
         const text = await response.text()
         console.log('Response text:', text)
         responseData = { message: text }

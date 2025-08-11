@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react'
 import { 
-  AlertCircle, 
   X,
   Clock,
   Construction

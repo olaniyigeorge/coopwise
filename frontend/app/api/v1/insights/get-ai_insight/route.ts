@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         try {
           const errorJson = JSON.parse(errorText);
           return NextResponse.json(errorJson, { status: response.status });
-        } catch (parseError) {
+        } catch {
           // If not JSON, return as plain error
           return NextResponse.json(
             { error: 'Backend API error', message: errorText },

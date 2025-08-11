@@ -25,7 +25,7 @@ export default function NotificationDropdown() {
   const formatTime = (timestamp: string) => {
     try {
       return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-    } catch (e) {
+    } catch {
       return 'recently';
     }
   };

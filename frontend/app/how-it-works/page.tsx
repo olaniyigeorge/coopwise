@@ -5,8 +5,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BulletPoint } from '@/components/ui/bullet-point'
-import { Badge } from "@/components/ui/badge"
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
 import CTA from '@/components/cta'
@@ -14,62 +12,6 @@ import { CheckCircle, Users, DollarSign, TrendingUp, Shield, Zap } from 'lucide-
 import HowItWorksTimeline from '@/components/how-it-works-timeline'
 
 export default function HowItWorksPage() {
-  const steps = [
-    {
-      title: "Open the CoopWise Link",
-      bullets: [
-        "If someone invites you, just tap the group link they shared",
-        "Or visit www.coopwise.com to get started"
-      ],
-      phoneImage: "/assets/images/Phone0.png",
-      phonePosition: "right"
-    },
-    {
-      title: "Create Your Account",
-      bullets: [
-        "Sign up with your name, email or phone number",
-        "Set your savings goal and basic initial takes less than 2 minutes"
-      ],
-      phoneImage: "/assets/images/Phone1.png",
-      phonePosition: "left"
-    },
-    {
-      title: "Join or Start a Group",
-      bullets: [
-        "Enter an invite code if you're joining a group",
-        "Or start your own group and invite people you trust"
-      ],
-      phoneImage: "/assets/images/Phone2.png",
-      phonePosition: "right"
-    },
-    {
-      title: "Set Your Group Rules",
-      bullets: [
-        "Decide how much to contribute and how often",
-        "Decide if payouts rotate or stay fixed, it's your group, your rules"
-      ],
-      phoneImage: "/assets/images/Phone3.png",
-      phonePosition: "left"
-    },
-    {
-      title: "Save Money, Get Smart AI Tips",
-      bullets: [
-        "Make regular contributions",
-        "CoopWise sends helpful reminders and suggestions to keep you on track"
-      ],
-      phoneImage: "/assets/images/Phone4.png",
-      phonePosition: "right"
-    },
-    {
-      title: "Track Your Progress",
-      bullets: [
-        "See your group's total savings, who has contributed, and when payouts are coming",
-        "Everything is transparent and easy to follow"
-      ],
-      phoneImage: "/assets/icons/Phone6.png",
-      phonePosition: "left"
-    }
-  ]
 
   const benefits = [
     {
@@ -186,7 +128,7 @@ export default function HowItWorksPage() {
               Why Choose CoopWise?
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Join thousands of people who are already saving smarter with CoopWise's powerful features and community support.
+              Join thousands of people who are already saving smarter with CoopWise&apos;s powerful features and community support.
             </p>
           </div>
           

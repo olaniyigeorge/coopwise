@@ -16,7 +16,7 @@ const mockMembers = [
     {    id: '4',    name: 'Mary Adekume',    number: '3',    joinDate: 'Join on May 23 2025',    role: 'Member',    roleColor: 'bg-green-100 text-green-800'  }
 ]
 
-export default function GroupMembersList({ groupId }: GroupMembersListProps) {
+export default function GroupMembersList({ }: GroupMembersListProps) {
   // Function to get the first name
   const getFirstName = (name: string) => {
     return name.split(' ')[0];
