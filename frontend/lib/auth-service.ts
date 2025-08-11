@@ -1,5 +1,6 @@
 import axios from 'axios';
 import CookieService from './cookie-service';
+import StorageService from './storage-service';
 
 // Define types
 export interface LoginCredentials {
@@ -34,7 +35,7 @@ export interface RegisterResponse {
 // Auth service
 const AuthService = {
   // Login user
-  async login(credentials: LoginCredentials) {
+  async login(credentials: LoginCredentials, rememberMe: boolean = false) {
     try {
       console.log('Logging in with:', credentials.username);
       
@@ -52,12 +53,18 @@ const AuthService = {
       console.log('Login response:', response.data);
       
       if (response.data.access_token) {
-        // Store the token in a cookie
-        CookieService.setToken(response.data.access_token);
+        // Store the token in a cookie with remember me option
+        CookieService.setToken(response.data.access_token, rememberMe);
+        
+        // Store remember me preference
+        CookieService.setRememberMe(rememberMe);
+        
+        // Store username for future logins
+        StorageService.setUsername(username, rememberMe);
         
         // If the user data is included in the response, use it
         if (response.data.user) {
-          CookieService.setUser(response.data.user);
+          CookieService.setUser(response.data.user, rememberMe);
           return {
             token: response.data.access_token,
             user: response.data.user
@@ -74,8 +81,8 @@ const AuthService = {
           
           console.log('User details:', userResponse.data);
           
-          // Store user in a cookie
-          CookieService.setUser(userResponse.data);
+          // Store user in a cookie with remember me option
+          CookieService.setUser(userResponse.data, rememberMe);
           
           return {
             token: response.data.access_token,
@@ -132,13 +139,30 @@ const AuthService = {
   // Logout user
   async logout() {
     try {
-      // Call the logout endpoint to clear HTTP-only cookies
-      await axios.post('/api/auth/logout');
-    } catch (error) {
-      console.error('Error during logout:', error);
-    } finally {
-      // Clear client-side cookies
+      // Clear all cookies and storage
       CookieService.clearAuth();
+      StorageService.clearAll();
+      
+      // Call logout API if needed
+      const token = this.getToken();
+      if (token) {
+        try {
+          await axios.post('/api/auth/logout', {}, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        } catch (error) {
+          console.warn('Logout API call failed, but local cleanup completed:', error);
+        }
+      }
+      
+      console.log('User logged out successfully');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if the API call fails, we still want to clear local data
+      CookieService.clearAuth();
+      StorageService.clearAll();
     }
   },
 

@@ -16,19 +16,15 @@ interface User {
 interface LoginCredentials {
   username: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 interface RegisterData {
-  username: string;
   email: string;
-  password: string;
   full_name: string;
+  username: string;
   phone_number: string;
-  target_savings_amount?: number | null;
-  savings_purpose?: string;
-  income_range?: string;
-  saving_frequency?: string;
-  role?: string;
+  password: string;
 }
 
 interface AuthState {
@@ -57,7 +53,7 @@ const useAuthStore = create<AuthState>()(
       login: async (credentials) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await AuthService.login(credentials);
+          const response = await AuthService.login(credentials, credentials.rememberMe || false);
           if (response.user) {
             set({ 
               user: response.user, 

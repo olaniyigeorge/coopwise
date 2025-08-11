@@ -5,12 +5,20 @@ const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user';
 const NOTIFICATIONS_KEY = 'notifications';
 const NEXT_NOTIFICATION_ID_KEY = 'nextNotificationId';
+const REMEMBER_ME_KEY = 'remember_me';
 
 // Cookie options
 const cookieOptions = {
-  expires: 7, // 7 days
+  expires: 7, // 7 days default
   path: '/',
   secure: process.env.NODE_ENV === 'production', // Only send cookie over HTTPS in production
+  sameSite: 'strict' as const
+};
+
+// Session cookie options (expires when browser closes)
+const sessionCookieOptions = {
+  path: '/',
+  secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict' as const
 };
 
@@ -41,9 +49,15 @@ const CookieService = {
     Cookies.remove(key, mergedOptions);
   },
   
-  // Set token cookie
-  setToken(token: string): void {
-    Cookies.set(TOKEN_KEY, token, cookieOptions);
+  // Set token cookie with remember me option
+  setToken(token: string, rememberMe: boolean = false): void {
+    if (rememberMe) {
+      // Persistent cookie - expires in 30 days
+      Cookies.set(TOKEN_KEY, token, { ...cookieOptions, expires: 30 });
+    } else {
+      // Session cookie - expires when browser closes
+      Cookies.set(TOKEN_KEY, token, sessionCookieOptions);
+    }
   },
 
   // Get token from cookie
@@ -56,9 +70,15 @@ const CookieService = {
     Cookies.remove(TOKEN_KEY, { path: '/' });
   },
 
-  // Set user cookie
-  setUser(user: any): void {
-    Cookies.set(USER_KEY, JSON.stringify(user), cookieOptions);
+  // Set user cookie with remember me option
+  setUser(user: any, rememberMe: boolean = false): void {
+    if (rememberMe) {
+      // Persistent cookie - expires in 30 days
+      Cookies.set(USER_KEY, JSON.stringify(user), { ...cookieOptions, expires: 30 });
+    } else {
+      // Session cookie - expires when browser closes
+      Cookies.set(USER_KEY, JSON.stringify(user), sessionCookieOptions);
+    }
   },
 
   // Get user from cookie
@@ -80,10 +100,32 @@ const CookieService = {
     Cookies.remove(USER_KEY, { path: '/' });
   },
 
+  // Set remember me preference
+  setRememberMe(rememberMe: boolean): void {
+    if (rememberMe) {
+      // Store remember me preference for 30 days
+      Cookies.set(REMEMBER_ME_KEY, 'true', { ...cookieOptions, expires: 30 });
+    } else {
+      // Remove remember me preference
+      Cookies.remove(REMEMBER_ME_KEY, { path: '/' });
+    }
+  },
+
+  // Get remember me preference
+  getRememberMe(): boolean {
+    return Cookies.get(REMEMBER_ME_KEY) === 'true';
+  },
+
   // Clear all auth cookies
   clearAuth(): void {
     this.removeToken();
     this.removeUser();
+    this.removeRememberMe();
+  },
+
+  // Remove remember me preference
+  removeRememberMe(): void {
+    Cookies.remove(REMEMBER_ME_KEY, { path: '/' });
   },
 
   // Notification methods
