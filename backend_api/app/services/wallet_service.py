@@ -218,22 +218,20 @@ class WalletService:
                 f"Failed to fetch wallet ledger by reference: {reference}. Error: {e}"
             )
             return None
-        
+
     @staticmethod
     async def get_wallet_by_id(wallet_id: str, db: AsyncSession) -> Wallet | None:
         try:
             stmt = select(Wallet).where(Wallet.id == wallet_id)
             result = await db.execute(stmt)
-            return result.scalar_one_or_none() 
+            return result.scalar_one_or_none()
         except Exception as e:
             logger.error(f"Failed to fetch wallet by ID: {wallet_id}. Error: {e}")
             return None
 
-
     @staticmethod
     async def get_wallet_ledger_record_by_id(
-        ledger_id: str,
-        db: AsyncSession
+        ledger_id: str, db: AsyncSession
     ) -> WalletLedgerDetail | None:
         """
         Fetch a wallet ledger record by its ID.
@@ -250,7 +248,6 @@ class WalletService:
                 f"Failed to fetch wallet ledger by id: {ledger_id}. Error: {e}"
             )
             return None
-
 
     @staticmethod
     async def record_ledger_entry(
@@ -307,11 +304,13 @@ class WalletService:
         return wallet
 
     @staticmethod
-    async def settle_payment_ledger_into_wallet(ledger_id: str, db: AsyncSession, redis: Redis):
+    async def settle_payment_ledger_into_wallet(
+        ledger_id: str, db: AsyncSession, redis: Redis
+    ):
         ledger = await WalletService.get_wallet_ledger_record_by_id(ledger_id, db)
         if not ledger:
             raise HTTPException(status_code=404, detail="Transaction ledger not found.")
-        
+
         if ledger.status == LedgerStatus.settled:
             raise HTTPException(status_code=400, detail="Ledger already settled.")
 
