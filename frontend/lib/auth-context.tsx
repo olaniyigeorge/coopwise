@@ -99,8 +99,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
       
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Check for pending invite code and return URL
+      const pendingInviteCode = localStorage.getItem('pendingInviteCode');
+      const returnUrl = new URLSearchParams(window.location.search).get('returnUrl');
+      
+      if (pendingInviteCode && returnUrl) {
+        // Clear the pending invite and redirect to the return URL
+        localStorage.removeItem('pendingInviteCode');
+        localStorage.removeItem('pendingGroupName');
+        router.push(returnUrl);
+      } else if (pendingInviteCode) {
+        // If there's a pending invite but no return URL, redirect to join page
+        localStorage.removeItem('pendingInviteCode');
+        localStorage.removeItem('pendingGroupName');
+        router.push(`/invite/${pendingInviteCode}/join`);
+      } else if (returnUrl) {
+        // If there's a return URL but no pending invite, redirect to it
+        router.push(returnUrl);
+      } else {
+        // Default redirect to dashboard
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       const errorMessage = err.response?.data?.detail || 'Login failed. Please check your credentials.';
       setError(errorMessage);
@@ -130,8 +149,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           description: `Welcome to CoopWise, ${response.user.full_name}!`,
         });
         
-        // Redirect to profile setup instead of dashboard
-        router.push('/auth/profile-setup');
+        // Check for pending invite code and return URL
+        const pendingInviteCode = localStorage.getItem('pendingInviteCode');
+        const returnUrl = new URLSearchParams(window.location.search).get('returnUrl');
+        
+        if (pendingInviteCode && returnUrl) {
+          // Clear the pending invite and redirect to the return URL
+          localStorage.removeItem('pendingInviteCode');
+          localStorage.removeItem('pendingGroupName');
+          router.push(returnUrl);
+        } else if (pendingInviteCode) {
+          // If there's a pending invite but no return URL, redirect to join page
+          localStorage.removeItem('pendingInviteCode');
+          localStorage.removeItem('pendingGroupName');
+          router.push(`/invite/${pendingInviteCode}/join`);
+        } else if (returnUrl) {
+          // If there's a return URL but no pending invite, redirect to it
+          router.push(returnUrl);
+        } else {
+          // Default redirect to profile setup
+          router.push('/auth/profile-setup');
+        }
       }
     } catch (err: any) {
       let errorMessage = 'Registration failed. Please try again.';
