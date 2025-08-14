@@ -10,8 +10,11 @@ from app.api.v1.routes.auth import (
 )
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.user import UserDetail, UserUpdate
-from db.dependencies import get_async_db_session
 from app.services.user_service import UserService
+from app.services.activity_service import ActivityService
+from app.schemas.activity_schemas import ActivityCreate
+from db.models.activity_model import ActivityType
+from db.dependencies import get_async_db_session
 
 router = APIRouter(prefix="/api/v1/users", tags=["User Management"])
 
@@ -49,7 +52,7 @@ async def get_users(
 async def update_user(
     user_id: str,
     user_update_data: UserUpdate,
-    user: AuthenticatedUser = Depends(is_admin_or_owner),
+    current_user: AuthenticatedUser = Depends(is_admin_or_owner),
     db: AsyncSession = Depends(get_async_db_session),
 ):
     """
@@ -58,6 +61,22 @@ async def update_user(
     updated_user = await UserService.update_user(db, user_id, user_update_data)
     if not updated_user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Log activity for profile update
+    try:
+        activity_data = ActivityCreate(
+            user_id=current_user.id,
+            type=ActivityType.updated_profile.value,
+            description="Updated profile information",
+            group_id=None,
+            entity_id=str(current_user.id),
+            amount=None,
+        )
+        await ActivityService.log(db, activity_data)
+    except Exception as e:
+        # Don't fail the update if activity logging fails
+        pass
+    
     return updated_user
 
 

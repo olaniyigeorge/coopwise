@@ -102,7 +102,7 @@ export default function InviteJoinHandler({ inviteCode, groupName }: InviteJoinH
       </Button>
       
       <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
-        <DialogContent className="sm:max-w-md max-w-[95%] rounded-xl p-5 sm:p-6">
+        <DialogContent className="max-w-xl rounded-xl p-5 sm:p-6">
           <DialogHeader className="space-y-1">
             <DialogTitle className="text-xl">Join {groupName}</DialogTitle>
             <DialogDescription className="text-sm text-gray-500">

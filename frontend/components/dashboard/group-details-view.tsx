@@ -263,40 +263,44 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
 
       {/* Invite Dialog */}
       <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Share group invite</DialogTitle>
             <DialogDescription>
               Share this invite code with people you want to join this group.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex items-center space-x-2 mt-4">
-            <div className="grid flex-1 gap-2">
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
               <label className="text-xs font-medium text-gray-500">
                 Shareable Invite Link
               </label>
-              <div className="flex items-center border rounded-md p-2 bg-gray-50">
-                <span className="text-sm font-medium flex-1 truncate">
-                  {window.location.origin}/invite/{inviteCode}
-                </span>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="border rounded-md p-3 bg-gray-50 invite-link-container">
+                    <span className="text-sm font-medium text-gray-900 invite-link-text" title={`${window.location.origin}/invite/${inviteCode}`}>
+                      {window.location.origin}/invite/{inviteCode}
+                    </span>
+                  </div>
+                </div>
+                <Button 
+                  type="button" 
+                  size="icon" 
+                  className="px-3 flex-shrink-0"
+                  onClick={copyToClipboard}
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">Copy</span>
+                </Button>
               </div>
               <p className="text-xs text-gray-500">
                 Share this link on social media to show group details
               </p>
             </div>
-            <Button 
-              type="button" 
-              size="icon" 
-              className="px-3"
-              onClick={copyToClipboard}
-            >
-              {copied ? (
-                <Check className="h-4 w-4" />
-              ) : (
-                <Copy className="h-4 w-4" />
-              )}
-              <span className="sr-only">Copy</span>
-            </Button>
           </div>
           <div className="mt-4 space-y-3">
             <div className="bg-blue-50 p-3 rounded-md border border-blue-100">

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +15,7 @@ export default function NewPasswordForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const searchParams = useSearchParams()
 
   const validatePassword = (pass: string) => {
     // Password must be at least 8 characters with capital and lowercase letters
@@ -24,31 +26,40 @@ export default function NewPasswordForm() {
     return hasMinLength && hasUppercase && hasLowercase
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Validate password format
     if (!validatePassword(password)) {
       setError("Password must be at least 8 characters, with one capital letter and one lowercase letter")
       return
     }
-    
-    // Check if passwords match
     if (password !== confirmPassword) {
       setError("Passwords do not match")
       return
     }
-    
-    // Handle password reset logic here
-    console.log({ password, confirmPassword })
-    
-    // Show success message
-    setSuccess(true)
-    
-    // Redirect to login after 2 seconds
-    setTimeout(() => {
-      window.location.href = "/login"
-    }, 2000)
+
+    try {
+      const token = searchParams.get('token') || new URLSearchParams(window.location.search).get('token')
+      if (!token) {
+        setError("Reset token missing. Please use the link from your email.")
+        return
+      }
+
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, new_password: password })
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.detail || 'Failed to change password')
+      }
+
+      setSuccess(true)
+      setTimeout(() => { window.location.href = "/auth/login" }, 2000)
+    } catch (err: any) {
+      setError(err.message || "Something went wrong")
+    }
   }
 
   const isFormFilled = password.trim() !== "" && confirmPassword.trim() !== ""
@@ -150,7 +161,7 @@ export default function NewPasswordForm() {
 
       <div className="text-center mt-6 pt-6 border-t border-gray-200">
         <p className="text-sm text-gray-600">
-          Remember your password? <Link href="/login" className="text-primary hover:text-primary/90 font-medium">Sign in</Link>
+          Remember your password? <Link href="/auth/login" className="text-primary hover:text-primary/90 font-medium">Sign in</Link>
         </p>
       </div>
     </div>

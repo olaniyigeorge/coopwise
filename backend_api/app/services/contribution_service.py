@@ -6,6 +6,9 @@ from sqlalchemy import select
 from app.schemas.contribution_schemas import ContributionCreate, ContributionDetail
 from app.services.membership_service import CooperativeMembershipService
 from app.schemas.auth import AuthenticatedUser
+from app.services.activity_service import ActivityService
+from app.schemas.activity_schemas import ActivityCreate
+from db.models.activity_model import ActivityType
 from db.models.contribution_model import Contribution
 from app.utils.logger import logger
 from app.core.config import config
@@ -51,6 +54,21 @@ class ContributionService:
         db.add(contribution)
         await db.commit()
         await db.refresh(contribution)
+
+        # Log activity for the contribution
+        try:
+            activity_data = ActivityCreate(
+                user_id=user.id,
+                type=ActivityType.made_contribution.value,
+                description=f"Made a contribution of {contribution_data.currency}{contribution_data.amount} to the savings group",
+                group_id=contribution_data.group_id,
+                entity_id=str(contribution.id),
+                amount=contribution_data.amount,
+            )
+            await ActivityService.log(db, activity_data)
+        except Exception as e:
+            logger.error(f"Failed to log contribution activity: {e}")
+            # Don't fail the contribution if activity logging fails
 
         logger.info(f"Contribution made successfully: {contribution}")
 

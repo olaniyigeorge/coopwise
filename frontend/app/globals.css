@@ -99,6 +99,44 @@ body {
   .p-responsive-lg {
     @apply p-4 sm:p-6 lg:p-8;
   }
+
+  /* Text Overflow Handling */
+  .text-overflow-safe {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-all;
+  }
+  
+  .invite-link-container {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .invite-link-text {
+    word-break: break-all;
+    hyphens: auto;
+  }
+
+  /* Mobile Dialog Improvements */
+  .dialog-mobile-safe {
+    max-width: calc(100vw - 2rem);
+    margin: 1rem;
+  }
+  
+  .dialog-content-responsive {
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+  
+  /* Text Break Utilities */
+  .break-words {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+  
+  .break-all {
+    word-break: break-all;
+  }
 }
 
 @layer base {

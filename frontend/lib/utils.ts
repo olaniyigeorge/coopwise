@@ -1,6 +1,6 @@
 import { ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { ActivityDetail, ActivityType } from "./dashboard-service"
+import { ActivityDetail } from "./dashboard-service"
 import { NotificationDetail } from "./stores/notification-store"
 
 // Combine clsx and tailwind-merge to intelligently handle conflicting Tailwind classes
@@ -24,27 +24,39 @@ export const getActivityDescription = (
   activity: ActivityDetail,
   isOwnActivity = false
 ): string => {
-  const { type, user_id, amount, entity_id } = activity
+  const { type, user_id, amount } = activity
 
   const actor = isOwnActivity ? 'You' : `User (${user_id})`
 
   switch (type) {
-    case ActivityType.CREATED_GROUP:
-      return `${actor} created a group(${entity_id}).`
-    case ActivityType.JOINED_GROUP:
-      return `${actor} joined a group.`
-    case ActivityType.LEFT_GROUP:
-      return `${actor} left the group.`
-    case ActivityType.ACCEPTED_INVITE:
-      return `${actor} accepted an invite to join the group.`
-    case ActivityType.DECLINED_INVITE:
-      return `${actor} declined an invite to join the group.`
-    case ActivityType.MADE_CONTRIBUTION:
-      return `${actor} contributed ${amount ? formatCurrency(amount) : 'an amount'} to the group.`
-    case ActivityType.RECEIVED_PAYOUT:
-      return `${actor} received a payout of ${amount ? formatCurrency(amount) : 'an amount'} from the group.`
+    case 'created_group':
+      return isOwnActivity ? 'You created a new savings group' : `${actor} created a new savings group`
+    case 'joined_group':
+      return isOwnActivity ? 'You joined a savings group' : `${actor} joined a savings group`
+    case 'left_group':
+      return isOwnActivity ? 'You left a savings group' : `${actor} left a savings group`
+    case 'accepted_invite':
+      return isOwnActivity ? 'You accepted an invitation to join a group' : `${actor} accepted an invitation to join a group`
+    case 'declined_invite':
+      return isOwnActivity ? 'You declined an invitation to join a group' : `${actor} declined an invitation to join a group`
+    case 'made_contribution':
+      if (amount) {
+        return isOwnActivity 
+          ? `You contributed ${formatCurrency(amount)} to your savings group`
+          : `${actor} contributed ${formatCurrency(amount)} to a savings group`
+      }
+      return isOwnActivity ? 'You made a contribution to your savings group' : `${actor} made a contribution to a savings group`
+    case 'received_payout':
+      if (amount) {
+        return isOwnActivity 
+          ? `You received a payout of ${formatCurrency(amount)} from your savings group`
+          : `${actor} received a payout of ${formatCurrency(amount)} from a savings group`
+      }
+      return isOwnActivity ? 'You received a payout from your savings group' : `${actor} received a payout from a savings group`
+    case 'updated_profile':
+      return isOwnActivity ? 'You updated your profile information' : `${actor} updated their profile information`
     default:
-      return activity.description || `${actor} performed an activity.`
+      return activity.description || `${actor} performed an activity`
   }
 }
 

@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import GroupsTabView from '@/components/dashboard/groups-tab-view'
 import { getDashboardData, DashboardData, defDashData, AIInsightDetail } from '@/lib/dashboard-service'
-import { formatCurrency, getActivityDescription } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { Bot, MessageSquare, Sparkles } from 'lucide-react'
 import AIInsightCard from '@/components/dashboard/ai-insight-card'
 import { formatDate } from '@/lib/contribution-utils'
+import RecentActivities from '@/components/dashboard/recent-activities'
 // import { formatDate } from '@/lib/insight-utils'
 
 export default function Dashboard() {
@@ -233,55 +234,10 @@ const recentActivity = dashboardData?.activities ?? [];
           </div>
 
           {/* Recent Activity Section */}
-          <div className="bg-white rounded-lg shadow p-4 sm:p-5">
-            <h2 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Recent Activity</h2>
-            
-            {recentActivity.length > 0 ? (
-              <div className="space-y-3">
-               {recentActivity.map((activity) => {
-                    const isOwnActivity = activity.user_id === user?.id
-
-                    return (
-                      <div key={activity.id} className="flex items-start border-b border-gray-100 pb-3">
-                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                          <Image
-                            src="/assets/icons/fluent_people-community-48-regular (1).svg"
-                            alt="Activity Icon"
-                            width={16}
-                            height={16}
-                          />
-                        </div>
-                        <div className="ml-3 flex-1">
-                          <div className="flex justify-between">
-                            <div className="text-sm font-medium">
-                              {getActivityDescription(activity, isOwnActivity)}
-                            </div>
-                          </div>
-                          <div className="text-xs text-gray-400 mt-1">{new Date(activity.created_at).toLocaleDateString()}</div>
-                        </div>
-                      </div>
-                    )
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-4 sm:py-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                  <Image 
-                    src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                    alt="Activity Icon" 
-                    width={20} 
-                    height={20}
-                    className="sm:w-6 sm:h-6"
-                  />
-                </div>
-                <h3 className="text-sm sm:text-base font-medium mb-1">No activity to show</h3>
-                <p className="text-xs sm:text-sm text-gray-500 px-2">
-                  You don&apos;t have any transactions and updates. Create a
-                  group or join an existing one to start saving together
-                </p>
-              </div>
-            )}
-          </div>
+          <RecentActivities 
+            activities={recentActivity} 
+            currentUserId={user?.id}
+          />
         </div>
 
         {/* Right column - takes 1/3 on desktop */}

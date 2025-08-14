@@ -125,7 +125,7 @@ export default async function InvitePage({ params }: { params: Promise<{ code: s
         </div>
       </header>
       
-      <main className="flex-1 container mx-auto max-w-3xl px-4 py-6 sm:py-8">
+      <main className="flex-1 container mx-auto max-w-3xl px-4 py-6 sm:py-8 overflow-hidden">
         {/* Show public group preview for unauthenticated users */}
         <PublicGroupPreview inviteCode={code} groupData={groupData} />
         

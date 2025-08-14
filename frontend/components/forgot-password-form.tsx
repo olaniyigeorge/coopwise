@@ -17,26 +17,32 @@ export default function ForgotPasswordForm({ emailOnly = false }: ForgotPassword
   const [error, setError] = useState("")
   const [isCodeSent, setIsCodeSent] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Simple validation
     if (!email.trim()) {
       setError(`Please enter your ${emailOnly ? 'email address' : 'phone number or email'}`)
       return
     }
-    
-    // Email validation if emailOnly is true
     if (emailOnly && !email.includes('@')) {
       setError("Please enter a valid email address")
       return
     }
     
-    // Simulate code sending process
-    setIsCodeSent(true)
-    
-    // Handle forgot password logic here
-    console.log({ email })
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.detail || 'Failed to send reset link')
+      }
+      setIsCodeSent(true)
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong')
+    }
   }
 
   const isFormFilled = email.trim() !== ""
@@ -127,7 +133,7 @@ export default function ForgotPasswordForm({ emailOnly = false }: ForgotPassword
 
       <div className="text-center mt-6 pt-6 border-t border-gray-200">
         <p className="text-sm text-gray-600">
-          Remember your password? <Link href="/login" className="text-primary hover:text-primary/90 font-medium">Sign in</Link>
+          Remember your password? <Link href="/auth/login" className="text-primary hover:text-primary/90 font-medium">Sign in</Link>
         </p>
       </div>
     </div>

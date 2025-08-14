@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import AIInsightsSummary from './ai-insights-summary'
 import DashboardGroupsSection from './dashboard-groups-section'
+import RecentActivities from './recent-activities'
 
 // Stats card component
 const StatsCard = ({ 
@@ -149,22 +150,7 @@ export default function DashboardOverview() {
           <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-5">
             <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Recent Activity</h2>
             
-            <div className="text-center py-6 sm:py-8">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <Image 
-                  src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                  alt="" 
-                  width={20} 
-                  height={20}
-                  className="sm:w-6 sm:h-6"
-                />
-              </div>
-              <h3 className="text-sm sm:text-base font-medium mb-1">No activity to show</h3>
-              <p className="text-xs sm:text-sm text-gray-500 px-2">
-                You don&apos;t have any transactions and updates. Create a
-                group or join an existing one to start saving together
-              </p>
-            </div>
+            <RecentActivities activities={[]} />
           </div>
         </div>
         

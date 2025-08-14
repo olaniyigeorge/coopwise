@@ -16,6 +16,7 @@ class ActivityType(enum.Enum):
     declined_invite = "declined_invite"
     accepted_invite = "accepted_invite"
     created_group = "created_group"
+    updated_profile = "updated_profile"
 
 
 class ActivityLog(Base):

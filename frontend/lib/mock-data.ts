@@ -6,6 +6,7 @@ import {
   User,
   Group 
 } from './types'
+import { ActivityDetail } from './dashboard-service'
 
 export const mockUsers: User[] = [
   {
@@ -246,5 +247,67 @@ export function getGroupContributions(groupId: string): Contribution[] {
 export function getRecentContributions(limit: number = 5): Contribution[] {
   return mockContributions
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, limit)
+}
+
+// Mock activities for testing
+export const mockActivities: ActivityDetail[] = [
+  {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    user_id: '123e4567-e89b-12d3-a456-426614174001',
+    group_id: '123e4567-e89b-12d3-a456-426614174002',
+    type: 'made_contribution',
+    description: 'Made a contribution of NGN50,000 to the savings group',
+    entity_id: 'contrib-1',
+    amount: 50000,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '123e4567-e89b-12d3-a456-426614174003',
+    user_id: '123e4567-e89b-12d3-a456-426614174001',
+    group_id: '123e4567-e89b-12d3-a456-426614174004',
+    type: 'joined_group',
+    description: 'Joined the savings group',
+    entity_id: 'group-2',
+    amount: null,
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: '123e4567-e89b-12d3-a456-426614174005',
+    user_id: '123e4567-e89b-12d3-a456-426614174001',
+    group_id: '123e4567-e89b-12d3-a456-426614174002',
+    type: 'created_group',
+    description: 'Created a new savings group called Family Savings',
+    entity_id: 'group-1',
+    amount: null,
+    created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: '123e4567-e89b-12d3-a456-426614174006',
+    user_id: '123e4567-e89b-12d3-a456-426614174001',
+    group_id: null,
+    type: 'updated_profile',
+    description: 'Updated profile information',
+    entity_id: '1',
+    amount: null,
+    created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: '123e4567-e89b-12d3-a456-426614174007',
+    user_id: '123e4567-e89b-12d3-a456-426614174001',
+    group_id: '123e4567-e89b-12d3-a456-426614174008',
+    type: 'made_contribution',
+    description: 'Made a contribution of NGN30,000 to the savings group',
+    entity_id: 'contrib-8',
+    amount: 30000,
+    created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
+  }
+]
+
+// Helper function to get user's recent activities
+export function getUserActivities(userId: string, limit: number = 10): ActivityDetail[] {
+  return mockActivities
+    .filter(activity => activity.user_id === userId)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, limit)
 } 

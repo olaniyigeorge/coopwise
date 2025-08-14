@@ -94,7 +94,7 @@ async def accept_invite(
     activity_data = ActivityCreate(
         user_id=user.id,
         type=ActivityType.joined_group.value,
-        description=f"{auth_user.full_name} accepted an invite to join the cooperative {group_data.name}",
+        description=f"Joined the savings group '{group_data.name}'",
         group_id=group_data.id,
         entity_id=str(group_data.id),
         amount=None,

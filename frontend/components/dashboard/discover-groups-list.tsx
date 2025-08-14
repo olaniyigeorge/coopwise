@@ -91,7 +91,6 @@ export default function DiscoverGroupsList({ searchQuery, suggestedGroups = [], 
   // Function to handle requesting an invite code
   const handleRequestInvite = async (groupId: string) => {
     try {
-      setSelectedGroupId(groupId);
       setIsGeneratingCode(true);
       setShowInviteModal(true);
       
@@ -211,7 +210,7 @@ export default function DiscoverGroupsList({ searchQuery, suggestedGroups = [], 
 
       {/* Invite Code Modal */}
       <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Invite Code</DialogTitle>
           </DialogHeader>
@@ -227,19 +226,28 @@ export default function DiscoverGroupsList({ searchQuery, suggestedGroups = [], 
                 <p className="text-sm text-gray-600">
                   Share this invite code with others to join the group
                 </p>
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={inviteCode}
-                    readOnly
-                    className="font-mono"
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={copyToClipboard}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-500">
+                    Invite Code
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <Input
+                        value={inviteCode}
+                        readOnly
+                        className="font-mono invite-link-text"
+                        title={inviteCode}
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={copyToClipboard}
+                      className="flex-shrink-0"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

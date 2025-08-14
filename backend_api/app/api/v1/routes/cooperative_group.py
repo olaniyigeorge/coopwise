@@ -47,7 +47,7 @@ async def create_cooperative_group(
     activity_data = ActivityCreate(
         user_id=coop.creator_id,
         type=ActivityType.created_group.value,
-        description=f"You created a group",
+        description=f"Created a new savings group called '{coop.name}'",
         group_id=coop.id,
         entity_id=str(coop.id),
         amount=None,

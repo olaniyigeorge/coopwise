@@ -64,8 +64,7 @@ export async function getDashboardData(): Promise<DashboardData> {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache, no-store'
       },
-      cache: 'no-store',
-      next: { revalidate: 0 }
+      cache: 'no-store'
     });
 
     if (!response.ok) {
@@ -146,6 +145,7 @@ export enum ActivityType {
   DECLINED_INVITE = "declined_invite",
   ACCEPTED_INVITE = "accepted_invite",
   CREATED_GROUP = "created_group",
+  UPDATED_PROFILE = "updated_profile",
 }
 
 

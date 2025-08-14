@@ -91,7 +91,7 @@ export default function PublicGroupPreview({ inviteCode, groupData }: PublicGrou
 
   // Show full group preview with available data
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-hidden">
       {/* Group Info */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {/* Group banner/header */}
@@ -122,14 +122,14 @@ export default function PublicGroupPreview({ inviteCode, groupData }: PublicGrou
           
           {/* Group name overlay on mobile */}
           <div className="absolute bottom-0 left-0 right-0 p-4 sm:hidden">
-            <h1 className="text-xl font-bold text-white drop-shadow-sm">{groupData.name}</h1>
+            <h1 className="text-xl font-bold text-white drop-shadow-sm break-words">{groupData.name}</h1>
           </div>
         </div>
         
         {/* Group details */}
         <div className="p-4 sm:p-6">
           {/* Hide on mobile as we show it in the banner */}
-          <h1 className="hidden sm:block text-2xl font-bold text-gray-900 mb-4">{groupData.name}</h1>
+          <h1 className="hidden sm:block text-2xl font-bold text-gray-900 mb-4 break-words">{groupData.name}</h1>
           
           {/* Member count */}
           <div className="flex items-center mb-4">
