@@ -311,6 +311,7 @@ const recentActivity = dashboardData?.activities ?? [];
             <Button 
               variant="outline" 
               className="w-full border-primary text-primary hover:bg-primary hover:text-white text-sm sm:text-base"
+              onClick={() => router.push('/dashboard/profile?focus=savings-goal')}
             >
               Update Goal
             </Button>
