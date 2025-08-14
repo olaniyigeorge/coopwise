@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import jwt
 
 from app.schemas.user import UserCreate
@@ -117,7 +117,7 @@ async def test_confirm_reset_token_invalid_type():
     payload = {
         "sub": "fake@example.com",
         "type": "access",
-        "exp": (datetime.now() + timedelta(minutes=1)).timestamp(),
+        "exp": (datetime.now(timezone.utc) + timedelta(minutes=1)).timestamp(),
     }
     token = jwt.encode(payload, config.APP_SECRET_KEY, algorithm=config.ALGORITHM)
 
