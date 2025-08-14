@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,6 +23,12 @@ interface ProfileData {
 
 export default function ProfilePage() {
   const { user, updateUserProfile, refreshUserData } = useAuth();
+  const searchParams = useSearchParams();
+  const focusSection = searchParams.get('focus');
+  
+  // Refs for scrolling to specific sections
+  const savingsGoalRef = useRef<HTMLDivElement>(null);
+  
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: '',
     phoneNumber: '',
@@ -51,6 +58,31 @@ export default function ProfilePage() {
       refreshUserData();
     }
   }, [user, refreshUserData]);
+
+  // Handle scrolling to specific sections when focus parameter is present
+  useEffect(() => {
+    if (focusSection === 'savings-goal' && savingsGoalRef.current) {
+      // Add a small delay to ensure the component is fully rendered
+      const timer = setTimeout(() => {
+        savingsGoalRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        
+        // Add a subtle highlight effect
+        if (savingsGoalRef.current) {
+          savingsGoalRef.current.classList.add('ring-2', 'ring-primary', 'ring-opacity-50');
+          setTimeout(() => {
+            if (savingsGoalRef.current) {
+              savingsGoalRef.current.classList.remove('ring-2', 'ring-primary', 'ring-opacity-50');
+            }
+          }, 2000);
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [focusSection]);
 
   const handleInputChange = (field: keyof ProfileData, value: string) => {
     setProfileData(prev => ({
@@ -124,6 +156,23 @@ export default function ProfilePage() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
+        
+        {/* Focus Banner */}
+        {focusSection === 'savings-goal' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-blue-800">Update Your Savings Goal</h3>
+                <p className="text-xs text-blue-600 mt-1">Scroll down to update your savings target, goal purpose, and frequency</p>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Profile Form */}
         <Card>
@@ -199,64 +248,69 @@ export default function ProfilePage() {
                 </Select>
               </div>
 
-              {/* Saving Amount Goal */}
-              <div className="space-y-2">
-                <Label htmlFor="savingAmountGoal" className="text-sm font-medium">
-                  Saving Amount Goal
-                </Label>
-                <Input
-                  id="savingAmountGoal"
-                  value={profileData.savingAmountGoal}
-                  onChange={(e) => handleInputChange('savingAmountGoal', e.target.value)}
-                  placeholder="Enter target amount"
-                  className="w-full"
-                />
-              </div>
+              {/* Savings Goal Section */}
+              <div ref={savingsGoalRef} className="space-y-4 p-4 bg-gray-50 rounded-lg border-2 border-transparent transition-all duration-300">
+                <h3 className="text-base font-semibold text-gray-800 mb-2">Savings Goal Settings</h3>
+                
+                {/* Saving Amount Goal */}
+                <div className="space-y-2">
+                  <Label htmlFor="savingAmountGoal" className="text-sm font-medium">
+                    Saving Amount Goal
+                  </Label>
+                  <Input
+                    id="savingAmountGoal"
+                    value={profileData.savingAmountGoal}
+                    onChange={(e) => handleInputChange('savingAmountGoal', e.target.value)}
+                    placeholder="Enter target amount"
+                    className="w-full"
+                  />
+                </div>
 
-              {/* Saving Goal */}
-              <div className="space-y-2">
-                <Label htmlFor="savingGoal" className="text-sm font-medium">
-                  Saving Goal
-                </Label>
-                <Select
-                  value={profileData.savingGoal}
-                  onValueChange={(value) => handleInputChange('savingGoal', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your saving goal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Education">Education</SelectItem>
-                    <SelectItem value="House Rent">House Rent</SelectItem>
-                    <SelectItem value="Emergency Fund">Emergency Fund</SelectItem>
-                    <SelectItem value="Investment">Investment</SelectItem>
-                    <SelectItem value="Business">Business</SelectItem>
-                    <SelectItem value="Travel">Travel</SelectItem>
-                    <SelectItem value="Car Purchase">Car Purchase</SelectItem>
-                    <SelectItem value="Wedding">Wedding</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                {/* Saving Goal */}
+                <div className="space-y-2">
+                  <Label htmlFor="savingGoal" className="text-sm font-medium">
+                    Saving Goal
+                  </Label>
+                  <Select
+                    value={profileData.savingGoal}
+                    onValueChange={(value) => handleInputChange('savingGoal', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your saving goal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Education">Education</SelectItem>
+                      <SelectItem value="House Rent">House Rent</SelectItem>
+                      <SelectItem value="Emergency Fund">Emergency Fund</SelectItem>
+                      <SelectItem value="Investment">Investment</SelectItem>
+                      <SelectItem value="Business">Business</SelectItem>
+                      <SelectItem value="Travel">Travel</SelectItem>
+                      <SelectItem value="Car Purchase">Car Purchase</SelectItem>
+                      <SelectItem value="Wedding">Wedding</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Saving Frequency */}
-              <div className="space-y-2">
-                <Label htmlFor="savingFrequency" className="text-sm font-medium">
-                  Saving Frequency
-                </Label>
-                <Select
-                  value={profileData.savingFrequency}
-                  onValueChange={(value) => handleInputChange('savingFrequency', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                  </SelectContent>
-                </Select>
+                {/* Saving Frequency */}
+                <div className="space-y-2">
+                  <Label htmlFor="savingFrequency" className="text-sm font-medium">
+                    Saving Frequency
+                  </Label>
+                  <Select
+                    value={profileData.savingFrequency}
+                    onValueChange={(value) => handleInputChange('savingFrequency', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
