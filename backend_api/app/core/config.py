@@ -122,6 +122,8 @@ def get_lazy_config():
             CASHRAMP_PUBKEY = "test"
             CASHRAMP_SECKEY = "test"
             GEMINI_API_KEY = "test"
+
         return DefaultConfig()
+
 
 config: DevConfig = get_lazy_config()

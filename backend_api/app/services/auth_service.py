@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -82,7 +82,7 @@ class AuthService:
         data: dict, expires_delta: timedelta = timedelta(minutes=30)
     ):
         to_encode = data.copy()
-        expire = datetime.now() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
         to_encode.update({"exp": expire})
         return jwt.encode(to_encode, config.APP_SECRET_KEY, algorithm=config.ALGORITHM)
 
@@ -98,7 +98,7 @@ class AuthService:
 
     @staticmethod
     async def create_password_reset_token(
-        user: User, expires_delta: timedelta = timedelta(seconds=20.0)
+        user: User, expires_delta: timedelta = timedelta(minutes=15)
     ) -> str:
         data = {
             "sub": user.email,
@@ -108,7 +108,7 @@ class AuthService:
             "role": user.role.value,
             "type": "reset",
         }
-        expire = datetime.now() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
         logger.info(f"Token will expire at: {expire}")
         data.update({"exp": expire})
         return jwt.encode(data, config.APP_SECRET_KEY, algorithm=config.ALGORITHM)
@@ -142,10 +142,9 @@ class AuthService:
             )
             if payload.get("type") != "reset":
                 raise HTTPException(status_code=400, detail="Invalid token type")
-            if (
-                "exp" in payload
-                and datetime.fromtimestamp(payload["exp"]) < datetime.now()
-            ):
+            if "exp" in payload and datetime.fromtimestamp(
+                payload["exp"], tz=timezone.utc
+            ) < datetime.now(timezone.utc):
                 raise HTTPException(status_code=400, detail="Token has expired")
             return payload
         except JWTError as e:
