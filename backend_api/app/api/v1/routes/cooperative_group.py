@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
+
 from db.models.activity_model import ActivityType
 from app.api.v1.routes.auth import get_current_user
 from app.utils.logger import logger
@@ -19,6 +20,8 @@ from app.services.notification_service import NotificationService
 from db.dependencies import get_async_db_session
 from app.services.cooperative_group_service import CooperativeGroupService
 from app.services.membership_service import CooperativeMembershipService
+
+# from app.services.chain import w3, poolfactory, from_account, PRIVATE_KEY
 
 
 router = APIRouter(prefix="/api/v1/cooperatives", tags=["Cooperative Groups"])
@@ -43,6 +46,38 @@ async def create_cooperative_group(
     )
 
     await CooperativeMembershipService.create_membership(db, membership_data, user)
+
+
+    # 2) On-chain: call PoolFactory.createPool with a relayer account
+    # try:
+    #     nonce = w3.eth.get_transaction_count(from_account)
+    #     tx = poolfactory.functions.createPool(
+    #         coop.name,
+    #         Web3.toChecksumAddress(coop.token_address),
+    #         coop.contribution_amount,
+    #         coop.contribution_frequency_seconds,
+    #         coop.coop_model,
+    #         coop.max_members,
+    #         coop.target_amount,
+    #         coop.rules_uri or ""
+    #     ).buildTransaction({
+    #         "chainId": int(os.getenv("CHAIN_ID", "1337")),
+    #         "gas": 6000000,
+    #         "gasPrice": w3.eth.gas_price,
+    #         "nonce": nonce,
+    #         "from": from_account
+    #     })
+    #     signed = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
+    #     tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
+    #     receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=f"on-chain create failed: {e}")
+
+    # 3) Save tx hash & pool address returned via event (indexer could also pick up)
+    # parse logs to find PoolCreated event (or the factory can return address directly in future)
+    # return {"coop_id": coop_id, "onchain_tx": receipt.transactionHash.hex()}
+
+
 
     activity_data = ActivityCreate(
         user_id=coop.creator_id,

@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation'
 import { Menu, X, Home, Info, Mail, LogIn, UserPlus } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '@/lib/auth-context'
+import { CampModal } from '@campnetwork/origin/react'
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -84,6 +85,7 @@ export default function Navbar() {
             </Link>
           </div>
           
+          <CampModal />
           {/* Desktop auth buttons */}
           {isLandingPage || !isAuthenticated ? 
             <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>

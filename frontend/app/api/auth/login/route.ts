@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // API base URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL  || 'https://coopwise.onrender.com' || "http://localhost:8000";
 
 // Cookie settings
 const COOKIE_NAME = 'auth_token';
@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     formData.append('client_secret', body.client_secret || '');
 
     // Call the authentication API
+    console.log(`Sending login request to Auth API ${API_URL}/api/v1/auth/login`);
     const response = await fetch(`${API_URL}/api/v1/auth/login`, {
       method: 'POST',
       headers: {
