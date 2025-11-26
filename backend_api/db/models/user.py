@@ -97,6 +97,9 @@ class User(Base):
     bank_accounts = relationship(
         "BankAccount", back_populates="user", cascade="all, delete-orphan"
     )
+    onchain_wallets = relationship(
+        "OnChainWallet", back_populates="user", cascade="all, delete-orphan"
+    )
     wallet = relationship("Wallet", back_populates="user", cascade="all, delete-orphan")
     # ai_chats = relationship(
     #     "ChatWithAI",

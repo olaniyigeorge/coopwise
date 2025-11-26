@@ -6,7 +6,7 @@ from typing import Annotated
 
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.notifications_schema import NotificationCreate
-from app.schemas.user import AuthUser, UserCreate
+from app.schemas.user import AuthUser, UserCreate, iAuthWallet
 from app.services.notification_service import NotificationService
 from db.dependencies import get_async_db_session
 from app.services.auth_service import AuthService
@@ -34,6 +34,29 @@ async def register_user(
         {"sub": reg.email, "id": str(reg.id), "role": reg.role.value}
     )
     return {"token": token, "user": reg}
+
+
+@router.post("/camp-sync")
+async def camp_sync(
+    user_wallet_auth_data: iAuthWallet, 
+    db: AsyncSession = Depends(get_async_db_session)
+):
+    synced_data = await AuthService.camp_sync(user_wallet_auth_data, db)
+    print('\n\nSynced data:', synced_data, "\n\n")
+
+    noti_data = NotificationCreate(
+        user_id=synced_data["user"]["id"],
+        title=f"Wallet {user_wallet_auth_data.wallet_address} Successfully Linked To Account",
+        message=f"Welcome to Coopwise {synced_data["user"]["full_name"]}",
+        event_type="general_alert",
+        type="info",
+        entity_url=None,
+    )
+    await NotificationService.create_and_push_notification_to_user(noti_data, db)
+    token = await AuthService.create_access_token(
+        {"sub": synced_data["user"]["email"], "id": str(synced_data["user"]["id"]), "role": synced_data["user"]["role"]}
+    )
+    return {"token": token, "user": synced_data["user"], "wallet": synced_data["wallet"]}
 
 
 @router.post("/login", response_model=AuthUser)

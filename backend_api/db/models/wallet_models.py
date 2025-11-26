@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import uuid4
-from sqlalchemy import Boolean, Column, Numeric, String, DateTime, ForeignKey, Enum
+from sqlalchemy import Boolean, Column, Numeric, String, DateTime, ForeignKey, Enum, JSON
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from db.database import Base
@@ -143,3 +143,35 @@ class BankAccount(Base):
     )
 
     user = relationship("User", back_populates="bank_accounts")
+
+
+
+
+
+
+class OnChainWallet(Base):
+    __tablename__ = "onchain_wallets"
+
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+
+    # The actual wallet address
+    wallet_address = Column(String(255), unique=True, index=True, nullable=False)
+
+    user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+
+    # ---- Blockchain Info ----
+    chain_id = Column(String(50), default="484")  # Camp Network Mainnet
+    network = Column(String(100), default="camp_network")  
+    wallet_type = Column(String(50), default="evm")  #TODO Future support of other wallet "evm", "solana", etc.
+
+    # ---- Status + Metadata ----
+    is_default = Column(Boolean, default=False)  # user's primary wallet
+    is_verified = Column(Boolean, default=False)  # signature-based verification
+    connected_at = Column(DateTime, default=datetime.now)
+    last_synced_at = Column(DateTime, nullable=True)
+
+    # Optional JSON for storing arbitrary metadata (e.g. balances)
+    wallet_metadata = Column(JSON, default=dict)
+
+    # Relationship
+    user = relationship("User", back_populates="onchain_wallets")

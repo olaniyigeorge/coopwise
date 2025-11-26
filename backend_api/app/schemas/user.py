@@ -22,6 +22,11 @@ class UserCreate(BaseModel):
     saving_frequency: Optional[SavingFrequency] = None
 
 
+class iAuthWallet(BaseModel):
+    wallet_address: str
+    origin_jwt: str
+    user_id: Optional[UUID] = None
+
 class UserUpdate(BaseModel):
     username: Optional[Annotated[str, constr(min_length=3, max_length=50)]] = None
     email: Optional[EmailStr] = None

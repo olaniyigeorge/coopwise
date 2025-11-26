@@ -1,16 +1,18 @@
 from datetime import datetime, timedelta, timezone
-from uuid import UUID
+from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from jose import jwt, JWTError
 
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserDetail, iAuthWallet
 from db.models.user import User, UserRoles
+from db.models.wallet_models import OnChainWallet
 from app.utils.crypto import verify_password, get_password_hash
 from app.utils.logger import logger
 from app.core.config import config
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
+
 
 
 class AuthService:
@@ -149,6 +151,78 @@ class AuthService:
             return payload
         except JWTError as e:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+    @staticmethod
+    async def camp_sync(data: iAuthWallet, db: AsyncSession):
+        try:
+            wallet_address = data.wallet_address
+            if not wallet_address:
+                raise HTTPException(status_code=400, detail="wallet_address is required")
+
+            wallet_address = wallet_address.strip().lower()
+
+            # Try to resolve user if user_id provided
+            user = None
+            user_id = data.user_id
+            if user_id:
+                result = await db.execute(select(User).where(User.id == user_id))
+                user = result.scalars().first()
+
+            # Check existing on-chain wallet
+            result = await db.execute(
+                select(OnChainWallet).where(OnChainWallet.wallet_address == wallet_address)
+            )
+            onchain_wallet = result.scalars().first()
+
+            # Create on-chain wallet if it doesn't exist
+            if not onchain_wallet:
+                onchain_wallet = OnChainWallet(wallet_address=wallet_address)
+                if user:
+                    onchain_wallet.user_id = user.id
+                db.add(onchain_wallet)
+                await db.commit()
+                await db.refresh(onchain_wallet)
+            else:
+                # If wallet exists but isn't linked and we have a user, link them
+                if user and data.user_id != user.id:
+                    onchain_wallet.user_id = user.id
+                    db.add(onchain_wallet)
+                    await db.commit()
+                    await db.refresh(onchain_wallet)
+
+            
+            # If we still don't have a user, create one with the user_id from wallet, wallet address as username etc
+            if not user:
+                user = User(
+                    id=onchain_wallet.id,
+                    username=f"user_{wallet_address[:8]}",
+                    email=f"{wallet_address.lower()}@wallet.coopwise.com", 
+                    password=get_password_hash(uuid4().hex),
+                    full_name="Camp User",
+                    phone_number="+0000000000",
+                    role=UserRoles.user,
+                )
+                db.add(user)
+                await db.commit()
+                await db.refresh(user)
+
+
+            # If we have a user, create an access token to return
+            token = None
+            if user:
+                token = await AuthService.create_access_token(
+                    {"sub": user.email, "id": str(user.id), "role": user.role.value},
+                    expires_delta=timedelta(hours=24),
+                )
+
+            return {"user": {"id": user.id, "full_name": user.full_name, "email": user.email, "role": user.role.value}, "wallet": {"id": onchain_wallet.id, "wallet_address": onchain_wallet.wallet_address, "connected_at": onchain_wallet.connected_at}, "token": token}
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in camp_sync: {e}")
+            raise HTTPException(status_code=500, detail="Could not sync wallet")
+
 
     @staticmethod
     async def change_password(token: str, new_password: str, db: AsyncSession):

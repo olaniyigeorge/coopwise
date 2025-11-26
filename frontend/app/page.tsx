@@ -8,10 +8,17 @@ import HowItWorks from '@/components/how-it-works'
 import Testimonials from '@/components/testimonials'
 import Footer from '@/components/footer'
 import ScrollToTop from '@/components/scroll-to-top'
-import { useAuthState } from '@campnetwork/origin/react'
+import { useAuth, useAuthState } from '@campnetwork/origin/react'
 
 export default function HomePage() {
   const { authenticated, loading } = useAuthState();
+  const auth = useAuth();
+
+
+
+  console.log('Home Page - Authenticated:', authenticated);
+  console.log('Home Page - Loading:', loading); 
+  console.log('Home Page - Auth Object:', auth);
  
   return (
     <div className="min-h-screen bg-white">
