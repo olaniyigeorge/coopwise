@@ -1,6 +1,5 @@
 "use client";
 import { useCampConnect } from "@/hooks/useCampConnect";
-import { CampModal } from "@campnetwork/origin/react";
 import { useAuthState } from "@campnetwork/origin/react";
 import { useEffect } from "react";
 

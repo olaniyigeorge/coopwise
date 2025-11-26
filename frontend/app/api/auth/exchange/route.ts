@@ -12,29 +12,56 @@ export async function POST(request: Request) {
     
     // OPTION 1: Try with the actual backend
     try {
-      const response = await fetch(`${API_URL}/api/v1/auth/camp-sync`, {
+      const res = await fetch(`${API_URL}/api/v1/auth/camp-sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({wallet_address: data.walletAddress, origin_jwt: data.originJwt}),
+        body: JSON.stringify({wallet_address: data.walletAddress, origin_jwt: data.originJwt, user_id: data.userId}),
       })
       
-      console.log('Response status:', response.status)
+      console.log('Response status:', res.status)
       
       let responseData
       try {
-        responseData = await response.json()
+        responseData = await res.json()
         console.log('Response data:', responseData)
       } catch {
-        const text = await response.text()
+        const text = await res.text()
         console.log('Response text:', text)
         responseData = { message: text }
       }
-      
-      return NextResponse.json(responseData, {
-        status: response.status,
-      })
+
+      console.log('Setting User:', responseData.user)
+      console.log('Setting token...', responseData.token)
+      console.log('Setting wallet...', responseData.wallet)
+
+
+      // Set HttpOnly cookie
+      const response = NextResponse.json(responseData, { status: res.status });
+      response.cookies.set("access_token", responseData.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 5, //TODO Accept remmeber me this deep down and set maxAge to a 3 days instead
+      });
+      response.cookies.set("user", JSON.stringify(responseData.user), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 5, //TODO Accept remmeber me this deep down and set maxAge to a 3 days instead
+      });
+      response.cookies.set("wallet", JSON.stringify(responseData.wallet), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 5, //TODO Accept remmeber me this deep down and set maxAge to a 3 days instead
+    });
+      return response;
+
     } catch (backendError) {
       console.error('Backend error:', backendError)
       
