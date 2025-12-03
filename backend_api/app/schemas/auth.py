@@ -1,3 +1,4 @@
+from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, EmailStr
 
@@ -8,3 +9,11 @@ class AuthenticatedUser(BaseModel):
     id: UUID
     role: UserRoles
     email: EmailStr
+
+
+
+class TokenData(BaseModel):
+    id: Optional[UUID] = None
+    full_name: Optional[str] = None
+    email: Optional[str] =  None
+    role: Optional[UserRoles] = None

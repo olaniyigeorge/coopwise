@@ -1,19 +1,104 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
+from typing import Annotated, Optional
 
-from app.schemas.auth import AuthenticatedUser
+from app.schemas.auth import AuthenticatedUser, TokenData
 from app.schemas.notifications_schema import NotificationCreate
 from app.schemas.user import AuthUser, UserCreate, iAuthWallet
 from app.services.notification_service import NotificationService
 from db.dependencies import get_async_db_session
 from app.services.auth_service import AuthService
 
-router = APIRouter(prefix="/api/v1/auth", tags=["Auth & Onboarding"])
+
+
+# --------------- Auth Middlewares ----------
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
+
+
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+) -> AuthenticatedUser:
+    payload = await AuthService.decode_token(token)
+    auth_user = AuthenticatedUser(
+        id=payload.get("id"), email=payload.get("sub"), role=payload.get("role")
+    )
+    return auth_user
+
+
+
+
+from fastapi.security.utils import get_authorization_scheme_param
+
+# 👇 1. Define a custom dependency to extract the token safely
+async def get_token_optional(request: Request) -> Optional[str]:
+    authorization: str = request.headers.get("Authorization")
+    if not authorization:
+        return None
+    scheme, token = get_authorization_scheme_param(authorization)
+    if scheme.lower() != "bearer":
+        return None
+    return token
+
+
+
+    
+async def get_optional_current_user(
+    token: Optional[str] = Depends(get_token_optional),
+) -> Optional[TokenData]:
+    
+    if not token:
+        return None
+    try:
+        return await get_current_user(token) 
+    except Exception:
+        return None
+    
+
+
+
+async def get_current_user_ws(websocket: WebSocket) -> AuthenticatedUser:
+    token = websocket.query_params.get("token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Missing token")
+
+    payload = await AuthService.decode_token(token)
+    auth_user = AuthenticatedUser(
+        id=payload.get("id"), email=payload.get("sub"), role=payload.get("role")
+    )
+    return auth_user
+
+
+async def is_admin_permissions(
+    token: Annotated[str, Depends(oauth2_scheme)],
+):
+    payload = await AuthService.decode_token(token)
+    current_user = AuthenticatedUser(
+        id=payload.get("id"), email=payload.get("sub"), role=payload.get("role")
+    )
+
+    if current_user.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return current_user
+
+
+async def is_admin_or_owner(
+    token: Annotated[str, Depends(oauth2_scheme)], resource_owner_id: UUID
+):
+    current_user = await get_current_user(token)
+
+    if current_user.role.value == "admin" or current_user.id == resource_owner_id:
+        return current_user
+
+    raise HTTPException(status_code=403, detail="Not authorized")
+
+
+
+# --------------- Auth Routes ----------
+
+router = APIRouter(prefix="/api/v1/auth", tags=["Auth & Onboarding"])
 
 @router.post("/register")
 async def register_user(
@@ -39,9 +124,15 @@ async def register_user(
 @router.post("/camp-sync")
 async def camp_sync(
     user_wallet_auth_data: iAuthWallet, 
+    user: AuthenticatedUser = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_async_db_session)
 ):
-    synced_data = await AuthService.camp_sync(user_wallet_auth_data, db)
+    if user is None:
+        # No auth'd user, proceed to get wallet and create new user if user_id not on wallet
+        print('\n\nNo authenticated user found. Proceeding without user context.\n\n')
+    
+
+    synced_data = await AuthService.camp_sync(user_wallet_auth_data, user, db)
     print('\n\nSynced data:', synced_data, "\n\n")
 
     noti_data = NotificationCreate(
@@ -104,48 +195,3 @@ async def reset_password(
 ):
     return await AuthService.change_password(token, new_password, db)
 
-
-async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-) -> AuthenticatedUser:
-    payload = await AuthService.decode_token(token)
-    auth_user = AuthenticatedUser(
-        id=payload.get("id"), email=payload.get("sub"), role=payload.get("role")
-    )
-    return auth_user
-
-
-async def get_current_user_ws(websocket: WebSocket) -> AuthenticatedUser:
-    token = websocket.query_params.get("token")
-    if not token:
-        raise HTTPException(status_code=400, detail="Missing token")
-
-    payload = await AuthService.decode_token(token)
-    auth_user = AuthenticatedUser(
-        id=payload.get("id"), email=payload.get("sub"), role=payload.get("role")
-    )
-    return auth_user
-
-
-async def is_admin_permissions(
-    token: Annotated[str, Depends(oauth2_scheme)],
-):
-    payload = await AuthService.decode_token(token)
-    current_user = AuthenticatedUser(
-        id=payload.get("id"), email=payload.get("sub"), role=payload.get("role")
-    )
-
-    if current_user.role.value != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
-    return current_user
-
-
-async def is_admin_or_owner(
-    token: Annotated[str, Depends(oauth2_scheme)], resource_owner_id: UUID
-):
-    current_user = await get_current_user(token)
-
-    if current_user.role.value == "admin" or current_user.id == resource_owner_id:
-        return current_user
-
-    raise HTTPException(status_code=403, detail="Not authorized")
