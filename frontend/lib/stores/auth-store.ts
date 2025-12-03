@@ -37,6 +37,8 @@ interface AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  setIsAuthenticated: (isAuthenticated: boolean) => void;
+  setUser: (user: User | null) => void;
   updateUser: (userData: Partial<User>) => void;
   clearError: () => void;
   setLoading: (isLoading: boolean) => void;
@@ -96,6 +98,9 @@ const useAuthStore = create<AuthState>()(
         }
       },
       
+      setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
+
+      
       logout: async () => {
         set({ isLoading: true });
         try {
@@ -113,6 +118,25 @@ const useAuthStore = create<AuthState>()(
           // Even if the API call fails, we still want to clear the user state
           set({ user: null, isAuthenticated: false });
         }
+      },
+
+            setUser: (user: User | null) => {
+        const current = get().user || ({} as User);
+
+        const merged: User = {
+          ...current,
+          ...user,
+          profile_picture_url: 
+            user?.profile_picture_url ||
+            current.profile_picture_url ||
+            user?.image ||
+            null,
+        };
+
+        //console.log("💾 Saving user to store:", merged);
+
+        set({ user: merged });
+        CookieService.setUser(merged);
       },
       
       updateUser: (userData) => {

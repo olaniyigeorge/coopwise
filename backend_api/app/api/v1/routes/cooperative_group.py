@@ -35,6 +35,7 @@ async def create_cooperative_group(
     user: AuthenticatedUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db_session),
 ):
+    coop_data = coop_data.model_copy(update={"creator_id": user.id})
     coop = await CooperativeGroupService.create_coop(coop_data, db)
 
     membership_data = MembershipCreate(

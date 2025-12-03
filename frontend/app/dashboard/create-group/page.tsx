@@ -12,6 +12,7 @@ import { Plus } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import GroupService from '@/lib/group-service'
 import CookieService from '@/lib/cookie-service'
+import useAuthStore from '@/lib/stores/auth-store'
 
 // Step 2: Group Rules
 function GroupRulesForm({ 
@@ -24,7 +25,7 @@ function GroupRulesForm({
   const [rules, setRules] = useState<{title: string, description: string}[]>([
     { 
       title: 'Contribution Amount', 
-      description: 'All members must contribute ₦1,000 every week as agreed by the group.' 
+      description: 'All members must contribute at least ₦1,000 every week as agreed by the group.' 
     }
   ])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -39,7 +40,8 @@ function GroupRulesForm({
     setRules([...rules, { title: '', description: '' }])
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+     e.preventDefault();
     try {
       setIsSubmitting(true)
       // Simulate API call
@@ -130,9 +132,10 @@ function GroupRulesForm({
 // Main component - will handle switching between steps
 export default function CreateGroup() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user } = useAuthStore()
   const [currentStep, setCurrentStep] = useState(1)
   const [groupData, setGroupData] = useState<any>(null)
+  const [isCreating, setIsCreating] = useState(false)
 
   const handleNext = async (formValues: any) => {
     try {
@@ -159,16 +162,20 @@ export default function CreateGroup() {
   }
 
   const handleComplete = async (rules: {title: string, description: string}[]) => {
+    
+    //console.log(`\Group data: ${groupData}\n`)
     if (!groupData) return
 
-    console.log(`\nRules: ${rules}\n`)
+    // console.log(`\nRules: ${rules}\n`)
+
+    // console.log(`USER: ${user}`)
     
     setIsCreating(true)
     try {
       // Prepare the data for API submission
       const payload = {
         name: groupData.name,
-        creator_id: user?.id || "",
+        creator_id: user!.id || "",
         description: groupData.description || "",
         image_url: groupData.imageUrl || "",
         contribution_amount: parseFloat(groupData.contributionAmount.replace(/[^\d.-]/g, '')) || 0,

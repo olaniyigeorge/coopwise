@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/auth-context'
+import useAuthStore from '@/lib/stores/auth-store'
 
 interface ProfileData {
   fullName: string
@@ -21,7 +22,8 @@ interface ProfileData {
 }
 
 export default function ProfileContent() {
-  const { user, updateUserProfile, refreshUserData } = useAuth();
+  const { updateUserProfile, refreshUserData } = useAuth();
+  const { user } = useAuthStore();
   const searchParams = useSearchParams();
   const focusSection = searchParams.get('focus');
   

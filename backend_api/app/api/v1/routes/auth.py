@@ -47,7 +47,7 @@ async def get_token_optional(request: Request) -> Optional[str]:
     
 async def get_optional_current_user(
     token: Optional[str] = Depends(get_token_optional),
-) -> Optional[TokenData]:
+) -> Optional[AuthenticatedUser]:
     
     if not token:
         return None
@@ -124,7 +124,7 @@ async def register_user(
 @router.post("/camp-sync")
 async def camp_sync(
     user_wallet_auth_data: iAuthWallet, 
-    user: AuthenticatedUser = Depends(get_optional_current_user),
+    user: Optional[AuthenticatedUser] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_async_db_session)
 ):
     if user is None:

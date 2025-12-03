@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -154,10 +155,11 @@ class AuthService:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
 
     @staticmethod
-    async def camp_sync(data: iAuthWallet, user: AuthenticatedUser, db: AsyncSession):
+    async def camp_sync(data: iAuthWallet, user: Optional[AuthenticatedUser], db: AsyncSession):
         try:
             wallet_address = (data.wallet_address or "").strip().lower()
             wallet_provider_id = data.user_id  # This is ID from Camp provider
+            user  = await db.get(User, user.id) if user else None
 
             if not wallet_address:
                 raise HTTPException(status_code=400, detail="wallet_address is required")
@@ -192,6 +194,11 @@ class AuthService:
                         db.add(onchain_wallet)
                         await db.commit()
                         await db.refresh(onchain_wallet)
+                else:
+                    # Fetch linked user if any
+                    if onchain_wallet.user_id:
+                        user = await db.get(User, onchain_wallet.user_id)
+
 
             # -----------------------------------------------------
             # 3. WALLET DOES NOT EXIST: create it
@@ -216,8 +223,8 @@ class AuthService:
                     username=f"user_{wallet_address[:8]}",
                     email=f"{wallet_address}@wallet.coopwise.com",
                     password=get_password_hash(uuid4().hex),
-                    full_name=f"Camp User {wallet_address}",
-                    phone_number="+0000000000",
+                    full_name=f"Camp User {wallet_address[:10]}",
+                    phone_number=f"{wallet_address[:10]}",
                     role=UserRoles.user,
                 )
 
@@ -241,13 +248,14 @@ class AuthService:
             return {
                 "user": {
                     "id": user.id,
-                    "full_name": user.full_name,
+                    "full_name": user.full_name or f"Camp User {onchain_wallet.wallet_address[:10]}",
                     "email": user.email,
                     "role": user.role.value,
                 },
                 "wallet": {
                     "id": onchain_wallet.id,
                     "wallet_address": onchain_wallet.wallet_address,
+                    "user_id": onchain_wallet.user_id,
                     "connected_at": onchain_wallet.connected_at,
                 },
                 "token": token,

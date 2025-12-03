@@ -1,7 +1,13 @@
+"use client";
+
+
+import { useAuthStore } from "@/lib/hooks/use-app-store";
 import { useAuth } from "@campnetwork/origin/react";
+import { set } from "date-fns";
 
 export function useCampConnect() {
   const auth = useAuth();
+  const { setUser, setIsAuthenticated, setLoading   } = useAuthStore();
 
   const connectAndExchange = async () => {
     console.log("\nConnecting and exchanging tokens with Camp...\n");
@@ -27,12 +33,18 @@ export function useCampConnect() {
       body: JSON.stringify({ originJwt, walletAddress, userId })
     });
 
+      
+
     if (!res.ok) {
       const err = await res.text();
       throw new Error(err || "Backend auth failed");
     }
 
     const data = await res.json();
+
+    setUser(data.user);
+    setIsAuthenticated(true);
+    setLoading(false)
 
     // example: { accessToken, user }
     return data;

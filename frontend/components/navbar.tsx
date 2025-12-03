@@ -5,14 +5,18 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from "@/components/ui/button"
 import { usePathname } from 'next/navigation'
-import { Menu, X, Home, Info, Mail, LogIn, UserPlus } from 'lucide-react'
+import { Menu, X, Home, Info, Mail, LogIn, UserPlus, LogOut, ChevronDown, Calendar1Icon, User } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '@/lib/auth-context'
 import { CampModal } from '@campnetwork/origin/react'
+import useAuthStore from '@/lib/stores/auth-store'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu'
+import { toast } from './ui/use-toast'
+import { Avatar, AvatarFallback } from './ui/avatar'
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { isAuthenticated }  = useAuth()
+  const { isAuthenticated, user, logout }  = useAuthStore()
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
@@ -25,9 +29,40 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+
   
-  // Check if we're on the landing page
-  const isLandingPage = pathname === '/';
+
+      // Helper functions for user display
+  const getFirstName = (name: string) => name.split(' ')[0];
+  const getFirstNameInitial = (name: string) => {
+    const firstName = getFirstName(name);
+    return firstName ? firstName[0].toUpperCase() : '';
+  };
+  
+  // Generate avatar color
+  const getAvatarColor = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 65%, 55%)`;
+  };
+    // User display data
+  const actualUserName = user?.full_name || '';
+  const avatarColor = getAvatarColor(actualUserName);
+  const firstNameInitial = getFirstNameInitial(actualUserName);
+  const firstName = getFirstName(actualUserName);
+
+    const isLandingPage = pathname === "/"
+    
+  //  Only show desktop nav if pathname is in navLinks
+  // const showDesktopNav = navLinks.some(link => link.href === pathname)
+
+
+  
+  console.log('Navbar - isAuthenticated:', isAuthenticated);
   
   return (
     <>
@@ -87,7 +122,7 @@ export default function Navbar() {
           
           <CampModal />
           {/* Desktop auth buttons */}
-          {isLandingPage || !isAuthenticated ? 
+          {isLandingPage && !isAuthenticated || !user? 
             <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>
               <Link href="/auth/login">
                 <Button 
@@ -105,14 +140,72 @@ export default function Navbar() {
             </div>
           :
             <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>
-              <Link href="/dashboard">
-                <Button 
-                  variant="outline" 
-                  className="text-primary border-primary hover:bg-primary hover:text-white transition-colors"
-                >
-                  Dashboard
-                </Button>
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 hover:dark:bg-secondary active:bg-gray-100 rounded-full px-1 sm:px-2 py-1 transition-colors touch-manipulation">
+                    {user?.profile_picture_url ? (
+                      <div className="gradient-border object-contain rounded-full">
+                        <Image
+                          src={user.profile_picture_url}
+                          alt={`${user.full_name}'s profile`}
+                          style={{ backgroundColor: avatarColor }}
+                          width={32}
+                          height={32}
+                          className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                        />
+                      </div>
+                    ) : (
+                      <div className="gradient-border object-contain rounded-full">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarFallback
+                            style={{ backgroundColor: avatarColor }}
+                            className="text-white"
+                          >
+                            {firstNameInitial}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    )}
+                    <div className="hidden sm:flex items-center gap-1 min-w-0">
+                      <span className="text-sm font-medium text-primary truncate max-w-[100px]">
+                        {firstName}
+                      </span>
+                      <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    </div>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 mt-1">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                    <Link href="/dashboard/" className="cursor-pointer py-2.5">
+                      <Calendar1Icon className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/profile" className="cursor-pointer py-2.5">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      logout()
+                      toast({
+                        title: "👋 Logged Out",
+                        description: "We hate to see you leave. Come back soon! ❤️.",
+                      })
+                      window.location.href = "/auth/login";
+                    }}
+                    className="cursor-pointer py-2.5 text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           }
 
