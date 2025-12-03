@@ -4,8 +4,9 @@ import { WalletDetail } from "./dashboard-service";
 
 
 export interface DepositData {
+    payment_gateway: string; // 'paystack' | 'crypto_wallet' | 'flutterwave'
     local_amount: number;
-    currency: string;
+    currency: string; // e.g., 'NGN' | 'USD' | 'CAMP'
 }
 
 
@@ -21,7 +22,7 @@ const WalletService = {
         return null;
       }
 
-      console.log('Attempting deposit in service...');
+      console.log('\n Attempting deposit in service...\n');
       const response = await fetch('/api/v1/wallet/', {
         method: 'POST',
         headers: {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // API base URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8000'  || 'https://coopwise.onrender.com';
 
 export async function POST(request: NextRequest) {
 
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     console.log('Deposit data:', body);
     
     // Call the API to make deposit
-    const response = await fetch(`${API_URL}/api/v1/wallet/deposit/`, {
+    const response = await fetch(`${API_URL}/api/v1/wallet/deposit/initiate`, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,

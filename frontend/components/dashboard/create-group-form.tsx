@@ -101,7 +101,7 @@ export default function CreateGroupForm({ onSubmitSuccess }: CreateGroupFormProp
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm font-medium text-gray-700">
-                    Group Name <span className="text-gray-500 font-normal ml-1">(Choose a name that identifies your group clearly)</span>
+                    Group Name <span className="text-gray-500 text-sm font-normal ml-1">(Choose a name that identifies your group clearly)</span>
                   </FormLabel>
                   <FormControl>
                     <Input 

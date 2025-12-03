@@ -39,7 +39,7 @@ function GroupsTabViewContent({ defaultTab = 'my-groups' }: GroupsTabViewProps) 
   const initialTab = tabParam === 'my' ? 'discover' : tabParam === 'my-groups' ? 'my-groups' : defaultTab
   
   const [activeTab, setActiveTab] = useState<string>(initialTab)
-
+  const [searchQuery, setSearchQuery] = useState<string>("")
   const [loading, setLoading] = useState(true)
   
   useEffect(() => {

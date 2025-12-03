@@ -2,7 +2,7 @@ import json
 from typing import Callable, Any
 import redis.asyncio as redis
 from fastapi import Depends
-from app.core.config import config
+from app.core.config import AppConfig as config
 
 
 if config.ENV == "dev":

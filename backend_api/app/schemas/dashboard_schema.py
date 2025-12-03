@@ -38,10 +38,10 @@ class ExploreGroups(BaseModel):
 
 
 class DashboardData(BaseModel):
-    user: UserDetail
-    summary: Summary
-    targets: Targets
-    groups: ExploreGroups  # Includes all user's groups + first page of suggested groups
+    user: Optional[UserDetail]
+    summary: Optional[Summary]
+    targets: Optional[Targets]
+    groups: Optional[ExploreGroups]  # Includes all user's groups + first page of suggested groups
     activities: List[ActivityDetail]  # Events triggered by the user in recent history
     ai_insights: List[
         AIInsightDetail

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from app.core.middleware import app_middleware
 from app.utils.logger import logger
-from app.core.config import config
+from app.core.config import AppConfig as config
 from app.api.v1.routes import (
     auth,
     cooperative_group,
@@ -120,4 +120,4 @@ async def home(request: Request):
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", reload=True, port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", reload=True, port=config.PORT)

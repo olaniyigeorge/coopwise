@@ -8,7 +8,7 @@ from app.services.membership_service import CooperativeMembershipService
 from app.schemas.auth import AuthenticatedUser
 from db.models.contribution_model import Contribution
 from app.utils.logger import logger
-from app.core.config import config
+from app.core.config import AppConfig as config
 from fastapi import HTTPException, status
 
 

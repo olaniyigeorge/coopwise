@@ -3,7 +3,7 @@ from redis import Redis
 import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import config
+from app.core.config import AppConfig as config
 from app.utils.logger import logger
 from app.core.dependencies import get_redis
 from app.services.insights_service import InsightEngine

@@ -14,6 +14,7 @@ export function useCampConnect() {
     // Step 2 — get Origin wallet address + JWT
     const originJwt = auth.jwt;
     const walletAddress = auth.walletAddress;
+    const userId = auth.userId;
 
     if (!originJwt || !walletAddress) {
       throw new Error("Failed to authenticate with Camp");
@@ -23,7 +24,7 @@ export function useCampConnect() {
     const res = await fetch("/api/auth/exchange", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ originJwt, walletAddress })
+      body: JSON.stringify({ originJwt, walletAddress, userId })
     });
 
     if (!res.ok) {

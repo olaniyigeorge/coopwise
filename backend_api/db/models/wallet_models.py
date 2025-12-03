@@ -146,9 +146,6 @@ class BankAccount(Base):
 
 
 
-
-
-
 class OnChainWallet(Base):
     __tablename__ = "onchain_wallets"
 

@@ -10,7 +10,7 @@ from app.schemas.cashramp_schemas import (
     InitiateDepositResponse,
     RampQuoteResponse,
 )
-from app.core.config import config
+from app.core.config import AppConfig as config
 
 
 CASHRAMP_URL = (

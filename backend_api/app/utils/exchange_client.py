@@ -1,7 +1,7 @@
 import httpx
 import os
 
-from app.core.config import config
+from app.core.config import AppConfig as config
 
 
 CASHRAMP_SECKEY = config.CASHRAMP_SECKEY or None

@@ -29,8 +29,8 @@ class DashboardService:
 
         user_data = await UserService.get_user_by_id(db, user.id)
         summary = await SummaryService.get_user_summary(user, db, redis)
-        targets = await SummaryService.get_user_targets(user, db, redis)
-        groups = await CooperativeGroupService.get_user_and_suggested_groups(
+        targets =  await SummaryService.get_user_targets(user, db, redis)
+        groups =  await CooperativeGroupService.get_user_and_suggested_groups(
             user, db, redis
         )
         activities = await ActivityService.get_user_recent_activities(db, user, redis)

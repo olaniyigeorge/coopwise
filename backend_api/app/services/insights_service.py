@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.user import UserDetail
 from app.services.activity_service import ActivityService
-from app.core.config import config
+from app.core.config import AppConfig as config
 from app.schemas.activity_schemas import ActivityDetail
 from app.services.user_service import UserService
 from app.schemas.ai_insight_schema import (
@@ -91,6 +91,17 @@ class InsightEngine:
             result = await db.execute(stmt)
             insights = result.scalars().all()
 
+            print(f"\n INSIGHT: \n {insights} \n")
+
+            if len(insights) < 1:
+                logger.info(
+                    f"🔄 No insights found for user {user.id}, generating new one"
+                )
+                # Generate new insights if none exist
+                await InsightEngine.get_save_new_insight(db, user, redis)
+                result = await db.execute(stmt)
+                insights = result.scalars().all()
+
             if insights[-1].created_at < (datetime.now() - timedelta(hours=12)):
                 logger.info(
                     f"🔄 No recent insights for user {user.id}, generating new one"
@@ -124,9 +135,9 @@ class InsightEngine:
         logger.info(f"\n\n creating and saving new insight....... \n\n")
         try:
             insight = await InsightEngine.get_ai_insight(db, user, redis)
-        except Exception:
+        except Exception as e:
             logger.info(
-                "Oops!! Couldn't generate AI insights for now. Try again later."
+                f"Oops!! Couldn't generate AI insights for now. Try again later. \n {e}"
             )
             return {
                 "status": 400,
@@ -379,10 +390,9 @@ class InsightEngine:
         prompt = await InsightEngine.build_ai_insight_prompt(user, activities)
 
         logger.info(f"\n\n Prompt: {prompt}\n\n")
-        # Step 2: Prepare request payload
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
-        # Step 3: Make POST request to Gemini API
+        # Step 3: POST a request to Gemini API
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={config.GEMINI_API_KEY}"
 
         try:
@@ -391,7 +401,7 @@ class InsightEngine:
                 headers={"Content-Type": "application/json"},
                 json=payload,
                 timeout=10,
-            )
+            ) 
             response.raise_for_status()
 
             data = response.json()

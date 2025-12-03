@@ -9,7 +9,7 @@ from db.models.user import User, UserRoles
 from db.models.wallet_models import OnChainWallet
 from app.utils.crypto import verify_password, get_password_hash
 from app.utils.logger import logger
-from app.core.config import config
+from app.core.config import AppConfig as config
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 
@@ -195,11 +195,11 @@ class AuthService:
             # If we still don't have a user, create one with the user_id from wallet, wallet address as username etc
             if not user:
                 user = User(
-                    id=onchain_wallet.id,
+                    id=data.user_id,
                     username=f"user_{wallet_address[:8]}",
                     email=f"{wallet_address.lower()}@wallet.coopwise.com", 
                     password=get_password_hash(uuid4().hex),
-                    full_name="Camp User",
+                    full_name=f"Camp User {wallet_address}",
                     phone_number="+0000000000",
                     role=UserRoles.user,
                 )

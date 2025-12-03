@@ -3,7 +3,7 @@ from sqlalchemy.orm import declarative_base
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from app.core.config import config
+from app.core.config import AppConfig as config
 from app.utils.logger import logger
 
 Base = declarative_base()

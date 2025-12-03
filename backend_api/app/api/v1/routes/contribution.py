@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 from db.models.contribution_model import ContributionStatus
-from app.core.config import config
+from app.core.config import AppConfig as config;
 from app.utils.logger import logger
 from app.services.cooperative_group_service import CooperativeGroupService
 from app.core.dependencies import get_redis

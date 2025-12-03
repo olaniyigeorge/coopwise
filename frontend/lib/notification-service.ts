@@ -96,10 +96,10 @@ const NotificationService = {
             
             // Attempt to reconnect after a delay if not intentionally closed
             if (event.code !== 1000) {
-                console.log("🔄 Attempting to reconnect in 5 seconds...");
+                console.log("🔄 Attempting to reconnect in 10 seconds...");
                 setTimeout(() => {
                     this.connectWebSocket(userId, onMessage);
-                }, 5000);
+                }, 10000);
             }
         };
     

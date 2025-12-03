@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 from app.services.user_service import UserService
-from app.core.config import config
+from app.core.config import AppConfig as config
 from app.services import cashramp_service
 from app.services.notification_service import NotificationService
 from app.services.payment_service import COOPWISE_USD_NGN_RATE, PaymentService
@@ -33,7 +33,7 @@ from app.utils.logger import logger
 
 router = APIRouter(prefix="/api/v1/wallet", tags=["Wallet"])
 
-CUTOFF_DATE = datetime.fromisoformat("2025-07-30T00:00:00")  # Mock payment cutoff date
+CUTOFF_DATE = datetime.fromisoformat("2025-12-07T00:00:00")  # Mock payment cutoff date
 
 
 @router.post(
@@ -116,7 +116,7 @@ async def initiate_deposit(
         if config.ENV != "dev" and datetime.now() > CUTOFF_DATE:
             raise HTTPException(
                 status_code=400,
-                detail="Mock payment is only available in production till 30th of June.",
+                detail=f"Mock payment is only available in production till {CUTOFF_DATE}.",
             )
         logger.info("\nMocking successful deposit payment \n")
         init_payment_response = {
@@ -139,7 +139,7 @@ async def initiate_deposit(
             reference=str(tx_ref_uuid),
             status=LedgerStatus.initiated,
             gateway="cash",
-            note="Deposit initiated from API",
+            note="Deposit mocked from API",
         )
         await WalletService.record_ledger_entry(ledger_data, db)
     elif payment_gateway == "mock_fail":
@@ -196,6 +196,9 @@ async def finalise_deposit(
         "on_chain_solana",
         "on_chain_cashramp" "coopwise_network_on_solana",
         "cash",
+        "ussd",
+        "bank_transfer",
+        "crypo_wallet",
     ]
 
     if payment_gateway not in supported_gateways:
@@ -240,7 +243,7 @@ async def finalise_deposit(
             reference, db
         )
 
-    if ledger_record.status != LedgerStatus.initiated:
+    if ledger_record.status not in [ LedgerStatus.initiated, LedgerStatus.pending ]:
         raise HTTPException(
             status_code=400, detail="Transaction already processed or invalid."
         )

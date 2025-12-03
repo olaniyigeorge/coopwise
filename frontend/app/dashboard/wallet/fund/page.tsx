@@ -22,6 +22,7 @@ export default function FundWallet() {
   const router = useRouter();
   const { toast } = useToast();
   const [amount, setAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
   const [loading, setLoading] = useState(false);
   const [paymentSuccessful, setPaymentSuccessful] = useState(false);
   
@@ -32,7 +33,7 @@ export default function FundWallet() {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    e.preventDefault(); 
 
     console.log(`\n Adding money....    \n`)
     
@@ -46,6 +47,7 @@ export default function FundWallet() {
     }
 
     setLoading(true);
+
     
     // Simulate payment processing
     // setTimeout(() => {
@@ -68,6 +70,7 @@ export default function FundWallet() {
     setLoading(false);
 
     const depData = {
+      'payment_gateway': paymentMethod,
       'local_amount': Number(amount),
       'currency': "NGN" // TODO Get user's local_currency
     }
@@ -205,7 +208,7 @@ export default function FundWallet() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
+                  <Button type="submit" onClick={() => setPaymentMethod("card")} className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
                     {loading ? 'Processing...' : 'Pay Now'}
                   </Button>
                 </CardFooter>
@@ -244,7 +247,7 @@ export default function FundWallet() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
+                  <Button type="submit" onClick={() => setPaymentMethod("bank_transfer")} className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
                     {loading ? 'Processing...' : 'Confirm Transfer'}
                   </Button>
                 </CardFooter>
@@ -273,7 +276,7 @@ export default function FundWallet() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
+                  <Button type="submit" onClick={() => setPaymentMethod("ussd")} className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
                     {loading ? 'Processing...' : 'Confirm Payment'}
                   </Button>
                 </CardFooter>

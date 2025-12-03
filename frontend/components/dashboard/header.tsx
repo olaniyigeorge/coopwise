@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import useAuthStore from '@/lib/stores/auth-store'
 import { useNotificationListener } from '@/lib/hooks/use-notifications-socket'
 import useNotificationStore, { NotificationDetail } from '@/lib/stores/notification-store'
+import { CampModal, useAuthState } from '@campnetwork/origin/react'
 
 interface HeaderProps {
   title?: string
@@ -38,6 +39,7 @@ export default function Header({
   showMobileMenu = false
 }: HeaderProps) {
   const { logout, user } = useAuthStore();
+  const { authenticated, loading } = useAuthState();
   const { notifications, markAsRead, markAllAsRead, unreadCount, fetchNotifications } = useNotificationStore();
   
   // Listen for notifications
@@ -124,9 +126,21 @@ export default function Header({
             </div>
           )}
         </div>
+
+
+        
         
         {/* Right section: Notifications & Profile */}
         <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
+          <span className={`block border-2  ${authenticated
+              ? "border-green-700 font-medium"
+              : !loading ? "bg-red-700"
+              : `border-orange-300`
+
+          }`}>
+             <CampModal />
+          </span>
+         
           {/* Notification Bell */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

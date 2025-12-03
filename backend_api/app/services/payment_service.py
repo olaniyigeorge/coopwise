@@ -5,16 +5,17 @@ from sqlalchemy import select
 from fastapi import Depends, HTTPException, status
 
 from app.schemas.auth import AuthenticatedUser
-from app.schemas.wallet_schemas import WalletLedgerCreate
+
+from app.schemas.wallet_schemas import WalletLedgerCreate, WalletLedgerCreate
 from app.services.wallet_service import WalletService
 from app.core.dependencies import get_cashramp_service
 from app.services.cashramp_service import CashRampService
 from db.models.wallet_models import LocalCurrency
-from app.core.config import config
+from app.core.config import AppConfig as config
 from app.schemas.payments import ChargeResponse, PaystackPayload
 from app.utils.logger import logger
 
-COOPWISE_USD_NGN_RATE = 1 / 1600
+COOPWISE_USD_NGN_RATE = 1 / 1500
 
 
 class PaymentService:

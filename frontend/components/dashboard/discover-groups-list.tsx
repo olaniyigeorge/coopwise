@@ -44,6 +44,7 @@ export default function DiscoverGroupsList({ searchQuery, suggestedGroups = [], 
   const [localLoading, setLocalLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteCode, setInviteCode] = useState('')
   const [isGeneratingCode, setIsGeneratingCode] = useState(false)
