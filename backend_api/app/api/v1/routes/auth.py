@@ -144,10 +144,8 @@ async def camp_sync(
         entity_url=None,
     )
     await NotificationService.create_and_push_notification_to_user(noti_data, db)
-    token = await AuthService.create_access_token(
-        {"sub": synced_data["user"]["email"], "id": str(synced_data["user"]["id"]), "role": synced_data["user"]["role"]}
-    )
-    return {"token": token, "user": synced_data["user"], "wallet": synced_data["wallet"]}
+
+    return synced_data
 
 
 @router.post("/login", response_model=AuthUser)

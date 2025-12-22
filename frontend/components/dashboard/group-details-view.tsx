@@ -21,6 +21,7 @@ import useAuthStore from '@/lib/stores/auth-store'
 import { UserDetail } from '@/lib/dashboard-service'
 import { formatCurrency } from '@/lib/contribution-utils'
 import Link from 'next/link'
+import GroupStats from '../web3_conn'
 
 interface GroupDetailsViewProps {
   groupId: string
@@ -325,299 +326,299 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
   );
 };
 
-// Group Stats Component
-const GroupStats = ({ 
-  groupData,
-  memberCount, 
-  totalSaved, 
-  progress, 
-  targetAmount,
-  contributionAmount,
-  contributionDueDate,
-  contributionDaysLeft,
-  contributionFrequency,
-  payoutAmount,
-  payoutRecipient,
-  payoutDate
-}: { 
-  groupData: GroupDetails;
-  memberCount: number;
-  totalSaved: number;
-  progress: number;
-  targetAmount: number;
-  contributionAmount: number;
-  contributionDueDate: string;
-  contributionDaysLeft: number;
-  contributionFrequency: string;
-  payoutAmount: number;
-  payoutRecipient: string;
-  payoutDate: string;
-}) => {
-  const [showContributionModal, setShowContributionModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('transfer');
-  const [countdown, setCountdown] = useState(10 * 60); // 10 minutes in seconds
+// // Group Stats Component
+// const GroupStats = ({ 
+//   groupData,
+//   memberCount, 
+//   totalSaved, 
+//   progress, 
+//   targetAmount,
+//   contributionAmount,
+//   contributionDueDate,
+//   contributionDaysLeft,
+//   contributionFrequency,
+//   payoutAmount,
+//   payoutRecipient,
+//   payoutDate
+// }: { 
+//   groupData: GroupDetails;
+//   memberCount: number;
+//   totalSaved: number;
+//   progress: number;
+//   targetAmount: number;
+//   contributionAmount: number;
+//   contributionDueDate: string;
+//   contributionDaysLeft: number;
+//   contributionFrequency: string;
+//   payoutAmount: number;
+//   payoutRecipient: string;
+//   payoutDate: string;
+// }) => {
+//   const [showContributionModal, setShowContributionModal] = useState(false);
+//   const [paymentMethod, setPaymentMethod] = useState('transfer');
+//   const [countdown, setCountdown] = useState(10 * 60); // 10 minutes in seconds
   
-  const { user } = useAuthStore()
-  // Format countdown time as mm:ss
-  const formatTime = () => {
-    const minutes = Math.floor(countdown / 60);
-    const seconds = countdown % 60;
-    return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
-  };
+//   const { user } = useAuthStore()
+//   // Format countdown time as mm:ss
+//   const formatTime = () => {
+//     const minutes = Math.floor(countdown / 60);
+//     const seconds = countdown % 60;
+//     return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+//   };
   
-  // Countdown timer effect
-  useEffect(() => {
-    if (!showContributionModal) return;
+//   // Countdown timer effect
+//   useEffect(() => {
+//     if (!showContributionModal) return;
     
-    // Reset countdown when modal opens
-    setCountdown(10 * 60);
+//     // Reset countdown when modal opens
+//     setCountdown(10 * 60);
     
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+//     const timer = setInterval(() => {
+//       setCountdown(prev => {
+//         if (prev <= 1) {
+//           clearInterval(timer);
+//           return 0;
+//         }
+//         return prev - 1;
+//       });
+//     }, 1000);
     
-    return () => clearInterval(timer);
-  }, [showContributionModal]);
+//     return () => clearInterval(timer);
+//   }, [showContributionModal]);
 
 
-  const handleContribution = async () => {
-    try {
-      if (!user?.id || !groupData?.id || !groupData?.nextContribution?.dueDate) {
-        throw new Error("Missing required contribution data");
-      }
+//   const handleContribution = async () => {
+//     try {
+//       if (!user?.id || !groupData?.id || !groupData?.nextContribution?.dueDate) {
+//         throw new Error("Missing required contribution data");
+//       }
   
-      const getDueDate = () => {
-        const date = new Date();
-        date.setHours(date.getHours() + 6);
-        return date.toISOString();
-      };
-      const contribution = {
-        user_id: user.id,
-        group_id: groupData.id,
-        amount: contributionAmount,
-        currency: 'NGN',
-        due_date: getDueDate() || groupData.nextContribution.dueDate,
-        note: 'Contribution via dashboard',
-        status: 'completed' as const // TODO - Set the status according to payment status [pledged]
-      };
-      const result = await ContributionService.makeContribution(contribution);
+//       const getDueDate = () => {
+//         const date = new Date();
+//         date.setHours(date.getHours() + 6);
+//         return date.toISOString();
+//       };
+//       const contribution = {
+//         user_id: user.id,
+//         group_id: groupData.id,
+//         amount: contributionAmount,
+//         currency: 'NGN',
+//         due_date: getDueDate() || groupData.nextContribution.dueDate,
+//         note: 'Contribution via dashboard',
+//         status: 'completed' as const // TODO - Set the status according to payment status [pledged]
+//       };
+//       const result = await ContributionService.makeContribution(contribution);
       
-      if (result) {
-          toast({
-            title: "Success",
-            description: "Contribution submitted successfully!",
-            variant: 'default'
-          });
-      }
-      setShowContributionModal(false);
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Error",
-        description: "Failed to submit contribution",
-        variant: "destructive"
-      });
-    }
-  };
+//       if (result) {
+//           toast({
+//             title: "Success",
+//             description: "Contribution submitted successfully!",
+//             variant: 'default'
+//           });
+//       }
+//       setShowContributionModal(false);
+//     } catch (err) {
+//       console.error(err);
+//       toast({
+//         title: "Error",
+//         description: "Failed to submit contribution",
+//         variant: "destructive"
+//       });
+//     }
+//   };
   
 
-  return (
-    <div className="flex flex-col md:flex-row gap-4 mb-6">
-      {/* Group Savings */}
-      <div className="flex-1 bg-white rounded-md p-4">
-        <h2 className="text-base font-medium mb-1">Group savings</h2>
-        <p className="text-xs text-gray-500">{memberCount} members in this group</p>
+//   return (
+//     <div className="flex flex-col md:flex-row gap-4 mb-6">
+//       {/* Group Savings */}
+//       <div className="flex-1 bg-white rounded-md p-4">
+//         <h2 className="text-base font-medium mb-1">Group savings</h2>
+//         <p className="text-xs text-gray-500">{memberCount} members in this group</p>
         
-        <div className="mt-3">
-          <p className="text-2xl font-bold text-gray-900">₦{totalSaved.toLocaleString()}</p>
-          <p className="text-xs text-gray-500">Total saved by this group</p>
-        </div>
+//         <div className="mt-3">
+//           <p className="text-2xl font-bold text-gray-900">₦{totalSaved.toLocaleString()}</p>
+//           <p className="text-xs text-gray-500">Total saved by this group</p>
+//         </div>
         
-        <div className="mt-3">
-          <div className="flex justify-between text-xs text-gray-500 mb-1">
-            <span>Progress to goal</span>
-            <span>{progress}%</span>
-          </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full">
-            <div className="h-full bg-green-600 rounded-full" style={{ width: `${progress}%` }}></div>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">Goal: ₦{targetAmount.toLocaleString()}</p>
-            </div>
-          </div>
+//         <div className="mt-3">
+//           <div className="flex justify-between text-xs text-gray-500 mb-1">
+//             <span>Progress to goal</span>
+//             <span>{progress}%</span>
+//           </div>
+//           <div className="w-full h-2 bg-gray-100 rounded-full">
+//             <div className="h-full bg-green-600 rounded-full" style={{ width: `${progress}%` }}></div>
+//           </div>
+//           <p className="text-xs text-gray-500 mt-1">Goal: ₦{targetAmount.toLocaleString()}</p>
+//             </div>
+//           </div>
 
-          {/* Next Contribution */}
-      <div className="flex-1 bg-white rounded-md p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-base font-medium">Next Contribution</h2>
-          <Calendar className="h-4 w-4 text-gray-400" />
-        </div>
+//           {/* Next Contribution */}
+//       <div className="flex-1 bg-white rounded-md p-4">
+//         <div className="flex justify-between items-center mb-4">
+//           <h2 className="text-base font-medium">Next Contribution</h2>
+//           <Calendar className="h-4 w-4 text-gray-400" />
+//         </div>
         
-        <div className="mb-3">
-          <p className="text-2xl font-bold text-gray-900">₦{contributionAmount.toLocaleString()}</p>
-          <p className="text-xs text-gray-500">Due on {contributionDueDate} ({contributionDaysLeft} days to go)</p>
-        </div>
+//         <div className="mb-3">
+//           <p className="text-2xl font-bold text-gray-900">₦{contributionAmount.toLocaleString()}</p>
+//           <p className="text-xs text-gray-500">Due on {contributionDueDate} ({contributionDaysLeft} days to go)</p>
+//         </div>
         
-        <div className="flex flex-col gap-2 mb-4">
-          <div className="flex items-center">
-            <div className="w-5 h-5 text-xs flex items-center justify-center bg-gray-100 rounded-full mr-2">
-              <Calendar className="h-3 w-3 text-gray-500" />
-            </div>
-            <span className="text-xs text-gray-500">Frequency</span>
-            <span className="ml-auto text-xs text-gray-900">{contributionFrequency}</span>
-                </div>
+//         <div className="flex flex-col gap-2 mb-4">
+//           <div className="flex items-center">
+//             <div className="w-5 h-5 text-xs flex items-center justify-center bg-gray-100 rounded-full mr-2">
+//               <Calendar className="h-3 w-3 text-gray-500" />
+//             </div>
+//             <span className="text-xs text-gray-500">Frequency</span>
+//             <span className="ml-auto text-xs text-gray-900">{contributionFrequency}</span>
+//                 </div>
           
-          <div className="flex items-center">
-            <div className="w-5 h-5 text-xs flex items-center justify-center bg-gray-100 rounded-full mr-2">
-              <div className="h-3 w-3 text-gray-500">!</div>
-              </div>
-            <span className="text-xs text-gray-500">Status</span>
-            <span className="ml-auto bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded">Pending</span>
-              </div>
-            </div>
+//           <div className="flex items-center">
+//             <div className="w-5 h-5 text-xs flex items-center justify-center bg-gray-100 rounded-full mr-2">
+//               <div className="h-3 w-3 text-gray-500">!</div>
+//               </div>
+//             <span className="text-xs text-gray-500">Status</span>
+//             <span className="ml-auto bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded">Pending</span>
+//               </div>
+//             </div>
         
-        <Button 
-          className="w-full bg-teal-700 hover:bg-teal-800 text-white text-sm"
-          onClick={() => setShowContributionModal(true)}
-        >
-              Make Contribution
-            </Button>
-          </div>
+//         <Button 
+//           className="w-full bg-teal-700 hover:bg-teal-800 text-white text-sm"
+//           onClick={() => setShowContributionModal(true)}
+//         >
+//               Make Contribution
+//             </Button>
+//           </div>
 
-          {/* Next Payout */}
-      <div className="flex-1 bg-white rounded-md p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-base font-medium">Next Payout</h2>
-          <Calendar className="h-4 w-4 text-gray-400" />
-        </div>
+//           {/* Next Payout */}
+//       <div className="flex-1 bg-white rounded-md p-4">
+//         <div className="flex justify-between items-center mb-4">
+//           <h2 className="text-base font-medium">Next Payout</h2>
+//           <Calendar className="h-4 w-4 text-gray-400" />
+//         </div>
         
-        <p className="text-2xl font-bold text-gray-900 mb-4">₦{payoutAmount.toLocaleString()}</p>
+//         <p className="text-2xl font-bold text-gray-900 mb-4">₦{payoutAmount.toLocaleString()}</p>
         
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center">
-            <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-            <span className="text-xs text-gray-500">Receiving Next:</span>
-            <span className="ml-auto text-xs text-gray-900">{payoutRecipient}</span>
-          </div>
+//         <div className="flex flex-col gap-2">
+//           <div className="flex items-center">
+//             <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+//             <span className="text-xs text-gray-500">Receiving Next:</span>
+//             <span className="ml-auto text-xs text-gray-900">{payoutRecipient}</span>
+//           </div>
           
-          <div className="flex items-center">
-            <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-            <span className="text-xs text-gray-500">Receiving Date:</span>
-            <span className="ml-auto text-xs text-gray-900">{payoutDate}</span>
-          </div>
-        </div>
-      </div>
+//           <div className="flex items-center">
+//             <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+//             <span className="text-xs text-gray-500">Receiving Date:</span>
+//             <span className="ml-auto text-xs text-gray-900">{payoutDate}</span>
+//           </div>
+//         </div>
+//       </div>
 
-      {/* Contribution Modal */}
-      <Dialog open={showContributionModal} onOpenChange={setShowContributionModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Make Contribution</DialogTitle>
-            <DialogDescription>
-              Make a commitment by being consistent with your contributions.
-            </DialogDescription>
-          </DialogHeader>
+//       {/* Contribution Modal */}
+//       <Dialog open={showContributionModal} onOpenChange={setShowContributionModal}>
+//         <DialogContent className="sm:max-w-md">
+//           <DialogHeader>
+//             <DialogTitle>Make Contribution</DialogTitle>
+//             <DialogDescription>
+//               Make a commitment by being consistent with your contributions.
+//             </DialogDescription>
+//           </DialogHeader>
           
-          <div className="py-4">
-            <h3 className="font-medium text-base mb-4">Make Contribution</h3>
-            <div className="border-t mb-4"></div>
+//           <div className="py-4">
+//             <h3 className="font-medium text-base mb-4">Make Contribution</h3>
+//             <div className="border-t mb-4"></div>
             
-            <div className="mb-6">
-              <p className="text-sm font-medium mb-2">Select Payment Option</p>
-              <RadioGroup
-                value={paymentMethod}
-                onValueChange={setPaymentMethod}
-                className="flex gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="transfer" id="transfer" />
-                  <Label htmlFor="transfer">Transfer</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="wallet" id="wallet" />
-                  <Label htmlFor="wallet">Wallet</Label>
-                </div>
-              </RadioGroup>
-            </div>
+//             <div className="mb-6">
+//               <p className="text-sm font-medium mb-2">Select Payment Option</p>
+//               <RadioGroup
+//                 value={paymentMethod}
+//                 onValueChange={setPaymentMethod}
+//                 className="flex gap-4"
+//               >
+//                 <div className="flex items-center space-x-2">
+//                   <RadioGroupItem value="transfer" id="transfer" />
+//                   <Label htmlFor="transfer">Transfer</Label>
+//                 </div>
+//                 <div className="flex items-center space-x-2">
+//                   <RadioGroupItem value="wallet" id="wallet" />
+//                   <Label htmlFor="wallet">Wallet</Label>
+//                 </div>
+//               </RadioGroup>
+//             </div>
             
-            {paymentMethod === 'transfer' && (
-              <div className="space-y-4">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-1">Transfer</p>
-                  <p className="text-lg font-bold">₦{contributionAmount.toLocaleString()}</p>
-                  <p className="text-sm text-gray-600">to:</p>
-                </div>
+//             {paymentMethod === 'transfer' && (
+//               <div className="space-y-4">
+//                 <div className="text-center">
+//                   <p className="text-sm text-gray-600 mb-1">Transfer</p>
+//                   <p className="text-lg font-bold">₦{contributionAmount.toLocaleString()}</p>
+//                   <p className="text-sm text-gray-600">to:</p>
+//                 </div>
                 
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <p className="text-sm font-medium">Polaris Bank</p>
-                  <div className="flex items-center">
-                    <p className="text-lg font-bold">0123456781</p>
-                    <Button variant="ghost" size="sm" className="ml-2 h-6 w-6 p-0">
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
+//                 <div className="bg-gray-50 p-4 rounded-md">
+//                   <p className="text-sm font-medium">Polaris Bank</p>
+//                   <div className="flex items-center">
+//                     <p className="text-lg font-bold">0123456781</p>
+//                     <Button variant="ghost" size="sm" className="ml-2 h-6 w-6 p-0">
+//                       <Copy className="h-4 w-4" />
+//                     </Button>
+//                   </div>
                   
-                  <p className="text-sm mt-2">Account Name</p>
-                  <p className="text-sm font-medium">Charity Association Coopwise</p>
+//                   <p className="text-sm mt-2">Account Name</p>
+//                   <p className="text-sm font-medium">Charity Association Coopwise</p>
                   
-                  <div className="mt-2 text-sm text-gray-500">
-                    <p>Expires in <span className="text-red-500 font-medium">{formatTime()}</span> minutes</p>
-                  </div>
-                </div>
-              </div>
-            )}
+//                   <div className="mt-2 text-sm text-gray-500">
+//                     <p>Expires in <span className="text-red-500 font-medium">{formatTime()}</span> minutes</p>
+//                   </div>
+//                 </div>
+//               </div>
+//             )}
             
-            {paymentMethod === 'wallet' && (
-              <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <div className="mb-3">
-                    <p className="text-sm text-gray-600">Wallet Balance</p>
-                    <p className="text-lg font-bold">₦500,000</p>
-                  </div>
+//             {paymentMethod === 'wallet' && (
+//               <div className="space-y-4">
+//                 <div className="bg-gray-50 p-4 rounded-md">
+//                   <div className="mb-3">
+//                     <p className="text-sm text-gray-600">Wallet Balance</p>
+//                     <p className="text-lg font-bold">₦500,000</p>
+//                   </div>
                   
-                  <div className="mb-3">
-                    <p className="text-sm text-gray-600">Contribution Amount</p>
-                    <p className="text-lg font-bold">₦{contributionAmount.toLocaleString()}</p>
-                  </div>
+//                   <div className="mb-3">
+//                     <p className="text-sm text-gray-600">Contribution Amount</p>
+//                     <p className="text-lg font-bold">₦{contributionAmount.toLocaleString()}</p>
+//                   </div>
                   
-                  <div className="mb-1">
-                    <p className="text-sm text-gray-600">Contribute <span className="font-bold">₦{contributionAmount.toLocaleString()}</span> to:</p>
-                    <p className="text-sm font-medium">Charity Association</p>
-                  </div>
-                </div>
+//                   <div className="mb-1">
+//                     <p className="text-sm text-gray-600">Contribute <span className="font-bold">₦{contributionAmount.toLocaleString()}</span> to:</p>
+//                     <p className="text-sm font-medium">Charity Association</p>
+//                   </div>
+//                 </div>
                 
-                <Button 
-                  type="button" 
-                  className="w-full bg-teal-700 hover:bg-teal-800 text-white"
-                  onClick={handleContribution}
-                >
-                  Pay from Wallet
-                </Button>
-              </div>
-            )}
-          </div>
+//                 <Button 
+//                   type="button" 
+//                   className="w-full bg-teal-700 hover:bg-teal-800 text-white"
+//                   onClick={handleContribution}
+//                 >
+//                   Pay from Wallet
+//                 </Button>
+//               </div>
+//             )}
+//           </div>
           
-          {paymentMethod === 'transfer' && (
-            <DialogFooter>
-              <Button 
-                type="button" 
-                className="w-full bg-teal-700 hover:bg-teal-800"
-                onClick={handleContribution}
-              >
-                Confirm Payment
-              </Button>
-            </DialogFooter>
-          )}
-        </DialogContent>
-      </Dialog>
-        </div>
-  );
-};
+//           {paymentMethod === 'transfer' && (
+//             <DialogFooter>
+//               <Button 
+//                 type="button" 
+//                 className="w-full bg-teal-700 hover:bg-teal-800"
+//                 onClick={handleContribution}
+//               >
+//                 Confirm Payment
+//               </Button>
+//             </DialogFooter>
+//           )}
+//         </DialogContent>
+//       </Dialog>
+//         </div>
+//   );
+// };
 
 // Tab type definition
 type TabType = 'contributions' | 'payouts' | 'members';

@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, status
 
 from app.schemas.auth import AuthenticatedUser
 
-from app.schemas.wallet_schemas import WalletLedgerCreate, WalletLedgerCreate
+from app.schemas.wallet_schemas import WalletLedgerCreate
 from app.services.wallet_service import WalletService
 from app.core.dependencies import get_cashramp_service
 from app.services.cashramp_service import CashRampService
