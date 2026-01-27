@@ -1,8 +1,14 @@
+import json
+from typing import Any, Dict
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
 
 from app.utils.logger import logger
 
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent 
 class GlobalConfig(BaseSettings):
     ENV: str
     PORT: int
@@ -19,8 +25,13 @@ class GlobalConfig(BaseSettings):
     CASHRAMP_PUBKEY: str
     CASHRAMP_SECKEY: str
     GEMINI_API_KEY: str
+    RATE_LIMIT_RULES_PATH: str
+    
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=str(BASE_DIR / ".env"),
+        extra="ignore",
+    )
 
 
 class DevConfig(GlobalConfig):
@@ -34,11 +45,12 @@ class ProdConfig(GlobalConfig):
 
 
 def get_config():
-    env_state = GlobalConfig().ENV.lower()  # Load from `.env` automatically
+    env_state = GlobalConfig().ENV.lower()  # Load from `.env` automatically TODO: Separate env logic
     configs = {"development": DevConfig, "production": ProdConfig, "test": TestConfig}
+   
     if env_state not in configs:
         raise ValueError(f"Invalid ENVT_STATE: {env_state}")
-    logger.info(f"\nUsing {env_state.capitalize()} config...\n")
+    logger.info(f"\n\nUsing {env_state.capitalize()} config...\n")
     return configs[env_state]()
 
 # Lazy config loading to avoid import-time errors
@@ -59,12 +71,42 @@ def get_lazy_config():
             APP_SECRET_KEY = "test_secret"
             PAYSTACK_SECRET_KEY = "test"
             PAYSTACK_PUBLIC_KEY = "test"
-            REDIS_URL = "redis://localhost:6379"
+            REDIS_URL = "redis://localhost:6379/0"
             CASHRAMP_PUBKEY = "test"
             CASHRAMP_SECKEY = "test"
             GEMINI_API_KEY = "test"
+            RATE_LIMIT_RULES_PATH = "app/rate_limit_rules.json"
 
         return DefaultConfig()
 
 
-AppConfig: DevConfig = get_lazy_config()
+def load_rate_limit_rules(path: str) -> Dict[str, Any]:
+    """
+    Loads rate limiting rules from a JSON file.
+    Returns default rules if the file is not found or invalid.
+    """
+    try:
+        with open(path, "r") as f:
+            rules = json.load(f)
+            logger.info(f"\n\nSuccessfully loaded rate limiting rules from \n{path}\n\n")
+            return rules
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logger.warning(f"Could not load rate limit rules from {path}: {e}. Using default rules.")
+        # Return a safe default if the file is missing or corrupt
+        return {
+            "default": {"capacity": 10, "refill_rate": 1}
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+AppConfig: GlobalConfig = get_lazy_config()
+rate_limit_rules = load_rate_limit_rules(AppConfig.RATE_LIMIT_RULES_PATH)

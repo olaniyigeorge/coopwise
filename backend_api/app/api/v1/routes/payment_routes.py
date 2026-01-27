@@ -13,7 +13,7 @@ from app.schemas.auth import AuthenticatedUser
 from app.schemas.payments import PaystackPayload
 from app.services.contribution_service import ContributionService
 from app.services.wallet_service import WalletService
-from app.core.config import AppConfig as config
+from config import AppConfig as config
 from db.dependencies import get_async_db_session
 from db.models.contribution_model import Contribution
 from app.services.payment_service import PaymentService

@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.user import UserDetail
 from app.services.activity_service import ActivityService
-from app.core.config import AppConfig as config
+from config import AppConfig as config
 from app.schemas.activity_schemas import ActivityDetail
 from app.services.user_service import UserService
 from app.schemas.ai_insight_schema import (

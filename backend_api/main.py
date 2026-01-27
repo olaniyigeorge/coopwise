@@ -5,9 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 load_dotenv()
-from app.core.middleware import app_middleware
+from app.core.middlewares import app_middleware
+from app.core.redis_client import redis_manager
+from app.core.middlewares import  DistributedTokenBucketMiddleware
 from app.utils.logger import logger
-from app.core.config import AppConfig as config
+from config import AppConfig as config, rate_limit_rules
 from app.api.v1.routes import (
     auth,
     cooperative_group,
@@ -32,12 +34,15 @@ from fastapi import Request
 from db.database import db_manager
 
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager"""
-    # Startup
+    logger.info("Application startup...")
+
+    app.state.redis = None
+
     try:
-        # Initialize database
+        # ---- DB init (your existing logic) ----
         engine_kwargs = {}
         if "sqlite" in config.DATABASE_URL:
             engine_kwargs.update(
@@ -48,9 +53,13 @@ async def lifespan(app: FastAPI):
             )
 
         db_manager.initialize(config.DATABASE_URL, **engine_kwargs)
-
-        # Create tables
         await db_manager.create_tables()
+
+        # ---- Redis init (same pattern) ----
+        app.state.redis = await redis_manager.initialize(
+            url=config.REDIS_URL,
+            decode_responses=True,
+        )
 
         logger.info("Application startup complete")
         yield
@@ -58,8 +67,10 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Startup failed: {e}")
         raise
+
     finally:
-        # Shutdown
+        # Shutdown (reverse order is fine)
+        await redis_manager.close()
         await db_manager.close()
         logger.info("Application shutdown complete")
 
@@ -84,13 +95,22 @@ app.include_router(cashramp_router.router)
 # Middleware
 app.add_middleware(BaseHTTPMiddleware, dispatch=app_middleware)
 
-# Add CORS middleware
+
+# Add CORS middleware 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[config.CLIENT_DOMAIN],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+default_rule = rate_limit_rules.get("default", {"capacity": 10, "refill_rate": 1})
+
+app.add_middleware(
+    DistributedTokenBucketMiddleware,
+    capacity=default_rule["capacity"],
+    refill_rate=default_rule["refill_rate"]
 )
 
 
@@ -102,14 +122,16 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     base_url = config.DOMAIN
+    docs_href = f"{base_url}/api/docs"
 
+    print("Rendering home page...", docs_href)
     return templates.TemplateResponse(
         request,
         "home.html",
         {
             "name": "CoopWise Backend",
             "details": "CoopWise API Backend",
-            "docs": f"{base_url}/api/docs",
+            "docs_href": docs_href,
         },
     )
 

@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from urllib.parse import unquote
 from alembic import context
 
-from app.core.config import AppConfig
+from config import AppConfig
 
 from db.database import Base
 

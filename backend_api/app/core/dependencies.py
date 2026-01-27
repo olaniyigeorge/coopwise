@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import redis.asyncio as redis_async
 from redis.asyncio.client import Redis
 
-from app.core.config import AppConfig as config
+from config import AppConfig as config
 from db.database import db_manager
 from app.services.cashramp_service import CashRampService
 from app.api.v1.routes.auth import get_current_user, is_admin_or_owner

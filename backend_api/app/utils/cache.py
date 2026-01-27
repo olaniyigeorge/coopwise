@@ -2,7 +2,7 @@ import json
 from typing import Callable, Any
 import redis.asyncio as redis
 from fastapi import Depends
-from app.core.config import AppConfig as config
+from config import AppConfig as config
 
 
 if config.ENV == "dev":
@@ -13,19 +13,6 @@ else:
     redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 
 
-# async def get_or_set(
-#     redis: Redis,
-#     key: str,
-#     fetch_fn: Callable[[], Any],
-#     ttl: int = 300
-# ) -> Any:
-#     cached = await redis.get(key)
-#     if cached:
-#         return json.loads(cached)
-
-#     result = await fetch_fn()
-#     await redis.set(key, json.dumps(result, default=str), ex=ttl)
-#     return result
 
 
 async def get_cache(key: str):

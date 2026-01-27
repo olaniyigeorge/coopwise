@@ -11,7 +11,7 @@ from db.models.user import User, UserRoles
 from db.models.wallet_models import OnChainWallet
 from app.utils.crypto import verify_password, get_password_hash
 from app.utils.logger import logger
-from app.core.config import AppConfig as config
+from config import AppConfig as config
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 

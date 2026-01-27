@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 from app.services.user_service import UserService
-from app.core.config import AppConfig as config
+from config import AppConfig as config
 from app.services import cashramp_service
 from app.services.notification_service import NotificationService
 from app.services.payment_service import COOPWISE_USD_NGN_RATE, PaymentService

@@ -11,7 +11,7 @@ from app.services.wallet_service import WalletService
 from app.core.dependencies import get_cashramp_service
 from app.services.cashramp_service import CashRampService
 from db.models.wallet_models import LocalCurrency
-from app.core.config import AppConfig as config
+from config import AppConfig as config
 from app.schemas.payments import ChargeResponse, PaystackPayload
 from app.utils.logger import logger
 

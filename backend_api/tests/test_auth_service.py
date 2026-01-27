@@ -7,7 +7,7 @@ from jose import jwt
 from app.schemas.user import UserCreate
 from app.services.auth_service import AuthService
 from app.utils.crypto import verify_password
-from app.core.config import AppConfig as config
+from config import AppConfig as config
 
 
 @pytest.mark.asyncio

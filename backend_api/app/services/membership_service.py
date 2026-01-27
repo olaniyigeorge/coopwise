@@ -16,7 +16,7 @@ from app.schemas.cooperative_membership import (
 )
 from db.models.membership import GroupMembership
 from app.utils.logger import logger
-from app.core.config import AppConfig as config
+from config import AppConfig as config
 from fastapi import HTTPException, status
 
 

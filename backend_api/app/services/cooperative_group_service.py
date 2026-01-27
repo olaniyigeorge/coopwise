@@ -26,7 +26,7 @@ from db.models.cooperative_group import (
     CooperativeStatus,
 )
 from app.utils.logger import logger
-from app.core.config import AppConfig as config
+from config import AppConfig as config
 
 
 class CooperativeGroupService:
