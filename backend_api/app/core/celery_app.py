@@ -24,21 +24,21 @@ celery_app = Celery(
     AppConfig.PROJECT_NAME,
     broker=AppConfig.REDIS_URL,
     backend=AppConfig.REDIS_URL,  # Enables result tracking in Redis
-    include=["src.events.tasks"],  # Ensure your event tasks are loaded
+    include=["app.pipelines"],  # Ensure your event tasks are loaded
 )
 
 # --------------------------------
 # Beat Schedule (Periodic Tasks)
 # --------------------------------
 celery_app.conf.beat_schedule = {
-    "check-event-reminders-every-hour": {
-        "task": "src.events.tasks.send_event_reminder_to_regs",
-        "schedule": crontab(minute=0, hour="*"),  # every hour on the hour
-        "args": ["email"],
-    },
+    # "check-event-reminders-every-hour": {
+    #     "task": "app.events.tasks.send_event_reminder_to_regs",
+    #     "schedule": crontab(minute=0, hour="*"),  # every hour on the hour
+    #     "args": ["email"],
+    # },
     # Uncomment this line temporarily if you want to confirm Beat runs
     # "test-task-every-30s": {
-    #     "task": "src.events.tasks.test_task",
+    #     "task": "app.events.tasks.test_task",
     #     "schedule": 30.0,  # every 30 seconds
     #     "args": ["hello from Beat!"],
     # },
@@ -70,17 +70,17 @@ celery_app.conf.update(
 # ----------------------------------
 # Auto-discover tasks from modules
 # ----------------------------------
-celery_app.autodiscover_tasks(["src.events"], force=True)
+celery_app.autodiscover_tasks(["app.pipelines"], force=True)
 
 # ------------------------------------------------
 # Optional: Post-configure signal for future hooks
 # -------------------------------------------------
-@celery_app.on_after_configure.connect
-def init_db(sender, **kwargs):
-    """Optional: Initialize DB connection when Celery starts."""
-    print("🔌 Initializing DB for Celery worker...")
-    try:
-        asyncio.run(db_manager.initialize(AppConfig.DATABASE_URL))
-        print("\nDB Initialized successfully")
-    except Exception as e:
-        print(f"\n Failed to initialize DB: {e}")
+# @celery_app.on_after_configure.connect
+# def init_db(sender, **kwargs):
+#     """Optional: Initialize DB connection when Celery starts."""
+#     print("🔌 Initializing DB for Celery worker...")
+#     try:
+#         db_manager.initialize(AppConfig.DATABASE_URL)
+#         print("\nDB Initialized successfully")
+#     except Exception as e:
+#         print(f"\n Failed to initialize DB: {e}")

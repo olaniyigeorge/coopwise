@@ -1,6 +1,6 @@
 import subprocess
 import sys
-import uvicorn
+import platform
 
 from app.utils.logger import logger
 
@@ -104,6 +104,8 @@ class ServiceManager:
     def start_celery_worker(self):
         """Start Celery worker process - logs to stdout"""
         print_info("Starting Celery Worker...")
+        is_windows = platform.system().lower().startswith("win")
+
         
         # Memory-optimized settings for Render
         if self.is_render:
@@ -111,13 +113,13 @@ class ServiceManager:
             pool = 'solo'  # Most memory efficient pool
             max_tasks_per_child = '50'
         else:
-            concurrency = os.getenv('CELERY_WORKERS', '2')
-            pool = 'prefork'
-            max_tasks_per_child = '1000'
+            concurrency = os.getenv("CELERY_WORKERS", "2")
+            pool = "solo" if is_windows else "prefork"
+            max_tasks_per_child = "1000"
         
         cmd = [
             'celery',
-            '-A', 'src.core.celery_app.celery_app',
+            '-A', 'app.core.celery_app.celery_app',
             'worker',
             '--loglevel=info',
             f'--concurrency={concurrency}',
@@ -168,7 +170,7 @@ class ServiceManager:
         
         cmd = [
             'celery',
-            '-A', 'src.core.celery_app.celery_app',
+            '-A', 'app.core.celery_app.celery_app',
             'beat',
             '--loglevel=info'
         ]
@@ -275,8 +277,7 @@ class ServiceManager:
         
         if run_tests:
             if self.run_tests():
-                logger.info("\n✅ Tests passed. Starting server...")
-                uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+                logger.info("\n✅ Tests passed. Continuing startup...")
             else:
                 logger.info("\n❌ Tests failed. Server not starting.")
                 sys.exit(1)
