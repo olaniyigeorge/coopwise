@@ -47,7 +47,7 @@ class RedisManager:
     async def close(self) -> None:
         if self.client is None:
             return
-        await self.client.aclose()  # preferred for redis-py asyncio
+        await self.client.aclose() 
         self.client = None
         logger.info("Redis connection closed")
 
