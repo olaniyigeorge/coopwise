@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple
 
 from pydantic import BaseModel
 from db.models.notifications import NotificationStatus
-from app.api.v1.routes.auth import get_current_user, get_current_user_ws
+from app.routers.v1.auth import get_current_user, get_current_user_ws
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.notifications_schema import (
     NotificationCreate,

@@ -7,7 +7,7 @@ from config import AppConfig as config
 from app.utils.logger import logger
 from app.core.dependencies import get_redis
 from app.services.insights_service import InsightEngine
-from app.api.v1.routes.auth import get_current_user
+from app.routers.v1.auth import get_current_user
 from app.schemas.auth import AuthenticatedUser
 from db.dependencies import get_async_db_session
 from app.utils.logger import logger

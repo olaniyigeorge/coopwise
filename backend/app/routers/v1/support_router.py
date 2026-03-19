@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated, List
 
-from app.api.v1.routes.auth import get_current_user
+from app.routers.v1.auth import get_current_user
 from app.schemas.support_schemas import FeedbackCreate, FeedbackDetail
 from app.services.support_service import SupportService
 from app.schemas.auth import AuthenticatedUser

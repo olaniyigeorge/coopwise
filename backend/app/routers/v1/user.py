@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.routes.auth import (
+from app.routers.v1.auth import (
     get_current_user,
     is_admin_or_owner,
     is_admin_permissions,

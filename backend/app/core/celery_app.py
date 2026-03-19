@@ -24,7 +24,7 @@ celery_app = Celery(
     AppConfig.PROJECT_NAME,
     broker=AppConfig.REDIS_URL,
     backend=AppConfig.REDIS_URL,  # Enables result tracking in Redis
-    include=["app.pipelines"],  # Ensure your event tasks are loaded
+    include=[],  # Ensure your event tasks are loaded
 )
 
 # --------------------------------
@@ -70,7 +70,7 @@ celery_app.conf.update(
 # ----------------------------------
 # Auto-discover tasks from modules
 # ----------------------------------
-celery_app.autodiscover_tasks(["app.pipelines"], force=True)
+celery_app.autodiscover_tasks([], force=True)
 
 # ------------------------------------------------
 # Optional: Post-configure signal for future hooks

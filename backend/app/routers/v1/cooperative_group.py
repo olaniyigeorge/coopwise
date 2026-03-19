@@ -4,7 +4,7 @@ from typing import List
 
 
 from db.models.activity_model import ActivityType
-from app.api.v1.routes.auth import get_current_user
+from app.routers.v1.auth import get_current_user
 from app.utils.logger import logger
 from app.schemas.activity_schemas import ActivityCreate
 from app.schemas.auth import AuthenticatedUser

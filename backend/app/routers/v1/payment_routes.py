@@ -8,7 +8,7 @@ from typing import Optional
 
 from app.utils.logger import logger
 from app.core.dependencies import get_redis
-from app.api.v1.routes.auth import get_current_user
+from app.routers.v1.auth import get_current_user
 from app.schemas.auth import AuthenticatedUser
 from app.schemas.payments import PaystackPayload
 from app.services.contribution_service import ContributionService

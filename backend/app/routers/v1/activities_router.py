@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.auth import AuthenticatedUser
-from app.api.v1.routes.auth import get_current_user
+from app.routers.v1.auth import get_current_user
 from app.schemas.activity_schemas import ActivityDetail
 from db.dependencies import get_async_db_session
 from db.models.activity_model import ActivityLog

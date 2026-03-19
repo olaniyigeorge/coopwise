@@ -10,7 +10,7 @@ from app.core.redis_client import redis_manager
 from app.core.middlewares import  DistributedTokenBucketMiddleware
 from app.utils.logger import logger
 from config import AppConfig as config, rate_limit_rules
-from app.api.v1.routes import (
+from app.routers.v1 import (
     auth,
     cooperative_group,
     membership,

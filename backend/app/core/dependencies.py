@@ -7,7 +7,7 @@ from redis.asyncio.client import Redis
 from config import AppConfig as config
 from db.database import db_manager
 from app.services.cashramp_service import CashRampService
-from app.api.v1.routes.auth import get_current_user, is_admin_or_owner
+from app.routers.v1.auth import get_current_user, is_admin_or_owner
 
 # ---------------------------- 🔁 Redis Dependency ----------------------------
 redis_client: Redis = redis_async.from_url(config.REDIS_URL)
