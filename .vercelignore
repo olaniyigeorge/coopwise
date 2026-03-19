@@ -1,5 +1,5 @@
 # Backend files (not needed for frontend deployment)
-backend_api/
+backend/
 .venv/
 __pycache__/
 *.pyc

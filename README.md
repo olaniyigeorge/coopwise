@@ -22,7 +22,7 @@
 ```txt
 coopwise/
 │
-├── backend_api/         → FastAPI backend (versioned routes, services, models, utils)
+├── backend/         → FastAPI backend (versioned routes, services, models, utils)
 │   ├── app/             → Core app logic: APIs, schemas, services, etc.
 │   ├── db/              → SQLAlchemy models and DB logic
 │   ├── main.py          → Entrypoint for backend
@@ -68,7 +68,7 @@ git clone https://github.com/olaniyigeorge/coopwise.git
 cd coopwise
 ```
 ```bash
-cd backend_api
+cd backend
 cp .env.sample .env
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
@@ -78,7 +78,7 @@ uvicorn main:app --reload
 
 ### 2. Backend Setup
 ```bash
-cd backend_api
+cd backend
 cp .env.sample .env
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
