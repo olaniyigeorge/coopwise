@@ -1,0 +1,18 @@
+{
+  "networks": {
+    "mainnet": "access-mainnet.onflow.org:9000",
+    "testnet": "access-testnet.onflow.org:9000",
+    "emulator": "127.0.0.1:3569"
+  },
+  "accounts": {
+    "coopwise-testnet": {
+      "address": "YOUR_FLOW_TESTNET_ADDRESS",
+      "key": {
+        "type": "file",
+        "location": "./.keys/testnet.pkey"
+      }
+    }
+  },
+  "contracts": {},
+  "deployments": {}
+}
