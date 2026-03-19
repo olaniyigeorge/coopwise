@@ -31,7 +31,7 @@ coopwise/                          # monorepo root
 │   │   │   ├── flow_event_worker.py       # Flow gRPC event listener
 │   │   │   └── payout_worker.py           # UnwrapFinalized → Flutterwave
 │   │   └── webhooks/               # new - Forte scheduled tx callbacks
-├── blockchain/
+├── coopchain/
 │   ├── cadence/                    # Flow smart contracts
 │   │   ├── contracts/
 │   │   │   ├── CoopWise.cdc        # circle registry, rotation, schedule
