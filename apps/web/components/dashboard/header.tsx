@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 import useAuthStore from '@/lib/stores/auth-store'
 import { useNotificationListener } from '@/lib/hooks/use-notifications-socket'
 import useNotificationStore, { NotificationDetail } from '@/lib/stores/notification-store'
-import { CampModal, useAuthState } from '@campnetwork/origin/react'
+
 
 interface HeaderProps {
   title?: string
@@ -138,7 +138,7 @@ export default function Header({
               : `border-orange-300`
 
           }`}>
-             <CampModal />
+         
           </span>
          
           {/* Notification Bell */}

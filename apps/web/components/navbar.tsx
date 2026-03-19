@@ -8,7 +8,6 @@ import { usePathname } from 'next/navigation'
 import { Menu, X, Home, Info, Mail, LogIn, UserPlus, LogOut, ChevronDown, Calendar1Icon, User } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '@/lib/auth-context'
-import { CampModal } from '@campnetwork/origin/react'
 import useAuthStore from '@/lib/stores/auth-store'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { toast } from './ui/use-toast'
@@ -119,8 +118,6 @@ export default function Navbar() {
               Contact Us
             </Link>
           </div>
-          
-          <CampModal />
           {/* Desktop auth buttons */}
           {isLandingPage && !isAuthenticated || !user? 
             <div className="hidden md:flex items-center space-x-2" suppressHydrationWarning>
