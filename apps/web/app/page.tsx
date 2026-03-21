@@ -8,10 +8,10 @@ import HowItWorks from '@/components/how-it-works'
 import Testimonials from '@/components/testimonials'
 import Footer from '@/components/footer'
 import ScrollToTop from '@/components/scroll-to-top'
-import { useAuth } from '@crossmint/client-sdk-react-ui'
+// import { useAuth } from '@crossmint/client-sdk-react-ui'
 
 export default function HomePage() {
-  const { user, status } = useAuth();
+  // const { user, status } = useAuth();
   const authenticated = status === "logged-in";
   const loading = status === "initializing";
 
