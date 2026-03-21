@@ -1,0 +1,1 @@
+// ← shared constants (chain IDs, contract addresses)

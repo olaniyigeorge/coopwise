@@ -20,9 +20,9 @@
 ## 📁 Project Structure
 
 ```txt
-olaniyigeorge-coopwise/
+coopwise/
 │
-├── backend_api/         → FastAPI backend (versioned routes, services, models, utils)
+├── backend/         → FastAPI backend (versioned routes, services, models, utils)
 │   ├── app/             → Core app logic: APIs, schemas, services, etc.
 │   ├── db/              → SQLAlchemy models and DB logic
 │   ├── main.py          → Entrypoint for backend
@@ -50,7 +50,7 @@ olaniyigeorge-coopwise/
 
 | Layer       | Technology                                                  |
 |-------------|-------------------------------------------------------------|
-| Frontend    | Next.js 14, TailwindCSS, React Server Components            |
+| Frontend    | Next.js 14, Shadcn, React Server Components            |
 | Backend     | FastAPI, PostgreSQL, SQLAlchemy, Redis, Celery              |
 | AI Stack    | Google LLM Flash Pro, LLM Prompts, Deepgram STT             |
 | Auth        | JWT, Email as Username, Secure Role-based Access           |
@@ -59,7 +59,7 @@ olaniyigeorge-coopwise/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone Repo
 
@@ -68,7 +68,7 @@ git clone https://github.com/olaniyigeorge/coopwise.git
 cd coopwise
 ```
 ```bash
-cd backend_api
+cd backend
 cp .env.sample .env
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
@@ -78,7 +78,7 @@ uvicorn main:app --reload
 
 ### 2. Backend Setup
 ```bash
-cd backend_api
+cd backend
 cp .env.sample .env
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt

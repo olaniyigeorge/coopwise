@@ -1,0 +1,1 @@
+// ← shared TS types (User, Group, Contribution)

@@ -1,0 +1,12 @@
+{       
+  // Windows
+  "python.defaultInterpreterPath": "backend/venv/Scripts/python.exe",
+
+  // Linux and macOS
+  "python.defaultInterpreterPath.linux": "backend/venv/bin/python",
+  "python.defaultInterpreterPath.osx": "backend/venv/bin/python",
+
+  "python.analysis.extraPaths": ["./"],
+  "python.analysis.autoSearchPaths": true,
+  "python.analysis.useLibraryCodeForTypes": true
+}
