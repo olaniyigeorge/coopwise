@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: revela-backend-api
+    env: python
+    region: virginia
+    plan: starter  
+    buildCommand: pip install -r requirements.txt
+    startCommand: python start_backend.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: RENDER
+        value: true
+      - key: PYTHONUNBUFFERED
+        value: 1
+      - key: PYTHONOPTIMIZE
+        value: 1
+      - key: CELERY_WORKERS
+        value: 1
+      - key: UVICORN_WORKERS
+        value: 1
+      - key: REDIS_URL
+        sync: false  # You'll set this manually in dashboard
+      - key: DATABASE_URL
+        sync: false  # You'll set this manually in dashboard
+    healthCheckPath: /health  # Make sure you have this endpoint
