@@ -6,7 +6,7 @@
   },
   "accounts": {
     "coopwise-testnet": {
-      "address": "YOUR_FLOW_TESTNET_ADDRESS",
+      "address": "0xf8d6e0586b0a20c7",
       "key": {
         "type": "file",
         "location": "./.keys/testnet.pkey"

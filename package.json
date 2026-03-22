@@ -1,16 +1,21 @@
 {
+  "name": "coopwise",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "dev": "concurrently -n web,api -c cyan,green \"npm run dev:web\" \"npm run dev:api\"",
     "dev:web": "cd apps/web && npm run dev",
     "dev:api": "cd backend && python start_backend.py",
+    "dev": "concurrently -n web,api -c cyan,green \"npm run dev:web\" \"npm run dev:api\"",
     "install:all": "npm install && cd apps/web && npm install",
     "setup": "npm run install:all && cd backend && pip install -r requirements.txt --break-system-packages"
   },
-  "dependencies": {
-    "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
-  },
   "devDependencies": {
     "concurrently": "^8.2.0"
-  }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.30.3"
 }

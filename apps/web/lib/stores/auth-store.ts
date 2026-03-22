@@ -10,6 +10,8 @@ interface User {
   username: string;
   phone_number: string;
   role: string;
+  /** Flow blockchain address — set after Crossmint wallet provisioning + backend sync */
+  flow_address?: string | null;
   [key: string]: any;
 }
 

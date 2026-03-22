@@ -4,14 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@crossmint/client-sdk-react-ui": "^3.1.0",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.9.1",
+    "@onflow/fcl": "^1.21.9",
     "@onflow/react-sdk": "^0.20.0",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
@@ -54,11 +56,11 @@
     "input-otp": "1.4.1",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.454.0",
-    "next": "15.2.4",
+    "next": "16.2.1",
     "next-themes": "^0.4.4",
-    "react": "^18.3.1",
-    "react-day-picker": "8.10.1",
-    "react-dom": "^18.3.1",
+    "react": "19.2.4",
+    "react-day-picker": "^9.0.0",
+    "react-dom": "19.2.4",
     "react-hook-form": "^7.54.1",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.7",
@@ -67,25 +69,29 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "vaul": "^0.9.6",
+    "vaul": "^1.1.2",
     "zod": "^3.24.1",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
-    "@next/bundle-analyzer": "^16.2.0",
+    "@next/bundle-analyzer": "16.2.1",
     "@types/node": "^22",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
     "cors": "^2.8.5",
     "eslint": "^9.32.0",
-    "eslint-config-next": "^15.4.4",
+    "eslint-config-next": "16.2.1",
     "express": "^5.1.0",
     "http-proxy-middleware": "^3.0.5",
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3"
   }
 }
