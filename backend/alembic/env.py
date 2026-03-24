@@ -9,6 +9,19 @@ from alembic import context
 from config import AppConfig
 
 from db.database import Base
+from db.models.cooperative_group import *
+from db.models.user import *
+from db.models.activity_model import *
+from db.models.ai_chat_model import *
+from db.models.contribution_model import *
+from db.models.membership import *
+from db.models.notifications import *
+from db.models.feedback_model import *
+from db.models.wallet_models import *
+from db.models.ai_insight import *
+
+print("Registered tables:", Base.metadata.tables.keys())
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -19,19 +32,21 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# Assume this is your async DB URL from env or config
+raw_db_url  = AppConfig.DATABASE_URL 
 
-DATABASE_URL = AppConfig.DATABASE_URL
-decoded_url = unquote(DATABASE_URL)
+# Replace only the driver part from 'asyncpg' to 'psycopg2'
+sync_db_url = raw_db_url.replace("postgresql+asyncpg", "postgresql")
 
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL is not set in the environment!")
 
-# SYNC_DATABASE_URL = str(make_url(DATABASE_URL).set(drivername="postgresql+psycopg2"))
+print(f"\nraw_db_url: {raw_db_url}\n")
+print(f"\nsync_db_url: {sync_db_url}\n")
+
 
 # Disable configparser interpolation
 config.config_ini_section = "alembic"
 # Update the config with the dynamically determined database URL
-config.set_main_option("sqlalchemy.url", decoded_url)
+config.set_main_option("sqlalchemy.url", sync_db_url)
 
 
 # add your model's MetaData object here
@@ -69,43 +84,23 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
+    """Run migrations in 'online' mode."""
 
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
-    # connectable = engine_from_config(
-    #     config.get_section(config.config_ini_section, {}),
-    #     prefix="sqlalchemy.",
-    #     poolclass=pool.NullPool,
-    # )
-
-    # with connectable.connect() as connection:
-    #     context.configure(
-    #         connection=connection, target_metadata=target_metadata
-    #     )
-
-    #     with context.begin_transaction():
-    #         context.run_migrations()
-    connectable: AsyncEngine = create_async_engine(
-        config.get_main_option("sqlalchemy.url"),
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
-    async def do_run_migrations():
-        async with connectable.connect() as connection:
-            await connection.run_sync(
-                lambda sync_connection: context.configure(
-                    connection=sync_connection,
-                    target_metadata=target_metadata,
-                )
-            )
-            async with context.begin_transaction():
-                await connection.run_sync(context.run_migrations)
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
 
+        with context.begin_transaction():
+            context.run_migrations()
 
 if context.is_offline_mode():
     run_migrations_offline()

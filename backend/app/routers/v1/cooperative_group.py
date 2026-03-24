@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
@@ -12,7 +14,10 @@ from app.schemas.cooperative_group import (
     CoopGroupCreate,
     CoopGroupDetails,
     CoopGroupUpdate,
+    JoinCircleResponse,
+    CooperativeStatus
 )
+
 from app.schemas.cooperative_membership import MembershipCreate
 from app.schemas.notifications_schema import NotificationCreate
 from app.services.activity_service import ActivityService
@@ -23,85 +28,152 @@ from app.services.membership_service import CooperativeMembershipService
 
 # from app.services.chain import w3, poolfactory, from_account, PRIVATE_KEY
 
+from app.services.flow_service import flow_service
+from app.services.fx_service import fx_service
+
 
 router = APIRouter(prefix="/api/v1/cooperatives", tags=["Cooperative Groups"])
 
-
-@router.post(
-    "/create", response_model=CoopGroupDetails, status_code=status.HTTP_201_CREATED
-)
+@router.post("/create", response_model=CoopGroupDetails, status_code=status.HTTP_201_CREATED)
 async def create_cooperative_group(
     coop_data: CoopGroupCreate,
     user: AuthenticatedUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db_session),
 ):
-    coop_data = coop_data.model_copy(update={"creator_id": user.id})
-    coop = await CooperativeGroupService.create_coop(coop_data, db)
+    # 1. Resolve phone numbers → Flow addresses
+    # TODO: real lookup once user phone is indexed
+    # member_addresses = await resolve_member_addresses(db, coop_data.member_phones)
+    member_addresses = [user.flow_address] if user.flow_address else []
 
+    # 2. Convert local currency → USDC
+    usdc_amount = await fx_service.to_usdc(
+        coop_data.contribution_amount, coop_data.currency
+    )
+
+    print(f"\nAmount in USDC: {usdc_amount} \n")
+
+    # 3. Write to Postgres first with status=pending, chain_circle_id=None
+    #    So a Flow failure doesn't lose the user's data
+    pending_data = coop_data.model_copy(update={
+        "creator_id": user.id,
+        "chain_circle_id": None,        # filled in after Flow confirms
+        "weekly_amount_usdc": usdc_amount,
+        "status": CooperativeStatus.pending.value,
+        "current_round": 0,
+        "is_complete": False,
+    })
+    coop = await CooperativeGroupService.create_coop(pending_data, db)
+
+    # 4. Submit to Flow blockchain
+    try:
+        tx_id = await flow_service.create_circle(
+            member_addresses=member_addresses,
+            weekly_amount_usdc=usdc_amount,
+            rotation_order=coop_data.rotation_order,
+        )
+        chain_circle_id = await flow_service.await_circle_created_event(tx_id)
+
+        print(f"\ tx_id: {tx_id} \n chain_circle_id: {chain_circle_id} \n")
+
+        # Update record with chain data
+        coop.chain_circle_id = chain_circle_id
+        coop.status = CooperativeStatus.active.value
+        await db.commit()
+        await db.refresh(coop)
+    except Exception as e:
+        logger.error(f"Flow tx failed for circle {coop.id}: {e}")
+        # Circle stays in DB with status=pending — can be retried
+        # Don't raise — return the pending circle to the user
+
+    # 5. Add creator membership
     membership_data = MembershipCreate(
         user_id=user.id,
         group_id=coop.id,
         invited_by=user.id,
         role="admin",
         status="accepted",
+        queue_position=1 if coop_data.rotation_order == "sequential" else None,
     )
-
     await CooperativeMembershipService.create_membership(db, membership_data, user)
 
-
-    # 2) On-chain: call PoolFactory.createPool with a relayer account
-    # try:
-    #     nonce = w3.eth.get_transaction_count(from_account)
-    #     tx = poolfactory.functions.createPool(
-    #         coop.name,
-    #         Web3.toChecksumAddress(coop.token_address),
-    #         coop.contribution_amount,
-    #         coop.contribution_frequency_seconds,
-    #         coop.coop_model,
-    #         coop.max_members,
-    #         coop.target_amount,
-    #         coop.rules_uri or ""
-    #     ).buildTransaction({
-    #         "chainId": int(os.getenv("CHAIN_ID", "1337")),
-    #         "gas": 6000000,
-    #         "gasPrice": w3.eth.gas_price,
-    #         "nonce": nonce,
-    #         "from": from_account
-    #     })
-    #     signed = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
-    #     tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
-    #     receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-    # except Exception as e:
-    #     raise HTTPException(status_code=500, detail=f"on-chain create failed: {e}")
-
-    # 3) Save tx hash & pool address returned via event (indexer could also pick up)
-    # parse logs to find PoolCreated event (or the factory can return address directly in future)
-    # return {"coop_id": coop_id, "onchain_tx": receipt.transactionHash.hex()}
-
-
-
+    # 6. Activity log
     activity_data = ActivityCreate(
         user_id=coop.creator_id,
         type=ActivityType.created_group.value,
-        description=f"You created a group",
+        description=f"You created a group: {coop.name}",
         group_id=coop.id,
         entity_id=str(coop.id),
         amount=None,
     )
-    logger.info(f"\n Logging activity... {membership_data}\n")
     await ActivityService.log(db, activity_data)
 
-    noti_data = NotificationCreate(
-        user_id=user.id,
-        title="New Cooperative Created",
-        message=f"Your cooperative, {coop.name} was created successful",
-        event_type="group",
-        type="success",
-        entity_url=None,
-    )
-    await NotificationService.create_and_push_notification_to_user(noti_data, db)
+    # 7. Notification
+    try:
+        noti_data = NotificationCreate(
+            user_id=user.id,
+            title="New Circle Created",
+            message=f"Your circle '{coop.name}' was successfully created on Flow.",
+            event_type="group",
+            type="success",
+            entity_url=f"/circle/{coop.id}",
+        )
+        await NotificationService.create_and_push_notification_to_user(noti_data, db)
+    except Exception as e:
+        logger.warning(f"Notification failed (non-fatal): {e}")
+
+    # TODO: Send invite notifications to coop_data.member_phones
 
     return CoopGroupDetails.model_validate(coop)
+
+@router.post("/{coop_id}/join", response_model=JoinCircleResponse, status_code=status.HTTP_200_OK)
+async def join_circle(
+    coop_id: UUID,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session)
+):
+    # Fetch group to get chain_circle_id
+    coop_group = await CooperativeGroupService.get_coop_group_by_id(db, str(coop_id))
+    if not coop_group:
+        raise HTTPException(status_code=404, detail="Circle not found")
+
+    # 1. Submit JoinCircle.cdc transaction to Flow (Stubbed)
+    # tx_id = await flow_service.join_circle(
+    #     circle_id=coop_group.chain_circle_id,
+    #     member_address=user.flow_address
+    # )
+    tx_id = "0xMockFlowTransactionId12345"
+
+    # 2. Update Postgres membership record
+    membership_data = MembershipCreate(
+        user_id=user.id,
+        group_id=coop_group.id,
+        invited_by=coop_group.creator_id,
+        role="member",
+        status="accepted"
+    )
+    await CooperativeMembershipService.create_membership(db, membership_data, user)
+
+    return {"tx_id": tx_id, "status": "joined", "message": "Successfully joined the circle on-chain."}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 @router.get("/", response_model=List[CoopGroupDetails])

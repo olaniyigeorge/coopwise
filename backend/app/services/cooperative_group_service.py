@@ -33,30 +33,42 @@ class CooperativeGroupService:
     # Create and manage cooperative groups.
 
     @staticmethod
-    async def create_coop(coop_data: CoopGroupCreate, db: AsyncSession):
+    async def create_coop(coop_data: CoopGroupCreate, db: AsyncSession) -> CooperativeGroup:
         try:
-
             new_coop_group = CooperativeGroup(
                 name=coop_data.name,
+                description=coop_data.description,
+                image_url=coop_data.image_url,
                 creator_id=coop_data.creator_id,
+                max_members=coop_data.max_members,
                 contribution_amount=coop_data.contribution_amount,
                 contribution_frequency=coop_data.contribution_frequency,
                 payout_strategy=coop_data.payout_strategy,
+                coop_model=coop_data.coop_model,
                 target_amount=coop_data.target_amount,
                 status=coop_data.status,
-                rules=coop_data.rules if coop_data.rules else None,
+                rules=coop_data.rules or None,
+                # Chain fields
+                chain_circle_id=coop_data.chain_circle_id,
+                weekly_amount_usdc=coop_data.weekly_amount_usdc,
+                currency=coop_data.currency,
+                rotation_order=coop_data.rotation_order,
+                current_round=coop_data.current_round,
+                is_complete=coop_data.is_complete,
             )
             db.add(new_coop_group)
             await db.commit()
             await db.refresh(new_coop_group)
-            logger.info("\n\n coop created....\n")
+            logger.info(f"\n\nCoop created: {new_coop_group.id}\n")
         except Exception as e:
-            logger.error(e)
+            await db.rollback()
+            logger.error(f"create_coop failed: {e}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Could not create cooperative group - {str(e)}",
+                detail=f"Could not create cooperative group — {str(e)}",
             )
         return new_coop_group
+
 
     @staticmethod
     async def get_coop_groups(db: AsyncSession, skip: int = 0, limit: int = 10):

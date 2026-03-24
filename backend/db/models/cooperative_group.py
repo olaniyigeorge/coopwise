@@ -1,22 +1,20 @@
 from datetime import datetime
-from decimal import Decimal
-from uuid import UUID, uuid4
+from uuid import uuid4
 from db.models.membership import GroupMembership
 from db.database import Base
-from sqlalchemy import JSON, Column, String, Enum, DateTime, Numeric, ForeignKey
+from sqlalchemy import JSON, Column, String, Enum, DateTime, Numeric, ForeignKey, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 import enum
 
 
-# Enum for Contribution Frequency
 class ContributionFrequency(enum.Enum):
     daily = "daily"
     weekly = "weekly"
+    biweekly = "biweekly"   # added
     monthly = "monthly"
 
 
-# Enum for Payout Strategy
 class PayoutStrategy(enum.Enum):
     rotating = "rotating"
     equal = "equal"
@@ -25,18 +23,27 @@ class PayoutStrategy(enum.Enum):
 
 class CooperativeModel(enum.Enum):
     ajo = "ajo"
+    esusu = "esusu"         # added
+    adashe = "adashe"       # added
+    chama = "chama"         # added
     coop = "coop"
 
 
-# Enum for Cooperative Status
 class CooperativeStatus(enum.Enum):
+    pending = "pending"     # added — waiting for enough members
     active = "active"
     inactive = "inactive"
     completed = "completed"
 
 
+class RotationOrder(enum.Enum):            # new
+    sequential = "sequential"
+    random = "random"
+
+
 class CooperativeGroup(Base):
     __tablename__ = "cooperative_groups"
+
     id = Column(
         PGUUID(as_uuid=True), primary_key=True, default=lambda: str(uuid4()), index=True
     )
@@ -46,7 +53,7 @@ class CooperativeGroup(Base):
     creator_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     max_members = Column(Numeric, default=12, nullable=False)
-    contribution_amount = Column(Numeric, nullable=False)
+    contribution_amount = Column(Numeric, nullable=False)           # local currency (NGN/KES/GHS)
     contribution_frequency = Column(Enum(ContributionFrequency), nullable=False)
     payout_strategy = Column(Enum(PayoutStrategy), nullable=False)
     coop_model = Column(
@@ -54,12 +61,22 @@ class CooperativeGroup(Base):
     )
     target_amount = Column(Numeric, nullable=False)
     status = Column(
-        Enum(CooperativeStatus), default=CooperativeStatus.inactive, nullable=False
+        Enum(CooperativeStatus), default=CooperativeStatus.pending, nullable=False
     )
-    next_payout_date = Column(DateTime, nullable=True)  # When the next payout is due
-    rules = Column(
-        JSON, nullable=True
-    )  # Like metatdata that are used to define the rules of the cooperative
+    next_payout_date = Column(DateTime, nullable=True)
+    rules = Column(JSON, nullable=True)
+
+    # ── NEW: Chain + wallet fields ─────────────────────────────────────────
+    chain_circle_id = Column(Integer, nullable=True, unique=True)   # on-chain UInt64 from Flow
+    flow_address = Column(String, nullable=True)                    # creator's Flow address
+    currency = Column(String, default="NGN", nullable=False)        # NGN | KES | GHS
+    weekly_amount_usdc = Column(Numeric(18, 6), nullable=True)      # USDC equivalent (6 decimals)
+    rotation_order = Column(
+        Enum(RotationOrder), default=RotationOrder.sequential, nullable=False
+    )
+    current_round = Column(Integer, default=0, nullable=False)      # which round we're on
+    is_complete = Column(Boolean, default=False, nullable=False)
+    # ───────────────────────────────────────────────────────────────────────
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(

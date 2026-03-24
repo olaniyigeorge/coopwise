@@ -242,7 +242,7 @@ class AuthService:
             # 5. Generate Access Token
             # -----------------------------------------------------
             token = await AuthService.create_access_token(
-                {"sub": user.email, "id": str(user.id), "role": user.role.value},
+                {"sub": user.email, "id": str(user.id), "role": user.role.value, "flow_address": user.flow_address},
                 expires_delta=timedelta(hours=24),
             )
 
@@ -348,9 +348,12 @@ class AuthService:
         # 5. Issue JWT — same shape as the existing login token
         # Import your actual AuthService.create_access_token here
         from app.services.auth_service import AuthService
-        token = await AuthService.create_access_token(
-            {"sub": user.email, "id": str(user.id), "role": user.role.value}
-        )
+        token = await AuthService.create_access_token({
+            "sub": user.email,
+            "id": str(user.id),
+            "role": user.role.value,
+            "flow_address": user.flow_address,   # add this
+        })
     
         return {
             "access_token": token,

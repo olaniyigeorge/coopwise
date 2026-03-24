@@ -125,7 +125,7 @@ async def register_user(
     )
     await NotificationService.create_and_push_notification_to_user(noti_data, db)
     token = await AuthService.create_access_token(
-        {"sub": reg.email, "id": str(reg.id), "role": reg.role.value}
+        {"sub": reg.email, "id": str(reg.id), "role": reg.role.value, "flow_address": reg.flow_address,}
     )
     return {"token": token, "user": reg}
 
@@ -172,7 +172,7 @@ async def login_for_access_token(
     if not user:
         raise HTTPException(status_code=401, detail="Invalid login credentials")
     token = await AuthService.create_access_token(
-        {"sub": user.email, "id": str(user.id), "role": user.role.value}
+        {"sub": user.email, "id": str(user.id), "role": user.role.value, "flow_address": user.flow_address,}
     )
 
     return {"access_token": token, "user": user}

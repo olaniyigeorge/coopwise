@@ -10,28 +10,23 @@ from app.utils.logger import logger
 
 BASE_DIR = Path(__file__).resolve().parent.parent 
 class GlobalConfig(BaseSettings):
-    ENV: str
-    PORT: int
-    PROJECT_NAME: str
-    CLIENT_DOMAIN: str
-    INVITE_CODE_PREFIX: str
-    DOMAIN: str
-    DATABASE_URL: str
-    ALGORITHM: str
-    APP_SECRET_KEY: str
-    PAYSTACK_SECRET_KEY: str
-    PAYSTACK_PUBLIC_KEY: str
-    REDIS_URL: str
-    CASHRAMP_PUBKEY: str
-    CASHRAMP_SECKEY: str
-    GEMINI_API_KEY: str
-    RATE_LIMIT_RULES_PATH: str
-    
+    ENV:str
+    PORT:int
+    PROJECT_NAME:str
+    CLIENT_DOMAIN:str 
+    INVITE_CODE_PREFIX:str 
+    DOMAIN:str
+    DATABASE_URL:str 
+    ALGORITHM:str 
+    APP_SECRET_KEY:str 
+    PAYSTACK_SECRET_KEY:str 
+    PAYSTACK_PUBLIC_KEY:str 
+    REDIS_URL:str 
+    GEMINI_API_KEY:str 
+    RATE_LIMIT_RULES_PATH:str 
 
-    model_config = SettingsConfigDict(
-        env_file=str(BASE_DIR / ".env"),
-        extra="ignore",
-    )
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
 
 
 class DevConfig(GlobalConfig):
@@ -45,39 +40,12 @@ class ProdConfig(GlobalConfig):
 
 
 def get_config():
-    env_state = GlobalConfig().ENV.lower()  # Load from `.env` automatically TODO: Separate env logic
+    env_state = GlobalConfig().ENV.lower()  # Load from `.env` automatically
     configs = {"development": DevConfig, "production": ProdConfig, "test": TestConfig}
-   
     if env_state not in configs:
         raise ValueError(f"Invalid ENVT_STATE: {env_state}")
-    logger.info(f"\n\nUsing {env_state.capitalize()} config...\n")
+    logger.info(f"\nUsing {env_state.capitalize()} config...\n")
     return configs[env_state]()
-
-# Lazy config loading to avoid import-time errors
-def get_lazy_config():
-    try:
-        return get_config()
-    except Exception:
-        # Return a default config for testing
-        class DefaultConfig:
-            ENV = "test"
-            PORT = 8000
-            PROJECT_NAME = "Coopwise"
-            CLIENT_DOMAIN = "http://localhost:3000"
-            INVITE_CODE_PREFIX = "XYZ"
-            DOMAIN = "http://localhost:8000"
-            DATABASE_URL = "sqlite+aiosqlite:///:memory:"
-            ALGORITHM = "HS256"
-            APP_SECRET_KEY = "test_secret"
-            PAYSTACK_SECRET_KEY = "test"
-            PAYSTACK_PUBLIC_KEY = "test"
-            REDIS_URL = "redis://localhost:6379/0"
-            CASHRAMP_PUBKEY = "test"
-            CASHRAMP_SECKEY = "test"
-            GEMINI_API_KEY = "test"
-            RATE_LIMIT_RULES_PATH = "app/rate_limit_rules.json"
-
-        return DefaultConfig()
 
 
 def load_rate_limit_rules(path: str) -> Dict[str, Any]:
@@ -104,9 +72,5 @@ def load_rate_limit_rules(path: str) -> Dict[str, Any]:
 
 
 
-
-
-
-
-AppConfig: GlobalConfig = get_lazy_config()
+AppConfig: DevConfig = get_config()
 rate_limit_rules = load_rate_limit_rules(AppConfig.RATE_LIMIT_RULES_PATH)

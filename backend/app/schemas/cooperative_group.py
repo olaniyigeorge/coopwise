@@ -1,56 +1,83 @@
 from datetime import datetime
 import json
-from typing import List
-from pydantic import BaseModel, ConfigDict, EmailStr
+from typing import List, Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from uuid import UUID
 import enum
 
 from db.models.cooperative_group import (
     ContributionFrequency,
     CooperativeModel,
-    CooperativeStatus,
     PayoutStrategy,
 )
+
+
+class CooperativeStatus(str, enum.Enum):
+    pending = "pending"   
+    active = "active"
+    inactive = "inactive"
+    completed = "completed"
+
 
 
 # class CoopGroupBase(BaseModel):
 #     name: str
 
 
+
+
 class CoopGroupCreate(BaseModel):
     name: str
-    creator_id: UUID
-    description: str | None = None
-    contribution_amount: int = 15000
-    image_url: str | None = None
-    max_members: int = 12
+    creator_id: Optional[UUID] = None
+    chain_circle_id: Optional[int] = None
+    weekly_amount_usdc: Optional[float] = None
+    current_round: int = 0
+    is_complete: bool = False
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    member_phones: List[str] = Field(default_factory=list, description="List of invited phone numbers")
+    contribution_amount: float = Field(..., description="Amount in local currency (e.g., NGN)")
+    currency: str = Field(default="NGN")
     contribution_frequency: ContributionFrequency
-    payout_strategy: PayoutStrategy
-    coop_model: CooperativeModel
-    target_amount: int = 180000
+    payout_strategy: PayoutStrategy  # : str = Field(default="rotating")
+    coop_model: CooperativeModel   # : str = Field(default="rosca")
+    max_members: int
+    target_amount: float
+    rotation_order: str = Field(default="sequential", description="sequential or random")
     status: CooperativeStatus
-    rules: List[dict] | None
-
+    rules: Optional[List[dict]]
 
 class CoopGroupDetails(BaseModel):
     id: UUID
+    chain_circle_id: Optional[int] = None
     name: str
     creator_id: UUID
-    description: str | None = None
+    description: Optional[str] = None
     image_url: str | None = None
-    contribution_amount: int
+    contribution_amount: float
     contribution_frequency: ContributionFrequency
     payout_strategy: PayoutStrategy
     coop_model: CooperativeModel
     max_members: int
-    target_amount: int
+    target_amount: float
     status: CooperativeStatus
-
+    
+    rotation_order: str
+    current_round: int
+    is_complete: bool
+ 
     rules: List[dict] | None
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+
+class JoinCircleResponse(BaseModel):
+    tx_id: str
+    status: str
+    message: str
 
 
 class CoopGroupTargetSummary(BaseModel):
