@@ -23,9 +23,18 @@ class UserCreate(BaseModel):
 
 
 class iAuthWallet(BaseModel):
-    wallet_address: str
-    origin_jwt: str
-    user_id: Optional[UUID] = None
+    """
+    Payload sent by useFlowWallet → sync-service → POST /api/v1/auth/camp-sync.
+ 
+    crossmint_user_id: Crossmint's stable user ID (never changes, survives email changes).
+    email: User's email from Crossmint (may be empty string for social logins that hide email).
+    flow_address: The provisioned wallet address (Flow or Solana).
+    wallet_provider: defaults to "crossmint".
+    """
+    crossmint_user_id: str
+    email: str              
+    flow_address: str
+    wallet_provider: Optional[str] = "crossmint"
 
 class UserUpdate(BaseModel):
     username: Optional[Annotated[str, constr(min_length=3, max_length=50)]] = None
@@ -53,7 +62,7 @@ class UserDetail(BaseModel):
     username: str
     email: EmailStr
     full_name: str
-    phone_number: PhoneNumberStr
+    phone_number: Optional[PhoneNumberStr]
     role: UserRoles
     profile_picture_url: Optional[str]
     target_savings_amount: Optional[float] = None

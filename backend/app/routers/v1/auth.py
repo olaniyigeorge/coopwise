@@ -65,10 +65,19 @@ async def get_current_user_ws(websocket: WebSocket) -> AuthenticatedUser:
         raise HTTPException(status_code=400, detail="Missing token")
 
     payload = await AuthService.decode_token(token)
-    auth_user = AuthenticatedUser(
-        id=payload.get("id"), email=payload.get("sub"), role=payload.get("role")
+
+    user_id = payload.get("id")
+    email = payload.get("sub")
+    role = payload.get("role")
+    
+    if not user_id or not email or not role:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    return AuthenticatedUser(
+        id=UUID(user_id),   
+        email=email,
+        role=role,
     )
-    return auth_user
 
 
 async def is_admin_permissions(
@@ -121,8 +130,8 @@ async def register_user(
     return {"token": token, "user": reg}
 
 
-@router.post("/camp-sync")
-async def camp_sync(
+@router.post("/crossmint-sync")
+async def crossmint_sync(
     user_wallet_auth_data: iAuthWallet, 
     user: Optional[AuthenticatedUser] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_async_db_session)
@@ -132,18 +141,22 @@ async def camp_sync(
         print('\n\nNo authenticated user found. Proceeding without user context.\n\n')
     
 
-    synced_data = await AuthService.camp_sync(user_wallet_auth_data, user, db)
+    synced_data = await AuthService.flow_sync(user_wallet_auth_data, user, db)
     print('\n\nSynced data:', synced_data, "\n\n")
 
-    noti_data = NotificationCreate(
-        user_id=synced_data["user"]["id"],
-        title=f"Wallet {user_wallet_auth_data.wallet_address} Successfully Linked To Account",
-        message=f"Welcome to Coopwise {synced_data["user"]["full_name"]}",
-        event_type="general_alert",
-        type="info",
-        entity_url=None,
-    )
-    await NotificationService.create_and_push_notification_to_user(noti_data, db)
+    # Notification is best-effort — never let it block the auth response
+    try:
+        noti_data = NotificationCreate(
+            user_id=synced_data["user"]["id"],
+            title=f"Wallet {user_wallet_auth_data.flow_address} Successfully Linked To Account",
+            message=f"Welcome to Coopwise {synced_data['user']['full_name']}",
+            event_type="general_alert",
+            type="info",
+            entity_url=None,
+        )
+        await NotificationService.create_and_push_notification_to_user(noti_data, db)
+    except Exception as e:
+        print(f"\n\n[crossmint-sync] Notification failed (non-fatal): {e}\n\n")
 
     return synced_data
 
