@@ -52,7 +52,7 @@ export default function DashboardLayout({
           showBackButton: true,
           backUrl: '/dashboard'
         }
-      case '/dashboard/create-group':
+      case '/dashboard/create-circle':
         return {
           // Empty title since it's already in the page content
           title: '',

@@ -22,6 +22,7 @@ export interface Group {
   creator_id: string;
   description: string;
   image_url?: string;
+  role?: string;
   contribution_amount: number;
   contribution_frequency: string;
   payout_strategy: string;

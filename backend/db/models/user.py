@@ -8,13 +8,11 @@ from sqlalchemy.orm import relationship
 import enum
 
 
-# Enum for User Roles
 class UserRoles(enum.Enum):
     admin = "admin"
     user = "user"
 
 
-# Enum for Saving Frequency
 class SavingFrequency(enum.Enum):
     daily = "daily"
     weekly = "weekly"
@@ -32,25 +30,41 @@ class IncomeRange(enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
+
     id = Column(
         PGUUID(as_uuid=True), primary_key=True, default=lambda: uuid4(), index=True
     )
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, unique=True, index=True, nullable=False)
+    # password is nullable so Crossmint-only users don't need one
+    password = Column(String, nullable=True)
     full_name = Column(String, nullable=False)
-    phone_number = Column(String(16), unique=True, nullable=False, index=True)
+    phone_number = Column(String(16), unique=True, nullable=True, index=True)
     profile_picture_url = Column(String, nullable=True)
 
     role = Column(Enum(UserRoles), default=UserRoles.user)
 
-    #  Onboarding & preference
+    # ── Crossmint / Web3 identity ──────────────────────────────────────────
+    # Crossmint's own stable user ID (e.g. "cm_usr_abc123").
+    # Indexed for fast lookup during camp-sync without touching email.
+    crossmint_user_id = Column(String, unique=True, index=True, nullable=True)
+
+    # The user's on-chain wallet address (Flow or Solana depending on chain config).
+    # Stored as a plain string; unique so we can look up by address if needed.
+    flow_address = Column(String, unique=True, index=True, nullable=True)
+
+    # Which wallet provider provisioned the address.
+    # "crossmint" is the default for smart-wallet users; "flow-native" for FCL wallets.
+    wallet_provider = Column(String, nullable=True, default="crossmint")
+    # ──────────────────────────────────────────────────────────────────────
+
+    # Onboarding & preferences
     target_savings_amount = Column(Float, nullable=True)
     savings_purpose = Column(String, nullable=True)
     income_range = Column(Enum(IncomeRange), nullable=True)
     saving_frequency = Column(Enum(SavingFrequency), nullable=True)
 
-    # Verification Flags
+    # Verification flags
     is_email_verified = Column(Boolean, default=False)
     is_phone_verified = Column(Boolean, default=False)
 
@@ -60,7 +74,7 @@ class User(Base):
         DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
     )
 
-    # ------------- Relationships -------------
+    # ── Relationships ──────────────────────────────────────────────────────
     memberships = relationship(
         "GroupMembership",
         back_populates="user",
@@ -101,15 +115,10 @@ class User(Base):
         "OnChainWallet", back_populates="user", cascade="all, delete-orphan"
     )
     wallet = relationship("Wallet", back_populates="user", cascade="all, delete-orphan")
-    # ai_chats = relationship(
-    #     "ChatWithAI",
-    #     back_populates="user",
-    #     cascade="all, delete-orphan",
-    #     lazy="selectin"
-    # )
 
 
-from db.models.ai_chat_model import ChatWithAI
+# Deferred relationship to avoid circular import with ChatWithAI
+from db.models.ai_chat_model import ChatWithAI  # noqa: E402
 
 User.ai_chats = relationship(
     "ChatWithAI", back_populates="user", cascade="all, delete-orphan"

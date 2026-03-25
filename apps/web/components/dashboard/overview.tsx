@@ -46,7 +46,7 @@ export default function DashboardOverview() {
           <Button 
             variant="outline" 
             className="border-primary text-primary hover:bg-primary hover:text-white text-sm sm:text-base"
-            onClick={() => router.push('/dashboard/create-group')}
+            onClick={() => router.push('/dashboard/create-circle')}
           >
             Create a Group
           </Button>

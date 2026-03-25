@@ -68,13 +68,13 @@ export function useFlowWallet(): UseFlowWalletReturn {
     }
 
     // User authenticated but wallet still provisioning
-    if (walletProvisionStatus !== "loaded-with-wallet") {
+    if (walletProvisionStatus !== "loaded" || !wallet?.address) {
       setWalletStatus("provisioning-wallet");
       return;
     }
 
     // Wallet ready but haven't synced to backend yet
-    if (wallet?.address && !synced) {
+    if (!synced) {
       setWalletStatus("syncing-backend");
 
       const email =
@@ -84,10 +84,12 @@ export function useFlowWallet(): UseFlowWalletReturn {
         )?.email ??
         "";
 
+      console.log(`\n\nCrossmint data : ${crossmintUser.id} ${crossmintUser.email} ${crossmintUser.phoneNumber}, ${wallet.address}\n`)
       syncCrossmintUser({
-        crossmint_user_id: crossmintUser.userId,
+        crossmint_user_id: crossmintUser.id, // userId
         email,
         flow_address: wallet.address,
+        wallet_provider: "crossmint"
       })
         .then(({ user }) => {
           // Hydrate our Zustand auth store with the backend user

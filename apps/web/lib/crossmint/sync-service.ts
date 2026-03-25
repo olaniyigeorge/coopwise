@@ -20,6 +20,7 @@ export interface CrossmintSyncPayload {
   crossmint_user_id: string;
   email: string;
   flow_address: string;
+  wallet_provider: string
 }
 
 export interface CrossmintSyncResponse {
@@ -45,7 +46,7 @@ export async function syncCrossmintUser(
   payload: CrossmintSyncPayload
 ): Promise<CrossmintSyncResponse> {
   const response = await axios.post<CrossmintSyncResponse>(
-    "/api/v1/auth/crossmint-sync",
+    "/api/auth/crossmint-sync",
     payload
   );
 

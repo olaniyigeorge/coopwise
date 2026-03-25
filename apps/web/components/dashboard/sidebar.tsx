@@ -37,7 +37,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     },
     { 
       name: 'Create Group', 
-      href: '/dashboard/create-group', 
+      href: '/dashboard/create-circle', 
       icon: Plus
     },
     { 
@@ -186,8 +186,8 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 <Image 
                   src="/assets/icons/logo.svg" 
                   alt="CoopWise Logo" 
-                width={30} 
-                height={30}
+                  width={30} 
+                  height={30}
                 />
               <span className="text-white font-semibold ml-2 text-lg">CoopWise</span>
             </div>

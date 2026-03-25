@@ -44,7 +44,7 @@ class CashRampService:
             url=CASHRAMP_URL,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {config.CASHRAMP_SECKEY}",
+                "Authorization": f"Bearer {config.GEMINI_API_KEY}",
             },
         )
         self.client = Client(transport=transport, fetch_schema_from_transport=True)

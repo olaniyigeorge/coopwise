@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import secrets
 from typing import Optional
 from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -241,7 +242,7 @@ class AuthService:
             # 5. Generate Access Token
             # -----------------------------------------------------
             token = await AuthService.create_access_token(
-                {"sub": user.email, "id": str(user.id), "role": user.role.value},
+                {"sub": user.email, "id": str(user.id), "role": user.role.value, "flow_address": user.flow_address},
                 expires_delta=timedelta(hours=24),
             )
 
@@ -266,7 +267,110 @@ class AuthService:
         except Exception as e:
             logger.error(f"Error in camp_sync: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail="Could not sync wallet")
+    
 
+    @staticmethod
+    async def flow_sync(
+        data: iAuthWallet,
+        current_user: Optional[AuthenticatedUser],
+        db: AsyncSession,
+    ) -> dict:
+        """
+        Upsert a Crossmint-authenticated user and return a signed JWT.
+    
+        Priority order for user lookup:
+        crossmint_user_id → email → create new
+        """
+    
+        user: Optional[User] = None
+    
+        # 1. Look up by crossmint_user_id (most reliable — doesn't change)
+        if data.crossmint_user_id:
+            result = await db.execute(
+                select(User).where(User.crossmint_user_id == data.crossmint_user_id)
+            )
+            user = result.scalar_one_or_none()
+    
+        # 2. Fall back to email (handles existing legacy accounts linking a wallet)
+        if user is None and data.email:
+            result = await db.execute(
+                select(User).where(User.email == data.email)
+            )
+            user = result.scalar_one_or_none()
+    
+        # 3. Create new user — Crossmint-only, no password required
+        if user is None:
+            # Generate a safe placeholder username from the wallet address
+            username_base = data.flow_address[-8:].lower()
+            username = f"user_{username_base}"
+    
+            # Ensure username is unique
+            existing = await db.execute(
+                select(User).where(User.username == username)
+            )
+            if existing.scalar_one_or_none():
+                username = f"user_{secrets.token_hex(4)}"
+    
+            # Derive display name from email if available
+            display_name = (
+                data.email.split("@")[0].replace(".", " ").title()
+                if data.email
+                else f"CoopWise User"
+            )
+    
+            user = User(
+                id=uuid4(),
+                username=username,
+                email=data.email or f"{data.crossmint_user_id}@crossmint.local",
+                password=None,           # no password for wallet users
+                full_name=display_name,
+                phone_number=None,       # collected later in onboarding
+                crossmint_user_id=data.crossmint_user_id,
+                flow_address=data.flow_address,
+                wallet_provider=data.wallet_provider or "crossmint",
+                is_email_verified=bool(data.email),  # Crossmint verifies email
+                role=UserRoles.user,
+            )
+            db.add(user)
+    
+        else:
+            # 4. Update wallet fields if they changed (e.g. user re-provisioned wallet)
+            if user.crossmint_user_id is None:
+                user.crossmint_user_id = data.crossmint_user_id
+            if user.flow_address != data.flow_address:
+                user.flow_address = data.flow_address
+            if user.wallet_provider is None:
+                user.wallet_provider = data.wallet_provider or "crossmint"
+    
+        await db.commit()
+        await db.refresh(user)
+    
+        # 5. Issue JWT — same shape as the existing login token
+        # Import your actual AuthService.create_access_token here
+        from app.services.auth_service import AuthService
+        token = await AuthService.create_access_token({
+            "sub": user.email,
+            "id": str(user.id),
+            "role": user.role.value,
+            "flow_address": user.flow_address,   # add this
+        })
+    
+        return {
+            "access_token": token,
+            "user": {
+                "id": str(user.id),
+                "email": user.email,
+                "full_name": user.full_name,
+                "username": user.username,
+                "role": user.role.value,
+                "flow_address": user.flow_address,
+                "crossmint_user_id": user.crossmint_user_id,
+                "wallet_provider": user.wallet_provider,
+                "is_email_verified": user.is_email_verified,
+                "phone_number": user.phone_number,
+                "profile_picture_url": user.profile_picture_url,
+            },
+        }
 
     @staticmethod
     async def change_password(token: str, new_password: str, db: AsyncSession):
