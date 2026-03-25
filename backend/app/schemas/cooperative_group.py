@@ -54,6 +54,7 @@ class CoopGroupDetails(BaseModel):
     creator_id: UUID
     description: Optional[str] = None
     image_url: str | None = None
+    currency: Optional[str]
     contribution_amount: float
     contribution_frequency: ContributionFrequency
     payout_strategy: PayoutStrategy
@@ -65,6 +66,9 @@ class CoopGroupDetails(BaseModel):
     rotation_order: str
     current_round: int
     is_complete: bool
+    member_count: int = 0
+
+    your_position_in_queue: Optional[int] = 1
  
     rules: List[dict] | None
     created_at: datetime

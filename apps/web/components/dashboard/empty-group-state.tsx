@@ -18,7 +18,7 @@ export default function EmptyGroupState() {
         </Button>
         
         <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
-          <Link href="/dashboard/create-group">Create a Group</Link>
+          <Link href="/dashboard/create-circle">Create a Circle</Link>
         </Button>
       </div>
     </div>

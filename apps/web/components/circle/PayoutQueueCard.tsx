@@ -41,7 +41,7 @@ export function PayoutQueueCard({
 }: PayoutQueueCardProps) {
   const currSymbol = CURRENCY_SYMBOLS[currency] ?? currency;
   const sortedMembers = [...members].sort(
-    (a, b) => a.queue_position - b.queue_position
+    (a, b) => a.payout_position - b.payout_position
   );
 
   return (
@@ -89,7 +89,7 @@ export function PayoutQueueCard({
           const isNext = idx === currentRound - 1;
           const isPaid = idx < currentRound - 1;
           const isYours =
-            yourPosition !== null && member.queue_position === yourPosition;
+            yourPosition !== null && member.payout_position === yourPosition;
 
           return (
             <li
@@ -112,7 +112,7 @@ export function PayoutQueueCard({
                     : "bg-muted text-muted-foreground"
                 }`}
               >
-                {member.queue_position}
+                {member.payout_position}
               </span>
 
               {/* Name */}

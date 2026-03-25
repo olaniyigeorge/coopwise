@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 
+from app.schemas.contribution_schemas import CircleHistoryEntry
 from db.models.activity_model import ActivityType
 from app.routers.v1.auth import get_current_user
 from app.utils.logger import logger
@@ -18,7 +19,7 @@ from app.schemas.cooperative_group import (
     CooperativeStatus
 )
 
-from app.schemas.cooperative_membership import MembershipCreate
+from app.schemas.cooperative_membership import CircleMemberDetail, MembershipCreate
 from app.schemas.notifications_schema import NotificationCreate
 from app.services.activity_service import ActivityService
 from app.services.notification_service import NotificationService
@@ -92,7 +93,7 @@ async def create_cooperative_group(
         invited_by=user.id,
         role="admin",
         status="accepted",
-        queue_position=1 if coop_data.rotation_order == "sequential" else None,
+        payout_position=1 if coop_data.rotation_order == "sequential" else None,
     )
     await CooperativeMembershipService.create_membership(db, membership_data, user)
 
@@ -187,26 +188,60 @@ async def list_cooperative_groups(
     return await CooperativeGroupService.get_coop_groups(db, skip=skip, limit=limit)
 
 
-@router.get("/me", response_model=List[CoopGroupDetails])
-async def list_cooperative_groups(
-    db: AsyncSession = Depends(get_async_db_session), skip: int = 0, limit: int = 10
-):
-    """
-    Fetch a list of cooperative groups with optional pagination.
-    """
 
-    return await CooperativeGroupService.get_coop_groups(db, skip=skip, limit=limit)
+
+# app/routers/v1/cooperative_groups.py  — add these routes
+
+@router.get("/me", response_model=list[CoopGroupDetails])
+async def get_my_circles(
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    return await CooperativeGroupService.get_user_circles(db, str(user.id))
 
 
 @router.get("/{coop_id}", response_model=CoopGroupDetails)
-async def get_coop(coop_id: str, db: AsyncSession = Depends(get_async_db_session)):
-    """
-    Fetch a single cooperative group by ID.
-    """
-    coop_group = await CooperativeGroupService.get_coop_group_by_id(db, coop_id)
-    if not coop_group:
-        raise HTTPException(status_code=404, detail="Cooperative group not found")
-    return coop_group
+async def get_coop(
+    coop_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    coop = await CooperativeGroupService.get_coop_group_by_id(
+        db, coop_id, requesting_user_id=str(user.id)
+    )
+    if not coop:
+        raise HTTPException(status_code=404, detail="Circle not found")
+    return coop
+
+
+@router.get("/{coop_id}/members", response_model=list[CircleMemberDetail])
+async def get_circle_members(
+    coop_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    coop = await CooperativeGroupService.get_coop_group_by_id(db, coop_id)
+    if not coop:
+        raise HTTPException(status_code=404, detail="Circle not found")
+    return await CooperativeGroupService.get_circle_members(
+        db, coop_id, coop.current_round
+    )
+
+
+@router.get("/{coop_id}/history", response_model=list[CircleHistoryEntry])
+async def get_circle_history(
+    coop_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    return await CooperativeGroupService.get_circle_history(db, coop_id)
+
+
+
+
+
+
+
 
 
 @router.get("/ext/{coop_id}")

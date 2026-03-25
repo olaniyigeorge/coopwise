@@ -35,12 +35,12 @@ export interface CreateCirclePayload {
 }
 
 export interface Circle {
-  id: number;                    // Postgres ID
+  id: number;                   
   chain_circle_id: number;       // on-chain UInt64 ID
   name: string;
   creator_id: string;
   member_count: number;
-  weekly_amount_local: number;
+  contribution_amount: number;
   currency: string;
   weekly_amount_usdc: number;
   payout_schedule: string;
@@ -56,21 +56,35 @@ export interface Circle {
 
 export interface CircleMember {
   user_id: string;
+  group_id: string;
+  role: string;
+  status: string;
+  payout_position: number;          // was queue_position
+  has_received_payout_this_cycle: boolean;
+  joined_at: string | null;
+
   full_name: string;
-  flow_address: string;
-  queue_position: number;
-  /** Whether this member has contributed in the current round */
+  username: string;
+  profile_picture_url: string | null;
+  flow_address: string | null;
+  is_email_verified: boolean;
+
   has_contributed_this_round: boolean;
 }
 
 export interface CircleHistoryEntry {
+  contribution_id: string;
+  amount: number;
+  currency: string;
+  status: string;                   // "pledged" | "completed" | etc.
+  note: string | null;
+  due_date: string | null;
+  fulfilled_at: string | null;
+  created_at: string;
+
   member_name: string;
-  member_address: string;
-  round: number;
-  submitted_at: string;
-  tx_id: string;
-  /** Link to flowscan.io — shows the encrypted ciphertext, not the amount */
-  explorer_url: string;
+  member_address: string | null;
+  explorer_url: string | null;      // null until tx_id column is added
 }
 
 export interface CreateCircleResponse {
@@ -94,7 +108,7 @@ const CircleService = {
    */
   async createCircle(data: CreateCirclePayload): Promise<CreateCircleResponse> {
     const response = await axios.post<CreateCircleResponse>(
-      "/api/v1/circles",
+      "/api/circles",
       data,
       { headers: AuthService.getAuthHeader() }
     );
@@ -105,9 +119,9 @@ const CircleService = {
    * Join an existing circle by its Postgres ID.
    * Returns tx_id — call `waitForTx(tx_id)` after this.
    */
-  async joinCircle(circleId: number): Promise<JoinCircleResponse> {
+  async joinCircle(circleId: string): Promise<JoinCircleResponse> {
     const response = await axios.post<JoinCircleResponse>(
-      `/api/v1/circles/${circleId}/join`,
+      `/api/circles/${circleId}/join`,
       {},
       { headers: AuthService.getAuthHeader() }
     );
@@ -115,38 +129,29 @@ const CircleService = {
   },
 
   /** Get full circle details including member list and queue position */
-  async getCircle(circleId: number): Promise<Circle> {
-    const response = await axios.get<Circle>(`/api/v1/circles/${circleId}`, {
-      headers: AuthService.getAuthHeader(),
-    });
+  async getCircle(circleId: string): Promise<Circle> {
+    const response = await axios.get<Circle>(`/api/circles/${circleId}`); 
     return response.data;
   },
 
   /** Get all members and their contribution status for the current round */
-  async getCircleMembers(circleId: number): Promise<CircleMember[]> {
-    const response = await axios.get<CircleMember[]>(
-      `/api/v1/circles/${circleId}/members`,
-      { headers: AuthService.getAuthHeader() }
-    );
+  async getCircleMembers(circleId: string): Promise<CircleMember[]> {
+    const response = await axios.get<CircleMember[]>(`/api/circles/${circleId}/members`);
     return response.data;
   },
 
   /** Get full contribution history for the circle (no amounts — only counts + tx links) */
-  async getCircleHistory(circleId: number): Promise<CircleHistoryEntry[]> {
-    const response = await axios.get<CircleHistoryEntry[]>(
-      `/api/v1/circles/${circleId}/history`,
-      { headers: AuthService.getAuthHeader() }
-    );
+  async getCircleHistory(circleId: string): Promise<CircleHistoryEntry[]> {
+    const response = await axios.get<CircleHistoryEntry[]>(`/api/circles/${circleId}/history`);
     return response.data;
   },
 
   /** Get all circles the current user belongs to */
   async getMyCircles(): Promise<Circle[]> {
-    const response = await axios.get<Circle[]>("/api/v1/circles/me", {
-      headers: AuthService.getAuthHeader(),
-    });
+    const response = await axios.get<Circle[]>("/api/circles");  // was /api/v1/circles/me
     return response.data;
   },
+
 
   /**
    * Poll a Flow transaction until it seals on-chain.

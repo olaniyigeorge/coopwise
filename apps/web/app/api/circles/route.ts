@@ -61,3 +61,22 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+
+async function backendHeaders() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
+  return {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+}
+
+
+export async function GET() {
+  const res = await fetch(`${BACKEND_URL}/api/v1/circles/me`, {
+    headers: await backendHeaders(),
+  });
+  const data = await res.json();
+  return NextResponse.json(data, { status: res.status });
+}

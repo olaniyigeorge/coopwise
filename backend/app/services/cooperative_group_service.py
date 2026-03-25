@@ -8,24 +8,27 @@ from sqlalchemy import func, select, desc
 from sqlalchemy.orm import joinedload
 from fastapi import HTTPException, status
 
-from app.schemas.contribution_schemas import ContributionDetail
-from app.schemas.cooperative_membership import MembershipExtDetails
-from db.models.contribution_model import Contribution, ContributionStatus
-from app.schemas.auth import AuthenticatedUser
-from app.schemas.dashboard_schema import ExploreGroups
-from app.utils.cache import get_cache, update_cache
-from db.models.membership import GroupMembership, MembershipStatus
+from app.schemas.contribution_schemas import CircleHistoryEntry, ContributionDetail
+from app.schemas.cooperative_membership import CircleMemberDetail, MembershipExtDetails
 from app.schemas.cooperative_group import (
     CoopGroupCreate,
     CoopGroupDetails,
     CoopGroupUpdate,
 )
+from app.schemas.auth import AuthenticatedUser
+from app.schemas.dashboard_schema import ExploreGroups
+
+from db.models.user import User
+from db.models.contribution_model import Contribution, ContributionStatus
+from db.models.membership import GroupMembership, MembershipStatus
 from db.models.cooperative_group import (
     ContributionFrequency,
     CooperativeGroup,
     CooperativeStatus,
 )
+
 from app.utils.logger import logger
+from app.utils.cache import get_cache, update_cache
 from config import AppConfig as config
 
 
@@ -86,18 +89,160 @@ class CooperativeGroupService:
             raise e
         return coop_groups
 
+
+
+
+
+
+
+
     @staticmethod
     async def get_coop_group_by_id(
-        db: AsyncSession, coop_group_id: str
+        db: AsyncSession, coop_group_id: str, requesting_user_id: Optional[str] = None
     ) -> Optional[CoopGroupDetails]:
         try:
-            stmt = select(CooperativeGroup).where(CooperativeGroup.id == coop_group_id)
+            stmt = select(CooperativeGroup).where(
+                CooperativeGroup.id == coop_group_id
+            )
             result = await db.execute(stmt)
-            coop_group = result.scalars().first()
+            coop = result.scalars().first()
+            if not coop:
+                return None
+
+            # Member count
+            count_stmt = select(func.count()).where(
+                GroupMembership.group_id == coop.id,
+                GroupMembership.status == "accepted",
+            )
+            member_count = (await db.execute(count_stmt)).scalar() or 0
+
+            details = CoopGroupDetails.model_validate(coop)
+            details.member_count = member_count
+
+            # Caller's queue position
+            if requesting_user_id:
+                pos_stmt = select(GroupMembership.payout_position).where(
+                    GroupMembership.group_id == coop.id,
+                    GroupMembership.user_id == requesting_user_id,
+                )
+                pos = (await db.execute(pos_stmt)).scalar()
+                details.your_position_in_queue = pos
+
+            return details
         except Exception as e:
-            logger.error(e)
-            raise e
-        return CoopGroupDetails.model_validate(coop_group) if coop_group else None
+            logger.error(f"get_coop_group_by_id: {e}")
+            raise
+
+    @staticmethod
+    async def get_user_circles(
+        db: AsyncSession, user_id: str
+    ) -> list[CoopGroupDetails]:
+        stmt = (
+            select(CooperativeGroup)
+            .join(GroupMembership, GroupMembership.group_id == CooperativeGroup.id)
+            .where(
+                GroupMembership.user_id == user_id,
+                GroupMembership.status == "accepted",
+            )
+            .order_by(CooperativeGroup.created_at.desc())
+        )
+        result = await db.execute(stmt)
+        groups = result.scalars().all()
+
+        out = []
+        for g in groups:
+            count_stmt = select(func.count()).where(
+                GroupMembership.group_id == g.id,
+                GroupMembership.status == "accepted",
+            )
+            member_count = (await db.execute(count_stmt)).scalar() or 0
+            details = CoopGroupDetails.model_validate(g)
+            details.member_count = member_count
+            out.append(details)
+        return out
+
+    @staticmethod
+    async def get_circle_members(
+        db: AsyncSession, circle_id: str, current_round: int
+    ) -> list[CircleMemberDetail]:
+        stmt = (
+            select(GroupMembership, User)
+            .join(User, User.id == GroupMembership.user_id)
+            .where(
+                GroupMembership.group_id == circle_id,
+                GroupMembership.status == "accepted",
+            )
+            .order_by(GroupMembership.payout_position)
+        )
+        rows = (await db.execute(stmt)).all()
+
+        # Check who contributed this round
+        contrib_stmt = select(Contribution.user_id).where(
+            Contribution.group_id == circle_id,
+            Contribution.round_number == current_round,
+        )
+        contributed_ids = set(
+            (await db.execute(contrib_stmt)).scalars().all()
+        )
+
+        return [
+            CircleMemberDetail(
+                user_id=membership.user_id,
+                group_id=membership.group_id,
+                role=membership.role.value,
+                status=membership.status.value,
+                payout_position=membership.payout_position,   # was queue_position
+                has_received_payout_this_cycle=membership.has_received_payout_this_cycle,
+                joined_at=membership.joined_at,
+                full_name=user.full_name,
+                username=user.username,
+                profile_picture_url=user.profile_picture_url,
+                flow_address=user.flow_address,
+                is_email_verified=user.is_email_verified,
+                has_contributed_this_round=membership.user_id in contributed_ids,
+            )
+            for membership, user in rows
+        ]
+
+    @staticmethod
+    async def get_circle_history(
+        db: AsyncSession, circle_id: str
+    ) -> list[CircleHistoryEntry]:
+        stmt = (
+            select(Contribution, User)
+            .join(User, User.id == Contribution.user_id)
+            .where(Contribution.group_id == circle_id)
+            .order_by(Contribution.created_at.desc())
+            .limit(50)
+        )
+        rows = (await db.execute(stmt)).all()
+
+        return [
+            CircleHistoryEntry(
+                contribution_id=contrib.id,
+                amount=float(contrib.amount),
+                currency=contrib.currency,
+                status=contrib.status.value,
+                note=contrib.note,
+                due_date=contrib.due_date,
+                fulfilled_at=contrib.fulfilled_at,
+                created_at=contrib.created_at,
+                member_name=user.full_name or user.username or "Member",
+                member_address=user.flow_address,
+                explorer_url=None,   # populate once tx_id column is added
+            )
+            for contrib, user in rows
+        ]
+
+
+
+
+
+
+
+
+
+
 
     @staticmethod
     async def get_ext_coop_group_by_id(db: AsyncSession, coop_group_id: str):
