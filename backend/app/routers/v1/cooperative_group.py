@@ -189,9 +189,6 @@ async def list_cooperative_groups(
 
 
 
-
-# app/routers/v1/cooperative_groups.py  — add these routes
-
 @router.get("/me", response_model=list[CoopGroupDetails])
 async def get_my_circles(
     user: AuthenticatedUser = Depends(get_current_user),
@@ -212,6 +209,17 @@ async def get_coop(
     if not coop:
         raise HTTPException(status_code=404, detail="Circle not found")
     return coop
+
+@router.get("/public/{coop_id}", response_model=CoopGroupDetails)
+async def get_circle_public(
+    coop_id: str,
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    """Public endpoint — no auth. Used by invite preview pages."""
+    circle = await CooperativeGroupService.get_coop_group_by_id(db, coop_id)
+    if not circle:
+        raise HTTPException(status_code=404, detail="Circle not found")
+    return circle
 
 
 @router.get("/{coop_id}/members", response_model=list[CircleMemberDetail])

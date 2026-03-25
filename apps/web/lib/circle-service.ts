@@ -40,6 +40,8 @@ export interface Circle {
   name: string;
   creator_id: string;
   member_count: number;
+  description?: string;
+  contribution_frequency?: string;
   contribution_amount: number;
   currency: string;
   weekly_amount_usdc: number;
@@ -119,14 +121,17 @@ const CircleService = {
    * Join an existing circle by its Postgres ID.
    * Returns tx_id — call `waitForTx(tx_id)` after this.
    */
-  async joinCircle(circleId: string): Promise<JoinCircleResponse> {
-    const response = await axios.post<JoinCircleResponse>(
-      `/api/circles/${circleId}/join`,
-      {},
-      { headers: AuthService.getAuthHeader() }
-    );
+  async joinCircle(circleId: string): Promise<Circle> {
+    const response = await axios.post<Circle>(`/api/circles/${circleId}/join`);
     return response.data;
   },
+
+
+  async getPublicCircle(circleId: string): Promise<Circle> {
+    const response = await axios.get<Circle>(`/api/circles/public/${circleId}`);
+    return response.data;
+  },
+
 
   /** Get full circle details including member list and queue position */
   async getCircle(circleId: string): Promise<Circle> {
