@@ -59,6 +59,8 @@ export default function CircleDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore();
+  const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+
 
   const circleId = params.id as string;
   const { circle, members, history, isLoading, error, refetch } = useCircle(circleId);
@@ -96,16 +98,6 @@ export default function CircleDetailPage() {
     }
   };
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    try {
-      await navigator.share({ title: circle?.name ?? "CoopWise Circle", url });
-    } catch {
-      await navigator.clipboard.writeText(url);
-      toast({ title: "Link copied!", description: "Share it with your members." });
-    }
-  };
-
   // ── Loading skeleton ───────────────────────────────────────────────────────
   if (isLoading) {
     return (
@@ -136,6 +128,39 @@ export default function CircleDetailPage() {
     );
   }
 
+
+
+  const handleShare = async () => {
+    if (isMember) {
+      // Members get a proper invite link with their ID embedded
+      try {
+        setIsGeneratingInvite(true);
+        const { invite_link } = await CircleService.generateInviteLink(`${circle.id}`);
+        try {
+          await navigator.share({ title: circle.name, url: invite_link });
+        } catch {
+          await navigator.clipboard.writeText(invite_link);
+          toast({ title: "Invite link copied!", description: "Share it to invite someone." });
+        }
+      } catch (err: any) {
+        toast({
+          title: "Couldn't generate invite",
+          description: err?.response?.data?.detail || "Try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsGeneratingInvite(false);
+      }
+    } else {
+      // Non-members just copy the current page URL
+      await navigator.clipboard.writeText(window.location.href);
+      toast({ title: "Link copied!" });
+    }
+  };
+
+
+
+
   const totalRounds = members.length; // one round per member
   const scheduleLabel: Record<string, string> = {
     weekly: "Weekly",
@@ -163,12 +188,17 @@ export default function CircleDetailPage() {
             >
               <RefreshCw className="w-4 h-4" />
             </button>
+
             <button
               onClick={handleShare}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title="Share invite link"
+              disabled={isGeneratingInvite}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              title={isMember ? "Generate invite link" : "Copy link"}
             >
-              <Share2 className="w-4 h-4" />
+              {isGeneratingInvite
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Share2 className="w-4 h-4" />
+              }
             </button>
           </div>
         </div>
