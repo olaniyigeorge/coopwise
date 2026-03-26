@@ -14,6 +14,17 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   NGN: "₦", KES: "KSh", GHS: "GH₵", USD: "$",
 };
 
+
+function safeDecodeCode(code: string): string {
+  try {
+    const decoded = atob(code);
+    // If it looks like a valid invite code after decoding, use it
+    if (decoded.includes(":")) return decoded;
+  } catch {}
+  return code; // already raw
+}
+
+
 export default function InvitePreviewPage() {
   const params = useParams();
   const code = params.code as string;
@@ -24,29 +35,28 @@ export default function InvitePreviewPage() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    console.log("\nCalling service for public circle\n")
-    CircleService.getPublicCircleByInvite(code)
+    const rawCode = decodeURIComponent(code);
+    //console.log(`\nCalling service for public circle: \n ${rawCoded} \n ${encodedCode} \n ${decodedCode} \n ${rawCode} \n ${code} \n`)
+    CircleService.getPublicCircleByInvite(rawCode)
       .then((data) => {
         if (!data) { setNotFound(true); return; }
         setGroup(data);
       })
       .catch(() => setNotFound(true))
       .finally(() => setIsLoading(false));
-  }, [params.code]);
+  }, [code]);
 
   const handleJoin = () => {
-    const encodedCode = btoa(code);
-
     if (isAuthenticated) {
       // Already logged in — go straight to the join confirmation page
-      router.push(`/invite/${params.code}/join`);
+      router.push(decodeURIComponent(`/invite/${code}/join`));
       return;
     }
     // Not logged in — stash invite code, redirect to login
     localStorage.setItem("pendingInviteCode", code);
     if (group?.name) localStorage.setItem("pendingGroupName", group.name);
     router.push(
-      `/auth/login?returnUrl=${encodeURIComponent(`/invite/${encodedCode}/join`)}`
+      `/auth/login?returnUrl=${decodeURIComponent(`/invite/${code}/join`)}`
     );
   };
 
@@ -84,7 +94,7 @@ export default function InvitePreviewPage() {
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image
-              src="/assets/icons/coopwise-logo.svg"
+              src="/assets/icons/logo.svg"
               alt="CoopWise"
               width={28}
               height={28}

@@ -156,9 +156,17 @@ const CircleService = {
   },
 
 
-  async getPublicCircle(circleId: string): Promise<Circle> {
-    const response = await axios.get<Circle>(`/api/circles/public/${circleId}`);
-    return response.data;
+  async getPublicCircle(circleId: string): Promise<Circle | null> {
+      try {
+      const res = await fetch(
+        `${API_URL}/api/v1/cooperatives/public/${circleId}`,
+        { next: { revalidate: 60 } }
+      );
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
   },
 
 

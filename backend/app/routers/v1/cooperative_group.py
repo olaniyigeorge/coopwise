@@ -325,8 +325,6 @@ async def join_circle(
     if coop.status == CooperativeStatus.inactive:
         raise HTTPException(status_code=400, detail="This circle is no longer active")
 
-
-    print("\nGot coop", coop, "\n")
     # Check if already a member
     existing = await CooperativeMembershipService.get_membership_by_user_and_group(
         user.id, UUID(coop_id), db
