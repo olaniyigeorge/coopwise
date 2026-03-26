@@ -168,6 +168,171 @@ class WalletService:
         }
 
     @staticmethod
+    async def lock_for_contribution(
+        user_id: UUID,
+        amount: Decimal,
+        db: AsyncSession
+    ) -> Dict[str, Any]:
+        """
+        Lock funds in user's wallet for a contribution.
+        Moves amount from stable_coin_balance to stable_coin_locked.
+        """
+        try:
+            stmt = select(Wallet).where(Wallet.user_id == user_id)
+            result = await db.execute(stmt)
+            wallet = result.scalars().first()
+
+            if not wallet:
+                return {"success": False, "error": "Wallet not found"}
+
+            if wallet.stable_coin_balance < amount:
+                return {"success": False, "error": "Insufficient balance"}
+
+            # Lock the funds
+            wallet.stable_coin_balance -= amount
+            wallet.stable_coin_locked = (wallet.stable_coin_locked or Decimal(0)) + amount
+
+            await db.commit()
+            await db.refresh(wallet)
+
+            # Create ledger entry for lock
+            ledger = WalletLedger(
+                wallet_id=wallet.id,
+                type=LedgerType.debit_locked,
+                stable_amount=-amount,  # Negative for debit
+                local_amount=Decimal(0),  # Not applicable for internal transfer
+                local_currency=wallet.local_currency,
+                exchange_rate=Decimal(1),
+                note="Funds locked for contribution"
+            )
+            db.add(ledger)
+            await db.commit()
+
+            logger.info(f"Locked {amount} for user {user_id} contribution")
+
+            return {"success": True, "locked_amount": amount}
+
+        except Exception as e:
+            logger.error(f"Failed to lock funds for contribution: {e}")
+            return {"success": False, "error": str(e)}
+
+    @staticmethod
+    async def finalize_contribution_debit(
+        user_id: UUID,
+        amount: Decimal,
+        db: AsyncSession
+    ) -> Dict[str, Any]:
+        """
+        Finalize a contribution by removing locked funds permanently.
+        Called when contribution is successfully completed onchain.
+        """
+        try:
+            stmt = select(Wallet).where(Wallet.user_id == user_id)
+            result = await db.execute(stmt)
+            wallet = result.scalars().first()
+
+            if not wallet:
+                return {"success": False, "error": "Wallet not found"}
+
+            if (wallet.stable_coin_locked or Decimal(0)) < amount:
+                return {"success": False, "error": "Insufficient locked funds"}
+
+            # Remove from locked (funds are now in contribution pool)
+            wallet.stable_coin_locked -= amount
+
+            await db.commit()
+            await db.refresh(wallet)
+
+            # Create ledger entry for finalization
+            ledger = WalletLedger(
+                wallet_id=wallet.id,
+                type=LedgerType.debit_finalize,
+                stable_amount=-amount,
+                local_amount=Decimal(0),
+                local_currency=wallet.local_currency,
+                exchange_rate=Decimal(1),
+                note="Contribution finalized - funds moved to group pool"
+            )
+            db.add(ledger)
+            await db.commit()
+
+            logger.info(f"Finalized contribution debit of {amount} for user {user_id}")
+
+            return {"success": True, "finalized_amount": amount}
+
+        except Exception as e:
+            logger.error(f"Failed to finalize contribution debit: {e}")
+            return {"success": False, "error": str(e)}
+
+    @staticmethod
+    async def release_locked_funds(
+        user_id: UUID,
+        amount: Decimal,
+        db: AsyncSession
+    ) -> Dict[str, Any]:
+        """
+        Release locked funds back to available balance.
+        Called when contribution fails or is cancelled.
+        """
+        try:
+            stmt = select(Wallet).where(Wallet.user_id == user_id)
+            result = await db.execute(stmt)
+            wallet = result.scalars().first()
+
+            if not wallet:
+                return {"success": False, "error": "Wallet not found"}
+
+            if (wallet.stable_coin_locked or Decimal(0)) < amount:
+                return {"success": False, "error": "Insufficient locked funds to release"}
+
+            # Move back to available balance
+            wallet.stable_coin_locked -= amount
+            wallet.stable_coin_balance += amount
+
+            await db.commit()
+            await db.refresh(wallet)
+
+            # Create ledger entry for release
+            ledger = WalletLedger(
+                wallet_id=wallet.id,
+                type=LedgerType.debit_revert,
+                stable_amount=amount,  # Positive for credit back
+                local_amount=Decimal(0),
+                local_currency=wallet.local_currency,
+                exchange_rate=Decimal(1),
+                note="Locked funds released due to failed contribution"
+            )
+            db.add(ledger)
+            await db.commit()
+
+            logger.info(f"Released {amount} locked funds for user {user_id}")
+
+            return {"success": True, "released_amount": amount}
+
+        except Exception as e:
+            logger.error(f"Failed to release locked funds: {e}")
+            return {"success": False, "error": str(e)}
+
+    @staticmethod
+    async def get_effective_balance(user_id: UUID, db: AsyncSession) -> Decimal:
+        """
+        Get the effective available balance (total - locked).
+        """
+        try:
+            stmt = select(Wallet).where(Wallet.user_id == user_id)
+            result = await db.execute(stmt)
+            wallet = result.scalars().first()
+
+            if not wallet:
+                return Decimal(0)
+
+            return wallet.stable_coin_balance
+
+        except Exception as e:
+            logger.error(f"Failed to get effective balance: {e}")
+            return Decimal(0)
+
+    @staticmethod
     async def get_wallet(
         db: AsyncSession, user: AuthenticatedUser, redis: Redis
     ) -> WalletDetail:
