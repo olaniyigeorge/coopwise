@@ -33,12 +33,6 @@ library PrivacyUtils {
         return FHE.add(total, addition);
     }
     
-    // Decrypt for owner view only - DEPRECATED in v0.11
-    // Decryption now happens off-chain using @zama-fhe/relayer-sdk
-    // function decryptForOwner(euint64 encryptedValue) internal view returns (uint64) {
-    //     return FHE.decrypt(encryptedValue);
-    // }
-    
     // Generate public proof that sum of contributions equals vault balance
     // Without revealing individual amounts
     function generateSolvencyProof(

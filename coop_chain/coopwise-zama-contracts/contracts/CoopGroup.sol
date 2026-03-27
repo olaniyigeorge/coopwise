@@ -80,7 +80,7 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
     // Join group before it starts
     function joinGroup() external groupActive {
         require(members.length < maxMembers, "Group full");
-        require(!memberData[msg.sender].isActive, "Already member");
+        require(memberData[msg.sender].wallet == address(0), "Already member");
         require(block.timestamp < createdAt + 1 days, "Registration closed"); // 1 day to join
         
         memberData[msg.sender] = Member({
@@ -151,7 +151,11 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         
         // Only proceed if all paid
         if (allPaid) {
-            executePayout();
+            // For v0.11, we need the decrypted payout amount
+            // In production, this should be provided by off-chain decryption
+            // For now, we'll use the vault balance as approximation
+            uint256 vaultBalance = address(this).balance;
+            executePayout(vaultBalance);
         }
     }
     
@@ -228,9 +232,82 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         return FHE.toBytes32(vault.getEncryptedBalance(address(this)));
     }
     
+    // Additional view functions for better UX
+    function getGroupInfo() external view returns (
+        string memory _name,
+        uint256 _cycleDuration,
+        uint256 _createdAt,
+        uint256 _currentRound,
+        uint256 _maxMembers,
+        bool _isActive,
+        uint256 _memberCount
+    ) {
+        return (
+            name,
+            cycleDuration,
+            createdAt,
+            currentRound,
+            maxMembers,
+            isActive,
+            members.length
+        );
+    }
+    
+    function getMemberInfo(address member) external view returns (
+        address wallet,
+        uint256 joinTime,
+        uint256 lastPayoutRound,
+        bool isActive
+    ) {
+        Member memory m = memberData[member];
+        return (
+            m.wallet,
+            m.joinTime,
+            m.lastPayoutRound,
+            m.isActive
+        );
+    }
+    
+    function isMember(address user) external view returns (bool) {
+        return memberData[user].wallet != address(0);
+    }
+    
+    function hasPaidCurrentRound(address member) external view returns (bool) {
+        return roundPaymentFlags[currentRound][member];
+    }
+    
     // Emergency: allow owner to return funds if group fails
     function emergencyRefund() external onlyOwner {
         require(!isActive || block.timestamp > createdAt + 365 days, "Too early");
-        // Implementation: distribute vault pro-rata
+        
+        // Get total vault balance
+        uint256 totalBalance = address(this).balance;
+        require(totalBalance > 0, "No funds to refund");
+        
+        // Calculate each member's proportional share based on contributions
+        uint256 totalContributions = 0;
+        for (uint i = 0; i < members.length; i++) {
+            // Note: In production, this would need off-chain decryption
+            // For emergency refund, we'll distribute equally as fallback
+            totalContributions += 1; // Placeholder - each member gets equal share
+        }
+        
+        // Distribute funds equally among all active members
+        if (totalContributions > 0) {
+            uint256 sharePerMember = totalBalance / totalContributions;
+            
+            for (uint i = 0; i < members.length; i++) {
+                if (memberData[members[i]].isActive) {
+                    (bool success, ) = members[i].call{value: sharePerMember}("");
+                    if (!success) {
+                        // If one transfer fails, continue with others
+                        continue;
+                    }
+                }
+            }
+        }
+        
+        // Deactivate group after emergency refund
+        isActive = false;
     }
 }
