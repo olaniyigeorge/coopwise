@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint32, externalEuint32, euint64, ebool, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import "./interfaces/ICoopGroup.sol";
 import "./interfaces/IFlowVault.sol";
 import "./RotationLogic.sol";
@@ -36,6 +37,7 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
     
     // Round tracking (encrypted booleans)
     mapping(uint256 => mapping(address => ebool)) private roundPayments;
+    mapping(uint256 => mapping(address => bool)) private roundPaymentFlags; // Public flags for v0.11 compatibility
     mapping(uint256 => ebool) private roundCompleted;
     
     // Events
@@ -107,19 +109,19 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
     }
     
     // Member contributes Flow (encrypted amount proves they know amount without revealing)
-    function contribute(bytes calldata encryptedAmount) external payable onlyMember groupActive nonReentrant {
-        euint64 amount = FHE.asEuint64(encryptedAmount);
+    function contribute(externalEuint64 encryptedAmount, bytes calldata inputProof, uint256 publicAmount) external payable onlyMember groupActive nonReentrant {
+        euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
         
-        // Verify amount matches required contribution (encrypted comparison)
-        ebool isCorrectAmount = PrivacyUtils.verifyExactAmount(amount, contributionAmount);
-        require(FHE.decrypt(isCorrectAmount), "Incorrect contribution amount");
+        // Verify public amount matches sent value
+        require(msg.value == publicAmount, "Incorrect Flow amount sent");
         
-        // Check not already paid this round
-        ebool alreadyPaid = roundPayments[currentRound][msg.sender];
-        require(!FHE.decrypt(alreadyPaid), "Already paid this round");
+        // Check not already paid this round - this will need to be handled differently in v0.11
+        // For now, we'll use a simple mapping that can be checked without decryption
+        require(!roundPaymentFlags[currentRound][msg.sender], "Already paid this round");
         
         // Record payment (encrypted)
         roundPayments[currentRound][msg.sender] = FHE.asEbool(true);
+        roundPaymentFlags[currentRound][msg.sender] = true;
         memberData[msg.sender].hasPaidCurrentRound = FHE.asEbool(true);
         memberData[msg.sender].totalContributed = FHE.add(
             memberData[msg.sender].totalContributed, 
@@ -127,11 +129,10 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         );
         totalContributed = FHE.add(totalContributed, amount);
         
-        // Transfer Flow to vault (actual amount is public for gas, encrypted for logic)
-        uint256 publicAmount = FHE.decrypt(amount); // Only decrypt for transfer
+        // Transfer Flow to vault using the provided public amount
         vault.deposit{value: publicAmount}(msg.sender, publicAmount, amount);
         
-        emit ContributionReceived(msg.sender, encryptedAmount, currentRound);
+        emit ContributionReceived(msg.sender, abi.encodePacked(externalEuint64.unwrap(encryptedAmount)), currentRound);
         
         // Auto-trigger payout if all paid
         tryAutoPayout();
@@ -139,28 +140,32 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
     
     // Internal: check if all paid and execute payout
     function tryAutoPayout() internal {
-        // Collect all payment statuses
-        ebool[] memory statuses = new ebool[](members.length);
+        // Check if all members paid using public flags
+        bool allPaid = true;
         for (uint i = 0; i < members.length; i++) {
-            statuses[i] = roundPayments[currentRound][members[i]];
+            if (!roundPaymentFlags[currentRound][members[i]]) {
+                allPaid = false;
+                break;
+            }
         }
         
-        ebool allPaid = rotationLogic.verifyRoundCompletion(statuses);
-        
-        // Only proceed if decrypted condition met
-        if (FHE.decrypt(allPaid)) {
+        // Only proceed if all paid
+        if (allPaid) {
             executePayout();
         }
     }
     
     // Execute payout to next in rotation
-    function executePayout() public groupActive nonReentrant {
-        // Verify all paid (redundant check for external calls)
-        ebool[] memory statuses = new ebool[](members.length);
+    function executePayout(uint256 publicPayoutAmount) public groupActive nonReentrant {
+        // Verify all paid using public flags
+        bool allPaid = true;
         for (uint i = 0; i < members.length; i++) {
-            statuses[i] = roundPayments[currentRound][members[i]];
+            if (!roundPaymentFlags[currentRound][members[i]]) {
+                allPaid = false;
+                break;
+            }
         }
-        require(FHE.decrypt(rotationLogic.verifyRoundCompletion(statuses)), "Not all paid");
+        require(allPaid, "Not all paid");
         
         address recipient = rotationOrder[rotationIndex];
         require(memberData[recipient].isActive, "Recipient not active");
@@ -178,17 +183,17 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         // Reset round
         for (uint i = 0; i < members.length; i++) {
             roundPayments[currentRound][members[i]] = FHE.asEbool(false);
+            roundPaymentFlags[currentRound][members[i]] = false;
             memberData[members[i]].hasPaidCurrentRound = FHE.asEbool(false);
         }
         
         roundCompleted[currentRound] = FHE.asEbool(true);
         currentRound++;
         
-        // Execute transfer from vault
-        uint256 publicPayout = FHE.decrypt(payoutAmount);
-        vault.withdraw(recipient, publicPayout, payoutAmount);
+        // Execute transfer from vault using provided public amount
+        vault.withdraw(recipient, publicPayoutAmount, payoutAmount);
         
-        emit PayoutExecuted(recipient, currentRound - 1, FHE.serialize(payoutAmount));
+        emit PayoutExecuted(recipient, currentRound - 1, abi.encodePacked(FHE.toBytes32(payoutAmount)));
         emit RoundAdvanced(currentRound);
         
         // Close group if rotation complete
@@ -197,7 +202,12 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         }
     }
     
-    // View functions
+    // Execute payout to next in rotation (legacy version for internal calls)
+    function executePayout() public groupActive nonReentrant {
+        // This should be called with the decrypted payout amount from off-chain
+        // For now, we'll use a placeholder - in production, this should be called with the actual amount
+        revert("Use executePayout(uint256) with decrypted amount");
+    }
     function getNextPayoutRecipient() external view returns (address) {
         return rotationLogic.peekNextRecipient(rotationOrder, rotationIndex);
     }
@@ -206,16 +216,16 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         return members.length;
     }
     
-    function getEncryptedContributionAmount() external view returns (bytes memory) {
-        return FHE.serialize(contributionAmount);
+    function getEncryptedContributionAmount() external view returns (bytes32) {
+        return FHE.toBytes32(contributionAmount);
     }
     
-    function getMyEncryptedBalance() external view onlyMember returns (bytes memory) {
-        return FHE.serialize(memberData[msg.sender].totalContributed);
+    function getMyEncryptedBalance() external view onlyMember returns (bytes32) {
+        return FHE.toBytes32(memberData[msg.sender].totalContributed);
     }
 
-    function getEncryptedBalance() external view returns (bytes memory) {
-        return FHE.serialize(vault.getEncryptedBalance(address(this)));
+    function getEncryptedBalance() external view returns (bytes32) {
+        return FHE.toBytes32(vault.getEncryptedBalance(address(this)));
     }
     
     // Emergency: allow owner to return funds if group fails

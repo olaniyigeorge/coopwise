@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import "@fhevm/solidity/lib/FHE.sol";
+import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 
 contract RotationLogic {
     struct RotationState {
@@ -45,7 +45,7 @@ contract RotationLogic {
     // Verify all members paid before allowing payout
     function verifyRoundCompletion(
         ebool[] calldata paymentStatuses
-    ) external pure returns (ebool) {
+    ) external returns (ebool) {
         ebool allPaid = FHE.asEbool(true);
         for (uint i = 0; i < paymentStatuses.length; i++) {
             allPaid = FHE.and(allPaid, paymentStatuses[i]);

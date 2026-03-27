@@ -5,7 +5,7 @@ import "@fhevm/solidity/lib/FHE.sol";
 
 library PrivacyUtils {
     // Encrypt a plaintext amount for contract storage
-    function encryptAmount(uint64 amount) internal pure returns (euint64) {
+    function encryptAmount(uint64 amount) internal returns (euint64) {
         return FHE.asEuint64(amount);
     }
     
@@ -13,7 +13,7 @@ library PrivacyUtils {
     function verifyExactAmount(
         euint64 encryptedPayment, 
         euint64 expectedAmount
-    ) internal pure returns (ebool) {
+    ) internal returns (ebool) {
         return FHE.eq(encryptedPayment, expectedAmount);
     }
     
@@ -21,7 +21,7 @@ library PrivacyUtils {
     function verifyMinimumAmount(
         euint64 encryptedPayment, 
         euint64 minimumAmount
-    ) internal pure returns (ebool) {
+    ) internal returns (ebool) {
         return FHE.ge(encryptedPayment, minimumAmount);
     }
     
@@ -29,21 +29,22 @@ library PrivacyUtils {
     function aggregate(
         euint64 total, 
         euint64 addition
-    ) internal pure returns (euint64) {
+    ) internal returns (euint64) {
         return FHE.add(total, addition);
     }
     
-    // Decrypt for owner view only (requires Zama KMS)
-    function decryptForOwner(euint64 encryptedValue) internal view returns (uint64) {
-        return FHE.decrypt(encryptedValue);
-    } // commented out because decryption happens off-chain with library
+    // Decrypt for owner view only - DEPRECATED in v0.11
+    // Decryption now happens off-chain using @zama-fhe/relayer-sdk
+    // function decryptForOwner(euint64 encryptedValue) internal view returns (uint64) {
+    //     return FHE.decrypt(encryptedValue);
+    // }
     
     // Generate public proof that sum of contributions equals vault balance
     // Without revealing individual amounts
     function generateSolvencyProof(
         euint64[] calldata contributions,
         euint64 vaultBalance
-    ) internal pure returns (ebool) {
+    ) internal returns (ebool) {
         euint64 sum = FHE.asEuint64(0);
         for (uint i = 0; i < contributions.length; i++) {
             sum = FHE.add(sum, contributions[i]);
