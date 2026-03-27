@@ -21,11 +21,29 @@ function parseInviteCode(code: string): string | null {
   }
 }
 
+function decodeInviteCode(encodedCode: string): { raw: string; groupId: string } | null {
+  try {
+      // Decode base64 back to raw invite code
+      const rawCode = decodeURIComponent(encodedCode);
+      // Format: CPW-INV-{inviter_id}:{group_id}
+      const colonIdx = rawCode.lastIndexOf(":");
+      if (colonIdx === -1) return null;
+      const groupId = rawCode.slice(colonIdx + 1);
+      return { raw: rawCode, groupId };
+    } catch {
+      return null;
+    }
+  }
+
 export default function JoinCirclePage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore();
   const code = params.code as string;
+
+  // Decode once — use raw code for API calls, groupId for navigation
+  const decoded = decodeInviteCode(code);
+  const circleId = decoded?.groupId;
 
   const [circle, setCircle] = useState<Circle | null>(null);
   const [isLoadingCircle, setIsLoadingCircle] = useState(true);
@@ -33,28 +51,29 @@ export default function JoinCirclePage() {
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const circleId = parseInviteCode(code);
+  
+
+
 
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("pendingInviteCode", code);
-      }
+      localStorage.setItem("pendingInviteCode", decoded?.raw ?? code);
       router.replace(
         `/auth/login?returnUrl=${encodeURIComponent(`/invite/${code}/join`)}`
       );
     }
-  }, [user, code, router]);
+  }, [user]);
 
   // Fetch circle preview
   useEffect(() => {
     if (!circleId) return;
+
     CircleService.getPublicCircle(circleId)
       .then(setCircle)
       .catch(() => setError("Circle not found."))
       .finally(() => setIsLoadingCircle(false));
-  }, [circleId]);
+  }, [circleId, user]);
 
   // Clear pending invite from localStorage on landing
   useEffect(() => {

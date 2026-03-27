@@ -17,7 +17,7 @@ export async function POST(
     return NextResponse.json({ detail: "Unauthorized" }, { status: 401 });
   }
 
-  const res = await fetch(`${BACKEND}/api/v1/circles/${id}/join`, {
+  const res = await fetch(`${BACKEND}/api/v1/cooperatives/${id}/join`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

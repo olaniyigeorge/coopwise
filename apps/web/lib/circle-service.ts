@@ -74,6 +74,26 @@ export interface CircleMember {
   has_contributed_this_round: boolean;
 }
 
+
+
+export interface PublicCirclePreview {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  contribution_amount: number;
+  currency: string;
+  contribution_frequency: string;
+  payout_schedule: string | null;
+  max_members: number;
+  member_count: number;
+  status: string;
+  coop_model: string;
+  exists: boolean;
+}
+
+
+
 export interface CircleHistoryEntry {
   contribution_id: string;
   amount: number;
@@ -101,6 +121,9 @@ export interface JoinCircleResponse {
   status: "joined";
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL as string;
+
+
 // ─── API calls ───────────────────────────────────────────────────────────────
 
 const CircleService = {
@@ -127,9 +150,23 @@ const CircleService = {
   },
 
 
-  async getPublicCircle(circleId: string): Promise<Circle> {
-    const response = await axios.get<Circle>(`/api/circles/public/${circleId}`);
+  async generateInviteLink(circleId: string): Promise<{ invite_code: string; invite_link: string }> {
+    const response = await axios.post(`/api/circles/${circleId}/invite`);
     return response.data;
+  },
+
+
+  async getPublicCircle(circleId: string): Promise<Circle | null> {
+      try {
+      const res = await fetch(
+        `${API_URL}/api/v1/cooperatives/public/${circleId}`,
+        { next: { revalidate: 60 } }
+      );
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
   },
 
 
@@ -138,6 +175,22 @@ const CircleService = {
     const response = await axios.get<Circle>(`/api/circles/${circleId}`); 
     return response.data;
   },
+
+  async getPublicCircleByInvite(
+    inviteCode: string
+  ): Promise<PublicCirclePreview | null> {
+    try {
+      const res = await fetch(
+        `${API_URL}/api/v1/cooperatives/${inviteCode}/invite`,
+        { next: { revalidate: 60 } }
+      );
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+  
 
   /** Get all members and their contribution status for the current round */
   async getCircleMembers(circleId: string): Promise<CircleMember[]> {

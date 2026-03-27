@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "dev:web": "cd apps/web && npm run dev",
-    "dev:api": "cd backend && venv\\Scripts\\activate && python start_backend.py",
+    "dev:api": "cd backend && .\\venv\\Scripts\\activate && uvicorn main:app --reload",
+    "start:be": "cd backend && .\\venv\\Scripts\\activate && python start_backend.py",
     "dev": "concurrently -n web,api -c cyan,green \"npm run dev:web\" \"npm run dev:api\"",
     "install:all": "npm install && cd apps/web && npm install",
     "setup": "npm run install:all && cd backend && pip install -r requirements.txt --break-system-packages"
