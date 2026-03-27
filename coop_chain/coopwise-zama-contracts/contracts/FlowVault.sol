@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import "fhevm/lib/TFHE.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@fhevm/solidity/lib/FHE.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract FlowVault is ReentrancyGuard {
     address public coopGroup;
@@ -40,8 +40,8 @@ contract FlowVault is ReentrancyGuard {
         require(msg.value == amount, "Incorrect Flow amount sent");
         
         // Update encrypted accounting
-        totalLocked = TFHE.add(totalLocked, encryptedAmount);
-        userBalances[from] = TFHE.add(userBalances[from], encryptedAmount);
+        totalLocked = FHE.add(totalLocked, encryptedAmount);
+        userBalances[from] = FHE.add(userBalances[from], encryptedAmount);
         
         depositCount[from]++;
         totalDeposits++;
@@ -54,8 +54,8 @@ contract FlowVault is ReentrancyGuard {
         euint64 encryptedAmount
     ) external onlyGroup nonReentrant {
         // Homomorphic subtraction
-        totalLocked = TFHE.sub(totalLocked, encryptedAmount);
-        userBalances[to] = TFHE.sub(userBalances[to], encryptedAmount);
+        totalLocked = FHE.sub(totalLocked, encryptedAmount);
+        userBalances[to] = FHE.sub(userBalances[to], encryptedAmount);
         
         // Transfer Flow
         (bool success, ) = to.call{value: amount}("");

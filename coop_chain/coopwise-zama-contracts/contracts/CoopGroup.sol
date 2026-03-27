@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import "fhevm/lib/TFHE.sol";
+import "@fhevm/solidity/lib/FHE.sol";
 import "./interfaces/ICoopGroup.sol";
 import "./interfaces/IFlowVault.sol";
 import "./RotationLogic.sol";
 import "./PrivacyUtils.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
@@ -64,7 +64,7 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         address _owner
     ) Ownable(_owner) {
         name = _name;
-        contributionAmount = TFHE.asEuint64(_contributionAmount);
+        contributionAmount = FHE.asEuint64(_contributionAmount);
         cycleDuration = _cycleDuration;
         maxMembers = _maxMembers;
         createdAt = block.timestamp;
@@ -83,8 +83,8 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         
         memberData[msg.sender] = Member({
             wallet: msg.sender,
-            totalContributed: TFHE.asEuint64(0),
-            hasPaidCurrentRound: TFHE.asEbool(false),
+            totalContributed: FHE.asEuint64(0),
+            hasPaidCurrentRound: FHE.asEbool(false),
             joinTime: block.timestamp,
             lastPayoutRound: 0,
             isActive: true
@@ -108,27 +108,27 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
     
     // Member contributes Flow (encrypted amount proves they know amount without revealing)
     function contribute(bytes calldata encryptedAmount) external payable onlyMember groupActive nonReentrant {
-        euint64 amount = TFHE.asEuint64(encryptedAmount);
+        euint64 amount = FHE.asEuint64(encryptedAmount);
         
         // Verify amount matches required contribution (encrypted comparison)
         ebool isCorrectAmount = PrivacyUtils.verifyExactAmount(amount, contributionAmount);
-        require(TFHE.decrypt(isCorrectAmount), "Incorrect contribution amount");
+        require(FHE.decrypt(isCorrectAmount), "Incorrect contribution amount");
         
         // Check not already paid this round
         ebool alreadyPaid = roundPayments[currentRound][msg.sender];
-        require(!TFHE.decrypt(alreadyPaid), "Already paid this round");
+        require(!FHE.decrypt(alreadyPaid), "Already paid this round");
         
         // Record payment (encrypted)
-        roundPayments[currentRound][msg.sender] = TFHE.asEbool(true);
-        memberData[msg.sender].hasPaidCurrentRound = TFHE.asEbool(true);
-        memberData[msg.sender].totalContributed = TFHE.add(
+        roundPayments[currentRound][msg.sender] = FHE.asEbool(true);
+        memberData[msg.sender].hasPaidCurrentRound = FHE.asEbool(true);
+        memberData[msg.sender].totalContributed = FHE.add(
             memberData[msg.sender].totalContributed, 
             amount
         );
-        totalContributed = TFHE.add(totalContributed, amount);
+        totalContributed = FHE.add(totalContributed, amount);
         
         // Transfer Flow to vault (actual amount is public for gas, encrypted for logic)
-        uint256 publicAmount = TFHE.decrypt(amount); // Only decrypt for transfer
+        uint256 publicAmount = FHE.decrypt(amount); // Only decrypt for transfer
         vault.deposit{value: publicAmount}(msg.sender, publicAmount, amount);
         
         emit ContributionReceived(msg.sender, encryptedAmount, currentRound);
@@ -148,7 +148,7 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         ebool allPaid = rotationLogic.verifyRoundCompletion(statuses);
         
         // Only proceed if decrypted condition met
-        if (TFHE.decrypt(allPaid)) {
+        if (FHE.decrypt(allPaid)) {
             executePayout();
         }
     }
@@ -160,7 +160,7 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         for (uint i = 0; i < members.length; i++) {
             statuses[i] = roundPayments[currentRound][members[i]];
         }
-        require(TFHE.decrypt(rotationLogic.verifyRoundCompletion(statuses)), "Not all paid");
+        require(FHE.decrypt(rotationLogic.verifyRoundCompletion(statuses)), "Not all paid");
         
         address recipient = rotationOrder[rotationIndex];
         require(memberData[recipient].isActive, "Recipient not active");
@@ -177,18 +177,18 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         
         // Reset round
         for (uint i = 0; i < members.length; i++) {
-            roundPayments[currentRound][members[i]] = TFHE.asEbool(false);
-            memberData[members[i]].hasPaidCurrentRound = TFHE.asEbool(false);
+            roundPayments[currentRound][members[i]] = FHE.asEbool(false);
+            memberData[members[i]].hasPaidCurrentRound = FHE.asEbool(false);
         }
         
-        roundCompleted[currentRound] = TFHE.asEbool(true);
+        roundCompleted[currentRound] = FHE.asEbool(true);
         currentRound++;
         
         // Execute transfer from vault
-        uint256 publicPayout = TFHE.decrypt(payoutAmount);
+        uint256 publicPayout = FHE.decrypt(payoutAmount);
         vault.withdraw(recipient, publicPayout, payoutAmount);
         
-        emit PayoutExecuted(recipient, currentRound - 1, TFHE.serialize(payoutAmount));
+        emit PayoutExecuted(recipient, currentRound - 1, FHE.serialize(payoutAmount));
         emit RoundAdvanced(currentRound);
         
         // Close group if rotation complete
@@ -207,11 +207,15 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
     }
     
     function getEncryptedContributionAmount() external view returns (bytes memory) {
-        return TFHE.serialize(contributionAmount);
+        return FHE.serialize(contributionAmount);
     }
     
     function getMyEncryptedBalance() external view onlyMember returns (bytes memory) {
-        return TFHE.serialize(memberData[msg.sender].totalContributed);
+        return FHE.serialize(memberData[msg.sender].totalContributed);
+    }
+
+    function getEncryptedBalance() external view returns (bytes memory) {
+        return FHE.serialize(vault.getEncryptedBalance(address(this)));
     }
     
     // Emergency: allow owner to return funds if group fails

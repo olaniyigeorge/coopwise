@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import "fhevm/lib/TFHE.sol";
+import "@fhevm/solidity/lib/FHE.sol";
 
 interface ICoopGroup {
     struct GroupConfig {
@@ -26,7 +26,7 @@ interface ICoopGroup {
     event PayoutExecuted(address indexed groupId, address indexed recipient, uint256 roundNumber);
     event RoundCompleted(address indexed groupId, uint256 roundNumber);
     
-    function contribute(bytes calldata encryptedAmount) external;
+    function contribute(bytes calldata encryptedAmount) external payable;
     function executePayout() external;
     function getEncryptedBalance() external view returns (bytes memory);
     function getNextPayoutRecipient() external view returns (address);
