@@ -25,6 +25,7 @@ from app.utils.logger import logger
 from uuid import UUID
 from redis.asyncio import Redis
 from app.utils.cache import get_cache, update_cache
+from typing import Dict, Any
 
 
 class WalletService:
