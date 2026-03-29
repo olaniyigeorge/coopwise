@@ -27,7 +27,7 @@ function formatRelativeTime(iso: string): string {
 }
 
 /** Derive simple initials avatar colour from an address */
-function addressColor(address: string): string {
+function addressColor(address: string | null | undefined): string {
   const colours = [
     "bg-violet-100 text-violet-700",
     "bg-sky-100 text-sky-700",
@@ -36,13 +36,19 @@ function addressColor(address: string): string {
     "bg-rose-100 text-rose-700",
     "bg-indigo-100 text-indigo-700",
   ];
-  const code = address
+  const code = (address ?? "")
     .split("")
     .reduce((acc, c) => acc + c.charCodeAt(0), 0);
   return colours[code % colours.length];
 }
 
-function Initials({ name, address }: { name: string; address: string }) {
+function Initials({
+  name,
+  address,
+}: {
+  name: string;
+  address: string | null | undefined;
+}) {
   const letters = name
     .split(" ")
     .slice(0, 2)
@@ -128,7 +134,9 @@ export function CircleHistory({ history, isLoading }: CircleHistoryProps) {
               {/* Right — time + verify link */}
               <div className="text-right shrink-0 space-y-0.5">
                 <p className="text-xs text-muted-foreground">
-                  {formatRelativeTime(entry.submitted_at)}
+                  {formatRelativeTime(
+                    entry.submitted_at ?? entry.created_at ?? new Date().toISOString()
+                  )}
                 </p>
                 {entry.explorer_url && (
                   <a

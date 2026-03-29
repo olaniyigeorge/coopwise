@@ -176,7 +176,7 @@ export default function JoinCirclePage() {
                   </p>
                   <p>
                     <span className="text-gray-400">Frequency:</span>{" "}
-                    <strong className="capitalize">{circle.contribution_frequency}</strong>
+                    <strong className="capitalize">{circle.payout_schedule}</strong>
                   </p>
                   <p>
                     <span className="text-gray-400">Payout strategy:</span>{" "}
