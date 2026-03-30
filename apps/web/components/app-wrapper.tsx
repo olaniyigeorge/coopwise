@@ -7,12 +7,10 @@ import {
   CrossmintProvider,
   CrossmintAuthProvider,
   CrossmintWalletProvider,
-  CrossmintWalletProvider,
 } from "@crossmint/client-sdk-react-ui";
 import { FlowProvider } from "@onflow/react-sdk";
 import flowJSON from "../flow.json";
 
-const CROSSMINT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_API_KEY as string;
 const CROSSMINT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_API_KEY as string;
 
 export function AppWrapper({ children }: { children: React.ReactNode }) {
@@ -48,12 +46,6 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
                   : "https://access-testnet.onflow.org",
               flowNetwork:
                 (process.env.NEXT_PUBLIC_FLOW_NETWORK as any) ?? "testnet",
-              accessNodeUrl:
-                process.env.NEXT_PUBLIC_FLOW_NETWORK === "mainnet"
-                  ? "https://access-mainnet.onflow.org"
-                  : "https://access-testnet.onflow.org",
-              flowNetwork:
-                (process.env.NEXT_PUBLIC_FLOW_NETWORK as any) ?? "testnet",
               appDetailTitle: "CoopWise",
               appDetailIcon: "https://coopwise.app/assets/icons/logo.svg",
               appDetailDescription: "African cooperative savings, reimagined",
@@ -67,9 +59,6 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
               </NotificationProvider>
             </AuthProvider>
           </FlowProvider>
-        </CrossmintWalletProvider>
-      </CrossmintAuthProvider>
-    </CrossmintProvider>
         </CrossmintWalletProvider>
       </CrossmintAuthProvider>
     </CrossmintProvider>

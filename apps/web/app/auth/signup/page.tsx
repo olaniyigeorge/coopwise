@@ -193,13 +193,13 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Legacy link */}
-        <p className="text-center text-xs text-gray-400 mt-4">
+        {/* Legacy signup — optional; keep routes if needed */}
+        {/* <p className="text-center text-xs text-gray-400 mt-4">
           Prefer the old signup?{" "}
           <Link href="/auth/signup-legacy" className="underline hover:text-gray-600">
             Use legacy form
           </Link>
-        </p>
+        </p> */}
       </div>
     </div>
   );

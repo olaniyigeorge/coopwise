@@ -10,10 +10,9 @@ import GroupsTabView from '@/components/dashboard/groups-tab-view'
 import { getDashboardData, DashboardData, defDashData, AIInsightDetail } from '@/lib/dashboard-service'
 import { formatCurrency, getActivityDescription } from '@/lib/utils'
 import Link from 'next/link'
-import { Bot, MessageSquare, Sparkles } from 'lucide-react'
+import { Bot, MessageSquare, Sparkles, Plus, Users, TrendingUp, ArrowUpRight } from 'lucide-react'
 import AIInsightCard from '@/components/dashboard/ai-insight-card'
 import { formatDate } from '@/lib/contribution-utils'
-// import { formatDate } from '@/lib/insight-utils'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -21,368 +20,388 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<DashboardData>(defDashData)
 
-  // Extract user's first name
   const firstName = user?.full_name?.split(' ')[0] || 'User'
 
- 
-  // Fetch dashboard data
   useEffect(() => {
     const fetchData = async () => {
-      console.log(`\n Fetching dashboardData ${isAuthenticated} \n`)
       if (isAuthenticated) {
         try {
           const data = await getDashboardData()
-                   
-          // Ensure the data has the expected structure
-          const processedData: DashboardData = data
-          // console.log('Setting Dashboard data:::', data)          
-          setDashboardData(processedData)
-        } catch (error) {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+          setDashboardData(data)
+        } catch (error) {
           console.error('Error fetching dashboard data:', error)
         } finally {
           setLoading(false)
         }
       }
     }
-    
     fetchData()
   }, [isAuthenticated])
-  
 
-
-
-
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthenticated && !loading) {
       router.push('/auth/login')
     }
   }, [isAuthenticated, router, loading])
 
-  if (!isAuthenticated && !loading) {
-    return null // Don't render anything while redirecting
-  }
+  if (!isAuthenticated && !loading) return null
 
-  // Safely access nested properties with nullish coalescing
-const savingsTotal = dashboardData?.summary?.your_savings ?? 0;
-const savingsGoal = dashboardData?.user?.target_savings_amount ?? 0;
+  // Derived values
+  const savingsTotal = dashboardData?.summary?.your_savings ?? 0
+  const savingsGoal = dashboardData?.user?.target_savings_amount ?? 0
+  const savingsProgress = savingsGoal > 0 ? Math.min((savingsTotal / savingsGoal) * 100, 100) : 0
+  const walletBalance = dashboardData?.summary?.wallet?.stable_coin_balance ?? 0
+  const hasUpcomingContribution = !!dashboardData?.summary?.next_contribution
+  const hasUpcomingPayout = !!dashboardData?.summary?.next_payout
 
-const savingsProgress = savingsGoal > 0
-  ? (savingsTotal / savingsGoal)*100
-  : 0;
+  const groupGoals = dashboardData?.targets?.group_goals ?? []
+  const firstGroupGoal = groupGoals[0] ?? {}
+  const savingsGoalName = firstGroupGoal.name ?? ''
 
-const walletBalance = dashboardData?.summary?.wallet?.stable_coin_balance ?? 0;
+  const ssg = dashboardData?.user?.target_savings_amount ?? 0
+  const sst = dashboardData?.summary?.your_savings ?? 0
+  const savingsGoalProgress = ssg > 0 ? Math.min((sst / ssg) * 100, 100) : 0
+  const savingsGoalRemaining = Math.max(ssg - sst, 0)
 
-const hasUpcomingContribution = !!dashboardData?.summary?.next_contribution;
-const hasUpcomingPayout = !!dashboardData?.summary?.next_payout;
-
-const groupGoals = dashboardData?.targets?.group_goals ?? [];
-const firstGroupGoal = groupGoals[0] ?? {};
-
-const savingsGoalName = firstGroupGoal.name ?? '';
-const savingsGoalCurrent = firstGroupGoal.target_amount ?? 0;
-const savingsGoalTarget = dashboardData?.targets?.savings_target ?? 0;
-
-const ssg = dashboardData?.user?.target_savings_amount ?? 0;
-const sst = dashboardData?.summary?.your_savings ?? 0;
-
-const savingsGoalProgress = ssg > 0 ? (sst / ssg)*100 : 0;
-const savingsGoalRemaining = ssg - sst;
-
-const recentActivity = dashboardData?.activities ?? [];
+  const recentActivity = dashboardData?.activities ?? []
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between">
-        <div className="mb-4 sm:mb-6">
-          <h2 className="text-xl sm:text-2xl font-semibold">
-            Welcome, {firstName}
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-500">Here&apos;s an overview of your savings</p>
-        </div>
+      <div className="space-y-6 pb-8">
 
-        {/* Top buttons - hide on mobile */}
-        <div className="hidden md:flex justify-end mb-6 space-x-3">
-          <Button 
-            variant="default" 
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => router.push('/dashboard/join-group')}>
-              Join a Group
-          </Button>
-          <Button 
-            variant="outline" 
-            className="border-primary text-primary hover:bg-primary hover:text-white"
-            onClick={() => router.push('/dashboard/create-circle')}
-          >
-              Create a Group
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow p-5">
-          <h3 className="text-gray-500 text-sm mb-2">Your savings</h3>
-          <div className="text-2xl font-bold">{formatCurrency(savingsTotal)}</div>
-          <div className="text-gray-500 text-xs mt-1">Total saved across all groups</div>
-          <div className="mt-4">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
-              <span>Progress</span>
-              <span>{savingsProgress}%</span>
-            </div>
-            <div className="relative w-full h-1.5 bg-gray-100 rounded-full">
-              <div 
-                className="absolute left-0 top-0 h-full bg-primary rounded-full" 
-                style={{ width: `${savingsProgress}%` }}
-              ></div>
-            </div>
-            <div className="text-xs text-gray-500 mt-1">Goal: {formatCurrency(savingsGoal)}</div>
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+              Welcome back, {firstName} 👋
+            </h1>
+            <p className="text-sm text-gray-500 mt-0.5">Here's an overview of your savings</p>
           </div>
-        </div>
-
-        {/* {formatCurrency(walletBalance)} */}
-
-        <div className="bg-white rounded-lg shadow p-5">
-          <h3 className="text-gray-500 text-sm mb-2">Your Wallet</h3>
-          <div className="items-start justify-between">
-            <div className="text-2xl font-bold w-full"><span className="text-xl tracking-tighter">USDC</span>  {Number(walletBalance || 0).toFixed(2)}</div> 
-            <div className="text-xs font-medium">{formatCurrency((walletBalance || 0)*(1600))}</div> 
-          </div>
-          <div className="text-gray-500 text-xs mt-1">Balance available in your wallet for contributions</div>
-          <div className="mt-4">
-            <Button 
-              variant="default" 
-              className="bg-primary hover:bg-primary/90 text-xs w-full"
-              onClick={() => router.push('/dashboard/wallet/fund')}
+          <div className="hidden md:flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-gray-200 text-gray-700 hover:border-primary hover:text-primary gap-1.5"
+              onClick={() => router.push('/dashboard/join-group')}
             >
-              Add Money
+              <Users className="w-3.5 h-3.5" />
+              Join Group
+            </Button>
+            <Button
+              size="sm"
+              className="gap-1.5"
+              onClick={() => router.push('/dashboard/create-circle')}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Create Group
             </Button>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-5">
-          <h3 className="text-gray-500 text-sm mb-2">Next Contribution</h3>
-          <div className="flex items-start mt-3">
-            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center relative">
-              <Image 
-                src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                alt="Group Icon" 
-                width={20} 
-                height={20} 
-              />
-            </div>
-            <div className="ml-3">
-              {hasUpcomingContribution ? (
-                <>
-                  <div className="text-base font-medium">{formatDate(dashboardData?.summary.next_contribution || "")}</div>
-                  <div className="text-gray-500 text-xs mt-1">
-                  {formatDate(dashboardData?.summary.next_contribution || "")}
-                    {/* {formatCurrency(dashboardData?.nextContribution?.amount || 0)} due on {new Date(dashboardData?.nextContribution?.dueDate || '').toLocaleDateString()} */}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="text-base font-medium">No upcoming contribution</div>
-                  <div className="text-gray-500 text-xs mt-1">Create a group or join an existing one to start saving together</div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* ── Stats Grid ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-        <div className="bg-white rounded-lg shadow p-5">
-          <h3 className="text-gray-500 text-sm mb-2">Next Payout</h3>
-          <div className="flex items-start mt-3">
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center relative">
-              <Image 
-                src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                alt="Group Icon" 
-                width={20} 
-                height={20} 
-              />
+          {/* Your Savings */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Your Savings</span>
+              <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+              </div>
             </div>
-            <div className="ml-3">
-              {hasUpcomingPayout ? (
-                <>
-                  <div className="text-base font-medium">{dashboardData?.summary?.next_payout}</div>
-                  <div className="text-gray-500 text-xs mt-1">
-                  {dashboardData?.summary?.next_payout}
-                    {/* {formatCurrency(dashboardData?.nextPayout?.amount || 0)} on {new Date(dashboardData?.nextPayout?.dueDate || '').toLocaleDateString()} */}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="text-base font-medium">No payout yet!</div>
-                  <div className="text-gray-500 text-xs mt-1">You&apos;ll see your payout date here after joining a group</div>
-                </>
-              )}
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(savingsTotal)}</p>
+              <p className="text-xs text-gray-400 mt-0.5">Across all groups</p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main content in two columns on desktop, one column on mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 ">
-        {/* Left column - takes 2/3 on desktop */}
-        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-          {/* Groups Section */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="p-0">
-              <GroupsTabView defaultTab="discover" />
+            <div>
+              <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                <span>Progress to goal</span>
+                <span className="font-medium text-gray-700">{savingsProgress.toFixed(0)}%</span>
+              </div>
+              <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                  style={{ width: `${savingsProgress}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5">Goal: {formatCurrency(savingsGoal)}</p>
             </div>
           </div>
 
-          {/* Recent Activity Section */}
-          <div className="bg-white rounded-lg shadow p-4 sm:p-5">
-            <h2 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Recent Activity</h2>
-            
-            {recentActivity.length > 0 ? (
-              <div className="space-y-3">
-               {recentActivity.map((activity) => {
-                    const isOwnActivity = activity.user_id === user?.id
+          {/* Wallet */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Wallet Balance</span>
+              <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center">
+                <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              </div>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">
+                <span className="text-base font-semibold text-gray-400 mr-1">USDC</span>
+                {Number(walletBalance || 0).toFixed(2)}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">≈ {formatCurrency((walletBalance || 0) * 1600)}</p>
+            </div>
+            <Button
+              size="sm"
+              className="w-full gap-1.5 mt-auto"
+              onClick={() => router.push('/dashboard/wallet/fund')}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Money
+            </Button>
+          </div>
 
-                    return (
-                      <div key={activity.id} className="flex items-start border-b border-gray-100 pb-3">
-                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                          <Image
-                            src="/assets/icons/fluent_people-community-48-regular (1).svg"
-                            alt="Activity Icon"
-                            width={16}
-                            height={16}
-                          />
-                        </div>
-                        <div className="ml-3 flex-1">
-                          <div className="flex justify-between">
-                            <div className="text-sm font-medium">
-                              {getActivityDescription(activity, isOwnActivity)}
-                            </div>
-                          </div>
-                          <div className="text-xs text-gray-400 mt-1">{new Date(activity.created_at).toLocaleDateString()}</div>
-                        </div>
-                      </div>
-                    )
-                })}
+          {/* Next Contribution */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Next Contribution</span>
+              <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
+                <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            {hasUpcomingContribution ? (
+              <div>
+                <p className="text-lg font-bold text-gray-900">
+                  {formatDate(dashboardData?.summary.next_contribution || '')}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">Upcoming due date</p>
               </div>
             ) : (
-              <div className="text-center py-4 sm:py-6">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                  <Image 
-                    src="/assets/icons/fluent_people-community-48-regular (1).svg" 
-                    alt="Activity Icon" 
-                    width={20} 
-                    height={20}
-                    className="sm:w-6 sm:h-6"
-                  />
-                </div>
-                <h3 className="text-sm sm:text-base font-medium mb-1">No activity to show</h3>
-                <p className="text-xs sm:text-sm text-gray-500 px-2">
-                  You don&apos;t have any transactions and updates. Create a
-                  group or join an existing one to start saving together
-                </p>
+              <div>
+                <p className="text-base font-semibold text-gray-700">Nothing scheduled</p>
+                <p className="text-xs text-gray-400 mt-0.5">Join a group to start saving together</p>
+              </div>
+            )}
+          </div>
+
+          {/* Next Payout */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Next Payout</span>
+              <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center">
+                <ArrowUpRight className="w-4 h-4 text-green-600" />
+              </div>
+            </div>
+            {hasUpcomingPayout ? (
+              <div>
+                <p className="text-lg font-bold text-gray-900">{dashboardData?.summary?.next_payout}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Expected payout date</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-base font-semibold text-gray-700">No payout yet</p>
+                <p className="text-xs text-gray-400 mt-0.5">Your payout date appears after joining a group</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right column - takes 1/3 on desktop */}
-        <div className="space-y-4 sm:space-y-6">
-          {/* Savings Goal Section */}
-          <div className="bg-white rounded-lg shadow p-4 sm:p-5">
-            <h2 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Savings Goal</h2>
-            
-            <div className="mb-3 sm:mb-4">
-              <div className="flex justify-between text-xs sm:text-sm text-gray-600 mb-2">
-                <span>{savingsGoalName}: {formatCurrency(savingsGoalCurrent)} of {formatCurrency(savingsGoalTarget)}</span>
-              </div>
+        {/* ── Main Content Grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-              <div className="w-full h-2 bg-gray-100 rounded-full mb-2">
-                <div 
-                  className="h-full bg-primary rounded-full" 
-                  style={{ width: `${savingsGoalProgress}%` }}
-                ></div>
-              </div>
+          {/* Left — Groups + Activity */}
+          <div className="lg:col-span-2 space-y-6">
 
-              <div className="flex justify-between text-xs sm:text-sm">
-                <span>{savingsGoalProgress}% complete</span>
-                <span>{formatCurrency(savingsGoalRemaining)} to go</span>
-              </div>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <GroupsTabView defaultTab="discover" />
             </div>
-            
-            <Button 
-              variant="outline" 
-              className="w-full border-primary text-primary hover:bg-primary hover:text-white text-sm sm:text-base"
-              onClick={() => router.push('/dashboard/profile?focus=savings-goal')}
-            >
-              Update Goal
-            </Button>
-          </div>
 
-          {/* AI Chat Assistant Section */}
-          <div className="bg-white rounded-lg shadow p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <h2 className="text-sm sm:text-base font-semibold flex items-center">
-                <Sparkles className="h-4 w-4 mr-2 text-primary" />
-                AI Financial Assistant
-              </h2>
-            </div>
-            
-            <div className="rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 p-4 mb-4">
-              <div className="flex items-start">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3 mt-1">
-                  <Bot className="h-4 w-4 text-blue-600" />
+            {/* Recent Activity */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <h2 className="text-sm font-semibold text-gray-900 mb-4">Recent Activity</h2>
+
+              {recentActivity.length > 0 ? (
+                <div className="divide-y divide-gray-50">
+                  {recentActivity.map((activity) => {
+                    const isOwnActivity = activity.user_id === user?.id
+                    return (
+                      <div key={activity.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                          <Image
+                            src="/assets/icons/fluent_people-community-48-regular (1).svg"
+                            alt="Activity"
+                            width={16}
+                            height={16}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-800">
+                            {getActivityDescription(activity, isOwnActivity)}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {new Date(activity.created_at).toLocaleDateString('en-NG', {
+                              day: 'numeric', month: 'short', year: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-                <div>
-                  <p className="text-sm mb-2">
-                    Get personalized financial advice and answers to your savings questions instantly.
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Ask about budgeting, savings strategies, debt management, and more.
-                  </p>
-                </div>
-              </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+                    <Image
+                      src="/assets/icons/fluent_people-community-48-regular (1).svg"
+                      alt="No activity"
+                      width={22}
+                      height={22}
+                    />
                   </div>
-            
-            <div className="space-y-2 mb-4">
-              <div className="text-xs font-medium text-gray-500">Popular questions:</div>
-              <div className="bg-gray-50 rounded p-2 text-xs">
-                &ldquo;How can I save ₦100,000 in 3 months?&rdquo;
-              </div>
-              <div className="bg-gray-50 rounded p-2 text-xs">
-                &ldquo;What&apos;s the best way to manage my debt?&rdquo;
-              </div>
-              <div className="bg-gray-50 rounded p-2 text-xs">
-                &ldquo;How should I budget my monthly income?&rdquo;
-              </div>
+                  <p className="text-sm font-medium text-gray-700">No activity yet</p>
+                  <p className="text-xs text-gray-400 mt-1 max-w-[220px]">
+                    Create or join a group to see your transactions here.
+                  </p>
+                </div>
+              )}
             </div>
-            
-            <Link href="/dashboard/ai-chat">
-              <Button 
-                variant="default" 
-                className="w-full flex items-center justify-center gap-2"
-              >
-                <MessageSquare className="h-4 w-4" />
-                Chat with AI Assistant
-              </Button>
-            </Link>
           </div>
-          {/* AI Insights Section */}
-          <div className="bg-white rounded-lg  shadow p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <h2 className="text-sm sm:text-base font-semibold flex items-center">
-                <Sparkles className="h-4 w-4 mr-2 text-secondary" />
-                AI Insights
-              </h2>
+
+          {/* Right — Savings Goal + AI */}
+          <div className="space-y-6">
+
+            {/* Savings Goal */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-gray-900">Savings Goal</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-primary h-7 px-2 hover:bg-primary/5"
+                  onClick={() => router.push('/dashboard/profile?focus=savings-goal')}
+                >
+                  Edit
+                </Button>
+              </div>
+
+              {ssg > 0 ? (
+                <>
+                  {savingsGoalName && (
+                    <p className="text-xs text-gray-400 mb-2 truncate">{savingsGoalName}</p>
+                  )}
+                  <div className="flex justify-between items-end mb-2">
+                    <span className="text-xl font-bold text-gray-900">{formatCurrency(sst)}</span>
+                    <span className="text-xs text-gray-400">of {formatCurrency(ssg)}</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-700"
+                      style={{ width: `${savingsGoalProgress}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs mt-2 text-gray-500">
+                    <span>{savingsGoalProgress.toFixed(0)}% complete</span>
+                    <span>{formatCurrency(savingsGoalRemaining)} left</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-4 border-gray-200 text-gray-600 hover:border-primary hover:text-primary text-xs"
+                    onClick={() => router.push('/dashboard/profile?focus=savings-goal')}
+                  >
+                    Update Goal
+                  </Button>
+                </>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500 mb-3">No savings goal set yet.</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-primary text-primary hover:bg-primary hover:text-white text-xs w-full"
+                    onClick={() => router.push('/dashboard/profile?focus=savings-goal')}
+                  >
+                    Set a Goal
+                  </Button>
+                </div>
+              )}
             </div>
-            <div className="flex-col items-center space-y-4">
-              {dashboardData.ai_insights.slice(0,3).map((insight: AIInsightDetail) => (
-                <AIInsightCard key={insight.id} insight={insight} />
-              ))}
+
+            {/* AI Chat Assistant */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold text-gray-900">AI Financial Assistant</h2>
+              </div>
+
+              <div className="rounded-xl bg-gradient-to-br from-indigo-50 via-blue-50 to-sky-50 p-4 mb-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
+                    <Bot className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    Get personalized financial advice — budgeting tips, savings strategies, and more.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 mb-4">
+                <p className="text-xs font-medium text-gray-400 mb-2">Try asking:</p>
+                {[
+                  'How can I save ₦100,000 in 3 months?',
+                  "What's the best way to manage my debt?",
+                  'How should I budget my monthly income?',
+                ].map((q) => (
+                  <div
+                    key={q}
+                    className="bg-gray-50 hover:bg-indigo-50 rounded-lg px-3 py-2 text-xs text-gray-600 cursor-pointer transition-colors border border-transparent hover:border-indigo-100"
+                  >
+                    &ldquo;{q}&rdquo;
+                  </div>
+                ))}
+              </div>
+
+              <Link href="/dashboard/ai-chat">
+                <Button size="sm" className="w-full gap-2">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  Chat with AI Assistant
+                </Button>
+              </Link>
             </div>
+
+            {/* AI Insights */}
+            {(dashboardData.ai_insights?.length ?? 0) > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="h-4 w-4 text-amber-500" />
+                  <h2 className="text-sm font-semibold text-gray-900">AI Insights</h2>
+                </div>
+                <div className="space-y-3">
+                  {dashboardData.ai_insights.slice(0, 3).map((insight: AIInsightDetail) => (
+                    <AIInsightCard key={insight.id} insight={insight} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Mobile CTA buttons */}
+        <div className="flex md:hidden gap-3">
+          <Button
+            variant="outline"
+            className="flex-1 border-primary text-primary hover:bg-primary hover:text-white"
+            onClick={() => router.push('/dashboard/join-group')}
+          >
+            Join a Group
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={() => router.push('/dashboard/create-circle')}
+          >
+            Create a Group
+          </Button>
+        </div>
+
       </div>
     </DashboardLayout>
   )
-} 
-
-
+}
