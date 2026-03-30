@@ -3,16 +3,16 @@
 import React from "react";
 import { AuthProvider } from "@/lib/auth-context";
 import { NotificationProvider } from "@/lib/notification-context";
-import { Toaster } from "@/components/ui/toaster";
-
 import {
   CrossmintProvider,
   CrossmintAuthProvider,
+  CrossmintWalletProvider,
   CrossmintWalletProvider,
 } from "@crossmint/client-sdk-react-ui";
 import { FlowProvider } from "@onflow/react-sdk";
 import flowJSON from "../flow.json";
 
+const CROSSMINT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_API_KEY as string;
 const CROSSMINT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_API_KEY as string;
 
 export function AppWrapper({ children }: { children: React.ReactNode }) {
@@ -35,15 +35,19 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
       >
         {/* createOnLogin="all-users" auto-provisions a Flow smart wallet on every login — no seed phrases */}
         <CrossmintWalletProvider
-          defaultChain={
-            (process.env.NEXT_PUBLIC_FLOW_NETWORK === "mainnet"
-              ? "flow"
-              : "flow-testnet") as any
-          }
-          createOnLogin="all-users"
+          createOnLogin={{ 
+            chain: "solana", 
+            signer: { type: "email" } 
+          }} 
         >
           <FlowProvider
             config={{
+              accessNodeUrl:
+                process.env.NEXT_PUBLIC_FLOW_NETWORK === "mainnet"
+                  ? "https://access-mainnet.onflow.org"
+                  : "https://access-testnet.onflow.org",
+              flowNetwork:
+                (process.env.NEXT_PUBLIC_FLOW_NETWORK as any) ?? "testnet",
               accessNodeUrl:
                 process.env.NEXT_PUBLIC_FLOW_NETWORK === "mainnet"
                   ? "https://access-mainnet.onflow.org"
@@ -56,16 +60,19 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
               appDetailUrl: "https://coopwise.app",
             }}
             flowJson={flowJSON}
-          >
+          > 
             <AuthProvider>
               <NotificationProvider>
                 {children}
-                <Toaster />
               </NotificationProvider>
             </AuthProvider>
           </FlowProvider>
         </CrossmintWalletProvider>
       </CrossmintAuthProvider>
     </CrossmintProvider>
+        </CrossmintWalletProvider>
+      </CrossmintAuthProvider>
+    </CrossmintProvider>
   );
 }
+

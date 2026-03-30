@@ -65,7 +65,7 @@ async def test_authenticate_user_success(test_db_session: AsyncSession):
 
 @pytest.mark.asyncio
 async def test_token_generation_and_decoding():
-    data = {"sub": "auth@example.com", "id": str("0000-00000-00000"), "role": "user"}
+    data = {"sub": "auth@example.com", "id": str("0000-00000-00000"), "role": "user", "flow_address": "FLOW_ADDR_00000000_111",}
     token = await AuthService.create_access_token(data=data)
     decoded = await AuthService.decode_token(token)
     assert decoded["sub"] == "auth@example.com"

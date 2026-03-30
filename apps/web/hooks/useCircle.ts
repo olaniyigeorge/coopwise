@@ -16,12 +16,8 @@ interface UseCircleResult {
   refetch: () => void;
 }
 
-/**
- * Primary data hook for the circle detail page.
- * Fetches circle info, member contribution status, and history in parallel.
- */
 export function useCircle(circleId: number | string): UseCircleResult {
-  const id = typeof circleId === "string" ? parseInt(circleId, 10) : circleId;
+  const id = `${circleId}`;
 
   const [circle, setCircle] = useState<Circle | null>(null);
   const [members, setMembers] = useState<CircleMember[]>([]);
@@ -33,7 +29,7 @@ export function useCircle(circleId: number | string): UseCircleResult {
   const refetch = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
-    if (!id || isNaN(id)) return;
+    if (!id) return;
 
     let cancelled = false;
     setIsLoading(true);
@@ -77,7 +73,6 @@ interface UseMyCirclesResult {
   refetch: () => void;
 }
 
-/** Hook to get all circles the current user belongs to */
 export function useMyCircles(): UseMyCirclesResult {
   const [circles, setCircles] = useState<Circle[]>([]);
   const [isLoading, setIsLoading] = useState(true);

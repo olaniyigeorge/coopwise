@@ -112,7 +112,7 @@ const recentActivity = dashboardData?.activities ?? [];
           <Button 
             variant="outline" 
             className="border-primary text-primary hover:bg-primary hover:text-white"
-            onClick={() => router.push('/dashboard/create-group')}
+            onClick={() => router.push('/dashboard/create-circle')}
           >
               Create a Group
           </Button>

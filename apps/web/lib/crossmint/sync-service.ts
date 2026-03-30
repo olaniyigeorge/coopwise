@@ -7,7 +7,7 @@
  *   - Link their Flow address to the user record
  *   - Receive back our own JWT for subsequent API calls
  *
- * Backend endpoint needed (backend dev to implement):
+ * Proxied by Next.js:
  *   POST /api/v1/auth/crossmint-sync
  *   Body: { crossmint_user_id, email, flow_address }
  *   Response: { access_token, user: { id, email, full_name, flow_address, ... } }
@@ -20,6 +20,7 @@ export interface CrossmintSyncPayload {
   crossmint_user_id: string;
   email: string;
   flow_address: string;
+  wallet_provider: string
 }
 
 export interface CrossmintSyncResponse {

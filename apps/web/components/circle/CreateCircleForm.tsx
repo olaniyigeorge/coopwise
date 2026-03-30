@@ -2,10 +2,11 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Loader2, Users, Coins, Calendar } from "lucide-react";
+import { Plus, Trash2, Loader2, Users, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea"; // Ensure you have this UI component
 import {
   Select,
   SelectContent,
@@ -14,37 +15,47 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import CircleService, { CreateCirclePayload } from "@/lib/circle-service";
+import CircleService from "@/lib/circle-service";
 
-type PayoutSchedule = "weekly" | "biweekly" | "monthly";
-type RotationOrder = "sequential" | "random";
+// Aligning with Backend Enums
+type ContributionFrequency = "daily" | "weekly" | "biweekly" | "monthly";
+type PayoutStrategy = "rotating" | "random" | "fixed";
+type CooperativeModel = "coop" | "ajo" | "esusu" | "chama";
 type Currency = "NGN" | "KES" | "GHS";
 
-const CURRENCY_LABELS: Record<Currency, { symbol: string; label: string }> = {
-  NGN: { symbol: "₦", label: "Nigerian Naira" },
-  KES: { symbol: "KSh", label: "Kenyan Shilling" },
-  GHS: { symbol: "GH₵", label: "Ghanaian Cedi" },
-};
-
-const SCHEDULE_LABELS: Record<PayoutSchedule, string> = {
-  weekly: "Weekly",
-  biweekly: "Every 2 weeks",
-  monthly: "Monthly",
+const CURRENCY_LABELS: Record<Currency, { symbol: string }> = {
+  NGN: { symbol: "₦" },
+  KES: { symbol: "KSh" },
+  GHS: { symbol: "GH₵" },
 };
 
 export function CreateCircleForm() {
   const router = useRouter();
 
+  // 1. Basic Info
   const [name, setName] = useState("");
-  const [weeklyAmount, setWeeklyAmount] = useState("");
+  const [description, setDescription] = useState("");
+  
+  // 2. Financials
+  const [contributionAmount, setContributionAmount] = useState("");
   const [currency, setCurrency] = useState<Currency>("NGN");
-  const [payoutSchedule, setPayoutSchedule] = useState<PayoutSchedule>("weekly");
-  const [rotationOrder, setRotationOrder] = useState<RotationOrder>("sequential");
+  const [frequency, setFrequency] = useState<ContributionFrequency>("weekly");
+  
+  // 3. Logic & Strategy
+  const [payoutStrategy, setPayoutStrategy] = useState<PayoutStrategy>("rotating");
+  const [coopModel, setCoopModel] = useState<CooperativeModel>("ajo");
+  const [rotationOrder, setRotationOrder] = useState("sequential");
+  
+  // 4. Members
+  const [maxMembers, setMaxMembers] = useState("5");
   const [memberPhones, setMemberPhones] = useState<string[]>([""]);
+
+  // 5. State Helpers
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [txPhase, setTxPhase] = useState<"idle" | "creating" | "sealing">("idle");
 
-  const currSymbol = CURRENCY_LABELS[currency].symbol;
+  // Auto-calculate target amount for the UI
+  const targetAmount = (parseFloat(contributionAmount) || 0) * (parseInt(maxMembers) || 0);
 
   const handlePhoneChange = (idx: number, value: string) => {
     const updated = [...memberPhones];
@@ -52,235 +63,164 @@ export function CreateCircleForm() {
     setMemberPhones(updated);
   };
 
-  const addPhone = () => setMemberPhones((prev) => [...prev, ""]);
-
-  const removePhone = (idx: number) =>
-    setMemberPhones((prev) => prev.filter((_, i) => i !== idx));
-
-  const validatePhones = (phones: string[]): string[] => {
-    return phones
-      .map((p) => p.trim())
-      .filter((p) => p.length > 0);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const amount = parseFloat(weeklyAmount.replace(/[^\d.]/g, ""));
-    if (!name.trim()) {
-      toast({ title: "Circle name is required", variant: "destructive" });
-      return;
-    }
+    const amount = parseFloat(contributionAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast({ title: "Enter a valid contribution amount", variant: "destructive" });
+      toast({ title: "Invalid amount", variant: "destructive" });
       return;
     }
 
-    const cleanPhones = validatePhones(memberPhones);
+    const cleanPhones = memberPhones.map(p => p.trim()).filter(p => p.length > 0);
 
-    const payload: CreateCirclePayload = {
+    // Matching CoopGroupCreate exactly
+    const payload = {
       name: name.trim(),
-      member_phones: cleanPhones,
-      weekly_amount_local: amount,
-      currency,
-      payout_schedule: payoutSchedule,
+      description: description.trim() || null,
+      contribution_amount: amount,
+      currency: currency,
+      contribution_frequency: frequency,
+      payout_strategy: payoutStrategy,
+      coop_model: coopModel,
+      max_members: parseInt(maxMembers),
+      target_amount: targetAmount,
       rotation_order: rotationOrder,
+      member_phones: cleanPhones,
+      status: "pending", // Backend usually expects this as initial state
+      rules: [], // Optional: add logic for custom rules later
     };
 
     try {
       setIsSubmitting(true);
       setTxPhase("creating");
 
-      const { circle_id, tx_id } = await CircleService.createCircle(payload);
+      const { circle_id, tx_id } = await CircleService.createCircle(
+        payload as import("@/lib/circle-service").CreateCirclePayload
+      );
 
-      // Wait for the Flow blockchain transaction to seal (~5–15 s on testnet)
-      setTxPhase("sealing");
-      await CircleService.waitForTx(tx_id);
+      if (tx_id) {
+        setTxPhase("sealing");
+        await CircleService.waitForTx(tx_id);
+      }
 
       toast({
         title: "Circle created!",
-        description: `"${name}" is live on the Flow blockchain.`,
-        className: "border-green-500 bg-green-50",
+        description: `"${name}" is active on the Flow blockchain.`,
       });
 
       router.push(`/dashboard/circle/${circle_id}`);
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.detail ||
-        err?.message ||
-        "Failed to create circle. Please try again.";
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      const msg = err?.response?.data?.detail || err?.message || "Creation failed";
+      toast({ title: "Error", description: String(msg), variant: "destructive" });
     } finally {
       setIsSubmitting(false);
       setTxPhase("idle");
     }
   };
 
-  const submitLabel = () => {
-    if (txPhase === "creating") return "Submitting to blockchain…";
-    if (txPhase === "sealing") return "Waiting for confirmation…";
-    return "Create Circle";
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Circle name */}
-      <div className="space-y-1.5">
-        <Label htmlFor="circle-name">Circle name</Label>
-        <Input
-          id="circle-name"
-          placeholder="e.g. Lagos Girls Monthly Ajo"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          disabled={isSubmitting}
-          required
-        />
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto pb-10">
+      {/* SECTION: BASIC INFO */}
+      <div className="space-y-4 border-b pb-6">
+        <div className="space-y-1.5">
+          <Label htmlFor="name">Circle Name</Label>
+          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Family Savings" required disabled={isSubmitting} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="desc">Description (Optional)</Label>
+          <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this group for?" disabled={isSubmitting} />
+        </div>
       </div>
 
-      {/* Contribution amount + currency */}
-      <div className="space-y-1.5">
-        <Label>Contribution amount per round</Label>
-        <div className="flex gap-2">
-          <Select
-            value={currency}
-            onValueChange={(v) => setCurrency(v as Currency)}
-            disabled={isSubmitting}
-          >
-            <SelectTrigger className="w-[120px] shrink-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(CURRENCY_LABELS) as Currency[]).map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c} ({CURRENCY_LABELS[c].symbol})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-              {currSymbol}
-            </span>
-            <Input
-              type="text"
-              inputMode="numeric"
-              className="pl-8"
-              placeholder="5,000"
-              value={weeklyAmount}
-              onChange={(e) => setWeeklyAmount(e.target.value)}
-              disabled={isSubmitting}
-            />
+      {/* SECTION: FINANCIALS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label>Contribution Amount</Label>
+          <div className="flex gap-2">
+            <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)} disabled={isSubmitting}>
+              <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NGN">NGN</SelectItem>
+                <SelectItem value="KES">KES</SelectItem>
+                <SelectItem value="GHS">GHS</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input type="number" value={contributionAmount} onChange={(e) => setContributionAmount(e.target.value)} placeholder="5000" required disabled={isSubmitting} />
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          CoopWise converts this to USDC on-chain. Your group sees{" "}
-          <strong>only ✓ / ✗</strong> — individual amounts stay private (Zama
-          FHE).
-        </p>
+
+        <div className="space-y-1.5">
+          <Label>Frequency</Label>
+          <Select value={frequency} onValueChange={(v) => setFrequency(v as ContributionFrequency)} disabled={isSubmitting}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="biweekly">Bi-Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Payout schedule */}
-      <div className="space-y-1.5">
-        <Label className="flex items-center gap-1.5">
-          <Calendar className="w-4 h-4" /> Payout schedule
-        </Label>
-        <Select
-          value={payoutSchedule}
-          onValueChange={(v) => setPayoutSchedule(v as PayoutSchedule)}
-          disabled={isSubmitting}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(SCHEDULE_LABELS) as PayoutSchedule[]).map((s) => (
-              <SelectItem key={s} value={s}>
-                {SCHEDULE_LABELS[s]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* SECTION: STRATEGY & MEMBERS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label>Max Members</Label>
+          <Input type="number" value={maxMembers} onChange={(e) => setMaxMembers(e.target.value)} min="2" disabled={isSubmitting} />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Cooperative Model</Label>
+          <Select value={coopModel} onValueChange={(v) => setCoopModel(v as CooperativeModel)} disabled={isSubmitting}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="coop">Fixed Cooperative</SelectItem>
+              <SelectItem value="ajo">ROSCA (Rotating)</SelectItem>
+              <SelectItem value="esusu">Fixed Savings</SelectItem>
+              <SelectItem value="chama">Chamas</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Rotation order */}
-      <div className="space-y-1.5">
-        <Label className="flex items-center gap-1.5">
-          <Coins className="w-4 h-4" /> Rotation order
-        </Label>
-        <Select
-          value={rotationOrder}
-          onValueChange={(v) => setRotationOrder(v as RotationOrder)}
-          disabled={isSubmitting}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="sequential">Sequential (fixed order)</SelectItem>
-            <SelectItem value="random">Random (shuffled)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Member phone numbers */}
-      <div className="space-y-2">
-        <Label className="flex items-center gap-1.5">
-          <Users className="w-4 h-4" /> Invite members (phone numbers)
-        </Label>
-        <p className="text-xs text-muted-foreground">
-          Members must already have a CoopWise account. Leave blank to create a
-          private circle and invite later.
-        </p>
+      {/* SECTION: MEMBERS PRE-INVITE */}
+      <div className="space-y-3">
+        <Label className="flex items-center gap-2"><Users className="w-4 h-4" /> Member Invitations</Label>
         {memberPhones.map((phone, idx) => (
           <div key={idx} className="flex gap-2">
-            <Input
-              type="tel"
-              placeholder="+2348012345678"
-              value={phone}
-              onChange={(e) => handlePhoneChange(idx, e.target.value)}
-              disabled={isSubmitting}
-              className="flex-1"
-            />
+            <Input type="tel" placeholder="+234..." value={phone} onChange={(e) => handlePhoneChange(idx, e.target.value)} disabled={isSubmitting} />
             {memberPhones.length > 1 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => removePhone(idx)}
-                disabled={isSubmitting}
-              >
-                <Trash2 className="w-4 h-4 text-destructive" />
-              </Button>
+              <Button type="button" variant="ghost" size="icon" onClick={() => setMemberPhones(prev => prev.filter((_, i) => i !== idx))}><Trash2 className="w-4 h-4 text-destructive" /></Button>
             )}
           </div>
         ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-1.5 text-xs"
-          onClick={addPhone}
-          disabled={isSubmitting}
-        >
-          <Plus className="w-3.5 h-3.5" /> Add member
+        <Button type="button" variant="outline" size="sm" onClick={() => setMemberPhones(p => [...p, ""])} disabled={isSubmitting}>
+          <Plus className="w-4 h-4 mr-2" /> Add Member
         </Button>
       </div>
 
-      {/* Blockchain status hint */}
-      {txPhase === "sealing" && (
-        <div className="rounded-md bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800">
-          Waiting for the Flow blockchain to confirm your circle… This usually
-          takes 5–15 seconds.
+      {/* SUMMARY BOX */}
+      <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Total Circle Target:</span>
+          <span className="font-bold">{CURRENCY_LABELS[currency].symbol}{targetAmount.toLocaleString()}</span>
         </div>
-      )}
+        <p className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+          <Target className="w-3 h-3" /> SECURED BY FLOW BLOCKCHAIN & ZAMA FHE
+        </p>
+      </div>
 
-      <Button
-        type="submit"
-        className="w-full bg-primary hover:bg-primary/90 text-white"
-        disabled={isSubmitting}
-      >
-        {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-        {submitLabel()}
+      <Button type="submit" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            {txPhase === "creating" ? "Initializing on Flow..." : "Waiting for Sealing..."}
+          </>
+        ) : (
+          "Create Circle"
+        )}
       </Button>
     </form>
   );

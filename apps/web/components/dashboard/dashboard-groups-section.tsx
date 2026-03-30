@@ -154,7 +154,7 @@ export default function DashboardGroupsSection() {
                   <Button 
                     variant="default" 
                     className="font-medium text-sm"
-                    onClick={() => router.push('/dashboard/create-group')}
+                    onClick={() => router.push('/dashboard/create-circle')}
                   >
                     Create a Group
                   </Button>
@@ -203,7 +203,7 @@ export default function DashboardGroupsSection() {
                 <Button 
                   variant="default" 
                   className="font-medium text-sm"
-                  onClick={() => router.push('/dashboard/create-group')}
+                  onClick={() => router.push('/dashboard/create-circle')}
                 >
                   Create a Group
                 </Button>

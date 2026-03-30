@@ -46,9 +46,9 @@ export default function DashboardOverview() {
           <Button 
             variant="outline" 
             className="border-primary text-primary hover:bg-primary hover:text-white text-sm sm:text-base"
-            onClick={() => router.push('/dashboard/create-group')}
+            onClick={() => router.push('/dashboard/create-circle')}
           >
-            Create a Group
+            Create a Circle
           </Button>
         </div>
       </div>
@@ -56,7 +56,7 @@ export default function DashboardOverview() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-6 sm:mb-8">
         {/* Your Savings */}
-        <StatsCard title="Your savings" icon="/assets/icons/piggy-bank.svg">
+        <StatsCard title="Your savings">
           <div className="flex flex-col">
             <span className="text-lg sm:text-xl font-semibold text-gray-800">₦0</span>
             <span className="text-xs text-gray-500 mt-1">Total saved across all groups</span>
@@ -75,7 +75,7 @@ export default function DashboardOverview() {
         </StatsCard>
         
         {/* Next Contribution */}
-        <StatsCard title="Next Contribution" icon="/assets/icons/calendar.svg">
+        <StatsCard title="Next Contribution">
           <div className="flex items-start sm:items-center">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
               <Image 
@@ -96,7 +96,7 @@ export default function DashboardOverview() {
         </StatsCard>
         
         {/* Next Payout */}
-        <StatsCard title="Next Payout" icon="/assets/icons/money.svg">
+        <StatsCard title="Next Payout">
           <div className="flex items-start sm:items-center">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
               <Image 
@@ -117,7 +117,7 @@ export default function DashboardOverview() {
         </StatsCard>
         
         {/* Payout Number */}
-        <StatsCard title="Payout Number" icon="/assets/icons/number.svg">
+        <StatsCard title="Payout Number">
           <div className="flex items-start sm:items-center">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
               <Image 

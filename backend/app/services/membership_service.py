@@ -115,6 +115,7 @@ class CooperativeMembershipService:
                 role=membership_data.role,
                 invited_by=membership_data.invited_by,
                 status=membership_data.status,
+                payout_position=membership_data.payout_position or 0
             )
             db.add(new_membership)
             await db.commit()
@@ -177,24 +178,14 @@ class CooperativeMembershipService:
         db: AsyncSession,
         group_id: UUID,
         inviter_id: UUID,
-    ) -> Optional[str]:
-
+    ) -> str:
+        """
+        Generates a deterministic invite code for a group+inviter pair.
+        Format: COOPWISE_{inviter_id}:{group_id}
+        Authorization (accepted member check) is enforced by the caller.
+        """
         invite_code = config.INVITE_CODE_PREFIX + str(inviter_id) + ":" + str(group_id)
-        logger.info(f"\n Invite code: {invite_code} \n")
-        try:
-            stmt = select(GroupMembership).where(
-                GroupMembership.group_id == group_id,
-                GroupMembership.invited_by == inviter_id,
-            )
-            result = await db.execute(stmt)
-            existing_membership = result.scalars().first()
-
-            if existing_membership:
-                logger.info("Membership exists")
-        except Exception as e:
-            logger.error(e)
-            raise e
-
+        logger.info(f"[InviteService] Generated invite code for group={group_id} by={inviter_id}")
         return invite_code
 
     # Checkout group with invite code

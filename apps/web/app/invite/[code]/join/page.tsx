@@ -1,291 +1,219 @@
-"use client"
+// apps/web/app/invite/[code]/join/page.tsx
+"use client";
 
-import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
-import GroupService from '@/lib/group-service'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Check, AlertTriangle, Users, ArrowRight } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import useAuthStore from "@/lib/stores/auth-store";
+import CircleService, { Circle } from "@/lib/circle-service";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
+import { Loader2, Check, AlertTriangle, Users, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
-export default function JoinGroupPage({ params }: { params: Promise<{ code: string }> }) {
-  const { user, isAuthenticated, loading } = useAuth()
-  const router = useRouter()
-  const { toast } = useToast()
+function parseInviteCode(code: string): string | null {
+  try {
+    const stripped = code.replace(/^COOPWISE_/, "");
+    const [, groupId] = stripped.split(":");
+    return groupId ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function decodeInviteCode(encodedCode: string): { raw: string; groupId: string } | null {
+  try {
+      // Decode base64 back to raw invite code
+      const rawCode = decodeURIComponent(encodedCode);
+      // Format: CPW-INV-{inviter_id}:{group_id}
+      const colonIdx = rawCode.lastIndexOf(":");
+      if (colonIdx === -1) return null;
+      const groupId = rawCode.slice(colonIdx + 1);
+      return { raw: rawCode, groupId };
+    } catch {
+      return null;
+    }
+  }
+
+export default function JoinCirclePage() {
+  const params = useParams();
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const code = params.code as string;
+
+  // Decode once — use raw code for API calls, groupId for navigation
+  const decoded = decodeInviteCode(code);
+  const circleId = decoded?.groupId;
+
+  const [circle, setCircle] = useState<Circle | null>(null);
+  const [isLoadingCircle, setIsLoadingCircle] = useState(true);
+  const [isJoining, setIsJoining] = useState(false);
+  const [joined, setJoined] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   
-  const [isJoining, setIsJoining] = useState(false)
-  const [joinSuccess, setJoinSuccess] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
-  const [groupData, setGroupData] = useState<any>(null)
-  const [isLoadingGroup, setIsLoadingGroup] = useState(true)
 
-  const [inviteCode, setInviteCode] = useState<string>('')
 
-  // Extract invite code from params
+
+  // Redirect to login if not authenticated
   useEffect(() => {
-    const extractCode = async () => {
-      const { code } = await params
-      setInviteCode(code)
+    if (!user) {
+      localStorage.setItem("pendingInviteCode", decoded?.raw ?? code);
+      router.replace(
+        `/auth/login?returnUrl=${encodeURIComponent(`/invite/${code}/join`)}`
+      );
     }
-    extractCode()
-  }, [params])
+  }, [user]);
 
-  // Check if user is authenticated
+  // Fetch circle preview
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      // Store the invite code and redirect to login
-      localStorage.setItem('pendingInviteCode', inviteCode)
-      router.push(`/auth/login?returnUrl=${encodeURIComponent(`/invite/${inviteCode}/join`)}`)
-      return
-    }
+    if (!circleId) return;
 
-    if (isAuthenticated && user) {
-      // User is authenticated, fetch group details and check pending invites
-      fetchGroupDetails()
-      checkPendingInvites()
-    }
-  }, [loading, isAuthenticated, user, inviteCode, router, fetchGroupDetails, checkPendingInvites])
+    CircleService.getPublicCircle(circleId)
+      .then(setCircle)
+      .catch(() => setError("Circle not found."))
+      .finally(() => setIsLoadingCircle(false));
+  }, [circleId, user]);
 
-  const fetchGroupDetails = useCallback(async () => {
+  // Clear pending invite from localStorage on landing
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("pendingInviteCode");
+      localStorage.removeItem("pendingCircleId");
+    }
+  }, []);
+
+  const handleJoin = async () => {
+    if (!circleId) return;
+    setIsJoining(true);
+    setError(null);
     try {
-      setIsLoadingGroup(true)
-      const response = await fetch(`/api/groups/public/invite/${inviteCode}`)
-      if (response.ok) {
-        const data = await response.json()
-        setGroupData(data)
-      }
-    } catch (error) {
-      console.error('Error fetching group details:', error)
-    } finally {
-      setIsLoadingGroup(false)
-    }
-  }, [inviteCode])
-
-  const checkPendingInvites = useCallback(() => {
-    // Check if there's a pending invite from localStorage
-    const pendingInvite = localStorage.getItem('pendingInviteCode')
-    
-    if (pendingInvite === inviteCode) {
-      // Clear the pending invite
-      localStorage.removeItem('pendingInviteCode')
-      localStorage.removeItem('pendingGroupName')
-    }
-  }, [inviteCode])
-
-  const handleJoinGroup = async () => {
-    try {
-      setIsJoining(true)
-      setErrorMessage('')
-      
-      // Join the group using the invite code
-      await GroupService.acceptInviteCode(inviteCode)
-      
-      // Show success
-      setJoinSuccess(true)
+      await CircleService.joinCircle(circleId);
+      setJoined(true);
       toast({
-        title: "Successfully joined!",
-        description: `You are now a member of ${groupData?.name || 'this group'}`,
-      })
-      
-      // Redirect to dashboard after a delay
-      setTimeout(() => {
-        router.push('/dashboard?tab=my')
-      }, 2000)
-      
-    } catch (error: any) {
-      console.error('Error joining group:', error)
-      setErrorMessage(error.message || 'Failed to join group. Please try again.')
-      toast({
-        title: "Error",
-        description: error.message || 'Failed to join group. Please try again.',
-        variant: "destructive",
-      })
+        title: "You've joined!",
+        description: `Welcome to "${circle?.name}".`,
+        className: "border-green-500",
+      });
+      setTimeout(() => router.push(`/dashboard/circle/${circleId}`), 1800);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.detail || err?.message || "Failed to join. Try again.";
+      setError(msg);
+      toast({ title: "Couldn't join", description: msg, variant: "destructive" });
     } finally {
-      setIsJoining(false)
+      setIsJoining(false);
     }
-  }
+  };
 
-  const handleGoToDashboard = () => {
-    router.push('/dashboard?tab=my')
-  }
-
-  // Show loading while checking authentication
-  if (loading) {
+  if (!user || isLoadingCircle) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!circle || !circleId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+          <p className="font-medium text-gray-900 mb-1">Invalid invite link</p>
+          <p className="text-sm text-gray-500 mb-4">
+            This link may have expired or be incorrect.
+          </p>
+          <Button variant="outline" onClick={() => router.push("/dashboard")}>
+            Go to dashboard
+          </Button>
         </div>
       </div>
-    )
-  }
-
-  // Show loading while fetching group details
-  if (isLoadingGroup) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-gray-600">Loading group details...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show error if group not found
-  if (!groupData || !groupData.exists) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <CardTitle>Invalid Invite Link</CardTitle>
-            <CardDescription>
-              This invite link appears to be invalid or has expired.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Button onClick={() => router.push('/')} className="w-full">
-              Go to Homepage
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900">Join Group</h1>
-            <Button variant="outline" onClick={handleGoToDashboard}>
-              Go to Dashboard
-            </Button>
-          </div>
-        </div>
+      <header className="bg-white border-b px-4 py-3 flex items-center gap-2">
+        <Image
+          src="/assets/icons/coopwise-logo-white.svg"
+          alt="CoopWise"
+          width={28}
+          height={28}
+        />
+        <span className="font-bold text-base">CoopWise</span>
       </header>
 
-      <main className="flex-1 container mx-auto max-w-2xl px-4 py-8">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="h-8 w-8 text-primary" />
+      <main className="flex-1 flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-br from-[#06413F] to-[#0a6360] text-white p-5 text-center">
+            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-2">
+              <Users className="w-6 h-6" />
             </div>
-            <CardTitle>Join {groupData.name || 'this group'}</CardTitle>
-            <CardDescription>
-              {joinSuccess 
-                ? "You've successfully joined the group!"
-                : "You're about to join this savings group."
-              }
-            </CardDescription>
-          </CardHeader>
+            <h1 className="text-lg font-bold">{circle.name}</h1>
+            <p className="text-white/70 text-sm">
+              {circle.member_count} / {circle.member_count} members
+            </p>
+          </div>
 
-          <CardContent className="space-y-6">
-            {isJoining ? (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-                <p className="text-gray-600">Processing your request...</p>
-              </div>
-            ) : joinSuccess ? (
-              <div className="text-center py-8">
-                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                  <Check className="h-6 w-6 text-green-600" />
+          <div className="p-5 space-y-4">
+            {joined ? (
+              <div className="text-center py-4">
+                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                  <Check className="w-6 h-6 text-green-600" />
                 </div>
-                <p className="text-base font-medium text-gray-900 mb-2">Successfully joined!</p>
-                <p className="text-sm text-gray-600 mb-6">
-                  You are now a member of {groupData.name || 'this group'}. Redirecting to your dashboard...
-                </p>
-                <Button onClick={handleGoToDashboard} className="w-full">
-                  Go to Dashboard
-                </Button>
-              </div>
-            ) : errorMessage ? (
-              <div className="text-center py-8">
-                <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
-                </div>
-                <p className="text-base font-medium text-gray-900 mb-2">Something went wrong</p>
-                <p className="text-sm text-gray-600 mb-6">{errorMessage}</p>
-                <Button onClick={handleJoinGroup} variant="outline" className="w-full">
-                  Try Again
-                </Button>
+                <p className="font-semibold text-gray-900">You're in!</p>
+                <p className="text-sm text-gray-500 mt-1">Redirecting to your circle…</p>
               </div>
             ) : (
               <>
-                {/* Group Summary */}
-                {groupData.name && (
-                  <div className="bg-gray-50 rounded-lg p-4 border">
-                    <h3 className="font-medium text-gray-900 mb-2">Group Summary</h3>
-                    <div className="space-y-2 text-sm text-gray-600">
-                      <p><strong>Name:</strong> {groupData.name}</p>
-                      {groupData.description && (
-                        <p><strong>Description:</strong> {groupData.description}</p>
-                      )}
-                      {groupData.contribution_amount && (
-                        <p><strong>Contribution:</strong> ₦{new Intl.NumberFormat().format(groupData.contribution_amount)}</p>
-                      )}
-                      {groupData.contribution_frequency && (
-                        <p><strong>Frequency:</strong> {groupData.contribution_frequency}</p>
-                      )}
-                      {groupData.memberCount && (
-                        <p><strong>Members:</strong> {groupData.memberCount}</p>
-                      )}
-                    </div>
-                  </div>
+                <div className="text-sm text-gray-600 bg-gray-50 rounded-xl p-3 space-y-1">
+                  <p>
+                    <span className="text-gray-400">Contribution:</span>{" "}
+                    <strong>
+                      {circle.contribution_amount.toLocaleString()} {circle.currency}
+                    </strong>
+                  </p>
+                  <p>
+                    <span className="text-gray-400">Frequency:</span>{" "}
+                    <strong className="capitalize">{circle.payout_schedule}</strong>
+                  </p>
+                  <p>
+                    <span className="text-gray-400">Payout strategy:</span>{" "}
+                    <strong className="capitalize">{circle.payout_schedule}</strong>
+                  </p>
+                </div>
+
+                {error && (
+                  <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+                    {error}
+                  </p>
                 )}
 
-                {/* Join Confirmation */}
-                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Users className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 mb-1">
-                        Ready to join {groupData.name || 'this group'}?
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        By joining, you&apos;ll be able to participate in group savings and contribute according to the group&apos;s rules.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <Button
+                  className="w-full bg-primary hover:bg-primary/90"
+                  onClick={handleJoin}
+                  disabled={isJoining}
+                >
+                  {isJoining ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-4 h-4 mr-2" />
+                  )}
+                  {isJoining ? "Joining…" : "Confirm and join"}
+                </Button>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                  <Button
-                    onClick={handleJoinGroup}
-                    disabled={isJoining}
-                    className="flex-1 bg-primary hover:bg-primary/90"
-                  >
-                    {isJoining ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Joining...
-                      </>
-                    ) : (
-                      <>
-                        Join Group
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    onClick={handleGoToDashboard}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                <Link
+                  href="/dashboard"
+                  className="block text-center text-sm text-gray-400 hover:text-gray-600"
+                >
+                  Cancel
+                </Link>
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </main>
     </div>
-  )
+  );
 }

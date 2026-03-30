@@ -1,45 +1,40 @@
 /**
- * Circle Service — Feature 2 (Join or Create a Circle) + Feature 3 (Contribute)
- *
- * This service wraps the new /api/v1/circles backend endpoints.
- * After the backend creates or joins a circle on-chain, it returns a Flow
- * transaction ID (tx_id). We poll that tx_id using FCL until it seals
- * (~5 seconds on testnet) before redirecting the user.
- *
- * What the BACKEND does (not our job):
- *   - Submits CreateCircle.cdc / JoinCircle.cdc Cadence transactions
- *   - Returns the Flow tx_id
- *
- * What WE do (frontend):
- *   - Call the REST endpoints
- *   - Watch tx_id via fcl.tx().onceSealed() for UX feedback
- *   - Display the result
+ * Circle Service — calls Next.js `/api/v1/circles/*` handlers that normalize
+ * FastAPI cooperative payloads (see `lib/server/circle-contract.ts`).
+ * Legacy cookie-based routes under `/api/circles/*` remain for invite flows.
  */
 
 import axios from "axios";
 import * as fcl from "@onflow/fcl";
 import AuthService from "./auth-service";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+const V1 = "/api/v1/circles";
 
-export interface CreateCirclePayload {
+export interface CreateCirclePayload extends Record<string, unknown> {
   name: string;
-  /** Phone numbers of invited members (without creator) e.g. ["+2348012345678"] */
-  member_phones: string[];
-  /** Amount the user enters in their local currency */
-  weekly_amount_local: number;
-  /** ISO currency code e.g. "NGN", "KES", "GHS" */
-  currency: string;
-  payout_schedule: "weekly" | "biweekly" | "monthly";
-  rotation_order: "sequential" | "random";
+  member_phones?: string[];
+  weekly_amount_local?: number;
+  contribution_amount?: number;
+  currency?: string;
+  payout_schedule?: string;
+  contribution_frequency?: string;
+  rotation_order?: string;
+  description?: string | null;
+  max_members?: number;
+  coop_model?: string;
+  payout_strategy?: string;
+  target_amount?: number;
+  status?: string;
 }
 
 export interface Circle {
-  id: number;                    // Postgres ID
-  chain_circle_id: number;       // on-chain UInt64 ID
+  id: string;
+  chain_circle_id: number;
   name: string;
   creator_id: string;
+  description?: string | null;
   member_count: number;
+  contribution_amount: number;
   weekly_amount_local: number;
   currency: string;
   weekly_amount_usdc: number;
@@ -49,116 +44,160 @@ export interface Circle {
   is_complete: boolean;
   next_payout_date: string | null;
   your_position_in_queue: number | null;
-  /** Flow address of the member whose turn it is to receive the payout this round */
   current_winner: string | null;
   created_at: string;
 }
 
 export interface CircleMember {
   user_id: string;
+  group_id?: string;
   full_name: string;
-  flow_address: string;
-  queue_position: number;
-  /** Whether this member has contributed in the current round */
+  username?: string | null;
+  profile_picture_url?: string | null;
+  flow_address: string | null;
+  role?: string;
+  status?: string;
+  payout_position: number;
+  queue_position?: number;
   has_contributed_this_round: boolean;
+  has_received_payout_this_cycle?: boolean;
+  joined_at?: string | null;
 }
 
 export interface CircleHistoryEntry {
+  contribution_id?: string;
+  amount?: number;
+  currency?: string;
+  status?: string;
+  note?: string | null;
+  due_date?: string | null;
+  fulfilled_at?: string | null;
+  created_at?: string;
   member_name: string;
-  member_address: string;
+  member_address: string | null;
   round: number;
-  submitted_at: string;
+  submitted_at?: string;
   tx_id: string;
-  /** Link to flowscan.io — shows the encrypted ciphertext, not the amount */
-  explorer_url: string;
+  explorer_url: string | null;
+}
+
+export interface PublicCirclePreview {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  contribution_amount: number;
+  currency: string;
+  contribution_frequency: string;
+  payout_schedule: string | null;
+  max_members: number;
+  member_count: number;
+  status: string;
+  coop_model: string;
+  exists: boolean;
 }
 
 export interface CreateCircleResponse {
-  circle_id: number;
+  circle_id: string;
   chain_circle_id: number;
-  /** Flow transaction ID — we poll this until sealed */
-  tx_id: string;
+  tx_id: string | null;
+  circle?: Circle;
 }
 
 export interface JoinCircleResponse {
-  tx_id: string;
-  status: "joined";
+  tx_id: string | null;
+  status: string;
+  circle?: Circle | null;
 }
 
-// ─── API calls ───────────────────────────────────────────────────────────────
+const API_URL =
+  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) ||
+  "https://coopwise.onrender.com";
 
 const CircleService = {
-  /**
-   * Create a new circle.
-   * Returns tx_id — call `waitForTx(tx_id)` after this to wait for on-chain confirmation.
-   */
   async createCircle(data: CreateCirclePayload): Promise<CreateCircleResponse> {
-    const response = await axios.post<CreateCircleResponse>(
-      "/api/v1/circles",
-      data,
-      { headers: AuthService.getAuthHeader() }
-    );
+    const response = await axios.post<CreateCircleResponse>(`${V1}`, data, {
+      headers: AuthService.getAuthHeader(),
+    });
     return response.data;
   },
 
-  /**
-   * Join an existing circle by its Postgres ID.
-   * Returns tx_id — call `waitForTx(tx_id)` after this.
-   */
-  async joinCircle(circleId: number): Promise<JoinCircleResponse> {
+  async joinCircle(circleId: string): Promise<JoinCircleResponse> {
     const response = await axios.post<JoinCircleResponse>(
-      `/api/v1/circles/${circleId}/join`,
+      `${V1}/${circleId}/join`,
       {},
       { headers: AuthService.getAuthHeader() }
     );
     return response.data;
   },
 
-  /** Get full circle details including member list and queue position */
-  async getCircle(circleId: number): Promise<Circle> {
-    const response = await axios.get<Circle>(`/api/v1/circles/${circleId}`, {
+  async generateInviteLink(
+    circleId: string
+  ): Promise<{ invite_code: string; invite_link: string }> {
+    const response = await axios.post(`/api/circles/${circleId}/invite`, {});
+    return response.data;
+  },
+
+  async getPublicCircle(circleId: string): Promise<Circle | null> {
+    try {
+      const res = await fetch(
+        `${API_URL}/api/v1/cooperatives/public/${circleId}`,
+        { next: { revalidate: 60 } }
+      );
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async getCircle(circleId: string): Promise<Circle> {
+    const response = await axios.get<Circle>(`${V1}/${circleId}`, {
       headers: AuthService.getAuthHeader(),
     });
     return response.data;
   },
 
-  /** Get all members and their contribution status for the current round */
-  async getCircleMembers(circleId: number): Promise<CircleMember[]> {
+  async getPublicCircleByInvite(
+    inviteCode: string
+  ): Promise<PublicCirclePreview | null> {
+    try {
+      const res = await fetch(
+        `${API_URL}/api/v1/cooperatives/${inviteCode}/invite`,
+        { next: { revalidate: 60 } }
+      );
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async getCircleMembers(circleId: string): Promise<CircleMember[]> {
     const response = await axios.get<CircleMember[]>(
-      `/api/v1/circles/${circleId}/members`,
+      `${V1}/${circleId}/members`,
       { headers: AuthService.getAuthHeader() }
     );
     return response.data;
   },
 
-  /** Get full contribution history for the circle (no amounts — only counts + tx links) */
-  async getCircleHistory(circleId: number): Promise<CircleHistoryEntry[]> {
+  async getCircleHistory(circleId: string): Promise<CircleHistoryEntry[]> {
     const response = await axios.get<CircleHistoryEntry[]>(
-      `/api/v1/circles/${circleId}/history`,
+      `${V1}/${circleId}/history`,
       { headers: AuthService.getAuthHeader() }
     );
     return response.data;
   },
 
-  /** Get all circles the current user belongs to */
   async getMyCircles(): Promise<Circle[]> {
-    const response = await axios.get<Circle[]>("/api/v1/circles/me", {
+    const response = await axios.get<Circle[]>(`${V1}`, {
       headers: AuthService.getAuthHeader(),
     });
     return response.data;
   },
 
-  /**
-   * Poll a Flow transaction until it seals on-chain.
-   * This usually takes 5–15 seconds on testnet.
-   * Throws if the transaction fails or reverts.
-   *
-   * Usage:
-   *   const { tx_id } = await CircleService.createCircle(...)
-   *   await CircleService.waitForTx(tx_id)
-   *   // now safe to redirect
-   */
-  async waitForTx(txId: string): Promise<void> {
+  async waitForTx(txId: string | null | undefined): Promise<void> {
+    if (!txId) return;
     await fcl.tx(txId).onceSealed();
   },
 };

@@ -1,150 +1,212 @@
-import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import Image from 'next/image'
-import { generateOpenGraphMetadata, generateTwitterMetadata } from '@/lib/og-helpers'
-import PublicGroupPreview from '@/components/invite/public-group-preview'
+// apps/web/app/invite/[code]/page.tsx
+"use client";
 
-// This function generates metadata for the page
-export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
-  // Fetch data for the group based on the invite code
-  const { code } = await params
-  const groupData = await getPublicGroupInfo(code)
-  
-  // If no group is found, return default metadata
-  if (!groupData || !groupData.exists) {
-    return {
-      title: 'Join Group | CoopWise',
-      description: 'Join a savings group on CoopWise',
-    }
-  }
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { Loader2, Users, ArrowRight, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import CircleService, { PublicCirclePreview } from "@/lib/circle-service";
+import useAuthStore from "@/lib/stores/auth-store";
 
-  // Group name and formatted description for social sharing
-  const title = groupData.name 
-    ? `Join ${groupData.name} on CoopWise`
-    : 'Join a Savings Group on CoopWise'
-  
-  const description = groupData.description || 
-    `Join this savings group and save money together with others. ${groupData.name || 'This group'} is looking for new members!`
-  
-  // Show some rules in the description if available
-  let rulesPreview = ''
-  if (groupData.rules && Array.isArray(groupData.rules) && groupData.rules.length > 0) {
-    const rulesToShow = groupData.rules.slice(0, 2) // Just show first 2 rules
-    rulesPreview = rulesToShow.map((rule: any) => `• ${rule.title}`).join(' ')
-    
-    if (rulesPreview) {
-      rulesPreview = `\nGroup rules include: ${rulesPreview}`
-    }
-  }
-  
-  // Combine description with rules preview
-  const fullDescription = `${description}${rulesPreview}`
-  
-  // Get image URL - use group image if available or default
-  const imageUrl = groupData.image_url || '/assets/images/OG Image_coopwise-1.png'
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  NGN: "₦", KES: "KSh", GHS: "GH₵", USD: "$",
+};
 
-  return {
-    title,
-    description: fullDescription,
-    openGraph: generateOpenGraphMetadata({
-      title,
-      description: fullDescription,
-      imagePath: imageUrl,
-      url: `/invite/${code}`
-    }),
-    twitter: generateTwitterMetadata({
-      title,
-      description: fullDescription,
-      imagePath: imageUrl
-    })
-  }
-}
 
-// Helper function to fetch public group information by invite code
-async function getPublicGroupInfo(code: string) {
+function safeDecodeCode(code: string): string {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/groups/public/invite/${code}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      next: { revalidate: 60 } // Cache for 1 minute
-    })
-
-    if (!res.ok) {
-      return null
-    }
-
-    const data = await res.json()
-    return data
-  } catch (error) {
-    console.error('Error fetching public group info:', error)
-    return null
-  }
+    const decoded = atob(code);
+    // If it looks like a valid invite code after decoding, use it
+    if (decoded.includes(":")) return decoded;
+  } catch {}
+  return code; // already raw
 }
 
-export default async function InvitePage({ params }: { params: Promise<{ code: string }> }) {
-  const { code } = await params
-  const groupData = await getPublicGroupInfo(code)
-  
-  // Return 404 if group not found
-  if (!groupData || !groupData.exists) {
-    notFound()
+
+export default function InvitePreviewPage() {
+  const params = useParams();
+  const code = params.code as string;
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+  const [group, setGroup] = useState<PublicCirclePreview | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    const rawCode = decodeURIComponent(code);
+    //console.log(`\nCalling service for public circle: \n ${rawCoded} \n ${encodedCode} \n ${decodedCode} \n ${rawCode} \n ${code} \n`)
+    CircleService.getPublicCircleByInvite(rawCode)
+      .then((data) => {
+        if (!data) { setNotFound(true); return; }
+        setGroup(data);
+      })
+      .catch(() => setNotFound(true))
+      .finally(() => setIsLoading(false));
+  }, [code]);
+
+  const handleJoin = () => {
+    if (isAuthenticated) {
+      // Already logged in — go straight to the join confirmation page
+      router.push(decodeURIComponent(`/invite/${code}/join`));
+      return;
+    }
+    // Not logged in — stash invite code, redirect to login
+    localStorage.setItem("pendingInviteCode", code);
+    if (group?.name) localStorage.setItem("pendingGroupName", group.name);
+    router.push(
+      `/auth/login?returnUrl=${decodeURIComponent(`/invite/${code}/join`)}`
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
-  
+
+  if (notFound || !group) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-sm">
+          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
+          <h1 className="text-lg font-semibold">Invalid invite link</h1>
+          <p className="text-sm text-muted-foreground">
+            This link may have expired or is no longer valid.
+          </p>
+          <Button variant="outline" onClick={() => router.push("/")}>
+            Go home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const sym = CURRENCY_SYMBOLS[group.currency] ?? group.currency;
+  const spotsLeft = group.max_members - group.member_count;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header with logo */}
-      <header className="bg-white border-b shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3 sm:py-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <Image 
-              src="/images/coopwise-logo.svg"
+      <header className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/assets/icons/logo.svg"
               alt="CoopWise"
-              width={32}
-              height={32}
-              className="mr-2"
-              priority
+              width={28}
+              height={28}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
             />
-            <span className="font-bold text-lg text-gray-900">CoopWise</span>
-          </div>
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <a 
-              href="/auth/login" 
-              className="text-sm font-medium text-primary hover:underline"
-            >
+            <span className="font-semibold text-sm">CoopWise</span>
+          </Link>
+          <div className="flex items-center gap-3 text-sm">
+            {
+              !isAuthenticated &&
+              <> <Link href="/auth/login" className="text-primary font-medium">
               Log in
-            </a>
-            <a 
-              href="/auth/signup" 
-              className="inline-block rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/90 transition"
+            </Link>
+            <Link
+              href="/auth/signup"
+              className="bg-primary text-white px-3 py-1.5 rounded-lg font-medium"
             >
               Sign up
-            </a>
+            </Link></>
+            }
+           
           </div>
         </div>
       </header>
-      
-      <main className="flex-1 container mx-auto max-w-3xl px-4 py-6 sm:py-8">
-        {/* Show public group preview for unauthenticated users */}
-        <PublicGroupPreview inviteCode={code} groupData={groupData} />
-        
-        {/* Additional info card */}
-        <div className="mt-6 bg-white rounded-xl shadow-sm p-4 sm:p-6 border-l-4 border-primary">
-          <h2 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">Why join a savings group?</h2>
-          <p className="text-xs sm:text-sm text-gray-600">
-            Cooperative savings groups help you save money more effectively through structured group contributions 
-            and commitment. Join this group to start building wealth together with others.
-          </p>
+
+      <main className="flex-1 max-w-lg mx-auto w-full px-4 py-8 space-y-4">
+        {/* Circle card */}
+        <div className="bg-gradient-to-br from-[#06413F] to-[#0a6360] rounded-2xl p-5 text-white space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="font-bold text-lg leading-tight">{group.name}</h1>
+              <p className="text-white/70 text-xs capitalize">
+                {group.coop_model} · {group.contribution_frequency}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-baseline gap-1">
+            <span className="text-3xl font-extrabold">
+              {sym}
+              {group.contribution_amount.toLocaleString()}
+            </span>
+            <span className="text-white/60 text-sm">/ round</span>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-white/60">
+            <span>
+              {group.member_count} / {group.max_members} members
+            </span>
+            <span
+              className={
+                spotsLeft <= 2 ? "text-amber-300 font-medium" : "text-white/60"
+              }
+            >
+              {spotsLeft} spot{spotsLeft !== 1 ? "s" : ""} left
+            </span>
+          </div>
         </div>
+
+        {/* Description */}
+        {group.description && (
+          <div className="bg-white rounded-xl p-4 border text-sm text-muted-foreground">
+            {group.description}
+          </div>
+        )}
+
+        {/* Terms */}
+        <div className="bg-white rounded-xl p-4 border space-y-2">
+          <h2 className="text-sm font-medium">What you're agreeing to</h2>
+          <ul className="text-xs text-muted-foreground space-y-1.5">
+            <li>
+              Contribute{" "}
+              <span className="font-medium text-foreground">
+                {sym}
+                {group.contribution_amount.toLocaleString()}
+              </span>{" "}
+              every {group.contribution_frequency}
+            </li>
+            <li>
+              Your contributions are private — no other member sees your
+              balance
+            </li>
+            <li>Payouts are automatic to your registered bank account</li>
+            <li>Transactions are recorded on the Flow blockchain</li>
+          </ul>
+        </div>
+
+        {/* CTA */}
+        <Button
+          className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl"
+          onClick={handleJoin}
+          disabled={spotsLeft <= 0 || group.status === "completed"}
+        >
+          {spotsLeft <= 0
+            ? "Circle is full"
+            : group.status === "completed"
+            ? "Circle is complete"
+            : "Join this circle"}
+          {spotsLeft > 0 && group.status !== "completed" && (
+            <ArrowRight className="w-4 h-4 ml-2" />
+          )}
+        </Button>
+
+        <p className="text-center text-xs text-muted-foreground">
+          Powered by Flow Blockchain · Crossmint Smart Wallets
+        </p>
       </main>
-      
-      {/* Footer */}
-      <footer className="bg-white border-t py-4 sm:py-6 mt-6">
-        <div className="container mx-auto px-4 text-center text-xs sm:text-sm text-gray-600">
-          <p>© {new Date().getFullYear()} CoopWise. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
-  )
-} 
+  );
+}

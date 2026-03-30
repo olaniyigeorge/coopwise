@@ -4,7 +4,7 @@ import os
 from config import AppConfig as config
 
 
-CASHRAMP_SECKEY = config.CASHRAMP_SECKEY or None
+CASHRAMP_SECKEY = config.GEMINI_API_KEY or None
 
 ACCURUE_STAGING_URL = "https://staging.api.useaccrue.com/cashramp/api/graphql"
 ACCURUE_PROD_URL = "https://api.useaccrue.com/cashramp/api/graphql"

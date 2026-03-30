@@ -48,7 +48,7 @@ function FlowExplorerLink({ circleId }: { circleId: number }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+      className="inline-flex items-center gap-1 text-xs text-green-200 hover:text-green-300 transition-colors"
     >
       View on Flowscan <ExternalLink className="w-3 h-3" />
     </a>
@@ -59,6 +59,8 @@ export default function CircleDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore();
+  const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+
 
   const circleId = params.id as string;
   const { circle, members, history, isLoading, error, refetch } = useCircle(circleId);
@@ -66,7 +68,9 @@ export default function CircleDetailPage() {
   const [isJoining, setIsJoining] = useState(false);
 
   const currentUserPosition = members.findIndex(
-    (m) => m.flow_address === user?.flow_address
+    (m) =>
+      m.user_id === user?.id ||
+      (!!m.flow_address && m.flow_address === user?.flow_address)
   );
   const isMember = currentUserPosition !== -1;
 
@@ -75,7 +79,7 @@ export default function CircleDetailPage() {
     try {
       setIsJoining(true);
       toast({ title: "Joining circle…", description: "Submitting to Flow blockchain." });
-      const { tx_id } = await CircleService.joinCircle(circle.id);
+      const { tx_id } = await CircleService.joinCircle(String(circle.id));
       await CircleService.waitForTx(tx_id);
       toast({
         title: "You've joined!",
@@ -92,16 +96,6 @@ export default function CircleDetailPage() {
       });
     } finally {
       setIsJoining(false);
-    }
-  };
-
-  const handleShare = async () => {
-    const url = window.location.href;
-    try {
-      await navigator.share({ title: circle?.name ?? "CoopWise Circle", url });
-    } catch {
-      await navigator.clipboard.writeText(url);
-      toast({ title: "Link copied!", description: "Share it with your members." });
     }
   };
 
@@ -135,6 +129,39 @@ export default function CircleDetailPage() {
     );
   }
 
+
+
+  const handleShare = async () => {
+    if (isMember) {
+      // Members get a proper invite link with their ID embedded
+      try {
+        setIsGeneratingInvite(true);
+        const { invite_link } = await CircleService.generateInviteLink(`${circle.id}`);
+        try {
+          await navigator.share({ title: circle.name, url: invite_link });
+        } catch {
+          await navigator.clipboard.writeText(invite_link);
+          toast({ title: "Invite link copied!", description: "Share it to invite someone." });
+        }
+      } catch (err: any) {
+        toast({
+          title: "Couldn't generate invite",
+          description: err?.response?.data?.detail || "Try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsGeneratingInvite(false);
+      }
+    } else {
+      // Non-members just copy the current page URL
+      await navigator.clipboard.writeText(window.location.href);
+      toast({ title: "Link copied!" });
+    }
+  };
+
+
+
+
   const totalRounds = members.length; // one round per member
   const scheduleLabel: Record<string, string> = {
     weekly: "Weekly",
@@ -162,12 +189,17 @@ export default function CircleDetailPage() {
             >
               <RefreshCw className="w-4 h-4" />
             </button>
+
             <button
               onClick={handleShare}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title="Share invite link"
+              disabled={isGeneratingInvite}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              title={isMember ? "Generate invite link" : "Copy link"}
             >
-              <Share2 className="w-4 h-4" />
+              {isGeneratingInvite
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Share2 className="w-4 h-4" />
+              }
             </button>
           </div>
         </div>
@@ -192,7 +224,7 @@ export default function CircleDetailPage() {
 
           <div className="flex items-baseline gap-1">
             <span className="text-3xl font-extrabold">
-              {formatAmount(circle.weekly_amount_local, circle.currency)}
+              {formatAmount(circle.contribution_amount, circle.currency)}
             </span>
             <span className="text-white/60 text-sm">/ round</span>
           </div>
@@ -221,16 +253,19 @@ export default function CircleDetailPage() {
         )}
 
         {/* Contribute CTA — shown to members who haven't contributed yet */}
-        {isMember &&
+        <div className="flex justify-center items-center">
+          {isMember &&
           members[currentUserPosition] &&
           !members[currentUserPosition].has_contributed_this_round &&
           !circle.is_complete && (
             <Link href={`/dashboard/circle/${circle.id}/contribute`}>
-              <Button className="w-full bg-primary hover:bg-primary/90 text-white">
+              <Button className="w-fit bg-primary hover:bg-primary/90 text-white">
                 Contribute this round
               </Button>
             </Link>
           )}
+        </div>
+        
 
         {/* Member contribution status */}
         <MemberStatusGrid
@@ -242,7 +277,11 @@ export default function CircleDetailPage() {
         <PayoutQueueCard
           members={members}
           yourPosition={
-            isMember ? members[currentUserPosition]?.queue_position ?? null : null
+            isMember
+              ? members[currentUserPosition]?.payout_position ??
+                members[currentUserPosition]?.queue_position ??
+                null
+              : null
           }
           nextPayoutDate={circle.next_payout_date}
           currentRound={circle.current_round}

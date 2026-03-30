@@ -9,6 +9,7 @@ class AuthenticatedUser(BaseModel):
     id: UUID
     role: UserRoles
     email: EmailStr
+    flow_address: Optional[str] = None
 
 
 

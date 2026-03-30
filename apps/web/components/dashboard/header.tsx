@@ -38,8 +38,8 @@ export default function Header({
   onMenuClick,
   showMobileMenu = false
 }: HeaderProps) {
-  const { logout, user } = useAuthStore();
-  const { authenticated, loading } = useAuthState();
+  const { isAuthenticated, isLoading, logout, user } = useAuthStore();
+
   const { notifications, markAsRead, markAllAsRead, unreadCount, fetchNotifications } = useNotificationStore();
   
   // Listen for notifications
@@ -132,9 +132,9 @@ export default function Header({
         
         {/* Right section: Notifications & Profile */}
         <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
-          <span className={`block border-2  ${authenticated
+          <span className={`block border-2  ${isAuthenticated
               ? "border-green-700 font-medium"
-              : !loading ? "bg-red-700"
+              : !isLoading ? "bg-red-700"
               : `border-orange-300`
 
           }`}>
