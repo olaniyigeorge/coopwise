@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Loader2, Users, Coins, Calendar, FileText, Target } from "lucide-react";
+import { Plus, Trash2, Loader2, Users, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,7 @@ import CircleService from "@/lib/circle-service";
 // Aligning with Backend Enums
 type ContributionFrequency = "daily" | "weekly" | "biweekly" | "monthly";
 type PayoutStrategy = "rotating" | "random" | "fixed";
-type CooperativeModel = "rosca" | "asusu" | "fixed";
+type CooperativeModel = "coop" | "ajo" | "esusu" | "chama";
 type Currency = "NGN" | "KES" | "GHS";
 
 const CURRENCY_LABELS: Record<Currency, { symbol: string }> = {
@@ -43,7 +43,7 @@ export function CreateCircleForm() {
   
   // 3. Logic & Strategy
   const [payoutStrategy, setPayoutStrategy] = useState<PayoutStrategy>("rotating");
-  const [coopModel, setCoopModel] = useState<CooperativeModel>("rosca");
+  const [coopModel, setCoopModel] = useState<CooperativeModel>("ajo");
   const [rotationOrder, setRotationOrder] = useState("sequential");
   
   // 4. Members
@@ -95,11 +95,14 @@ export function CreateCircleForm() {
       setIsSubmitting(true);
       setTxPhase("creating");
 
-      // @ts-ignore - Ensure your circle-service matches this new payload
-      const { circle_id, tx_id } = await CircleService.createCircle(payload);
+      const { circle_id, tx_id } = await CircleService.createCircle(
+        payload as import("@/lib/circle-service").CreateCirclePayload
+      );
 
-      setTxPhase("sealing");
-      await CircleService.waitForTx(tx_id);
+      if (tx_id) {
+        setTxPhase("sealing");
+        await CircleService.waitForTx(tx_id);
+      }
 
       toast({
         title: "Circle created!",

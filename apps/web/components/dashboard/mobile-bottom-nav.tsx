@@ -6,9 +6,9 @@ import { usePathname } from 'next/navigation'
 import { 
   Home, 
   Users, 
-  DollarSign, 
-  Sparkles, 
-  MessageSquare
+  PlusCircle,
+  Trophy,
+  Wallet
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -31,20 +31,19 @@ const navigationItems: NavItem[] = [
     icon: <Users className="w-5 h-5" />
   },
   {
-    name: 'Contributions',
-    href: '/dashboard/contributions',
-    icon: <DollarSign className="w-5 h-5" />
+    name: 'Create',
+    href: '/dashboard/create-circle',
+    icon: <PlusCircle className="w-5 h-5" />
   },
   {
-    name: 'AI Chat',
-    href: '/dashboard/ai-chat',
-    icon: <Sparkles className="w-5 h-5" />
+    name: 'Leaders',
+    href: '/dashboard/leaderboard',
+    icon: <Trophy className="w-5 h-5" />
   },
   {
-    name: 'Messages',
-    href: '/dashboard/messages',
-    icon: <MessageSquare className="w-5 h-5" />,
-    badge: 10
+    name: 'Payouts',
+    href: '/dashboard/payouts',
+    icon: <Wallet className="w-5 h-5" />
   }
 ]
 
@@ -54,6 +53,13 @@ export default function MobileBottomNav() {
   const isActive = (path: string) => {
     if (path === '/dashboard') {
       return pathname === '/dashboard'
+    }
+    if (path === '/dashboard/my-group') {
+      return (
+        pathname === path ||
+        pathname?.startsWith(`${path}/`) ||
+        pathname?.startsWith('/dashboard/circle/')
+      )
     }
     return pathname === path || pathname?.startsWith(`${path}/`)
   }

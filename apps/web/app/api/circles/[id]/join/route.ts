@@ -2,7 +2,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-const BACKEND = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
+import { resolveBackendUrl } from "@/lib/server/backend-url";
+
+const BACKEND = resolveBackendUrl();
 interface Ctx { params: Promise<{ id: string }> }
 
 export async function POST(

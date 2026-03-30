@@ -71,7 +71,7 @@ export default function InvitePreviewCard({
               Frequency
             </div>
             <p className="font-semibold text-gray-900 capitalize">
-              {circle.contribution_frequency}
+              {circle.payout_schedule}
             </p>
           </div>
         </div>

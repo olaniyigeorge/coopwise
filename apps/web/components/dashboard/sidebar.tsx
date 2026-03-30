@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Home, Users, Plus, UserPlus, MessageSquare, HelpCircle, User, LogOut, Sparkles, X } from 'lucide-react'
+import { Home, Users, Plus, UserPlus, MessageSquare, HelpCircle, User, LogOut, Sparkles, Trophy, Wallet, X } from 'lucide-react'
 import { toast } from 'sonner'
 import useAuthStore from '@/lib/stores/auth-store'
 
@@ -36,7 +36,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       icon: Users
     },
     { 
-      name: 'Create Group', 
+      name: 'Create Circle', 
       href: '/dashboard/create-circle', 
       icon: Plus
     },
@@ -44,6 +44,16 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       name: 'Join Group', 
       href: '/dashboard/join-group', 
       icon: UserPlus
+    },
+    {
+      name: 'Leaderboard',
+      href: '/dashboard/leaderboard',
+      icon: Trophy
+    },
+    {
+      name: 'Payouts',
+      href: '/dashboard/payouts',
+      icon: Wallet
     },
     { 
       name: 'Messages', 
@@ -68,7 +78,14 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     if (path === '/dashboard') {
       return pathname === '/dashboard'
     }
-    return pathname === path || (pathname?.startsWith(`${path}/`) && path !== '/dashboard')
+    if (path === '/dashboard/my-group') {
+      return (
+        pathname === '/dashboard/my-group' ||
+        pathname?.startsWith('/dashboard/my-group/') ||
+        pathname?.startsWith('/dashboard/circle/')
+      )
+    }
+    return pathname === path || pathname?.startsWith(`${path}/`)
   }
 
   const handleLinkClick = () => {

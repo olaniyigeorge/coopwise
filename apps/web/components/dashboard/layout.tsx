@@ -38,6 +38,14 @@ export default function DashboardLayout({
         backUrl: '/dashboard/my-group'
       }
     }
+
+    if (path.startsWith('/dashboard/circle/')) {
+      return {
+        title: '',
+        subtitle: '',
+        showBackButton: false
+      }
+    }
     
     switch (path) {
       case '/dashboard':
@@ -52,10 +60,20 @@ export default function DashboardLayout({
           showBackButton: true,
           backUrl: '/dashboard'
         }
+      case '/dashboard/create-group':
       case '/dashboard/create-circle':
         return {
           // Empty title since it's already in the page content
           title: '',
+          showBackButton: true,
+          backUrl: '/dashboard'
+        }
+
+      case '/dashboard/leaderboard':
+      case '/dashboard/payouts':
+        return {
+          title: '',
+          subtitle: '',
           showBackButton: true,
           backUrl: '/dashboard'
         }
