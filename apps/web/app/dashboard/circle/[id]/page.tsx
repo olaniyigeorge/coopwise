@@ -65,11 +65,12 @@ export default function CircleDetailPage() {
   const circleId = params.id as string;
   const { circle, members, history, isLoading, error, refetch } = useCircle(circleId);
 
-  console.log(`\n\nCircle: ${circle}\n\n`)
   const [isJoining, setIsJoining] = useState(false);
 
   const currentUserPosition = members.findIndex(
-    (m) => m.flow_address === user?.flow_address
+    (m) =>
+      m.user_id === user?.id ||
+      (!!m.flow_address && m.flow_address === user?.flow_address)
   );
   const isMember = currentUserPosition !== -1;
 
@@ -78,7 +79,7 @@ export default function CircleDetailPage() {
     try {
       setIsJoining(true);
       toast({ title: "Joining circle…", description: "Submitting to Flow blockchain." });
-      const { tx_id } = await CircleService.joinCircle(`${circle.id}`);
+      const { tx_id } = await CircleService.joinCircle(String(circle.id));
       await CircleService.waitForTx(tx_id);
       toast({
         title: "You've joined!",
@@ -276,7 +277,11 @@ export default function CircleDetailPage() {
         <PayoutQueueCard
           members={members}
           yourPosition={
-            isMember ? members[currentUserPosition]?.payout_position ?? null : null
+            isMember
+              ? members[currentUserPosition]?.payout_position ??
+                members[currentUserPosition]?.queue_position ??
+                null
+              : null
           }
           nextPayoutDate={circle.next_payout_date}
           currentRound={circle.current_round}

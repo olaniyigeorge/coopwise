@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import "fhevm/lib/TFHE.sol";
+import {FHE, euint32, externalEuint32, euint64, ebool, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import "./interfaces/ICoopGroup.sol";
 import "./interfaces/IFlowVault.sol";
 import "./RotationLogic.sol";
 import "./PrivacyUtils.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
@@ -36,6 +37,7 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
     
     // Round tracking (encrypted booleans)
     mapping(uint256 => mapping(address => ebool)) private roundPayments;
+    mapping(uint256 => mapping(address => bool)) private roundPaymentFlags; // Public flags for v0.11 compatibility
     mapping(uint256 => ebool) private roundCompleted;
     
     // Events
@@ -64,7 +66,7 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         address _owner
     ) Ownable(_owner) {
         name = _name;
-        contributionAmount = TFHE.asEuint64(_contributionAmount);
+        contributionAmount = FHE.asEuint64(_contributionAmount);
         cycleDuration = _cycleDuration;
         maxMembers = _maxMembers;
         createdAt = block.timestamp;
@@ -78,13 +80,13 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
     // Join group before it starts
     function joinGroup() external groupActive {
         require(members.length < maxMembers, "Group full");
-        require(!memberData[msg.sender].isActive, "Already member");
+        require(memberData[msg.sender].wallet == address(0), "Already member");
         require(block.timestamp < createdAt + 1 days, "Registration closed"); // 1 day to join
         
         memberData[msg.sender] = Member({
             wallet: msg.sender,
-            totalContributed: TFHE.asEuint64(0),
-            hasPaidCurrentRound: TFHE.asEbool(false),
+            totalContributed: FHE.asEuint64(0),
+            hasPaidCurrentRound: FHE.asEbool(false),
             joinTime: block.timestamp,
             lastPayoutRound: 0,
             isActive: true
@@ -107,31 +109,30 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
     }
     
     // Member contributes Flow (encrypted amount proves they know amount without revealing)
-    function contribute(bytes calldata encryptedAmount) external payable onlyMember groupActive nonReentrant {
-        euint64 amount = TFHE.asEuint64(encryptedAmount);
+    function contribute(externalEuint64 encryptedAmount, bytes calldata inputProof, uint256 publicAmount) external payable onlyMember groupActive nonReentrant {
+        euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
         
-        // Verify amount matches required contribution (encrypted comparison)
-        ebool isCorrectAmount = PrivacyUtils.verifyExactAmount(amount, contributionAmount);
-        require(TFHE.decrypt(isCorrectAmount), "Incorrect contribution amount");
+        // Verify public amount matches sent value
+        require(msg.value == publicAmount, "Incorrect Flow amount sent");
         
-        // Check not already paid this round
-        ebool alreadyPaid = roundPayments[currentRound][msg.sender];
-        require(!TFHE.decrypt(alreadyPaid), "Already paid this round");
+        // Check not already paid this round - this will need to be handled differently in v0.11
+        // For now, we'll use a simple mapping that can be checked without decryption
+        require(!roundPaymentFlags[currentRound][msg.sender], "Already paid this round");
         
         // Record payment (encrypted)
-        roundPayments[currentRound][msg.sender] = TFHE.asEbool(true);
-        memberData[msg.sender].hasPaidCurrentRound = TFHE.asEbool(true);
-        memberData[msg.sender].totalContributed = TFHE.add(
+        roundPayments[currentRound][msg.sender] = FHE.asEbool(true);
+        roundPaymentFlags[currentRound][msg.sender] = true;
+        memberData[msg.sender].hasPaidCurrentRound = FHE.asEbool(true);
+        memberData[msg.sender].totalContributed = FHE.add(
             memberData[msg.sender].totalContributed, 
             amount
         );
-        totalContributed = TFHE.add(totalContributed, amount);
+        totalContributed = FHE.add(totalContributed, amount);
         
-        // Transfer Flow to vault (actual amount is public for gas, encrypted for logic)
-        uint256 publicAmount = TFHE.decrypt(amount); // Only decrypt for transfer
+        // Transfer Flow to vault using the provided public amount
         vault.deposit{value: publicAmount}(msg.sender, publicAmount, amount);
         
-        emit ContributionReceived(msg.sender, encryptedAmount, currentRound);
+        emit ContributionReceived(msg.sender, abi.encodePacked(externalEuint64.unwrap(encryptedAmount)), currentRound);
         
         // Auto-trigger payout if all paid
         tryAutoPayout();
@@ -139,28 +140,36 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
     
     // Internal: check if all paid and execute payout
     function tryAutoPayout() internal {
-        // Collect all payment statuses
-        ebool[] memory statuses = new ebool[](members.length);
+        // Check if all members paid using public flags
+        bool allPaid = true;
         for (uint i = 0; i < members.length; i++) {
-            statuses[i] = roundPayments[currentRound][members[i]];
+            if (!roundPaymentFlags[currentRound][members[i]]) {
+                allPaid = false;
+                break;
+            }
         }
         
-        ebool allPaid = rotationLogic.verifyRoundCompletion(statuses);
-        
-        // Only proceed if decrypted condition met
-        if (TFHE.decrypt(allPaid)) {
-            executePayout();
+        // Only proceed if all paid
+        if (allPaid) {
+            // For v0.11, we need the decrypted payout amount
+            // In production, this should be provided by off-chain decryption
+            // For now, we'll use the vault balance as approximation
+            uint256 vaultBalance = address(this).balance;
+            executePayout(vaultBalance);
         }
     }
     
     // Execute payout to next in rotation
-    function executePayout() public groupActive nonReentrant {
-        // Verify all paid (redundant check for external calls)
-        ebool[] memory statuses = new ebool[](members.length);
+    function executePayout(uint256 publicPayoutAmount) public groupActive nonReentrant {
+        // Verify all paid using public flags
+        bool allPaid = true;
         for (uint i = 0; i < members.length; i++) {
-            statuses[i] = roundPayments[currentRound][members[i]];
+            if (!roundPaymentFlags[currentRound][members[i]]) {
+                allPaid = false;
+                break;
+            }
         }
-        require(TFHE.decrypt(rotationLogic.verifyRoundCompletion(statuses)), "Not all paid");
+        require(allPaid, "Not all paid");
         
         address recipient = rotationOrder[rotationIndex];
         require(memberData[recipient].isActive, "Recipient not active");
@@ -177,18 +186,18 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         
         // Reset round
         for (uint i = 0; i < members.length; i++) {
-            roundPayments[currentRound][members[i]] = TFHE.asEbool(false);
-            memberData[members[i]].hasPaidCurrentRound = TFHE.asEbool(false);
+            roundPayments[currentRound][members[i]] = FHE.asEbool(false);
+            roundPaymentFlags[currentRound][members[i]] = false;
+            memberData[members[i]].hasPaidCurrentRound = FHE.asEbool(false);
         }
         
-        roundCompleted[currentRound] = TFHE.asEbool(true);
+        roundCompleted[currentRound] = FHE.asEbool(true);
         currentRound++;
         
-        // Execute transfer from vault
-        uint256 publicPayout = TFHE.decrypt(payoutAmount);
-        vault.withdraw(recipient, publicPayout, payoutAmount);
+        // Execute transfer from vault using provided public amount
+        vault.withdraw(recipient, publicPayoutAmount, payoutAmount);
         
-        emit PayoutExecuted(recipient, currentRound - 1, TFHE.serialize(payoutAmount));
+        emit PayoutExecuted(recipient, currentRound - 1, abi.encodePacked(FHE.toBytes32(payoutAmount)));
         emit RoundAdvanced(currentRound);
         
         // Close group if rotation complete
@@ -197,7 +206,12 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         }
     }
     
-    // View functions
+    // Execute payout to next in rotation (legacy version for internal calls)
+    function executePayout() public groupActive nonReentrant {
+        // This should be called with the decrypted payout amount from off-chain
+        // For now, we'll use a placeholder - in production, this should be called with the actual amount
+        revert("Use executePayout(uint256) with decrypted amount");
+    }
     function getNextPayoutRecipient() external view returns (address) {
         return rotationLogic.peekNextRecipient(rotationOrder, rotationIndex);
     }
@@ -206,17 +220,94 @@ contract CoopGroup is ICoopGroup, ReentrancyGuard, Ownable {
         return members.length;
     }
     
-    function getEncryptedContributionAmount() external view returns (bytes memory) {
-        return TFHE.serialize(contributionAmount);
+    function getEncryptedContributionAmount() external view returns (bytes32) {
+        return FHE.toBytes32(contributionAmount);
     }
     
-    function getMyEncryptedBalance() external view onlyMember returns (bytes memory) {
-        return TFHE.serialize(memberData[msg.sender].totalContributed);
+    function getMyEncryptedBalance() external view onlyMember returns (bytes32) {
+        return FHE.toBytes32(memberData[msg.sender].totalContributed);
+    }
+
+    function getEncryptedBalance() external view returns (bytes32) {
+        return FHE.toBytes32(vault.getEncryptedBalance(address(this)));
+    }
+    
+    // Additional view functions for better UX
+    function getGroupInfo() external view returns (
+        string memory _name,
+        uint256 _cycleDuration,
+        uint256 _createdAt,
+        uint256 _currentRound,
+        uint256 _maxMembers,
+        bool _isActive,
+        uint256 _memberCount
+    ) {
+        return (
+            name,
+            cycleDuration,
+            createdAt,
+            currentRound,
+            maxMembers,
+            isActive,
+            members.length
+        );
+    }
+    
+    function getMemberInfo(address member) external view returns (
+        address wallet,
+        uint256 joinTime,
+        uint256 lastPayoutRound,
+        bool isActive
+    ) {
+        Member memory m = memberData[member];
+        return (
+            m.wallet,
+            m.joinTime,
+            m.lastPayoutRound,
+            m.isActive
+        );
+    }
+    
+    function isMember(address user) external view returns (bool) {
+        return memberData[user].wallet != address(0);
+    }
+    
+    function hasPaidCurrentRound(address member) external view returns (bool) {
+        return roundPaymentFlags[currentRound][member];
     }
     
     // Emergency: allow owner to return funds if group fails
     function emergencyRefund() external onlyOwner {
         require(!isActive || block.timestamp > createdAt + 365 days, "Too early");
-        // Implementation: distribute vault pro-rata
+        
+        // Get total vault balance
+        uint256 totalBalance = address(this).balance;
+        require(totalBalance > 0, "No funds to refund");
+        
+        // Calculate each member's proportional share based on contributions
+        uint256 totalContributions = 0;
+        for (uint i = 0; i < members.length; i++) {
+            // Note: In production, this would need off-chain decryption
+            // For emergency refund, we'll distribute equally as fallback
+            totalContributions += 1; // Placeholder - each member gets equal share
+        }
+        
+        // Distribute funds equally among all active members
+        if (totalContributions > 0) {
+            uint256 sharePerMember = totalBalance / totalContributions;
+            
+            for (uint i = 0; i < members.length; i++) {
+                if (memberData[members[i]].isActive) {
+                    (bool success, ) = members[i].call{value: sharePerMember}("");
+                    if (!success) {
+                        // If one transfer fails, continue with others
+                        continue;
+                    }
+                }
+            }
+        }
+        
+        // Deactivate group after emergency refund
+        isActive = false;
     }
 }
