@@ -173,13 +173,13 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Legacy login */}
-        <p className="text-center text-xs text-gray-400 mt-4">
+        {/* Legacy login — optional; keep routes if needed */}
+        {/* <p className="text-center text-xs text-gray-400 mt-4">
           Prefer password login?{" "}
           <Link href="/auth/login-legacy" className="underline hover:text-gray-600 transition-colors">
             Use legacy login
           </Link>
-        </p>
+        </p> */}
 
       </div>
     </div>
