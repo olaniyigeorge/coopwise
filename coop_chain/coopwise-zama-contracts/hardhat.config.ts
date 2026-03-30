@@ -8,6 +8,7 @@ import "hardhat-gas-reporter";
 import type { HardhatUserConfig } from "hardhat/config";
 import { vars } from "hardhat/config";
 import "solidity-coverage";
+import type { HttpNetworkUserConfig } from "hardhat/types";
 
 import "./tasks/accounts";
 import "./tasks/FHECounter";
@@ -71,6 +72,6 @@ const config: HardhatUserConfig = {
     outDir: "types",
     target: "ethers-v6",
   },
-};
+} as any;
 
 export default config;
