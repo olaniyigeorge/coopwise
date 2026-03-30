@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { useContribution, ContributionStatus } from "@/hooks/useContribution";
 
 interface ContributePanelProps {
-  circleId: number;
+  circleId: number | string;
   circleName: string;
   /** Amount formatted for display e.g. "₦5,000" */
   displayAmount: string;

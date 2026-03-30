@@ -72,10 +72,10 @@ export default function ContributePage() {
         {!isLoading && !error && circle && (
           <div className="bg-white rounded-2xl border border-border shadow-sm p-5">
             <ContributePanel
-              circleId={parseInt(circleId, 10)}
+              circleId={circleId}
               circleName={circle.name}
               displayAmount={formatAmount(
-                circle.weekly_amount_local,
+                circle.contribution_amount || circle.weekly_amount_local,
                 circle.currency
               )}
               returnUrl={circleDetailUrl}
@@ -92,7 +92,10 @@ export default function ContributePage() {
             <li>
               CoopWise asks the Zama relayer to encrypt your {" "}
               {circle
-                ? formatAmount(circle.weekly_amount_local, circle.currency)
+                ? formatAmount(
+                    circle.contribution_amount || circle.weekly_amount_local,
+                    circle.currency
+                  )
                 : "contribution"}{" "}
               into an unreadable ciphertext.
             </li>

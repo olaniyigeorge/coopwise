@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { resolveBackendUrl } from "@/lib/server/backend-url";
+
+const BACKEND_URL = resolveBackendUrl();
 
 export async function POST(req: NextRequest) {
   try {
@@ -74,7 +76,7 @@ async function backendHeaders() {
 
 
 export async function GET() {
-  const res = await fetch(`${BACKEND_URL}/api/v1/circles/me`, {
+  const res = await fetch(`${BACKEND_URL}/api/v1/cooperatives/me`, {
     headers: await backendHeaders(),
   });
   const data = await res.json();
