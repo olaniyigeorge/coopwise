@@ -5,6 +5,7 @@ from redis import Redis
 from typing import Optional, Dict, Any
 import json
 
+from app.utils.logger import logger
 from app.schemas.cashramp_schemas import (
     CustomerResponse,
     InitiateDepositResponse,
