@@ -61,8 +61,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       name: 'Messages', 
       href: '/dashboard/messages', 
       icon: MessageSquare,
-      // Until a real messages API exists, mirror notification unread count.
-      badge: unreadCount
+      // Messages badge is disabled until a real messages/unread API exists.
     },
 
     { 
