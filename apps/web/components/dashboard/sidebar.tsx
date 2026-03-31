@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { Home, Users, Plus, UserPlus, MessageSquare, HelpCircle, User, LogOut, Sparkles, Trophy, Wallet, X } from 'lucide-react'
 import { toast } from 'sonner'
 import useAuthStore from '@/lib/stores/auth-store'
+import useNotificationStore from '@/lib/stores/notification-store'
 
 interface SidebarProps {
   isOpen?: boolean
@@ -17,6 +18,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { logout } = useAuthStore()
+  const { unreadCount } = useNotificationStore()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   
   const navigationItems = [
@@ -59,7 +61,8 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       name: 'Messages', 
       href: '/dashboard/messages', 
       icon: MessageSquare,
-      badge: 10 
+      // Until a real messages API exists, mirror notification unread count.
+      badge: unreadCount
     },
 
     { 
@@ -109,13 +112,13 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         onClose()
       }
      
-      logout()
+      await logout()
 
       toast.success('Logged out successfully', {
         description: 'You have been securely logged out.'
       })
       
-      router.push('/auth/login')
+      router.replace('/auth/login')
       
     } catch (error) {
       console.error('Logout error:', error)
@@ -142,9 +145,9 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           <item.icon className="w-5 h-5" />
                 </div>
         <span className="ml-3 text-sm font-medium">{item.name}</span>
-                {item.badge && (
+                {!!item.badge && item.badge > 0 && (
                   <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
-                    {item.badge}
+                    {item.badge > 9 ? '9+' : item.badge}
                   </span>
                 )}
               </Link>
