@@ -495,16 +495,7 @@ export const defDashData: DashboardData = {
     suggested_groups: []
   },
   activities: [
-    {
-      id: "33333333-3333-3333-3333-333333333333",
-      user_id: "00000000-0000-0000-0000-000000000000",
-      group_id: "22222222-2222-2222-2222-222222222222",
-      type: ActivityType.CREATED_GROUP,
-      description: "You created a group",
-      entity_id: "22222222-2222-2222-2222-222222222222",
-      amount: null,
-      created_at: "2025-06-07T16:00:25.196647"
-    }
+    // Mock fallback intentionally empty so "Recent Activity" doesn't show fake data.
   ],
   ai_insights: [
     {
