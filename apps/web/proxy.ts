@@ -5,6 +5,17 @@ export function proxy(request: NextRequest) {
   // Get the pathname
   const { pathname } = request.nextUrl
 
+  // Protect dashboard pages (client-accessible) when logged out
+  if (pathname.startsWith('/dashboard')) {
+    const token = request.cookies.get('auth_token')?.value
+    if (!token) {
+      const loginUrl = request.nextUrl.clone()
+      loginUrl.pathname = '/auth/login'
+      loginUrl.searchParams.set('returnUrl', `${pathname}${request.nextUrl.search || ''}`)
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
   // Only run this middleware for API routes
   if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/')) {
     // Get the token from the cookies
@@ -54,5 +65,5 @@ export function proxy(request: NextRequest) {
 
 // See "Matching Paths" below to learn more
 export const config = {
-  matcher: '/api/:path*',
+  matcher: ['/api/:path*', '/dashboard/:path*'],
 } 
