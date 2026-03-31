@@ -49,7 +49,9 @@ interface Message {
   isOwn: boolean
 }
 
-const mockContacts: Contact[] = [
+const USE_MOCK_DATA = false; // Disable mock data in production
+
+const mockContacts: Contact[] = USE_MOCK_DATA ? [
   {
     id: '1',
     name: 'Education Savers Group',
@@ -98,9 +100,9 @@ const mockContacts: Contact[] = [
     type: 'group',
     groupMembers: 25
   }
-]
+] : []
 
-const mockMessages: Message[] = [
+const mockMessages: Message[] = USE_MOCK_DATA ? [
   {
     id: '1',
     content: 'Hey everyone! Just wanted to remind you that contributions are due this Friday.',
@@ -141,11 +143,11 @@ const mockMessages: Message[] = [
     status: 'read',
     isOwn: true
   }
-]
+] : []
 
 export default function MessagesPage() {
   const { isMobile } = useMobile()
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(mockContacts[0])
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(mockContacts[0] ?? null)
   const [searchTerm, setSearchTerm] = useState('')
   const [messageText, setMessageText] = useState('')
   const [showContactsList, setShowContactsList] = useState(!isMobile)

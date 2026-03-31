@@ -3,8 +3,9 @@ import AuthService from '@/lib/auth-service';
 
 // Get API key from environment variables or use the provided key
 const getApiKey = (): string => {
-  // Use the provided API key
-  return 'AIzaSyAEIjFXIIHWBWFPGF2agdLvgC9sbkbM4CQ';
+  // Prefer using environment variables (client-safe because it's prefixed with NEXT_PUBLIC).
+  // In this app, the primary path should be the backend route.
+  return process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 };
 
 // Initialize the Gemini API client with the API key
@@ -56,41 +57,29 @@ export class AIService {
     try {
       // First try to use the backend API
       const token = await AuthService.getToken();
-      
-      if (token) {
-        try {
-          console.log('Using backend API for AI chat');
-          const response = await fetch('/api/v1/insights/ai-chat', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ prompt: message }),
-          });
-          
-          if (response.ok) {
-            const data = await response.text();
-            console.log('Got response from backend AI chat API');
-            return data;
-          } else {
-            console.warn('Backend AI chat API failed, falling back to direct Gemini API');
-          }
-        } catch (apiError) {
-          console.error('Error using backend AI chat API:', apiError);
-          console.warn('Falling back to direct Gemini API');
-        }
+
+      if (!token) {
+        throw new Error('Authentication required');
       }
-      
-      // Fallback to direct Gemini API if backend fails
-      // Check if API key is available
-      if (!getApiKey()) {
-        throw new Error('No API key provided. Please configure the Gemini API key in environment variables.');
+
+      console.log('Using backend API for AI chat');
+      const response = await fetch('/api/v1/insights/ai-chat', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: message }),
+      });
+
+      if (response.ok) {
+        const data = await response.text();
+        return data;
       }
-      
-      const result = await this.chat.sendMessage(message);
-      const response = result.response;
-      return response.text();
+
+      // Surface backend error text (helps you debug GEMINI_API_KEY / auth issues).
+      const errorText = await response.text().catch(() => '');
+      throw new Error(errorText || `Backend AI chat failed (${response.status})`);
     } catch (error: any) {
       console.error('Error sending message to AI:', error);
       
@@ -100,7 +89,7 @@ export class AIService {
       } else if (error.message?.includes('quota')) {
         throw new Error('API quota exceeded. Please try again later or check your API usage limits.');
       } else {
-        throw new Error('Failed to get response from AI assistant. Please try again later.');
+        throw new Error(error.message || 'Failed to get response from AI assistant. Please try again later.');
       }
     }
   }
