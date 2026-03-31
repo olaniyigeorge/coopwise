@@ -134,7 +134,7 @@ export default function Header({
         <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
           <span className={`block border-2  ${isAuthenticated
               ? "border-green-700 font-medium"
-              : !isLoading ? "bg-red-700"
+              : !isLoading ? "bg-primary"
               : `border-orange-300`
 
           }`}>
