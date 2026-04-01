@@ -76,7 +76,11 @@ async def get_immediate_ai_response(
     except Exception as e:
         # Never leak upstream details (or API keys) to clients.
         logger.error(f"AI chat failed: {e}")
-        response = "Something happened. Please try again."
+        msg = str(e) if e else ""
+        if "rate limited" in msg.lower():
+            response = "AI is temporarily rate-limited. Please try again in a minute."
+        else:
+            response = "Something happened. Please try again."
 
     return response
 
@@ -90,18 +94,33 @@ async def ask_google_llm(prompt: str):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={config.GEMINI_API_KEY}"
 
     try:
-        response = requests.post(
-            url, headers={"Content-Type": "application/json"}, json=payload, timeout=10
-        )
-        response.raise_for_status()
+        # Retry transient upstream errors (esp. 429) a couple times.
+        last_status: int | None = None
+        for attempt in range(3):
+            response = requests.post(
+                url, headers={"Content-Type": "application/json"}, json=payload, timeout=15
+            )
+            last_status = response.status_code
+            if response.status_code == 429:
+                # Backoff: 0.5s, 1.0s then give up
+                import time
+
+                time.sleep(0.5 * (attempt + 1))
+                continue
+            response.raise_for_status()
+            break
+        else:
+            raise RuntimeError("AI is rate limited")
 
         data = response.json()
-        logger.info(f"\n\n ->GOOGLE JSON response {data} GOOGLE JSON response<- \n\n")
         insight_text = data["candidates"][0]["content"]["parts"][0]["text"]
         return insight_text
 
     except requests.RequestException as e:
         # Do not include the full exception string, which may contain the request URL (and API key).
+        if getattr(e, "response", None) is not None and e.response is not None:
+            if e.response.status_code == 429:
+                raise RuntimeError("AI is rate limited")
         raise RuntimeError("Failed to fetch AI insight")
 
     except (KeyError, IndexError) as e:
