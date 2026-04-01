@@ -36,11 +36,11 @@ cadence/
 
 access(all) contract CoopWise {
 
-        // ── Storage paths ──────────────────────────────────────────────────────
+        // ── Storage paths
         access(all) let RegistryStoragePath: StoragePath
         access(all) let RegistryPublicPath: PublicPath
 
-        // ── Circle state ───────────────────────────────────────────────────────
+        // ── Circle state
         access(all) struct Circle {
                 access(all) let id: UInt64
                 access(all) let name: String
@@ -75,7 +75,7 @@ access(all) contract CoopWise {
                 }
         }
 
-        // ── Registry resource — stores all circles ─────────────────────────────
+        // ── Registry resource — stores all circles───────
         access(all) resource Registry {
                 access(all) var circles: {UInt64: Circle}
                 access(all) var nextId: UInt64
@@ -131,7 +131,7 @@ access(all) contract CoopWise {
                 }
         }
 
-        // ── Events — backend subscribes to these ──────────────────────────────
+        // ── Events — backend subscribes to these
         access(all) event CircleCreated(
                 circleId: UInt64,
                 name: String,
@@ -142,7 +142,7 @@ access(all) contract CoopWise {
 
         access(all) event MemberJoined(circleId: UInt64, member: Address)
 
-        // ── Contract init — runs once at deploy ───────────────────────────────
+        // ── Contract init — runs once at deploy
         init() {
                 self.RegistryStoragePath = /storage/CoopWiseRegistry
                 self.RegistryPublicPath = /public/CoopWiseRegistry
@@ -158,7 +158,7 @@ access(all) contract CoopWise {
                 self.account.capabilities.publish(cap, at: self.RegistryPublicPath)
         }
 
-        // ── Public accessor ───────────────────────────────────────────────────
+        // ── Public accessor───────
         access(all) fun getRegistry(): &Registry {
                 return self.account.storage.borrow<&Registry>(
                         from: self.RegistryStoragePath
