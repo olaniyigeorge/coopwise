@@ -193,10 +193,19 @@ class CooperativeMembershipService:
     async def checkout_invite_code(
         db: AsyncSession, invite_code: str, user: AuthenticatedUser
     ):
-        invited_id__group_id = invite_code[11:]
-        inviter_id, group_id = invited_id__group_id.split(":")
-        group_id = UUID(group_id)
-        inviter_id = UUID(inviter_id)
+        # Code format: {INVITE_CODE_PREFIX}{inviter_id}:{group_id}
+        # Example: CPW-INV-<inviter_uuid>:<group_uuid>
+        try:
+            stripped = invite_code.replace(config.INVITE_CODE_PREFIX, "", 1)
+            inviter_id_str, group_id_str = stripped.split(":")
+            inviter_id = UUID(inviter_id_str)
+            group_id = UUID(group_id_str)
+        except Exception as e:
+            logger.error(f"Invalid invite code format: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid invite code format",
+            )
         try:
             stmt = select(GroupMembership).where(
                 GroupMembership.group_id == group_id,
@@ -236,10 +245,19 @@ class CooperativeMembershipService:
     async def accept_invite_code(
         db: AsyncSession, user: AuthenticatedUser, invite_code: str
     ) -> Optional[GroupMembership]:
-        invited_id__group_id = invite_code[11:]
-        inviter_id, group_id = invited_id__group_id.split(":")
-        group_id = UUID(group_id)
-        inviter_id = UUID(inviter_id)
+        # Code format: {INVITE_CODE_PREFIX}{inviter_id}:{group_id}
+        # Example: CPW-INV-<inviter_uuid>:<group_uuid>
+        try:
+            stripped = invite_code.replace(config.INVITE_CODE_PREFIX, "", 1)
+            inviter_id_str, group_id_str = stripped.split(":")
+            inviter_id = UUID(inviter_id_str)
+            group_id = UUID(group_id_str)
+        except Exception as e:
+            logger.error(f"Invalid invite code format: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid invite code format",
+            )
         try:
             stmt = select(GroupMembership).where(
                 GroupMembership.group_id == group_id,
