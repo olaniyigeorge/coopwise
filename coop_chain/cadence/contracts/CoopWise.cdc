@@ -49,7 +49,7 @@ access(all) contract CoopWise {
         }
     }
 
-    // ── State ─────────────────────────────────────────────────────────────
+    // ── State──────
     access(all) var nextCircleId: UInt64
     access(contract) var circles: {UInt64: CircleInfo}
 
@@ -101,7 +101,7 @@ access(all) contract CoopWise {
         }
     }
 
-    // ── Admin resource (held by CoopWise service account) ────────────────
+    // ── Admin resource (held by CoopWise service account)─────
     access(all) resource Admin {
 
         access(all) fun createCircle(
@@ -138,7 +138,7 @@ access(all) contract CoopWise {
         }
     }
 
-    // ── Internal helpers ─────────────────────────────────────────────────
+    // ── Internal helpers─────
     access(contract) fun advanceRound(circleId: UInt64, newRound: UInt64) {
         if var circle = self.circles[circleId] {
             circle.currentRound = newRound
@@ -150,7 +150,7 @@ access(all) contract CoopWise {
         }
     }
 
-    // ── Public read ───────────────────────────────────────────────────────
+    // ── Public read
     access(all) fun getCircle(id: UInt64): CircleInfo? {
         return self.circles[id]
     }
@@ -159,7 +159,7 @@ access(all) contract CoopWise {
         return self.nextCircleId
     }
 
-    // ── Init ──────────────────────────────────────────────────────────────
+    // ── Init ──
     init() {
         self.nextCircleId = 0
         self.circles = {}
