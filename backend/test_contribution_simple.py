@@ -14,7 +14,7 @@ async def test_imports():
     """Test that all our new modules can be imported"""
     try:
         from app.services.contract_service import contract_service
-        print("✅ Contract service imported successfully")
+        print(" Contract service imported successfully")
 
         # Test contract service methods
         result = await contract_service.submit_contribution_onchain(
@@ -24,14 +24,14 @@ async def test_imports():
             user_address="test-address",
             network="flow"
         )
-        print(f"✅ Contract service submit method works: {result['success']}")
+        print(f" Contract service submit method works: {result['success']}")
 
         # Test query method
         status = await contract_service.query_contribution_status(
             contribution_id="test-contrib-id",
             network="flow"
         )
-        print(f"✅ Contract service query method works: {status is not None}")
+        print(f" Contract service query method works: {status is not None}")
 
         print("\n🎉 All contract service tests passed!")
         return True

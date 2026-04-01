@@ -6,7 +6,8 @@
   ],
   "python.analysis.autoSearchPaths": true,
   "python.analysis.useLibraryCodeForTypes": true,
-  "python.analysis.diagnosticMode": "workspace"
+  "python.analysis.diagnosticMode": "workspace",
+  "cadence.flowCommand": "flow"
 }
 
   // "python.analysis.typeCheckingMode": "basic",

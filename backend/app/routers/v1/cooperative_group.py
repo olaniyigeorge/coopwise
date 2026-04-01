@@ -75,7 +75,7 @@ async def create_cooperative_group(
             weekly_amount_usdc=usdc_amount,
             rotation_order=coop_data.rotation_order,
         )
-        chain_circle_id = await flow_service.await_circle_created_event(tx_id)
+        chain_circle_id = await flow_service.await_cicle_created_event(tx_id)
 
         print(f"\ tx_id: {tx_id} \n chain_circle_id: {chain_circle_id} \n")
 
@@ -128,6 +128,8 @@ async def create_cooperative_group(
     # TODO: Send invite notifications to coop_data.member_phones
 
     return CoopGroupDetails.model_validate(coop)
+
+
 
 @router.post("/{coop_id}/join", response_model=JoinCircleResponse, status_code=status.HTTP_200_OK)
 async def join_circle(

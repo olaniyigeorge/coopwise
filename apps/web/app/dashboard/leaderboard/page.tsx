@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-// ─── Platform stat card ───────────────────────────────────────────────────────
+// ─── Platform stat card
 
 interface StatCardProps {
   label: string;
@@ -43,7 +43,7 @@ function StatCard({ label, value, icon }: StatCardProps) {
   );
 }
 
-// ─── Circle rank card ────────────────────────────────────────────────────────
+// ─── Circle rank card─
 
 interface CircleRankCardProps {
   rank: number;
@@ -121,7 +121,7 @@ function RankSkeleton() {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Page───
 
 export default function LeaderboardPage() {
   const { data, isLoading, error, refetch } = useLeaderboard();
