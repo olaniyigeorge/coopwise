@@ -194,7 +194,7 @@ export default function Navbar() {
                         title: "👋 Logged Out",
                         description: "We hate to see you leave. Come back soon! ❤️.",
                       })
-                      window.location.href = "/auth/login";
+                      window.location.replace("/auth/login");
                     }}
                     className="cursor-pointer py-2.5 text-red-600 focus:text-red-600"
                   >

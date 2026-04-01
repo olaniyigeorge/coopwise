@@ -116,7 +116,7 @@ coopwise/                          # monorepo root
 ### 1. Clone Repo
 
 ```bash
-git clone https://github.com/olaniyigeorge/coopwise.git
+git clone https://github.com/Timeless-Dave/coopwise.git
 cd coopwise
 ```
 ```bash

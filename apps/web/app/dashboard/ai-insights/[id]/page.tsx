@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,8 +24,10 @@ import { ImplementationStatus } from '@/lib/types'
 export default function AIInsightDetailPage() {
   const router = useRouter()
   
-  // Find the insight by ID
-  const insight = mockInsights.find(i => i.id === 'insight-1') //params.id
+  // Find the insight by ID from the route segment
+  const params = useParams<{ id: string }>()
+  const insightId = params?.id ?? ''
+  const insight = mockInsights.find(i => i.id === insightId)
   
   if (!insight) {
     return (

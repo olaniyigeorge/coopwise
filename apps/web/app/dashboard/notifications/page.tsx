@@ -8,10 +8,10 @@ import {
   Bell, 
   CheckCircle
 } from 'lucide-react'
-import { useNotifications } from '@/lib/notification-context'
+import useNotificationStore from '@/lib/stores/notification-store'
 
 export default function NotificationsPage() {
-  const { notifications, markAsRead, markAllAsRead } = useNotifications()
+  const { notifications, markAsRead, markAllAsRead } = useNotificationStore()
 
   // Format date to a more readable format
   const formatDate = (dateString: string) => {
@@ -33,6 +33,7 @@ export default function NotificationsPage() {
       case 'warning':
         return <div className="w-2 h-2 rounded-full bg-amber-500"></div>
       case 'error':
+      case 'danger':
         return <div className="w-2 h-2 rounded-full bg-red-500"></div>
       default:
         return <div className="w-2 h-2 rounded-full bg-blue-500"></div>
