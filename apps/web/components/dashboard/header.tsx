@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Bell, ChevronDown, ArrowLeft, Menu, LogOut, User } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { 
@@ -38,6 +39,7 @@ export default function Header({
   onMenuClick,
   showMobileMenu = false
 }: HeaderProps) {
+  const router = useRouter()
   const { isAuthenticated, isLoading, logout, user } = useAuthStore();
 
   const { notifications, markAsRead, markAllAsRead, unreadCount, fetchNotifications } = useNotificationStore();
@@ -134,7 +136,7 @@ export default function Header({
         <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
           <span className={`block border-2  ${isAuthenticated
               ? "border-green-700 font-medium"
-              : !isLoading ? "bg-red-700"
+              : !isLoading ? "bg-primary"
               : `border-orange-300`
 
           }`}>
@@ -241,7 +243,10 @@ export default function Header({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={logout} 
+                onClick={async () => {
+                  await logout()
+                  router.replace('/auth/login')
+                }} 
                 className="cursor-pointer py-2.5 text-red-600 focus:text-red-600"
               >
                 <LogOut className="mr-2 h-4 w-4" />

@@ -495,16 +495,7 @@ export const defDashData: DashboardData = {
     suggested_groups: []
   },
   activities: [
-    {
-      id: "33333333-3333-3333-3333-333333333333",
-      user_id: "00000000-0000-0000-0000-000000000000",
-      group_id: "22222222-2222-2222-2222-222222222222",
-      type: ActivityType.CREATED_GROUP,
-      description: "You created a group",
-      entity_id: "22222222-2222-2222-2222-222222222222",
-      amount: null,
-      created_at: "2025-06-07T16:00:25.196647"
-    }
+    // Mock fallback intentionally empty so "Recent Activity" doesn't show fake data.
   ],
   ai_insights: [
     {
@@ -545,64 +536,7 @@ export const defDashData: DashboardData = {
       updated_at: "2025-06-07T15:58:39.180310"
     }
   ],
-  notifications: [
-    {
-      id: "55555555-5555-5555-5555-555555555555",
-      title: "New Cooperative Created",
-      message: "Your cooperative, Community Savings Fund was created successfully",
-      event_type: EventType.GROUP,
-      type: NotificationType.SUCCESS,
-      status: NotificationStatus.UNREAD,
-      is_read: false,
-      read_at: null,
-      user: {
-        id: "00000000-0000-0000-0000-000000000000",
-        username: "user@example.com",
-        email: "user@example.com",
-        full_name: "John Doe",
-        phone_number: "+10000000000",
-        role: UserRoles.USER,
-        target_savings_amount: 0,
-        savings_purpose: "",
-        income_range: IncomeRange.below_50k,
-        saving_frequency: SavingFrequency.DAILY,
-        is_email_verified: false,
-        is_phone_verified: false,
-        created_at: "2025-06-07T13:00:38.311147",
-        updated_at: "2025-06-07T13:02:26.133341"
-      },
-      entity_url: null,
-      created_at: "2025-06-07T16:00:25.208159"
-    },
-    {
-      id: "66666666-6666-6666-6666-666666666666",
-      title: "Sign up Successful",
-      message: "Welcome to Coopwise",
-      event_type: EventType.GENERAL_ALERT,
-      type: NotificationType.INFO,
-      status: NotificationStatus.UNREAD,
-      is_read: false,
-      read_at: null,
-      user: {
-        id: "00000000-0000-0000-0000-000000000000",
-        username: "user@example.com",
-        email: "user@example.com",
-        full_name: "John Doe",
-        phone_number: "+10000000000",
-        role: UserRoles.USER,
-        target_savings_amount: 0,
-        savings_purpose: "",
-        income_range: IncomeRange.below_50k,
-        saving_frequency: SavingFrequency.DAILY,
-        is_email_verified: false,
-        is_phone_verified: false,
-        created_at: "2025-06-07T13:00:38.311147",
-        updated_at: "2025-06-07T13:02:26.133341"
-      },
-      entity_url: null,
-      created_at: "2025-06-07T13:00:38.422020"
-    }
-  ],
+  notifications: [],
   cooperative_members: [
     {
       id: 1,

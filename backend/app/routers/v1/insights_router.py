@@ -74,7 +74,9 @@ async def get_immediate_ai_response(
     try:
         response = await ask_google_llm(whole_prompt)
     except Exception as e:
-        response = f"Something happened. Please try again {e}"
+        # Never leak upstream details (or API keys) to clients.
+        logger.error(f"AI chat failed: {e}")
+        response = "Something happened. Please try again."
 
     return response
 
@@ -99,7 +101,8 @@ async def ask_google_llm(prompt: str):
         return insight_text
 
     except requests.RequestException as e:
-        raise RuntimeError(f"Failed to fetch AI insight: {e}")
+        # Do not include the full exception string, which may contain the request URL (and API key).
+        raise RuntimeError("Failed to fetch AI insight")
 
     except (KeyError, IndexError) as e:
         raise RuntimeError(f"Unexpected Gemini response format: {e}")

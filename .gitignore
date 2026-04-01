@@ -185,3 +185,7 @@ node_modules/
 celerybeat-schedule*
 celerybeat-schedule-shm
 celerybeat-schedule-wal
+
+# Local-only backend dev (do not commit)
+backend/coopwise_dev.db
+backend/app/core/local_redis.py

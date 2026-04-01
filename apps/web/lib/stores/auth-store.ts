@@ -112,6 +112,11 @@ const useAuthStore = create<AuthState>()(
             isAuthenticated: false, 
             isLoading: false 
           });
+          // Clear persisted client state so we don't "auto-login" from cache.
+          try {
+            localStorage.removeItem('auth-storage');
+            localStorage.removeItem('notifications-storage');
+          } catch {}
         } catch (error: any) {
           set({ 
             error: error.message || 'Logout failed', 
@@ -119,6 +124,10 @@ const useAuthStore = create<AuthState>()(
           });
           // Even if the API call fails, we still want to clear the user state
           set({ user: null, isAuthenticated: false });
+          try {
+            localStorage.removeItem('auth-storage');
+            localStorage.removeItem('notifications-storage');
+          } catch {}
         }
       },
 

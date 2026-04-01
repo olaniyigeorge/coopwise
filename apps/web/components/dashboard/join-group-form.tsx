@@ -74,18 +74,6 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
     },
   })
   
-  // Auto-verify code if passed via URL
-  useEffect(() => {
-    if (initialCode && initialCode.length >= 6) {
-      form.setValue('inviteCode', initialCode)
-      // Delay verification slightly to ensure form is ready
-      setTimeout(() => {
-        const values = { inviteCode: initialCode }
-        onVerifyCode(values)
-      }, 500)
-    }
-  }, [initialCode, form, onVerifyCode])
-  
   // Function to verify the invite code
   const onVerifyCode = useCallback(async (values: z.infer<typeof inviteCodeSchema>) => {
     setVerifying(true)
@@ -156,6 +144,18 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
       setVerifying(false);
     }
   }, [toast])
+
+  // Auto-verify code if passed via URL
+  useEffect(() => {
+    if (initialCode && initialCode.length >= 6) {
+      form.setValue('inviteCode', initialCode)
+      // Delay verification slightly to ensure form is ready
+      setTimeout(() => {
+        const values = { inviteCode: initialCode }
+        onVerifyCode(values)
+      }, 500)
+    }
+  }, [initialCode, form, onVerifyCode])
   
   // Function to join the group
   async function onJoinGroup() {

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: revela-backend-api
+    name: coopwise-backend-api
     env: python
     region: virginia
     plan: starter  
@@ -23,4 +23,4 @@ services:
         sync: false  # You'll set this manually in dashboard
       - key: DATABASE_URL
         sync: false  # You'll set this manually in dashboard
-    healthCheckPath: /health  # Make sure you have this endpoint
+    healthCheckPath: /ping
