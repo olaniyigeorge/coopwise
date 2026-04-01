@@ -114,7 +114,7 @@ readiness = await PayoutService.check_payout_readiness(
 )
 
 if readiness['is_ready']:
-    print(f"✅ Ready! {readiness['members_contributed']} collected")
+    print(f" Ready! {readiness['members_contributed']} collected")
     
     # Execute
     result = await PayoutService.execute_payout(
@@ -124,7 +124,7 @@ if readiness['is_ready']:
     )
     
     if result['success']:
-        print(f"✅ Payout completed: {result['tx_hash']}")
+        print(f" Payout completed: {result['tx_hash']}")
         print(f"Recipient: {result['recipient']}")
         print(f"Amount: {result['payout_amount']}")
     else:
@@ -148,7 +148,7 @@ refund_result = await ContributionService.emergency_refund(
 )
 
 if refund_result['success']:
-    print(f"✅ Refund initiated: {refund_result['tx_hash']}")
+    print(f" Refund initiated: {refund_result['tx_hash']}")
 else:
     print(f"❌ Refund failed: {refund_result['message']}")
 ```
@@ -167,7 +167,7 @@ withdrawal_result = await ContributionService.request_withdrawal(
 )
 
 if withdrawal_result['success']:
-    print(f"✅ Withdrawal requested: {withdrawal_result['tx_hash']}")
+    print(f" Withdrawal requested: {withdrawal_result['tx_hash']}")
 else:
     print(f"❌ Withdrawal failed: {withdrawal_result['message']}")
 ```
@@ -181,7 +181,7 @@ else:
 | `pledged` | Initial - not yet locked |
 | `initiated` | Funds locked, awaiting contract |
 | `pending` | Contract received, confirming |
-| `completed` | ✅ Successfully deducted |
+| `completed` |  Successfully deducted |
 | `failed` | ❌ Error - funds returned |
 | `cancelled` | Manually cancelled |
 
@@ -394,16 +394,16 @@ uvicorn main:app --reload
 
 When using the system:
 
-- ✅ Always use HTTPS in production
-- ✅ Validate JWT tokens on every request
-- ✅ Never log sensitive amounts in plaintext
-- ✅ Use encrypted amounts (euint64) for privacy
-- ✅ Verify contract addresses in .env
-- ✅ Test with testnet before production
-- ✅ Monitor for unusual patterns
-- ✅ Keep audit logs for 7 years (financial records)
-- ✅ Handle errors gracefully (no internal details exposed)
-- ✅ Rate limit API endpoints
+-  Always use HTTPS in production
+-  Validate JWT tokens on every request
+-  Never log sensitive amounts in plaintext
+-  Use encrypted amounts (euint64) for privacy
+-  Verify contract addresses in .env
+-  Test with testnet before production
+-  Monitor for unusual patterns
+-  Keep audit logs for 7 years (financial records)
+-  Handle errors gracefully (no internal details exposed)
+-  Rate limit API endpoints
 
 ---
 

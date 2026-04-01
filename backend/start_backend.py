@@ -277,7 +277,7 @@ class ServiceManager:
         
         if run_tests:
             if self.run_tests():
-                logger.info("\n✅ Tests passed. Continuing startup...")
+                logger.info("\n Tests passed. Continuing startup...")
             else:
                 logger.info("\n❌ Tests failed. Server not starting.")
                 sys.exit(1)
@@ -303,7 +303,7 @@ class ServiceManager:
             time.sleep(2)
             
             print_colored("=" * 60, Colors.GREEN)
-            print_success("✅ All services running!")
+            print_success(" All services running!")
             print_colored("=" * 60, Colors.GREEN)
             print(f"🌐 API Server: http://0.0.0.0:{self.port}")
             print(f"📊 Environment: {'Production (Render)' if self.is_render else 'Development'}")

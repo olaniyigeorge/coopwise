@@ -150,7 +150,7 @@ State is persisted per circle in **PostgreSQL** with a rolling 90-day window. Re
 - **Privacy boundary** — agent scores groups, not individual contribution amounts (FHE-encrypted values are never decrypted by the agent)
 - **Bias audit** — nudge copy is reviewed against a fairness rubric before deployment to production
 
-## ✅ Success Metrics
+##  Success Metrics
 
 | Metric | Target |
 |--------|--------|
@@ -313,7 +313,7 @@ Session state is held in **Redis** for the duration of the onboarding flow (TTL:
 - **Minimum group threshold** — newly created circles are held in a "forming" state until the minimum member count is reached; the founding member is notified of expected wait time
 - **No re-interview within 7 days** — prevents profile thrashing from repeated sessions
 
-## ✅ Success Metrics
+##  Success Metrics
 
 | Metric | Target |
 |--------|--------|
@@ -470,7 +470,7 @@ Wallet-level rolling state is held in **Redis** (hot path, 30-day window). Histo
 - **Anomaly alert rate limiting** — maximum 3 anomaly alerts per circle per 24 hours to prevent alert fatigue
 - **Recommendation expiry** — recommendations older than 48 hours are automatically marked stale and removed from the dashboard
 
-## ✅ Success Metrics
+##  Success Metrics
 
 | Metric | Target |
 |--------|--------|
@@ -486,7 +486,7 @@ Wallet-level rolling state is held in **Redis** (hot path, 30-day window). Histo
 ## CoopWise Treasury Summary — Circle: ajo-lagos-7
 Period: Cycle 6 of 12 | Generated: 2025-07-14
 
-**Treasury health: ✅ Healthy**
+**Treasury health:  Healthy**
 
 **This cycle**
 - Contributions received: 8 of 9 members (89%)
@@ -495,9 +495,9 @@ Period: Cycle 6 of 12 | Generated: 2025-07-14
 - Offramp settlement time: 34 minutes
 
 **Forecast — next 3 cycles**
-- Cycle 7: Projected ✅ (all commitments on track)
+- Cycle 7: Projected  (all commitments on track)
 - Cycle 8: ⚠️ One member's contribution pattern shows irregularity — monitoring
-- Cycle 9: Projected ✅
+- Cycle 9: Projected 
 
 **Recommendations**
 1. Send a payment reminder to Member #3 ahead of Cycle 8 (confidence: 78%)

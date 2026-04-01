@@ -105,9 +105,9 @@ export async function isPlatformAuthenticatorAvailable(): Promise<boolean> {
   return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+//
 // Internal helpers
-// ─────────────────────────────────────────────────────────────────────────────
+//
 
 /**
  * Extracts the raw P-256 public key bytes (65 bytes: 0x04 || x || y)

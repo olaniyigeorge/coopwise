@@ -44,7 +44,7 @@ class User(Base):
 
     role = Column(Enum(UserRoles), default=UserRoles.user)
 
-    # ── Crossmint / Web3 identity ──────────────────────────────────────────
+    #  Crossmint / Web3 identity 
     # Crossmint's own stable user ID (e.g. "cm_usr_abc123").
     # Indexed for fast lookup during camp-sync without touching email.
     crossmint_user_id = Column(String, unique=True, index=True, nullable=True)
@@ -56,7 +56,7 @@ class User(Base):
     # Which wallet provider provisioned the address.
     # "crossmint" is the default for smart-wallet users; "flow-native" for FCL wallets.
     wallet_provider = Column(String, nullable=True, default="crossmint")
-    # ──────────────────────────────────────────────────────────────────────
+    #
 
     # Onboarding & preferences
     target_savings_amount = Column(Float, nullable=True)
@@ -74,7 +74,7 @@ class User(Base):
         DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
     )
 
-    # ── Relationships ──────────────────────────────────────────────────────
+    #  Relationships 
     memberships = relationship(
         "GroupMembership",
         back_populates="user",

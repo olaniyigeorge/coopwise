@@ -66,7 +66,7 @@ class CooperativeGroup(Base):
     next_payout_date = Column(DateTime, nullable=True)
     rules = Column(JSON, nullable=True)
 
-    # ── NEW: Chain + wallet fields ─────────────────────────────────────────
+    # ── NEW: Chain + wallet fields
     chain_circle_id = Column(Integer, nullable=True, unique=True)   # on-chain UInt64 from Flow
     flow_address = Column(String, nullable=True)                    # creator's Flow address
     currency = Column(String, default="NGN", nullable=False)        # NGN | KES | GHS
@@ -76,8 +76,7 @@ class CooperativeGroup(Base):
     )
     current_round = Column(Integer, default=0, nullable=False)      # which round we're on
     is_complete = Column(Boolean, default=False, nullable=False)
-    # ───────────────────────────────────────────────────────────────────────
-
+    
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(
         DateTime, default=datetime.now, onupdate=datetime.now, nullable=False

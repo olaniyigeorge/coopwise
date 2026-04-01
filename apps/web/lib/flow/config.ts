@@ -34,11 +34,11 @@ export function getExplorerUrl(txId: string) {
   return `${FLOW_EXPLORER_BASE}/${txId}`;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+//
 // Cadence Transactions
 // These are submitted from the FRONTEND using FCL.
 // CoopWise fee-payer account covers all gas — user pays nothing.
-// ─────────────────────────────────────────────────────────────────────────────
+//
 
 /**
  * JoinCircle.cdc
@@ -82,9 +82,9 @@ transaction(
 }
 `;
 
-// ─────────────────────────────────────────────────────────────────────────────
+//
 // Cadence Scripts (read-only — no signing needed)
-// ─────────────────────────────────────────────────────────────────────────────
+//
 
 /**
  * GetCircle.cdc
