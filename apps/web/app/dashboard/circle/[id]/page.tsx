@@ -99,7 +99,7 @@ export default function CircleDetailPage() {
     }
   };
 
-  // ── Loading skeleton ───────────────────────────────────────────────────────
+  // ── Loading skeleton
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -113,7 +113,7 @@ export default function CircleDetailPage() {
     );
   }
 
-  // ── Error state ─────────────────────────────────────────────────────────────
+  // ── Error state──────
   if (error || !circle) {
     return (
       <DashboardLayout>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types─
 
 export interface PlatformStats {
   total_circles: number;
@@ -33,7 +33,7 @@ interface UseLeaderboardResult {
   refetch: () => void;
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
+// ─── Hook──
 
 /**
  * Fetches the public leaderboard — circle activity counts only.

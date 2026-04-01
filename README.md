@@ -1,6 +1,6 @@
 # 🟢 CoopWise: Reimagining African Cooperatives with AI & Stablecoin Innovation
 
-**CoopWise** is an *AI* and *blockchain-powered* cooperative savings platform designed for Africa’s financial realities. It digitizes traditional savings models like Ajo, Esusu, and Chamas, offering programmable stablecoin escrows, transparent group governance, and AI-driven insights. With smart contract automation and fiat on/off-ramps via CashRamp, CoopWise empowers communities with modern, decentralized financial infrastructure.
+**CoopWise** is an *AI* and *blockchain-powered* cooperative savings platform designed for Africa’s financial realities. It digitizes traditional savings models like Ajo, Esusu, and Chamas, offering programmable stablecoin escrows, transparent group governance, and AI-driven insights. With smart contract automation and fiat on/off-ramps via Flow, CoopWise empowers communities with modern, decentralized financial infrastructure.
 
 ---
 

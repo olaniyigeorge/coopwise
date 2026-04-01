@@ -14,7 +14,7 @@ import {
   Lock,
 } from "lucide-react";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   NGN: "₦",
@@ -42,7 +42,7 @@ function formatDate(iso: string | null): string {
   });
 }
 
-// ─── Status badge ─────────────────────────────────────────────────────────────
+// ─── Status badge──────
 
 interface StatusBadgeProps {
   status: PayoutStatus;
@@ -86,7 +86,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
   );
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
+// Skeleton
 
 function PayoutSkeleton() {
   return (
@@ -105,7 +105,7 @@ function PayoutSkeleton() {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Page───
 
 export default function PayoutsPage() {
   const { payouts, isLoading, error, refetch } = useMyPayouts();

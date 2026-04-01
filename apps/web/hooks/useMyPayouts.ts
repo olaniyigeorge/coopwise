@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import AuthService from "@/lib/auth-service";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types─
 
 export type PayoutStatus = "pending" | "processing" | "complete" | "failed";
 
@@ -29,7 +29,7 @@ interface UseMyPayoutsResult {
   refetch: () => void;
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
+// ─── Hook──
 
 /**
  * Fetches the current user's personal payout history.
