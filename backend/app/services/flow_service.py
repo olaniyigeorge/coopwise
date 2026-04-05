@@ -141,6 +141,9 @@ class FlowService:
             return result
 
 
+flow_service = FlowService()
+
+
 
 
 
@@ -240,7 +243,3 @@ class FlowService:
 #             f"circle_id={circle_id} member={member_address} tx_id={tx_id}"
 #         )
 #         return tx_id
-
-
-# # Singleton — import this everywhere
-# flow_service = FlowService()
