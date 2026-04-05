@@ -21,12 +21,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const { unreadCount } = useNotificationStore()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   
-  const navigationItems: Array<{
-    name: string
-    href: string
-    icon: typeof Home
-    badge?: number
-  }> = [
+  const navigationItems = [
     { 
       name: 'Dashboard', 
       href: '/dashboard', 
@@ -161,9 +156,9 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex w-[208px] bg-[#06413F] h-dvh max-h-screen fixed left-0 top-0 flex-col min-h-0">
+      <div className="hidden lg:flex w-[208px] bg-[#06413F] h-screen overflow-y-auto fixed left-0 top-0 flex-col ">
         {/* Logo */}
-        <div className="p-4 flex-shrink-0 flex items-center justify-center">
+        <div className="p-4 flex items-center justify-center">
           <Link href="/" className="flex gap-6 items-center">
             <Image 
               src="/assets/icons/logo.svg" 
@@ -175,15 +170,15 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           </Link>
         </div>
         
-        {/* Navigation — only this region scrolls when zoomed or many items */}
-        <nav className="flex-1 min-h-0 mt-4 overflow-y-auto overflow-x-hidden overscroll-contain">
-          <ul className="space-y-1 pb-2">
+        {/* Navigation */}
+        <nav className="flex-1 mt-4">
+          <ul className="space-y-1">
             {navigationItems.map(renderNavItem)}
         </ul>
       </nav>
       
       {/* Logout */}
-        <div className="p-4 flex-shrink-0 mt-auto border-t border-white/10">
+        <div className="p-4 mt-auto border-t border-white/10">
           <button 
             onClick={handleLogout}
             disabled={isLoggingOut}
