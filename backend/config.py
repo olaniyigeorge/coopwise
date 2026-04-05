@@ -1,6 +1,7 @@
 import json
 from typing import Any, Dict
 from dotenv import load_dotenv
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 
@@ -21,8 +22,14 @@ class GlobalConfig(BaseSettings):
     APP_SECRET_KEY:str 
     PAYSTACK_SECRET_KEY:str 
     PAYSTACK_PUBLIC_KEY:str 
-    REDIS_URL:str 
-    GEMINI_API_KEY:str 
+    REDIS_URL:str
+    OPENAI_API_KEY: str = Field(default="", description="OpenAI API key for insights and AI chat")
+    OPENAI_CHAT_MODEL: str = Field(default="gpt-4o-mini", description="Chat completion model id")
+    GEMINI_API_KEY: str = Field(
+        default="",
+        description="Legacy: optional CashRamp bearer fallback if CASHRAMP_API_KEY is unset",
+    )
+    CASHRAMP_API_KEY: str = Field(default="", description="Bearer token for CashRamp GraphQL API")
     RATE_LIMIT_RULES_PATH:str 
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

@@ -34,7 +34,10 @@ Set these in the Render dashboard (or sync from a secrets store). Names match `b
 | `CLIENT_DOMAIN` | **Frontend origin** for CORS (single URL), e.g. `https://your-app.vercel.app` — must match the browser origin exactly. |
 | `INVITE_CODE_PREFIX` | e.g. `CPW-INV-` |
 | `PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` | From Paystack dashboard (test vs live). |
-| `GEMINI_API_KEY` | If you use Gemini-backed features. |
+| `OPENAI_API_KEY` | **Required** for AI chat and AI-generated insights (OpenAI). |
+| `OPENAI_CHAT_MODEL` | Optional; default `gpt-4o-mini`. |
+| `CASHRAMP_API_KEY` | CashRamp GraphQL bearer token (use this name in production). |
+| `GEMINI_API_KEY` | Optional legacy fallback: if set and `CASHRAMP_API_KEY` is empty, used as CashRamp bearer (historical misname). |
 | `RATE_LIMIT_RULES_PATH` | e.g. `app/rate_limit_rules.json` |
 
 Copy from `backend/env.sample` and fill values; **never commit** real secrets (`.env` is gitignored).

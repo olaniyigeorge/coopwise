@@ -376,7 +376,12 @@ def main():
     sys.stderr.reconfigure(line_buffering=True)
     
     manager = ServiceManager()
-    manager.start_all()
+    # Pre-start pytest pulls in the full app stack and fails on many hosts (e.g. Render)
+    # when env or DB differs from local dev — and is not appropriate for production boot.
+    run_tests = not manager.is_render
+    if manager.is_render:
+        print_info("Render: skipping pre-start pytest (use CI for tests).")
+    manager.start_all(run_tests=run_tests)
 
 if __name__ == '__main__':
     main()

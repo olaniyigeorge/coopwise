@@ -14,6 +14,10 @@ from app.schemas.cashramp_schemas import (
 from config import AppConfig as config
 
 
+def _cashramp_bearer() -> str:
+    return (config.CASHRAMP_API_KEY or config.GEMINI_API_KEY or "").strip()
+
+
 CASHRAMP_URL = (
     "https://api.useaccrue.com/cashramp/api/graphql"
     if config.ENV == "dev"
@@ -41,13 +45,11 @@ class PaymentVerificationResponse(BaseModel):
 class CashRampService:
     def __init__(self, redis: Redis):
         self.redis = redis
-        transport = AIOHTTPTransport(
-            url=CASHRAMP_URL,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {config.GEMINI_API_KEY}",
-            },
-        )
+        headers = {"Content-Type": "application/json"}
+        bearer = _cashramp_bearer()
+        if bearer:
+            headers["Authorization"] = f"Bearer {bearer}"
+        transport = AIOHTTPTransport(url=CASHRAMP_URL, headers=headers)
         self.client = Client(transport=transport, fetch_schema_from_transport=True)
 
     async def get_account_info(self) -> Dict:

@@ -1,10 +1,11 @@
 import httpx
-import os
 
+from app.utils.logger import logger
 from config import AppConfig as config
 
 
-CASHRAMP_SECKEY = config.GEMINI_API_KEY or None
+_raw = (config.CASHRAMP_API_KEY or config.GEMINI_API_KEY or "").strip()
+CASHRAMP_SECKEY = _raw or None
 
 ACCURUE_STAGING_URL = "https://staging.api.useaccrue.com/cashramp/api/graphql"
 ACCURUE_PROD_URL = "https://api.useaccrue.com/cashramp/api/graphql"

@@ -1,19 +1,22 @@
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
 from redis import Redis
-import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import AppConfig as config
 from app.utils.logger import logger
 from app.core.dependencies import get_redis
 from app.services.insights_service import InsightEngine
 from app.routers.v1.auth import get_current_user
 from app.schemas.auth import AuthenticatedUser
 from db.dependencies import get_async_db_session
-from app.utils.logger import logger
+from app.utils.openai_chat import openai_chat_completion
 
 
 router = APIRouter(prefix="/api/v1/insights", tags=["Insights"])
+
+
+class AiChatBody(BaseModel):
+    prompt: str = Field(..., min_length=1)
 
 
 @router.get("/", summary="Get Insights")
@@ -57,24 +60,28 @@ async def get_insight(
 
 @router.post("/ai-chat", summary="Chat with AI Assistant")
 async def get_immediate_ai_response(
+    body: AiChatBody,
     db: AsyncSession = Depends(get_async_db_session),
     current_user: AuthenticatedUser = Depends(get_current_user),
-    prompt: str = "",
     redis_client: Redis = Depends(get_redis),
 ):
-    whole_prompt = f"""
-        You are CoopWise AI assistant. An AI financial assitant working for a cooperative savings app in Nigeria.
-        That helps with savings and financial advices and insights
-
-
-        Provide a helpful, useful and very concise response for this user's message to advice their need
-
-        Message: {prompt}
-    """
+    _ = db, current_user, redis_client
+    system = (
+        "You are CoopWise AI assistant, a concise financial helper for a cooperative "
+        "savings app in Nigeria. Focus on savings, budgeting, and group savings behavior."
+    )
+    user_msg = (
+        "Provide a helpful, useful, and very concise reply to the user's message.\n\n"
+        f"Message: {body.prompt}"
+    )
     try:
-        response = await ask_google_llm(whole_prompt)
+        response = await openai_chat_completion(
+            user_msg,
+            system_prompt=system,
+            max_tokens=800,
+            temperature=0.6,
+        )
     except Exception as e:
-        # Never leak upstream details (or API keys) to clients.
         logger.error(f"AI chat failed: {e}")
         msg = str(e) if e else ""
         if "rate limited" in msg.lower():
@@ -83,45 +90,3 @@ async def get_immediate_ai_response(
             response = "Something happened. Please try again."
 
     return response
-
-
-async def ask_google_llm(prompt: str):
-    logger.info(f"\n\n Prompt: {prompt}\n\n")
-    # Step 2: Prepare request payload
-    payload = {"contents": [{"parts": [{"text": prompt}]}]}
-
-    # Step 3: Make POST request to Gemini API
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={config.GEMINI_API_KEY}"
-
-    try:
-        # Retry transient upstream errors (esp. 429) a couple times.
-        last_status: int | None = None
-        for attempt in range(3):
-            response = requests.post(
-                url, headers={"Content-Type": "application/json"}, json=payload, timeout=15
-            )
-            last_status = response.status_code
-            if response.status_code == 429:
-                # Backoff: 0.5s, 1.0s then give up
-                import time
-
-                time.sleep(0.5 * (attempt + 1))
-                continue
-            response.raise_for_status()
-            break
-        else:
-            raise RuntimeError("AI is rate limited")
-
-        data = response.json()
-        insight_text = data["candidates"][0]["content"]["parts"][0]["text"]
-        return insight_text
-
-    except requests.RequestException as e:
-        # Do not include the full exception string, which may contain the request URL (and API key).
-        if getattr(e, "response", None) is not None and e.response is not None:
-            if e.response.status_code == 429:
-                raise RuntimeError("AI is rate limited")
-        raise RuntimeError("Failed to fetch AI insight")
-
-    except (KeyError, IndexError) as e:
-        raise RuntimeError(f"Unexpected Gemini response format: {e}")

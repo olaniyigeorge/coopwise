@@ -3,7 +3,6 @@ import random
 from typing import List, Union
 from pydantic import ValidationError
 from redis import Redis
-import requests
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.user import UserDetail
@@ -24,6 +23,7 @@ from app.schemas.auth import AuthenticatedUser
 from app.services.notification_service import NotificationService
 from app.utils.cache import get_cache, update_cache
 from app.utils.llm_client import ask_llm
+from app.utils.openai_chat import openai_chat_completion
 from fastapi import HTTPException, status
 import json
 from app.utils.logger import logger
@@ -381,41 +381,28 @@ class InsightEngine:
 
     @staticmethod
     async def get_ai_insight(db: AsyncSession, user: AuthenticatedUser, redis: Redis):
-        if not config.GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY is not set in environment variables")
+        if not (config.OPENAI_API_KEY or "").strip():
+            raise ValueError("OPENAI_API_KEY is not set in environment variables")
 
         user = await UserService.get_user_by_id(db, user.id)
         activities = await ActivityService.get_user_recent_activities(db, user, redis)
-        # Step 1: Build prompt from activity logs
         prompt = await InsightEngine.build_ai_insight_prompt(user, activities)
 
         logger.info(f"\n\n Prompt: {prompt}\n\n")
-        payload = {"contents": [{"parts": [{"text": prompt}]}]}
-
-        # Step 3: POST a request to Gemini API
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={config.GEMINI_API_KEY}"
-
+        system = (
+            "You are an AI Insight Assistant for a cooperative savings platform in Africa. "
+            "Reply with only the JSON object requested in the user message, no markdown fences."
+        )
         try:
-            response = requests.post(
-                url,
-                headers={"Content-Type": "application/json"},
-                json=payload,
-                timeout=10,
-            ) 
-            response.raise_for_status()
-
-            data = response.json()
-            logger.info(
-                f"\n\n ->GOOGLE JSON response {data} GOOGLE JSON response<- \n\n"
+            insight_text = await openai_chat_completion(
+                prompt,
+                system_prompt=system,
+                max_tokens=2048,
+                temperature=0.4,
             )
-            insight_text = data["candidates"][0]["content"]["parts"][0]["text"]
             return insight_text
-
-        except requests.RequestException as e:
-            raise RuntimeError(f"Failed to fetch AI insight: {e}")
-
-        except (KeyError, IndexError) as e:
-            raise RuntimeError(f"Unexpected Gemini response format: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to fetch AI insight: {e}") from e
 
     @staticmethod
     async def build_ai_insight_prompt(
