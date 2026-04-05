@@ -13,6 +13,8 @@ interface DashboardLayoutProps {
   children: React.ReactNode
   fullWidth?: boolean
   noPadding?: boolean
+  /** Fill viewport height (e.g. AI chat) — flex chain for min-h-0 scroll areas */
+  viewportFill?: boolean
   className?: string
 }
 
@@ -20,6 +22,7 @@ export default function DashboardLayout({
   children, 
   fullWidth = false,
   noPadding = false,
+  viewportFill = false,
   className 
 }: DashboardLayoutProps) {
   const pathname = usePathname()
@@ -142,7 +145,13 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" onClick={handleCloseSidebar}>
+    <div
+      className={cn(
+        "min-h-screen bg-gray-50",
+        viewportFill && "min-h-[100dvh] flex flex-col"
+      )}
+      onClick={handleCloseSidebar}
+    >
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div 
@@ -161,7 +170,8 @@ export default function DashboardLayout({
       {/* Main Content Area */}
       <div className={cn(
         "min-h-screen transition-all duration-200 ease-in-out",
-        "lg:ml-[208px]"
+        "lg:ml-[208px]",
+        viewportFill && "min-h-0 flex-1 flex flex-col"
       )}>
         <Header 
           {...headerConfig} 
@@ -174,6 +184,7 @@ export default function DashboardLayout({
           !noPadding && "p-3 sm:p-4 lg:p-6",
           "pb-20 lg:pb-6", // Bottom padding to account for mobile navigation
           fullWidth ? "w-full" : "mx-auto",
+          viewportFill && "flex flex-1 flex-col min-h-0 !pb-20 lg:!pb-0",
           className
         )}>
           {children}

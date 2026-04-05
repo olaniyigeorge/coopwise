@@ -102,17 +102,24 @@ const useNotificationStore = create<NotificationStore>()(
         set({ isLoading: true, error: null });
         try {
           const response = await NotificationService.fetchNotifications(page, pageSize);
-          
+          const incoming = response.notifications || [];
+          const dedupe = (list: NotificationDetail[]) => {
+            const map = new Map<string, NotificationDetail>();
+            for (const n of list) map.set(n.id, n);
+            return [...map.values()];
+          };
+          const nextList =
+            page === 1
+              ? dedupe(incoming)
+              : dedupe([...get().notifications, ...incoming]);
           set({
-            notifications: page === 1 
-              ? response.notifications || [] 
-              : [...get().notifications, ...(response.notifications || [])],
+            notifications: nextList,
             pagination: {
               total: response.total || 0,
               page: response.page || 1,
               pageSize: response.page_size || 20,
             },
-            unreadCount: (response.notifications || []).filter((n: NotificationDetail) => !n.is_read).length,
+            unreadCount: nextList.filter((n: NotificationDetail) => !n.is_read).length,
             isLoading: false
           });
         } catch (error: any) {

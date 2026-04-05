@@ -12,6 +12,8 @@ const V1 = "/api/v1/circles";
 
 export interface CreateCirclePayload extends Record<string, unknown> {
   name: string;
+  /** open = listed in discover & join without code; invite_only = code flow */
+  join_policy?: "open" | "invite_only";
   member_phones?: string[];
   weekly_amount_local?: number;
   contribution_amount?: number;
@@ -32,6 +34,7 @@ export interface Circle {
   chain_circle_id: number;
   name: string;
   creator_id: string;
+  join_policy?: string;
   description?: string | null;
   member_count: number;
   contribution_amount: number;
@@ -193,6 +196,14 @@ const CircleService = {
     const response = await axios.get<Circle[]>(`${V1}`, {
       headers: AuthService.getAuthHeader(),
     });
+    return response.data;
+  },
+
+  async discoverOpenCircles(skip = 0, limit = 20): Promise<Circle[]> {
+    const response = await axios.get<Circle[]>(
+      `${V1}/discover?skip=${skip}&limit=${limit}`,
+      { headers: AuthService.getAuthHeader() }
+    );
     return response.data;
   },
 

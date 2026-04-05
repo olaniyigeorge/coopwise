@@ -2,6 +2,8 @@
 
 Use `backend/render.yaml` as a blueprint, or create a **Web Service** manually with the settings below.
 
+After pulling migrations, run **`alembic upgrade head`** (or let your deploy pipeline run it) so columns like `join_policy` exist.
+
 ## Build & start
 
 - **Root directory**: `backend` (if the Render service is scoped to the monorepo; otherwise set **Root Directory** to `backend` in the service settings).

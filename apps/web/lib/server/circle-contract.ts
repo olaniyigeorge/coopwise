@@ -66,6 +66,7 @@ type LegacyGroup = {
   current_round?: number | null;
   is_complete?: boolean | null;
   current_winner?: string | null;
+  join_policy?: string | null;
 };
 
 function toNumber(value: unknown, fallback = 0): number {
@@ -265,6 +266,7 @@ export function normalizeCircle(
     your_position_in_queue: currentUserMembership?.payout_position ?? null,
     current_winner: currentWinner,
     created_at: toIsoDate(group.created_at) ?? new Date().toISOString(),
+    join_policy: String(group.join_policy ?? "invite_only"),
   };
 }
 
@@ -312,5 +314,9 @@ export function buildLegacyCircleCreatePayload(
       toNumber(payload.target_amount, 0) || contributionAmount * maxMembers,
     status: String(payload.status ?? "active"),
     rules: Array.isArray(payload.rules) ? payload.rules : null,
+    join_policy:
+      payload.join_policy === "open" || payload.join_policy === "invite_only"
+        ? String(payload.join_policy)
+        : "invite_only",
   };
 }

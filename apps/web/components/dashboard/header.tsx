@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect } from 'react'
+import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Bell, ChevronDown, ArrowLeft, Menu, LogOut, User } from 'lucide-react'
@@ -42,14 +42,10 @@ export default function Header({
   const router = useRouter()
   const { isAuthenticated, isLoading, logout, user } = useAuthStore();
 
-  const { notifications, markAsRead, markAllAsRead, unreadCount, fetchNotifications } = useNotificationStore();
+  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
   
-  // Listen for notifications
+  // Listen for notifications (also loads initial list — avoid duplicate fetch here)
   useNotificationListener();
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
 
   // Helper functions for user display
   const getFirstName = (name: string) => name.split(' ')[0];

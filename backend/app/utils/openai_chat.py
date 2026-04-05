@@ -57,3 +57,41 @@ async def openai_chat_completion(
             logger.error("OpenAI API error: %s", e)
             raise RuntimeError("Failed to fetch AI response") from e
     raise RuntimeError("AI is rate limited") from last_exc
+
+
+async def openai_chat_with_messages(
+    messages: list[dict[str, str]],
+    *,
+    max_tokens: int = 800,
+    temperature: float = 0.6,
+) -> str:
+    """Multi-turn chat; `messages` must be OpenAI-shaped (system/user/assistant only)."""
+    if not messages:
+        raise ValueError("messages must not be empty")
+    model = (config.OPENAI_CHAT_MODEL or "gpt-4o-mini").strip()
+    client = _require_client()
+    last_exc: Exception | None = None
+    for attempt in range(3):
+        try:
+            resp = await client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            choice = resp.choices[0].message.content
+            if not choice:
+                raise RuntimeError("Empty response from OpenAI")
+            return choice.strip()
+        except RateLimitError as e:
+            last_exc = e
+            logger.warning("OpenAI rate limited (attempt %s): %s", attempt + 1, e)
+            await asyncio.sleep(0.5 * (attempt + 1))
+        except APIError as e:
+            if getattr(e, "status_code", None) == 429:
+                last_exc = e
+                await asyncio.sleep(0.5 * (attempt + 1))
+                continue
+            logger.error("OpenAI API error: %s", e)
+            raise RuntimeError("Failed to fetch AI response") from e
+    raise RuntimeError("AI is rate limited") from last_exc

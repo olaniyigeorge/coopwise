@@ -76,7 +76,9 @@ class CooperativeGroup(Base):
     )
     current_round = Column(Integer, default=0, nullable=False)      # which round we're on
     is_complete = Column(Boolean, default=False, nullable=False)
-    
+    # open: anyone can join via /join; invite_only: must use invite code flow
+    join_policy = Column(String(32), default="invite_only", nullable=False)
+
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(
         DateTime, default=datetime.now, onupdate=datetime.now, nullable=False

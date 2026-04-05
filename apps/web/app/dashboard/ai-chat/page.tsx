@@ -1,105 +1,55 @@
-"use client"
+"use client";
 
-import React, { useEffect } from 'react'
-import AIChatInterface from '@/components/ai/chat-interface'
-import DashboardLayout from '@/components/dashboard/layout'
+import AIChatInterface from "@/components/ai/chat-interface";
+import DashboardLayout from "@/components/dashboard/layout";
 
 export default function AIChatPage() {
-  // Add a class to the main element to remove padding for the chat interface
-  useEffect(() => {
-    const mainElement = document.querySelector('main');
-    if (mainElement) {
-      mainElement.classList.add('p-0');
-      
-      // Cleanup function to remove the class when component unmounts
-      return () => {
-        mainElement.classList.remove('p-0');
-      };
-    }
-  }, []);
-
   return (
-    <DashboardLayout>
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-0 lg:gap-4">
-        <div className="col-span-1 lg:col-span-3">
+    <DashboardLayout viewportFill noPadding className="max-w-none w-full">
+      <div className="flex flex-1 flex-col min-h-0 gap-0 lg:flex-row lg:gap-4 lg:px-4 lg:pb-2 lg:pt-2">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <AIChatInterface />
         </div>
-        
-        <div className="hidden lg:block space-y-3 lg:pr-6">
-          <div className="bg-card rounded-lg p-3 border">
-            <h3 className="font-medium text-base mb-1">About AI Assistant</h3>
-            <p className="text-xs text-muted-foreground mb-2">
-              Your personal AI financial advisor is here to help you make better savings and financial decisions.
+
+        <aside className="hidden max-h-[min(100dvh-4rem,900px)] w-80 flex-shrink-0 flex-col gap-3 overflow-y-auto overscroll-contain lg:flex lg:pr-2">
+          <div className="bg-card rounded-lg border p-3">
+            <h3 className="mb-1 text-base font-medium">About AI Assistant</h3>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Your personal AI financial advisor for savings and cooperative groups.
             </p>
             <ul className="space-y-1 text-xs">
               <li className="flex items-start gap-2">
-                <span className="bg-primary/10 text-primary rounded-full p-1 mt-0.5">
-                  <svg width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M11.4669 3.72684C11.7558 3.91574 11.8369 4.30308 11.648 4.59198L7.39799 11.092C7.29783 11.2452 7.13556 11.3467 6.95402 11.3699C6.77247 11.3931 6.58989 11.3355 6.45446 11.2124L3.70446 8.71241C3.44905 8.48022 3.43023 8.08494 3.66242 7.82953C3.89461 7.57412 4.28989 7.55529 4.5453 7.78749L6.75292 9.79441L10.6018 3.90792C10.7907 3.61902 11.178 3.53795 11.4669 3.72684Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                  </svg>
+                <span className="mt-0.5 rounded-full bg-primary/10 p-1 text-primary">
+                  ✓
                 </span>
-                <span>Get personalized savings advice</span>
+                <span>Chats are saved for about a week on the server</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="bg-primary/10 text-primary rounded-full p-1 mt-0.5">
-                  <svg width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M11.4669 3.72684C11.7558 3.91574 11.8369 4.30308 11.648 4.59198L7.39799 11.092C7.29783 11.2452 7.13556 11.3467 6.95402 11.3699C6.77247 11.3931 6.58989 11.3355 6.45446 11.2124L3.70446 8.71241C3.44905 8.48022 3.43023 8.08494 3.66242 7.82953C3.89461 7.57412 4.28989 7.55529 4.5453 7.78749L6.75292 9.79441L10.6018 3.90792C10.7907 3.61902 11.178 3.53795 11.4669 3.72684Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                  </svg>
+                <span className="mt-0.5 rounded-full bg-primary/10 p-1 text-primary">
+                  ✓
                 </span>
-                <span>Learn budgeting strategies</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="bg-primary/10 text-primary rounded-full p-1 mt-0.5">
-                  <svg width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M11.4669 3.72684C11.7558 3.91574 11.8369 4.30308 11.648 4.59198L7.39799 11.092C7.29783 11.2452 7.13556 11.3467 6.95402 11.3699C6.77247 11.3931 6.58989 11.3355 6.45446 11.2124L3.70446 8.71241C3.44905 8.48022 3.43023 8.08494 3.66242 7.82953C3.89461 7.57412 4.28989 7.55529 4.5453 7.78749L6.75292 9.79441L10.6018 3.90792C10.7907 3.61902 11.178 3.53795 11.4669 3.72684Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                  </svg>
-                </span>
-                <span>Discover investment opportunities</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="bg-primary/10 text-primary rounded-full p-1 mt-0.5">
-                  <svg width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M11.4669 3.72684C11.7558 3.91574 11.8369 4.30308 11.648 4.59198L7.39799 11.092C7.29783 11.2452 7.13556 11.3467 6.95402 11.3699C6.77247 11.3931 6.58989 11.3355 6.45446 11.2124L3.70446 8.71241C3.44905 8.48022 3.43023 8.08494 3.66242 7.82953C3.89461 7.57412 4.28989 7.55529 4.5453 7.78749L6.75292 9.79441L10.6018 3.90792C10.7907 3.61902 11.178 3.53795 11.4669 3.72684Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                  </svg>
-                </span>
-                <span>Get answers to financial questions</span>
+                <span>Use New Chat to clear saved history</span>
               </li>
             </ul>
           </div>
-          
-          <div className="bg-card rounded-lg p-3 border">
-            <h3 className="font-medium text-base mb-1">Tips for Better Results</h3>
-            <ul className="space-y-1 text-xs">
-              <li className="flex items-start gap-2">
-                <span className="bg-blue-100 text-blue-600 rounded-full p-1 mt-0.5 text-xs font-bold">1</span>
-                <span>Be specific about your financial goals</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="bg-blue-100 text-blue-600 rounded-full p-1 mt-0.5 text-xs font-bold">2</span>
-                <span>Provide context about your financial situation</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="bg-blue-100 text-blue-600 rounded-full p-1 mt-0.5 text-xs font-bold">3</span>
-                <span>Ask follow-up questions for more details</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="bg-blue-100 text-blue-600 rounded-full p-1 mt-0.5 text-xs font-bold">4</span>
-                <span>Try the suggested prompts for quick answers</span>
-              </li>
+
+          <div className="bg-card rounded-lg border p-3">
+            <h3 className="mb-1 text-base font-medium">Tips</h3>
+            <ul className="space-y-1 text-xs text-muted-foreground">
+              <li>1. Be specific about goals</li>
+              <li>2. Mention income or constraints if relevant</li>
+              <li>3. Ask follow-ups</li>
             </ul>
           </div>
-          
-          <div className="bg-amber-50 text-amber-800 rounded-lg p-3 border border-amber-200">
-            <h3 className="font-medium text-base mb-1">Important Note</h3>
-            <p className="text-xs mb-1">
-              This AI assistant provides general financial guidance and is not a substitute for professional financial advice.
-            </p>
+
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900">
+            <h3 className="mb-1 text-base font-medium">Note</h3>
             <p className="text-xs">
-              Always consult with a qualified financial advisor for personalized recommendations.
+              General guidance only — not professional financial advice.
             </p>
           </div>
-        </div>
+        </aside>
       </div>
     </DashboardLayout>
-  )
-} 
+  );
+}

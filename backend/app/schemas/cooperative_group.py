@@ -19,6 +19,10 @@ class CooperativeStatus(str, enum.Enum):
     completed = "completed"
 
 
+class JoinPolicy(str, enum.Enum):
+    open = "open"
+    invite_only = "invite_only"
+
 
 # class CoopGroupBase(BaseModel):
 #     name: str
@@ -46,6 +50,10 @@ class CoopGroupCreate(BaseModel):
     rotation_order: str = Field(default="sequential", description="sequential or random")
     status: CooperativeStatus
     rules: Optional[List[dict]]
+    join_policy: JoinPolicy = Field(
+        default=JoinPolicy.invite_only,
+        description="open = browse & join; invite_only = code required",
+    )
 
 class CoopGroupDetails(BaseModel):
     id: UUID
@@ -62,7 +70,8 @@ class CoopGroupDetails(BaseModel):
     max_members: int
     target_amount: float
     status: CooperativeStatus
-    
+    join_policy: JoinPolicy = JoinPolicy.invite_only
+
     rotation_order: str
     current_round: int
     is_complete: bool

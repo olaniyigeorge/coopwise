@@ -58,6 +58,7 @@ class CooperativeGroupService:
                 rotation_order=coop_data.rotation_order,
                 current_round=coop_data.current_round,
                 is_complete=coop_data.is_complete,
+                join_policy=coop_data.join_policy.value,
             )
             db.add(new_coop_group)
             await db.commit()
@@ -89,9 +90,52 @@ class CooperativeGroupService:
             raise e
         return coop_groups
 
+    @staticmethod
+    async def list_open_groups(
+        db: AsyncSession,
+        user_id: str,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> list[CoopGroupDetails]:
+        """Circles that are open to join, not full, excluding groups the user is already in."""
+        joined_stmt = select(GroupMembership.group_id).where(
+            GroupMembership.user_id == user_id
+        )
+        joined_res = await db.execute(joined_stmt)
+        joined_ids = [row[0] for row in joined_res.all()]
 
+        filters = [
+            CooperativeGroup.status == CooperativeStatus.active,
+            CooperativeGroup.join_policy == "open",
+        ]
+        if joined_ids:
+            filters.append(CooperativeGroup.id.notin_(joined_ids))
 
-
+        stmt = (
+            select(CooperativeGroup)
+            .where(*filters)
+            .order_by(desc(CooperativeGroup.created_at))
+            .offset(skip)
+            .limit(limit * 2)
+        )
+        result = await db.execute(stmt)
+        groups = result.scalars().all()
+        out: list[CoopGroupDetails] = []
+        for g in groups:
+            count_stmt = select(func.count()).where(
+                GroupMembership.group_id == g.id,
+                GroupMembership.status == "accepted",
+            )
+            member_count = int((await db.execute(count_stmt)).scalar() or 0)
+            max_m = int(float(g.max_members))
+            if member_count >= max_m:
+                continue
+            details = CoopGroupDetails.model_validate(g)
+            details.member_count = member_count
+            out.append(details)
+            if len(out) >= limit:
+                break
+        return out
 
 
 
@@ -431,6 +475,7 @@ class CooperativeGroupService:
             select(CooperativeGroup)
             .where(
                 CooperativeGroup.status == CooperativeStatus.active,
+                CooperativeGroup.join_policy == "open",
                 CooperativeGroup.id.notin_(user_group_ids),
             )
             .limit(page_size)

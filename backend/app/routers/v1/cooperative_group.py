@@ -17,8 +17,8 @@ from app.schemas.cooperative_group import (
     CoopGroupCreate,
     CoopGroupDetails,
     CoopGroupUpdate,
-    JoinCircleResponse,
-    CooperativeStatus
+    CooperativeStatus,
+    JoinPolicy,
 )
 
 from app.schemas.cooperative_membership import CircleMemberDetail, MembershipCreate
@@ -33,7 +33,7 @@ from app.services.membership_service import CooperativeMembershipService
 
 from app.services.flow_service import flow_service
 from app.services.fx_service import fx_service
-from db.models.membership import GroupMembership
+from db.models.membership import GroupMembership, MembershipStatus
 
 
 router = APIRouter(prefix="/api/v1/cooperatives", tags=["Cooperative Groups"])
@@ -75,7 +75,7 @@ async def create_cooperative_group(
             weekly_amount_usdc=usdc_amount,
             rotation_order=coop_data.rotation_order,
         )
-        chain_circle_id = await flow_service.await_cicle_created_event(tx_id)
+        chain_circle_id = await flow_service.await_circle_created_event(tx_id)
 
         print(f"\ tx_id: {tx_id} \n chain_circle_id: {chain_circle_id} \n")
 
@@ -130,39 +130,17 @@ async def create_cooperative_group(
     return CoopGroupDetails.model_validate(coop)
 
 
-
-@router.post("/{coop_id}/join", response_model=JoinCircleResponse, status_code=status.HTTP_200_OK)
-async def join_circle(
-    coop_id: UUID,
+@router.get("/discover", response_model=List[CoopGroupDetails])
+async def discover_open_circles(
+    skip: int = 0,
+    limit: int = 20,
     user: AuthenticatedUser = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db_session)
+    db: AsyncSession = Depends(get_async_db_session),
 ):
-    # Fetch group to get chain_circle_id
-    coop_group = await CooperativeGroupService.get_coop_group_by_id(db, str(coop_id))
-    if not coop_group:
-        raise HTTPException(status_code=404, detail="Circle not found")
-
-    # 1. Submit JoinCircle.cdc transaction to Flow (Stubbed)
-    # tx_id = await flow_service.join_circle(
-    #     circle_id=coop_group.chain_circle_id,
-    #     member_address=user.flow_address
-    # )
-    tx_id = "0xMockFlowTransactionId12345"
-
-    # 2. Update Postgres membership record
-    membership_data = MembershipCreate(
-        user_id=user.id,
-        group_id=coop_group.id,
-        invited_by=coop_group.creator_id,
-        role="member",
-        status="accepted"
+    """List open (public) circles the current user can join without an invite code."""
+    return await CooperativeGroupService.list_open_groups(
+        db, str(user.id), skip=skip, limit=min(limit, 50)
     )
-    await CooperativeMembershipService.create_membership(db, membership_data, user)
-
-    return {"tx_id": tx_id, "status": "joined", "message": "Successfully joined the circle on-chain."}
-
-
-
 
 
 
@@ -327,11 +305,17 @@ async def join_circle(
     if coop.status == CooperativeStatus.inactive:
         raise HTTPException(status_code=400, detail="This circle is no longer active")
 
+    if coop.join_policy != JoinPolicy.open:
+        raise HTTPException(
+            status_code=403,
+            detail="This circle requires an invite code from a member.",
+        )
+
     # Check if already a member
     existing = await CooperativeMembershipService.get_membership_by_user_and_group(
         user.id, UUID(coop_id), db
     )
-    if existing and existing.status == "accepted":
+    if existing and existing.status == MembershipStatus.accepted:
         raise HTTPException(status_code=400, detail="Already a member of this circle")
 
     # 3. Check capacity

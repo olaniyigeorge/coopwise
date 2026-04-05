@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import CircleService from "@/lib/circle-service";
 
 // Aligning with Backend Enums
@@ -49,6 +50,8 @@ export function CreateCircleForm() {
   // 4. Members
   const [maxMembers, setMaxMembers] = useState("5");
   const [memberPhones, setMemberPhones] = useState<string[]>([""]);
+
+  const [joinPolicy, setJoinPolicy] = useState<"open" | "invite_only">("invite_only");
 
   // 5. State Helpers
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,6 +92,7 @@ export function CreateCircleForm() {
       member_phones: cleanPhones,
       status: "pending", // Backend usually expects this as initial state
       rules: [], // Optional: add logic for custom rules later
+      join_policy: joinPolicy,
     };
 
     try {
@@ -130,6 +134,38 @@ export function CreateCircleForm() {
         <div className="space-y-1.5">
           <Label htmlFor="desc">Description (Optional)</Label>
           <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this group for?" disabled={isSubmitting} />
+        </div>
+        <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+          <Label>Who can join?</Label>
+          <RadioGroup
+            value={joinPolicy}
+            onValueChange={(v) => setJoinPolicy(v as "open" | "invite_only")}
+            className="space-y-2"
+            disabled={isSubmitting}
+          >
+            <div className="flex items-start space-x-3 rounded-md border bg-background p-3">
+              <RadioGroupItem value="open" id="jp-open" className="mt-1" />
+              <div>
+                <Label htmlFor="jp-open" className="font-medium cursor-pointer">
+                  Open — listed on Join Group; anyone can join
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Good for hackathons and public savings circles.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3 rounded-md border bg-background p-3">
+              <RadioGroupItem value="invite_only" id="jp-invite" className="mt-1" />
+              <div>
+                <Label htmlFor="jp-invite" className="font-medium cursor-pointer">
+                  Private — invite code only
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Members need a code from you or another member.
+                </p>
+              </div>
+            </div>
+          </RadioGroup>
         </div>
       </div>
 

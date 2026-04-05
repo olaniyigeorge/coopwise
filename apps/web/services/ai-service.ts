@@ -5,11 +5,47 @@ export type ChatMessage = {
   content: string;
 };
 
+export type StoredChatMessage = {
+  role: string;
+  content: string;
+  ts?: string;
+};
+
 /**
  * AI features use the backend only (OpenAI key stays server-side).
- * Configure OPENAI_API_KEY on the API (Render), not in the browser.
  */
 export class AIService {
+  private authHeaders(): Promise<Record<string, string>> {
+    return AuthService.getToken().then((token) => {
+      if (!token) throw new Error('Authentication required');
+      return {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+    });
+  }
+
+  async fetchChatHistory(): Promise<StoredChatMessage[]> {
+    const headers = await this.authHeaders();
+    const response = await fetch('/api/v1/insights/ai-chat/history', {
+      method: 'GET',
+      headers,
+    });
+    if (!response.ok) {
+      return [];
+    }
+    const data = await response.json().catch(() => ({}));
+    return Array.isArray(data.messages) ? data.messages : [];
+  }
+
+  async clearChatHistory(): Promise<void> {
+    const headers = await this.authHeaders();
+    await fetch('/api/v1/insights/ai-chat/history', {
+      method: 'DELETE',
+      headers,
+    });
+  }
+
   async sendMessage(message: string): Promise<string> {
     const token = await AuthService.getToken();
     if (!token) {
@@ -34,7 +70,7 @@ export class AIService {
   }
 
   async resetChat(): Promise<void> {
-    return Promise.resolve();
+    await this.clearChatHistory();
   }
 
   async getInsights() {
