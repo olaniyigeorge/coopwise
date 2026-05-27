@@ -1,59 +1,55 @@
-import asyncio
 import sys
 from pathlib import Path
 from celery import Celery
 from celery.schedules import crontab
 
 from config import AppConfig
-from db.database import db_manager
 
-# ----------------------
-# Ensure project root is discoverable
-# ---------------------
+# Path setup 
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-print(f"\n\n=== Celery Configuration ===")
-print(f"Redis URL: {AppConfig.REDIS_URL}")
-print(f"Project Root: {project_root}\n\n")
-
-# ------------------
-# Create Celery instance
-# -----------------
+# Celery instance 
 celery_app = Celery(
     AppConfig.PROJECT_NAME,
     broker=AppConfig.REDIS_URL,
-    backend=AppConfig.REDIS_URL,  # Enables result tracking in Redis
-    include=[],  # Ensure your event tasks are loaded
+    backend=AppConfig.REDIS_URL,
+    include=[
+        "app.tasks.notification_tasks",  # deliver_notification, review_manual_queue
+    ],
 )
 
-# --------------------------------
-# Beat Schedule (Periodic Tasks)
-# --------------------------------
-celery_app.conf.beat_schedule = {
-    # "check-event-reminders-every-hour": {
-    #     "task": "app.events.tasks.send_event_reminder_to_regs",
-    #     "schedule": crontab(minute=0, hour="*"),  # every hour on the hour
-    #     "args": ["email"],
-    # },
-    # Uncomment this line temporarily if you want to confirm Beat runs
-    # "test-task-every-30s": {
-    #     "task": "app.events.tasks.test_task",
-    #     "schedule": 30.0,  # every 30 seconds
-    #     "args": ["hello from Beat!"],
-    # },
-
+# Queue routing 
+# One queue per channel so worker pools are independent and channel failures
+# don't block each other.
+celery_app.conf.task_routes = {
+    "app.tasks.notification_tasks.deliver_push":          {"queue": "push"},
+    "app.tasks.notification_tasks.deliver_sms":           {"queue": "sms"},
+    "app.tasks.notification_tasks.deliver_email":         {"queue": "email"},
+    "app.tasks.notification_tasks.review_manual_queue":   {"queue": "celery"},  # default queue
 }
 
-# -------------------------------
-# General Celery configuration
-# -------------------------------
+# Beat schedule 
+celery_app.conf.beat_schedule = {
+    # Surfaces manual_review notifications to ops every 15 minutes
+    "dlq-review-every-15min": {
+        "task": "app.tasks.notification_tasks.review_manual_queue",
+        "schedule": crontab(minute="*/15"),
+    },
+    # Contribution reminders — checks for contributions due in 24hrs, every hour
+    "contribution-reminders-every-hour": {
+        "task": "app.tasks.notification_tasks.send_contribution_reminders",
+        "schedule": crontab(minute=0, hour="*"),
+    },
+}
+
+# General config 
 celery_app.conf.update(
     timezone="UTC",
     enable_utc=True,
     task_track_started=True,
-    task_time_limit=300,        
-    task_soft_time_limit=240,   
+    task_time_limit=300,            # hard kill after 5 min
+    task_soft_time_limit=240,       # SoftTimeLimitExceeded raised at 4 min
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
@@ -61,26 +57,12 @@ celery_app.conf.update(
     broker_connection_retry=True,
     broker_connection_max_retries=10,
     result_backend=AppConfig.REDIS_URL,
-    result_expires=3600,        # 1 hour
+    result_expires=3600,            # results kept for 1 hour
     broker_pool_limit=10,
     worker_prefetch_multiplier=4,
     worker_max_tasks_per_child=1000,
+    # acks_late is set per-task on notification tasks, not globally,
+    # so non-notification tasks are unaffected.
 )
 
-# ----------------------------------
-# Auto-discover tasks from modules
-# ----------------------------------
-celery_app.autodiscover_tasks([], force=True)
-
-# ------------------------------------------------
-# Optional: Post-configure signal for future hooks
-# -------------------------------------------------
-# @celery_app.on_after_configure.connect
-# def init_db(sender, **kwargs):
-#     """Optional: Initialize DB connection when Celery starts."""
-#     print("🔌 Initializing DB for Celery worker...")
-#     try:
-#         db_manager.initialize(AppConfig.DATABASE_URL)
-#         print("\nDB Initialized successfully")
-#     except Exception as e:
-#         print(f"\n Failed to initialize DB: {e}")
+celery_app.autodiscover_tasks(["app.tasks"], force=True)
