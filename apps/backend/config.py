@@ -24,6 +24,7 @@ class GlobalConfig(BaseSettings):
     REDIS_URL: str
     GEMINI_API_KEY: str
     RATE_LIMIT_RULES_PATH: str
+    CELERY_BROKER_URL:str
 
     # Mail config: required for notification email delivery
     MAIL_USERNAME: str
