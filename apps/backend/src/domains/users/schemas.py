@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Annotated, List, Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, constr
 from uuid import UUID
-from apps.backend.src.domains.users.models import IncomeRange, SavingFrequency, UserRoles
+from src.domains.users.models import IncomeRange, SavingFrequency, UserRoles
 
 
 PhoneNumberStr = Annotated[str, constr(pattern=r"^\+\d{7,15}$")]  # E.164 format

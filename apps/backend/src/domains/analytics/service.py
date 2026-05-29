@@ -3,13 +3,13 @@ from typing import List
 from redis import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from apps.backend.src.utils.cache import get_cache, update_cache
-from apps.backend.src.domains.analytics.schemas import ActivityCreate, ActivityDetail
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.analytics.models import ActivityLog
+from src.infra.cache.redis_client import get_cache, update_cache
+from src.domains.analytics.schemas import ActivityCreate, ActivityDetail
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.analytics.models import ActivityLog
 from datetime import datetime
 from uuid import UUID
-from apps.backend.src.shared.utils.logger import logger
+from src.shared.utils.logger import logger
 
 
 class ActivityService:
@@ -100,17 +100,17 @@ from sqlalchemy import select, func
 from redis.asyncio import Redis
 from datetime import datetime
 
-from apps.backend.src.domains.wallets.service import WalletService
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.circles.schemas import CoopGroupTargetSummary
-from apps.backend.src.domains.dashboard.schemas import Summary, Targets
-from apps.backend.src.utils.cache import get_cache, update_cache
-from apps.backend.src.domains.contributions.models import Contribution, ContributionStatus
-from apps.backend.src.domains.memberships.models import GroupMembership
-from apps.backend.src.domains.circles.schemas import CooperativeGroup
-from apps.backend.src.domains.memberships.service import CooperativeMembershipService
-from apps.backend.src.shared.utils.logger import logger
-from apps.backend.src.domains.users.models import User
+from src.domains.wallets.service import WalletService
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.circles.schemas import CoopGroupTargetSummary
+from src.domains.dashboard.schemas import Summary, Targets
+from src.infra.cache.redis_client import get_cache, update_cache
+from src.domains.contributions.models import Contribution, ContributionStatus
+from src.domains.memberships.models import GroupMembership
+from src.domains.circles.models import CooperativeGroup
+from src.domains.memberships.service import CooperativeMembershipService
+from src.shared.utils.logger import logger
+from src.domains.users.models import User
 
 
 class SummaryService:

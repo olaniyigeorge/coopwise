@@ -1,6 +1,7 @@
+import json
 import logging
 import redis.asyncio as redis
-from typing import Optional
+from typing import Any, Optional
 
 from config import AppConfig
 
@@ -34,13 +35,29 @@ class RedisManager:
         logger.info("Redis connection closed")
 
     def get(self) -> redis.Redis:
-        """
-        Return the active client. Raises if called before initialize().
-        Use this for synchronous access after startup.
-        """
         if self.client is None:
             raise RuntimeError("RedisManager not initialized. Call initialize() first.")
         return self.client
 
 
 redis_manager = RedisManager()
+
+
+async def get_cache(key: str) -> Optional[Any]:
+    try:
+        client = redis_manager.get()
+        value = await client.get(key)
+        if value is None:
+            return None
+        return json.loads(value)
+    except Exception as e:
+        logger.warning("Cache get failed for key %s: %s", key, e)
+        return None
+
+
+async def update_cache(key: str, value: Any, ttl: int = 300) -> None:
+    try:
+        client = redis_manager.get()
+        await client.set(key, json.dumps(value, default=str), ex=ttl)
+    except Exception as e:
+        logger.warning("Cache update failed for key %s: %s", key, e)

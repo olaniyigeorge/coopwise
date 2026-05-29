@@ -3,11 +3,11 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.app.api.routers.v1.auth import get_current_user
-from apps.backend.src.domains.analytics.schemas import ActivityDetail
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
-from apps.backend.src.domains.analytics.models import ActivityLog
+from src.domains.auth.schemas import AuthenticatedUser
+from src.api.middlewares.dependencies import get_current_user
+from src.domains.analytics.schemas import ActivityDetail
+from src.infra.db.dependencies import get_async_db_session
+from src.domains.analytics.models import ActivityLog
 
 
 router = APIRouter(prefix="/api/v1/activities", tags=["Activities"])

@@ -9,16 +9,16 @@ from fastapi.routing import APIRouter
 from pydantic import BaseModel
 from typing import Dict, List, Tuple
 
-from apps.backend.src.domains.notifications.notification_models import NotificationStatus
-from apps.backend.app.api.routers.v1.auth import get_current_user, get_current_user_ws
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.notifications.schemas import (
+from src.domains.notifications.models import NotificationStatus
+from src.api.middlewares.dependencies import get_current_user, get_current_user_ws
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.notifications.schemas import (
     NotificationCreate,
     NotificationDetail,
 )
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
+from src.infra.db.dependencies import get_async_db_session
 from sqlalchemy.ext.asyncio import AsyncSession
-from apps.backend.src.domains.notifications.service import NotificationService
+from src.domains.notifications.service import NotificationService
 
 router = APIRouter(prefix="/api/v1/notifications", tags=["Notifications"])
 

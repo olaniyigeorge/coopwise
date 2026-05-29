@@ -6,28 +6,28 @@ from redis import Redis
 import requests
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from apps.backend.src.domains.users.schemas import UserDetail
-from apps.backend.src.domains.analytics.service import ActivityService
+from src.domains.users.schemas import UserDetail
+from src.domains.analytics.service import ActivityService
 from config import AppConfig as config
-from apps.backend.src.domains.analytics.schemas import ActivityDetail
-from apps.backend.src.domains.users.service import UserService
-from apps.backend.src.domains.insights.schemas import (
+from src.domains.analytics.schemas import ActivityDetail
+from src.domains.users.service import UserService
+from src.domains.insights.schemas import (
     AI_INSIGHT_TEMPLATES,
     AIInsightCreate,
     AIInsightDetail,
     InsightMetadata,
 )
-from apps.backend.src.domains.dashboard.schemas import DashboardData
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
+from src.domains.dashboard.schemas import DashboardData
+from src.domains.auth.schemas import AuthenticatedUser
 
 # from app.services.insight_service import InsightService
-from apps.backend.src.domains.notifications.notification_service import NotificationService
-from apps.backend.src.utils.cache import get_cache, update_cache
-from apps.backend.src.shared.utils.llm_client import ask_llm
+from src.domains.notifications.service import NotificationService
+from src.infra.cache.redis_client import get_cache, update_cache
+from src.shared.utils.llm_client import ask_llm
 from fastapi import HTTPException, status
 import json
-from apps.backend.src.shared.utils.logger import logger
-from apps.backend.src.domains.insights.models import AIInsight
+from src.shared.utils.logger import logger
+from src.domains.insights.models import AIInsight
 
 import re
 

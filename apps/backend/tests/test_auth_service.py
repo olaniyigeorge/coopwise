@@ -4,9 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 
-from apps.backend.src.domains.users.schemas import UserCreate
-from apps.backend.src.domains.auth.service import AuthService
-from apps.backend.src.shared.utils.crypto import verify_password
+from src.domains.users.schemas import UserCreate
+from src.domains.auth.service import AuthService
+from src.shared.utils.crypto import verify_password
 from config import AppConfig as config
 
 

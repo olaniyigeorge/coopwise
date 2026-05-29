@@ -1,6 +1,6 @@
 """Push notification worker for notifications."""
 
-from apps.backend.src.domains.notifications.providers.push import PushProvider
+from src.domains.notifications.providers.push import PushProvider
 
 
 class PushWorker:

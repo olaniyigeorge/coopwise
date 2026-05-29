@@ -1,6 +1,6 @@
 """Email worker skeleton for notifications."""
 
-from apps.backend.src.domains.notifications.providers.email import EmailProvider
+from src.domains.notifications.providers.email import EmailProvider
 
 
 class EmailWorker:

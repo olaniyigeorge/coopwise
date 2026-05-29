@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from config import AppConfig as config
-from apps.backend.src.shared.utils.logger import logger
+from src.shared.utils.logger import logger
 
 Base = declarative_base()
 

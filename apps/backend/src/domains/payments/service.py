@@ -4,16 +4,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import Depends, HTTPException, status
 
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
+from src.domains.auth.schemas import AuthenticatedUser
 
-from apps.backend.src.domains.wallets.schemas import WalletLedgerCreate
-from apps.backend.src.domains.wallets.service import WalletService
-from apps.backend.src.api.middlewares.dependencies import get_cashramp_service
-from apps.backend.src.coopwise_infra.payments.cashramp_service import CashRampService
-from apps.backend.src.domains.wallets.models import LocalCurrency
+from src.domains.wallets.schemas import WalletLedgerCreate
+from src.domains.wallets.service import WalletService
+from src.api.middlewares.dependencies import get_cashramp_service
+from src.infra.payments.cashramp_service import CashRampService
+from src.domains.wallets.models import LocalCurrency
 from config import AppConfig as config
-from apps.backend.src.domains.payments.schemas import ChargeResponse, PaystackPayload
-from apps.backend.src.shared.utils.logger import logger
+from src.domains.payments.schemas import ChargeResponse, PaystackPayload
+from src.shared.utils.logger import logger
 
 COOPWISE_USD_NGN_RATE = 1 / 1500
 
@@ -362,13 +362,13 @@ from enum import Enum
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_
-from apps.backend.src.shared.utils.logger import logger
+from src.shared.utils.logger import logger
 from fastapi import HTTPException, status
 
-from apps.backend.src.domains.circles.schemas import CooperativeGroup, CooperativeStatus
-from apps.backend.src.domains.contributions.models import Contribution, ContributionStatus
-from apps.backend.src.domains.memberships.models import GroupMembership
-from apps.backend.src.coopwise_infra.blockchain.contract_service import contract_service
+from src.domains.circles.models import CooperativeGroup, CooperativeStatus
+from src.domains.contributions.models import Contribution, ContributionStatus
+from src.domains.memberships.models import GroupMembership
+from src.infra.blockchain.contract_service import contract_service
 
 
 class PayoutPhase(Enum):

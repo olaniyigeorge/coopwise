@@ -1,6 +1,6 @@
 """SMS worker skeleton for notifications."""
 
-from apps.backend.src.domains.notifications.providers.sms import SMSProvider
+from src.domains.notifications.providers.sms import SMSProvider
 
 
 class SMSWorker:

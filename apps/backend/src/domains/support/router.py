@@ -4,15 +4,15 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated, List
 
-from apps.backend.app.api.routers.v1.auth import get_current_user
-from apps.backend.src.domains.support.schemas import FeedbackCreate, FeedbackDetail
-from apps.backend.src.domains.support.service import SupportService
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.notifications.schemas import NotificationCreate
-from apps.backend.src.domains.users.schemas import AuthUser, UserCreate
-from apps.backend.src.domains.notifications.notification_service import NotificationService
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
-from apps.backend.src.domains.auth.service import AuthService
+from src.api.middlewares.dependencies import get_current_user
+from src.domains.support.schemas import FeedbackCreate, FeedbackDetail
+from src.domains.support.service import SupportService
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.notifications.schemas import NotificationCreate
+from src.domains.users.schemas import AuthUser, UserCreate
+from src.domains.notifications.service import NotificationService
+from src.infra.db.dependencies import get_async_db_session
+from src.domains.auth.service import AuthService
 
 router = APIRouter(prefix="/api/v1/support", tags=["Support, Feedback & Reviews"])
 

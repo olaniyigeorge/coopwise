@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from uuid import UUID
 from datetime import datetime
 from typing import Optional
-from apps.backend.src.domains.analytics.models import ActivityType
+from src.domains.analytics.models import ActivityType
 
 
 class ActivityCreate(BaseModel):

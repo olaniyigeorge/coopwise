@@ -2,9 +2,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
-from apps.backend.src.domains.support.schemas import FeedbackCreate, FeedbackDetail
-from apps.backend.src.domains.support.feedback_model import Feedback
-from apps.backend.src.shared.utils.logger import logger
+from src.domains.support.schemas import FeedbackCreate, FeedbackDetail
+from src.domains.support.models import Feedback
+from src.shared.utils.logger import logger
 
 
 class SupportService:

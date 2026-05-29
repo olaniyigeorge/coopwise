@@ -3,7 +3,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
 
-from apps.backend.src.coopwise_infra.db.database import db_manager
+from src.infra.db.database import db_manager
 
 
 async def get_async_db_session() -> AsyncGenerator[AsyncSession, None]:

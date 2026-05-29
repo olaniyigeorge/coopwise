@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator
 
 from main import app as fastapi_app
-from apps.backend.src.coopwise_infra.db.database import Base, DatabaseManager
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
+from src.infra.db.database import Base, DatabaseManager
+from src.infra.db.dependencies import get_async_db_session
 
 # Global test database manager
 test_db_manager: DatabaseManager = None

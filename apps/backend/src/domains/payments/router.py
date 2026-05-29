@@ -1,23 +1,23 @@
 import hmac
 import hashlib
-from apps.backend.src.infra.payments.cashramp_schemas import CustomerResponse, RampQuoteResponse
-from apps.backend.src.infra.payments.cashramp_service import CashRampService
+from src.infra.payments.cashramp_schemas import CustomerResponse, RampQuoteResponse, InitiateDepositResponse, InitiateDepositResponse
+from src.infra.payments.cashramp_service import CashRampService
 from fastapi import APIRouter, Request, Header, HTTPException, status, Depends
 from fastapi.responses import RedirectResponse
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
-from apps.backend.src.shared.utils.logger import logger
-from apps.backend.src.api.middlewares.dependencies import get_cashramp_service, get_redis
-from apps.backend.app.api.routers.v1.auth import get_current_user
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.payments.schemas import PaystackPayload
-from apps.backend.src.domains.contributions.service import ContributionService
-from apps.backend.src.domains.wallets.service import WalletService
+from src.shared.utils.logger import logger
+from src.api.middlewares.dependencies import get_cashramp_service, get_redis
+from src.api.middlewares.dependencies import get_current_user
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.payments.schemas import PaystackPayload
+from src.domains.contributions.service import ContributionService
+from src.domains.wallets.service import WalletService
 from config import AppConfig as config
-from apps.backend.src.domains.contributions.models import Contribution
-from apps.backend.src.domains.payments.service import PaymentService
+from src.domains.contributions.models import Contribution
+from src.domains.payments.service import PaymentService
 
 
 
@@ -29,17 +29,17 @@ from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
-from apps.backend.src.shared.utils.logger import logger
-from apps.backend.src.api.middlewares.dependencies import get_redis
-from apps.backend.app.api.routers.v1.auth import get_current_user
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.payments.schemas import PaystackPayload
-from apps.backend.src.domains.contributions.service import ContributionService
-from apps.backend.src.domains.wallets.service import WalletService
+from src.shared.utils.logger import logger
+from src.api.middlewares.dependencies import get_redis
+from src.api.middlewares.dependencies import get_current_user
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.payments.schemas import PaystackPayload
+from src.domains.contributions.service import ContributionService
+from src.domains.wallets.service import WalletService
 from config import AppConfig as config
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
-from apps.backend.src.domains.contributions.models import Contribution
-from apps.backend.src.domains.payments.service import PaymentService
+from src.infra.db.dependencies import get_async_db_session
+from src.domains.contributions.models import Contribution
+from src.domains.payments.service import PaymentService
 
 router = APIRouter(prefix="/api/v1/payments", tags=["Payments & Integrations"])
 

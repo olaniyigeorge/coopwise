@@ -2,7 +2,7 @@ import subprocess
 import sys
 import platform
 
-from apps.backend.src.shared.utils.logger import logger
+from src.shared.utils.logger import logger
 
 
 #!/usr/bin/env python3
@@ -119,7 +119,7 @@ class ServiceManager:
         
         cmd = [
             'celery',
-            '-A', 'app.core.celery_app.celery_app',
+            '-A', 'src.infra.celery.app.celery_app',
             'worker',
             '--loglevel=info',
             f'--concurrency={concurrency}',
@@ -170,7 +170,7 @@ class ServiceManager:
         
         cmd = [
             'celery',
-            '-A', 'app.core.celery_app.celery_app',
+            '-A', 'src.infra.celery.app.celery_app',
             'beat',
             '--loglevel=info'
         ]

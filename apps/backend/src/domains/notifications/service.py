@@ -13,16 +13,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from redis.asyncio import Redis
 
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.notifications.schemas import (
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.notifications.schemas import (
     NotificationCreate,
     NotificationDetail,
 )
-from apps.backend.src.domains.notifications.schemas import NotificationUpdate
-from apps.backend.src.domains.notifications.notification_models import Notification, NotificationStatus
-from apps.backend.src.utils.cache import get_cache, update_cache
-from apps.backend.src.shared.utils.logger import logger
-from apps.backend.src.domains.users.service import UserService
+from src.domains.notifications.schemas import NotificationUpdate
+from src.domains.notifications.models import Notification, NotificationStatus
+from src.infra.cache.redis_client import get_cache, update_cache
+from src.shared.utils.logger import logger
+from src.domains.users.service import UserService
 
 
 class NotificationService:

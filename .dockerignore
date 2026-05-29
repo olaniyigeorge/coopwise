@@ -1,0 +1,12 @@
+node_modules
+.git
+blockchain
+docs
+tests
+tools
+packages
+*.log
+apps/frontend/node_modules
+apps/frontend/.next
+apps/backend/__pycache__
+apps/backend/logs

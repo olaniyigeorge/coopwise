@@ -6,22 +6,22 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-from apps.backend.src.domains.contributions.models import ContributionStatus
+from src.domains.contributions.models import ContributionStatus
 from config import AppConfig as config;
-from apps.backend.src.shared.utils.logger import logger
-from apps.backend.src.domains.circles.service import CooperativeGroupService
-from apps.backend.src.api.middlewares.dependencies import get_redis
-from apps.backend.src.domains.wallets.schemas import WalletDeposit
-from apps.backend.src.domains.wallets.service import WalletService
-from apps.backend.src.domains.notifications.schemas import NotificationCreate
-from apps.backend.src.domains.notifications.notification_service import NotificationService
-from apps.backend.src.domains.payments.service import PaymentService
-from apps.backend.src.domains.users.service import UserService
-from apps.backend.src.domains.contributions.schemas import ContributionCreate, ContributionDetail
-from apps.backend.app.api.routers.v1.auth import get_current_user, is_admin_permissions
-from apps.backend.src.domains.contributions.service import ContributionService
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
+from src.shared.utils.logger import logger
+from src.domains.circles.service import CooperativeGroupService
+from src.api.middlewares.dependencies import get_redis
+from src.domains.wallets.schemas import WalletDeposit
+from src.domains.wallets.service import WalletService
+from src.domains.notifications.schemas import NotificationCreate
+from src.domains.notifications.service import NotificationService
+from src.domains.payments.service import PaymentService
+from src.domains.users.service import UserService
+from src.domains.contributions.schemas import ContributionCreate, ContributionDetail
+from src.api.middlewares.dependencies import get_current_user, is_admin_permissions
+from src.domains.contributions.service import ContributionService
+from src.domains.auth.schemas import AuthenticatedUser
+from src.infra.db.dependencies import get_async_db_session
 
 
 router = APIRouter(prefix="/api/v1/contributions", tags=["Contributions"])
@@ -161,22 +161,22 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-from apps.backend.src.domains.contributions.models import ContributionStatus
+from src.domains.contributions.models import ContributionStatus
 from config import AppConfig as config;
-from apps.backend.src.shared.utils.logger import logger
-from apps.backend.src.domains.circles.service import CooperativeGroupService
-from apps.backend.src.api.middlewares.dependencies import get_redis
-from apps.backend.src.domains.wallets.schemas import WalletDeposit
-from apps.backend.src.domains.wallets.service import WalletService
-from apps.backend.src.domains.notifications.schemas import NotificationCreate
-from apps.backend.src.domains.notifications.notification_service import NotificationService
-from apps.backend.src.domains.payments.service import PaymentService
-from apps.backend.src.domains.users.service import UserService
-from apps.backend.src.domains.contributions.schemas import ContributionCreate, ContributionDetail
-from apps.backend.app.api.routers.v1.auth import get_current_user, is_admin_permissions
-from apps.backend.src.domains.contributions.service import ContributionService
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
+from src.shared.utils.logger import logger
+from src.domains.circles.service import CooperativeGroupService
+from src.api.middlewares.dependencies import get_redis
+from src.domains.wallets.schemas import WalletDeposit
+from src.domains.wallets.service import WalletService
+from src.domains.notifications.schemas import NotificationCreate
+from src.domains.notifications.service import NotificationService
+from src.domains.payments.service import PaymentService
+from src.domains.users.service import UserService
+from src.domains.contributions.schemas import ContributionCreate, ContributionDetail
+from src.api.middlewares.dependencies import get_current_user, is_admin_permissions
+from src.domains.contributions.service import ContributionService
+from src.domains.auth.schemas import AuthenticatedUser
+from src.infra.db.dependencies import get_async_db_session
 
 
 router = APIRouter(prefix="/api/v1/contributions", tags=["Contributions"])

@@ -3,7 +3,7 @@ from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
-from apps.backend.src.domains.contributions.models import ContributionStatus
+from src.domains.contributions.models import ContributionStatus
 
 
 class ContributionCreate(BaseModel):

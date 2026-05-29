@@ -3,15 +3,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.backend.app.api.routers.v1.auth import (
+from src.domains.auth.router import (
     get_current_user,
     is_admin_or_owner,
     is_admin_permissions,
 )
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.users.schemas import UserDetail, UserUpdate
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
-from apps.backend.src.domains.users.service import UserService
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.users.schemas import UserDetail, UserUpdate
+from src.infra.db.dependencies import get_async_db_session
+from src.domains.users.service import UserService
 
 router = APIRouter(prefix="/api/v1/users", tags=["User Management"])
 

@@ -3,7 +3,7 @@ import asyncio
 import logging
 from flow_py_sdk import flow_client, cadence
 from flow_py_sdk.cadence import Address, UFix64, String, Array, UInt64, UInt8
-from apps.backend.src.shared.utils.logger import logger
+from src.shared.utils.logger import logger
 
 FLOW_SERVICE_ACCOUNT = "0xYOUR_SERVICE_ACCOUNT"
 COOPWISE_CONTRACT_ADDRESS = "0xYOUR_CONTRACT_ADDRESS"
@@ -243,4 +243,8 @@ class FlowService:
 
 
 # # Singleton — import this everywhere
-# flow_service = FlowService()
+
+
+flow_service = FlowService()
+
+flow_service = FlowService()

@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.dashboard.schemas import DashboardData
-from apps.backend.src.api.middlewares.dependencies import get_current_user, get_redis
-from apps.backend.src.domains.dashboard.service import DashboardService
+from src.infra.db.dependencies import get_async_db_session
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.dashboard.schemas import DashboardData
+from src.api.middlewares.dependencies import get_current_user, get_redis
+from src.domains.dashboard.service import DashboardService
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["Dashboard"])
 

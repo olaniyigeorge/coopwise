@@ -5,30 +5,30 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
-from apps.backend.src.domains.users.service import UserService
+from src.domains.users.service import UserService
 from config import AppConfig as config
-from apps.backend.src.coopwise_infra.payments import cashramp_service
-from apps.backend.src.domains.notifications.notification_service import NotificationService
-from apps.backend.src.domains.payments.service import COOPWISE_USD_NGN_RATE, PaymentService
-from apps.backend.src.domains.wallets.models import (
+from src.infra.payments import cashramp_service
+from src.domains.notifications.service import NotificationService
+from src.domains.payments.service import COOPWISE_USD_NGN_RATE, PaymentService
+from src.domains.wallets.models import (
     LedgerStatus,
     LedgerType,
     PaymentGateway,
     StableCurrency,
 )
-from apps.backend.src.domains.notifications.schemas import NotificationCreate
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
-from apps.backend.src.domains.wallets.service import WalletService
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.wallets.schemas import (
+from src.domains.notifications.schemas import NotificationCreate
+from src.infra.db.dependencies import get_async_db_session
+from src.domains.wallets.service import WalletService
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.wallets.schemas import (
     WalletDeposit,
     WalletLedgerCreate,
     WalletWithdraw,
     WalletBalance,
     WalletDetail,
 )
-from apps.backend.src.api.middlewares.dependencies import get_current_user, get_redis
-from apps.backend.src.shared.utils.logger import logger
+from src.api.middlewares.dependencies import get_current_user, get_redis
+from src.shared.utils.logger import logger
 
 
 router = APIRouter(prefix="/api/v1/wallet", tags=["Wallet"])
@@ -56,7 +56,7 @@ async def initiate_deposit(
 
     # Choose from a list of payment gateways
     if payment_gateway == "paystack":
-        from apps.backend.src.domains.payments.schemas import PaystackPayload
+        from src.domains.payments.schemas import PaystackPayload
 
         payment_payload = PaystackPayload(
             amount=int(Decimal(deposit_data.local_amount) * 100),

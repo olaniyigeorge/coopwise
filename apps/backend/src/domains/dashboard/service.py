@@ -2,17 +2,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 
 
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.dashboard.schemas import DashboardData
-from apps.backend.src.shared.utils.logger import logger
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.dashboard.schemas import DashboardData
+from src.shared.utils.logger import logger
 
-from apps.backend.src.domains.circles.service import CooperativeGroupService
-from apps.backend.src.domains.analytics.service import ActivityService
-from apps.backend.src.domains.insights.service import InsightEngine
-from apps.backend.src.domains.notifications.notification_service import NotificationService
-from apps.backend.src.domains.memberships.service import CooperativeMembershipService
-from apps.backend.src.domains.analytics.summary_service import SummaryService
-from apps.backend.src.domains.users.service import UserService
+from src.domains.circles.service import CooperativeGroupService
+from src.domains.analytics.service import ActivityService
+from src.domains.insights.service import InsightEngine
+from src.domains.notifications.service import NotificationService
+from src.domains.memberships.service import CooperativeMembershipService
+from src.domains.analytics.service import SummaryService
+from src.domains.users.service import UserService
 
 
 class DashboardService:

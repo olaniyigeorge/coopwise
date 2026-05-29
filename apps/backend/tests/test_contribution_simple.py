@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 async def test_imports():
     """Test that all our new modules can be imported"""
     try:
-        from apps.backend.src.coopwise_infra.blockchain.contract_service import contract_service
+        from src.infra.blockchain.contract_service import contract_service
         print(" Contract service imported successfully")
 
         # Test contract service methods

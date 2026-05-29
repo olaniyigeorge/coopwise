@@ -1,27 +1,24 @@
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, make_url
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy import pool
-from urllib.parse import unquote
 from alembic import context
 
 from config import AppConfig
 
-from apps.backend.src.coopwise_infra.db.database import Base
-from apps.backend.src.domains.circles.schemas import *
-from apps.backend.src.domains.users.models import *
-from apps.backend.src.domains.analytics.models import *
-from apps.backend.src.domains.ai_chat.models import *
-from apps.backend.src.domains.contributions.models import *
-from apps.backend.src.domains.memberships.models import *
-from apps.backend.src.domains.notifications.notification_models import *
-from apps.backend.src.domains.support.feedback_model import *
-from apps.backend.src.domains.wallets.models import *
-from apps.backend.src.domains.insights.models import *
+from src.infra.db.database import Base
+from src.domains.circles.models import *
+from src.domains.users.models import *
+from src.domains.analytics.models import *
+from src.domains.ai_chat.models import *
+from src.domains.contributions.models import *
+from src.domains.memberships.models import *
+from src.domains.notifications.models import *
+from src.domains.support.models import *
+from src.domains.wallets.models import *
+from src.domains.insights.models import *
 
 print("Registered tables:", Base.metadata.tables.keys())
-
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

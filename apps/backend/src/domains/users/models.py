@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
-from apps.backend.src.domains.memberships.models import GroupMembership
-from apps.backend.src.coopwise_infra.db.database import Base
+from src.domains.memberships.models import GroupMembership
+from src.infra.db.database import Base
 from sqlalchemy import Boolean, Column, String, Enum, DateTime, Float
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
@@ -118,7 +118,7 @@ class User(Base):
 
 
 # Deferred relationship to avoid circular import with ChatWithAI
-from apps.backend.src.domains.ai_chat.models import ChatWithAI  # noqa: E402
+from src.domains.ai_chat.models import ChatWithAI  # noqa: E402
 
 User.ai_chats = relationship(
     "ChatWithAI", back_populates="user", cascade="all, delete-orphan"

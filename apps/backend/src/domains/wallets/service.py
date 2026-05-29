@@ -3,28 +3,28 @@ from datetime import datetime
 import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from apps.backend.src.domains.wallets.models import (
+from src.domains.wallets.models import (
     LedgerStatus,
     Wallet,
     LocalCurrency,
     WalletLedger,
     LedgerType,
 )
-from apps.backend.src.domains.wallets.schemas import (
+from src.domains.wallets.schemas import (
     WalletDeposit,
     WalletDetail,
     WalletLedgerCreate,
     WalletLedgerDetail,
     WalletWithdraw,
 )
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.shared.utils.exchange_client import fetch_exchange_rate
+from src.domains.auth.schemas import AuthenticatedUser
+from src.shared.utils.exchange_client import fetch_exchange_rate
 from fastapi import HTTPException, status
 from decimal import Decimal
-from apps.backend.src.shared.utils.logger import logger
+from src.shared.utils.logger import logger
 from uuid import UUID
 from redis.asyncio import Redis
-from apps.backend.src.utils.cache import get_cache, update_cache
+from src.infra.cache.redis_client import get_cache, update_cache
 from typing import Dict, Any
 
 

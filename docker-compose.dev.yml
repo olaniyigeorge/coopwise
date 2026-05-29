@@ -1,0 +1,118 @@
+services:
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: coopwise_backend
+    command: >
+      uvicorn main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --reload-exclude venv
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./apps/backend/.env
+    environment:
+      DATABASE_URL: postgresql://coopwise:coopwise@postgres:5432/coopwise_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    volumes:
+      - ./apps/backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: coopwise_frontend
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./apps/frontend/.env
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_WS_URL: ws://localhost:8000
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  celery_worker:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    command: celery -A src.infra.celery.app worker --loglevel=info -Q default
+    env_file:
+      - ./apps/backend/.env
+    volumes:
+      - ./apps/backend:/app
+    depends_on:
+      - backend
+
+  notification_worker:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    command: celery -A src.infra.celery.app worker --loglevel=info -Q notifications --concurrency=10
+    env_file:
+      - ./apps/backend/.env
+    volumes:
+      - ./apps/backend:/app
+    depends_on:
+      - backend
+
+  blockchain_worker:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    command: celery -A src.infra.celery.app worker --loglevel=info -Q blockchain --concurrency=5
+    env_file:
+      - ./apps/backend/.env
+    volumes:
+      - ./apps/backend:/app
+    depends_on:
+      - backend
+
+  celery_beat:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    command: celery -A src.infra.celery.app beat --loglevel=info
+    env_file:
+      - ./apps/backend/.env
+    volumes:
+      - ./apps/backend:/app
+    depends_on:
+      - backend
+
+  flower:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    command: celery -A src.infra.celery.app flower --port=5555
+    ports:
+      - "5555:5555"
+    env_file:
+      - ./apps/backend/.env
+    depends_on:
+      - redis
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: olaniyigeorge77@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres

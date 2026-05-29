@@ -6,12 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from jose import jwt, JWTError
 
-from apps.backend.src.domains.users.schemas import UserCreate, UserDetail, iAuthWallet
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.users.models import User, UserRoles
-from apps.backend.src.domains.wallets.models import OnChainWallet
-from apps.backend.src.shared.utils.crypto import verify_password, get_password_hash
-from apps.backend.src.shared.utils.logger import logger
+from src.domains.users.schemas import UserCreate, UserDetail, iAuthWallet
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.users.models import User, UserRoles
+from src.domains.wallets.models import OnChainWallet
+from src.shared.utils.crypto import verify_password, get_password_hash
+from src.shared.utils.logger import logger
 from config import AppConfig as config
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
@@ -347,7 +347,7 @@ class AuthService:
     
         # 5. Issue JWT — same shape as the existing login token
         # Import your actual AuthService.create_access_token here
-        from apps.backend.src.domains.auth.service import AuthService
+        from src.domains.auth.service import AuthService
         token = await AuthService.create_access_token({
             "sub": user.email,
             "id": str(user.id),

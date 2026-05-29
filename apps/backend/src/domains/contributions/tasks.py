@@ -27,14 +27,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.orm import sessionmaker
 
-from apps.backend.src.domains.contributions.service import ContributionService, ContributionActionType
-from apps.backend.src.domains.circles.service import CooperativeGroupService
-from apps.backend.src.domains.memberships.service import CooperativeMembershipService
-from apps.backend.src.domains.circles.schemas import CooperativeGroup, CooperativeStatus, ContributionFrequency
-from apps.backend.src.domains.contributions.models import Contribution, ContributionStatus
-from apps.backend.src.domains.memberships.models import GroupMembership
-from apps.backend.src.shared.utils.logger import logger
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
+from src.domains.contributions.service import ContributionService, ContributionActionType
+from src.domains.circles.service import CooperativeGroupService
+from src.domains.memberships.service import CooperativeMembershipService
+from src.domains.circles.models import CooperativeGroup, CooperativeStatus, ContributionFrequency
+from src.domains.contributions.models import Contribution, ContributionStatus
+from src.domains.memberships.models import GroupMembership
+from src.shared.utils.logger import logger
+from src.domains.auth.schemas import AuthenticatedUser
 
 
 class TimedContributionWorker:
@@ -386,7 +386,7 @@ class TimedContributionWorker:
                             logger.error(f"Group not found for contribution {contrib.id}")
                             continue
 
-                        from apps.backend.src.coopwise_infra.blockchain.contract_service import contract_service
+                        from src.infra.blockchain.contract_service import contract_service
                         result = await contract_service.submit_contribution(
                             group_address=str(group.id),
                             user_address=user.wallet_address or str(user.id),

@@ -5,8 +5,8 @@ from redis import Redis
 from typing import Optional, Dict, Any
 import json
 
-from apps.backend.src.shared.utils.logger import logger
-from apps.backend.src.coopwise_infra.payments.cashramp_schemas import (
+from src.shared.utils.logger import logger
+from src.infra.payments.cashramp_schemas import (
     CustomerResponse,
     InitiateDepositResponse,
     RampQuoteResponse,

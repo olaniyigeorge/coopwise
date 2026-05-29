@@ -3,7 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
-from apps.backend.src.domains.insights.models import (
+from src.domains.insights.models import (
     AIInsight,
     DifficultyLevel,
     ImplementationStatus,

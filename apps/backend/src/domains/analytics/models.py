@@ -5,7 +5,7 @@ from datetime import datetime
 import enum
 import uuid
 
-from apps.backend.src.coopwise_infra.db.database import Base
+from src.infra.db.database import Base
 
 
 class ActivityType(enum.Enum):

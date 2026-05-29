@@ -6,16 +6,16 @@ from enum import Enum
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
-from apps.backend.src.domains.contributions.schemas import ContributionCreate, ContributionDetail
-from apps.backend.src.domains.memberships.service import CooperativeMembershipService
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.contributions.models import Contribution, ContributionStatus
-from apps.backend.src.domains.circles.schemas import CooperativeGroup, ContributionFrequency
-from apps.backend.src.shared.utils.logger import logger
+from src.domains.contributions.schemas import ContributionCreate, ContributionDetail
+from src.domains.memberships.service import CooperativeMembershipService
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.contributions.models import Contribution, ContributionStatus
+from src.domains.circles.models import CooperativeGroup, ContributionFrequency
+from src.shared.utils.logger import logger
 from config import AppConfig as config
 from fastapi import HTTPException, status
-from apps.backend.src.coopwise_infra.blockchain.contract_service import contract_service
-from apps.backend.src.domains.wallets.service import WalletService
+from src.infra.blockchain.contract_service import contract_service
+from src.domains.wallets.service import WalletService
 
 
 class ContributionActionType(Enum):
@@ -80,7 +80,7 @@ class ContributionService:
             )
 
         # Get group for validation
-        from apps.backend.src.domains.circles.service import CooperativeGroupService
+        from src.domains.circles.service import CooperativeGroupService
         group = await CooperativeGroupService.get_coop_group_by_id(
             db, contribution_data.group_id
         )
@@ -244,7 +244,7 @@ class ContributionService:
                 return None
 
             # Get group details
-            from apps.backend.src.domains.circles.service import CooperativeGroupService
+            from src.domains.circles.service import CooperativeGroupService
             group = await CooperativeGroupService.get_coop_group_by_id(db, group_id)
             if not group or group.status.value != "active":
                 logger.warning(f"Auto-contribution skipped: group not active group={group_id}")
@@ -368,7 +368,7 @@ class ContributionService:
             )
 
         # Get group
-        from apps.backend.src.domains.circles.service import CooperativeGroupService
+        from src.domains.circles.service import CooperativeGroupService
         group = await CooperativeGroupService.get_coop_group_by_id(db, group_id)
         if not group:
             raise HTTPException(
@@ -446,7 +446,7 @@ class ContributionService:
             )
 
         # Get group
-        from apps.backend.src.domains.circles.service import CooperativeGroupService
+        from src.domains.circles.service import CooperativeGroupService
         group = await CooperativeGroupService.get_coop_group_by_id(db, group_id)
         if not group:
             raise HTTPException(
@@ -485,7 +485,7 @@ class ContributionService:
         Check if a users's contribution is due based on frequency and last contribution.
         """
         # Get group
-        from apps.backend.src.domains.circles.service import CooperativeGroupService
+        from src.domains.circles.service import CooperativeGroupService
         group = await CooperativeGroupService.get_coop_group_by_id(db, group_id)
         if not group:
             return False

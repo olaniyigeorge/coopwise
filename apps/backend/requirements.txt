@@ -48,6 +48,7 @@ fastapi-cli==0.0.7
 Flask==3.1.1
 flask-cors==6.0.1
 Flask-Login==0.6.3
+flower==2.0.1
 flow-py-sdk==2.0.2
 frozenlist==1.8.0
 gevent==25.5.1
@@ -102,7 +103,7 @@ propcache==0.4.1
 proto-plus==1.26.1
 protobuf==6.33.6
 psutil==7.0.0
-psycopg2==2.9.11
+psycopg2-binary==2.9.11
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pycparser==2.23
@@ -121,9 +122,7 @@ python-jose==3.5.0
 python-multipart==0.0.20
 python-socketio==5.13.0
 pyunormalize==17.0.0
-pywin32==311
 PyYAML==6.0.2
-pyzmq==27.0.0
 redis==6.2.0
 regex==2025.11.3
 requests==2.32.5

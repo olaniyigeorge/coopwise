@@ -4,8 +4,8 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, Literal
 
-from apps.backend.src.domains.users.schemas import UserDetail
-from apps.backend.src.domains.notifications.notification_models import EventType, NotificationStatus, NotificationType
+from src.domains.users.schemas import UserDetail
+from src.domains.notifications.models import EventType, NotificationStatus, NotificationType
 
 
 class NotificationDetail(BaseModel):

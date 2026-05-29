@@ -8,27 +8,27 @@ from sqlalchemy import func, select, desc
 from sqlalchemy.orm import joinedload
 from fastapi import HTTPException, status
 
-from apps.backend.src.domains.contributions.schemas import CircleHistoryEntry, ContributionDetail
-from apps.backend.src.domains.memberships.schemas import CircleMemberDetail, MembershipExtDetails
-from apps.backend.src.domains.circles.schemas import (
+from src.domains.contributions.schemas import CircleHistoryEntry, ContributionDetail
+from src.domains.memberships.schemas import CircleMemberDetail, MembershipExtDetails
+from src.domains.circles.schemas import (
     CoopGroupCreate,
     CoopGroupDetails,
     CoopGroupUpdate,
 )
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.dashboard.schemas import ExploreGroups
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.dashboard.schemas import ExploreGroups
+from src.domains.circles.models import CooperativeGroup, ContributionFrequency, CooperativeStatus
 
-from apps.backend.src.domains.users.models import User
-from apps.backend.src.domains.contributions.models import Contribution, ContributionStatus
-from apps.backend.src.domains.memberships.models import GroupMembership, MembershipStatus
-from apps.backend.src.domains.circles.schemas import (
+from src.domains.users.models import User
+from src.domains.contributions.models import Contribution, ContributionStatus
+from src.domains.memberships.models import GroupMembership, MembershipStatus
+from src.domains.circles.schemas import (
     ContributionFrequency,
-    CooperativeGroup,
     CooperativeStatus,
 )
 
-from apps.backend.src.shared.utils.logger import logger
-from apps.backend.src.utils.cache import get_cache, update_cache
+from src.shared.utils.logger import logger
+from src.infra.cache.redis_client import get_cache, update_cache
 from config import AppConfig as config
 
 

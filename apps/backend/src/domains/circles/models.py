@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
-from db.models.membership import GroupMembership
-from db.database import Base
+from src.domains.memberships.models import GroupMembership
+from src.infra.db.database import Base
 from sqlalchemy import JSON, Column, String, Enum, DateTime, Numeric, ForeignKey, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship

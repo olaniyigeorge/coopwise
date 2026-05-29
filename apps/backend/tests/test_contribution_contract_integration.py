@@ -3,12 +3,12 @@ from uuid import uuid4
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch
 
-from apps.backend.src.domains.contributions.service import ContributionService
-from apps.backend.src.coopwise_infra.blockchain.contract_service import contract_service
-from apps.backend.src.domains.wallets.service import WalletService
-from apps.backend.src.domains.contributions.schemas import ContributionCreate
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.contributions.models import ContributionStatus
+from src.domains.contributions.service import ContributionService
+from src.infra.blockchain.contract_service import contract_service
+from src.domains.wallets.service import WalletService
+from src.domains.contributions.schemas import ContributionCreate
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.contributions.models import ContributionStatus
 
 
 @pytest.mark.asyncio

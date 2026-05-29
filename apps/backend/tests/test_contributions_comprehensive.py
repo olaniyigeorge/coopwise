@@ -23,21 +23,21 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from apps.backend.src.coopwise_infra.db.database import Base
-from apps.backend.src.domains.users.models import User
-from apps.backend.src.domains.circles.schemas import (
+from src.infra.db.database import Base
+from src.domains.users.models import User
+from src.domains.circles.schemas import (
     CooperativeGroup, CooperativeStatus, ContributionFrequency, PayoutStrategy, CooperativeModel
 )
-from apps.backend.src.domains.memberships.models import GroupMembership
-from apps.backend.src.domains.contributions.models import Contribution, ContributionStatus
-from apps.backend.src.domains.wallets.models import Wallet, WalletLedger, LedgerType, LedgerStatus
+from src.domains.memberships.models import GroupMembership
+from src.domains.contributions.models import Contribution, ContributionStatus
+from src.domains.wallets.models import Wallet, WalletLedger, LedgerType, LedgerStatus
 
-from apps.backend.src.domains.contributions.service import ContributionService, ContributionActionType
-from apps.backend.src.coopwise_infra.blockchain.contract_service import contract_service
-from apps.backend.src.domains.payments.payout_service import PayoutService
-from apps.backend.src.domains.contributions.tasks import TimedContributionWorker
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.contributions.schemas import ContributionCreate
+from src.domains.contributions.service import ContributionService, ContributionActionType
+from src.infra.blockchain.contract_service import contract_service
+from src.domains.payments.payout_service import PayoutService
+from src.domains.contributions.tasks import TimedContributionWorker
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.contributions.schemas import ContributionCreate
 
 
 # ====================

@@ -4,18 +4,18 @@ from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from apps.backend.src.domains.users.schemas import UserDetail
-from apps.backend.src.utils.cache import get_cache, update_cache
-from apps.backend.src.domains.circles.schemas import CooperativeGroup
-from apps.backend.src.domains.users.models import User
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.memberships.schemas import (
+from src.domains.users.schemas import UserDetail
+from src.infra.cache.redis_client import get_cache, update_cache
+from src.domains.circles.models import CooperativeGroup
+from src.domains.users.models import User
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.memberships.schemas import (
     AcceptMembership,
     MembershipCreate,
     MembershipDetails,
 )
-from apps.backend.src.domains.memberships.models import GroupMembership
-from apps.backend.src.shared.utils.logger import logger
+from src.domains.memberships.models import GroupMembership
+from src.shared.utils.logger import logger
 from config import AppConfig as config
 from fastapi import HTTPException, status
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from apps.backend.src.coopwise_infra.db.database import Base
+from src.infra.db.database import Base
 from sqlalchemy import Boolean, Column, Enum, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship

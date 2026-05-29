@@ -2,7 +2,7 @@ from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, EmailStr
 
-from apps.backend.src.domains.users.models import UserRoles
+from src.domains.users.models import UserRoles
 
 
 class AuthenticatedUser(BaseModel):

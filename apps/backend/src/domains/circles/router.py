@@ -6,14 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 
-from apps.backend.src.domains.contributions.schemas import CircleHistoryEntry
-from apps.backend.src.domains.analytics.models import ActivityType
-from apps.backend.app.api.routers.v1.auth import get_current_user
-from apps.backend.src.shared.utils.logger import logger
+from src.domains.contributions.schemas import CircleHistoryEntry
+from src.domains.analytics.models import ActivityType
+from src.api.middlewares.dependencies import get_current_user
+from src.shared.utils.logger import logger
 from config import AppConfig
-from apps.backend.src.domains.analytics.schemas import ActivityCreate
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.circles.schemas import (
+from src.domains.analytics.schemas import ActivityCreate
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.circles.schemas import (
     CoopGroupCreate,
     CoopGroupDetails,
     CoopGroupUpdate,
@@ -21,19 +21,19 @@ from apps.backend.src.domains.circles.schemas import (
     CooperativeStatus
 )
 
-from apps.backend.src.domains.memberships.schemas import CircleMemberDetail, MembershipCreate
-from apps.backend.src.domains.notifications.schemas import NotificationCreate
-from apps.backend.src.domains.analytics.service import ActivityService
-from apps.backend.src.domains.notifications.notification_service import NotificationService
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
-from apps.backend.src.domains.circles.service import CooperativeGroupService
-from apps.backend.src.domains.memberships.service import CooperativeMembershipService
+from src.domains.memberships.schemas import CircleMemberDetail, MembershipCreate
+from src.domains.notifications.schemas import NotificationCreate
+from src.domains.analytics.service import ActivityService
+from src.domains.notifications.service import NotificationService
+from src.infra.db.dependencies import get_async_db_session
+from src.domains.circles.service import CooperativeGroupService
+from src.domains.memberships.service import CooperativeMembershipService
 
 # from app.services.chain import w3, poolfactory, from_account, PRIVATE_KEY
 
-from apps.backend.src.coopwise_infra.payments.flow_service import flow_service
-from apps.backend.src.coopwise_infra.exchange.fx_service import fx_service
-from apps.backend.src.domains.memberships.models import GroupMembership
+from src.infra.payments.flow_service import flow_service
+from src.infra.exchange.fx_service import fx_service
+from src.domains.memberships.models import GroupMembership
 
 
 router = APIRouter(prefix="/api/v1/cooperatives", tags=["Cooperative Groups"])

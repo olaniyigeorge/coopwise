@@ -3,7 +3,7 @@ import json
 from uuid import UUID
 from decimal import Decimal
 from enum import Enum
-from apps.backend.src.shared.utils.logger import logger
+from src.shared.utils.logger import logger
 from config import AppConfig as config
 import os
 

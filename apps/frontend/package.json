@@ -10,7 +10,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@crossmint/client-sdk-react-ui": "^3.1.0",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.9.1",
     "@onflow/fcl": "^1.21.9",

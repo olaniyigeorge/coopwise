@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import UUID
-from apps.backend.src.coopwise_infra.db.database import Base
+from src.infra.db.database import Base
 
 from sqlalchemy import Column, String, Text, Boolean, DateTime, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID

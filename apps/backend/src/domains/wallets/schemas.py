@@ -4,7 +4,7 @@ from uuid import UUID
 from datetime import datetime
 from typing import Literal, Optional
 
-from apps.backend.src.domains.wallets.models import (
+from src.domains.wallets.models import (
     LedgerStatus,
     LedgerType,
     LocalCurrency,

@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
                 "poolclass": sqlalchemy.StaticPool,
             })
 
-        db_manager.initialize(config.DATABASE_URL, **engine_kwargs)
+        db_manager.initialize(config.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1), **engine_kwargs)
         await db_manager.create_tables()
 
         app.state.redis = await redis_manager.initialize(

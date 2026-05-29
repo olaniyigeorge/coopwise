@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy import Column, DateTime, Integer, String
 
-from apps.backend.src.coopwise_infra.db.database import Base
+from src.infra.db.database import Base
 
 
 class Feedback(Base):

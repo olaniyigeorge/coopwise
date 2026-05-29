@@ -2,20 +2,23 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
+from src.domains.circles.schemas import CoopGroupDetails
+from src.domains.circles.schemas import CoopGroupDetails
+from src.domains.circles.schemas import CoopGroupDetails
 
-from apps.backend.src.shared.utils.logger import logger
-from apps.backend.src.domains.analytics.models import ActivityType
-from apps.backend.src.domains.analytics.schemas import ActivityCreate
-from apps.backend.src.domains.notifications.schemas import NotificationCreate
-from apps.backend.src.domains.analytics.service import ActivityService
-from apps.backend.src.domains.circles.service import CooperativeGroupService
-from apps.backend.src.domains.notifications.notification_service import NotificationService
-from apps.backend.src.domains.users.service import UserService
-from apps.backend.src.domains.auth.schemas import AuthenticatedUser
-from apps.backend.src.domains.memberships.schemas import MembershipDetails
-from apps.backend.src.coopwise_infra.db.dependencies import get_async_db_session
-from apps.backend.src.domains.memberships.service import CooperativeMembershipService
-from apps.backend.src.api.middlewares.dependencies import get_current_user
+from src.shared.utils.logger import logger
+from src.domains.analytics.models import ActivityType
+from src.domains.analytics.schemas import ActivityCreate
+from src.domains.notifications.schemas import NotificationCreate
+from src.domains.analytics.service import ActivityService
+from src.domains.circles.service import CooperativeGroupService
+from src.domains.notifications.service import NotificationService
+from src.domains.users.service import UserService
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.memberships.schemas import MembershipDetails
+from src.infra.db.dependencies import get_async_db_session
+from src.domains.memberships.service import CooperativeMembershipService
+from src.api.middlewares.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/v1/memberships", tags=["Memberships"])
 

@@ -4,8 +4,8 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 
-from apps.backend.src.domains.users.schemas import UserDetail
-from apps.backend.src.domains.memberships.models import MembershipRole, MembershipStatus
+from src.domains.users.schemas import UserDetail
+from src.domains.memberships.models import MembershipRole, MembershipStatus
 
 
 class MembershipCreate(BaseModel):

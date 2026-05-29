@@ -3,10 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
 
-from apps.backend.src.domains.users.models import User
-from apps.backend.src.domains.users.schemas import UserCreate, UserDetail, UserUpdate
-from apps.backend.src.shared.utils.crypto import get_password_hash, verify_password
-from apps.backend.src.shared.utils.logger import logger
+from src.domains.users.models import User
+from src.domains.users.schemas import UserCreate, UserDetail, UserUpdate
+from src.shared.utils.crypto import get_password_hash, verify_password
+from src.shared.utils.logger import logger
 
 
 class UserService:

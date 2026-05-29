@@ -5,11 +5,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from uuid import UUID
 import enum
 
-from apps.backend.src.domains.circles.schemas import (
-    ContributionFrequency,
-    CooperativeModel,
-    PayoutStrategy,
-)
+from src.domains.circles.models import ContributionFrequency, CooperativeModel, PayoutStrategy
 
 
 class CooperativeStatus(str, enum.Enum):

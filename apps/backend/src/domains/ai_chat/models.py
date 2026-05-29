@@ -3,7 +3,7 @@ from uuid import uuid4
 from sqlalchemy import Column, Text, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
-from apps.backend.src.coopwise_infra.db.database import Base
+from src.infra.db.database import Base
 from sqlalchemy import Column, Text
 
 
