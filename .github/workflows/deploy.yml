@@ -3,7 +3,8 @@ name: Deploy Coopwise to GCP
 on:
   push:
     branches:
-      - main
+      - notiifications
+      - dev
 
 jobs:
   deploy:
