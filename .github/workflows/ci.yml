@@ -3,7 +3,7 @@ description: CI workflow for Coopwise project
 
 on:
   push:
-    branches: [main, 0G]
+    branches: [main, staging, 0G,]
   
 jobs:
   backend:
