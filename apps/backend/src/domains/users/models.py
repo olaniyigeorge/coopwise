@@ -101,6 +101,12 @@ class User(Base):
         lazy="selectin",
         cascade="all, delete-orphan",
     )
+    notification_preferences = relationship(
+        "UserNotificationPreferences",
+        back_populates="user",
+        uselist=False,  # one-to-one
+        cascade="all, delete-orphan",
+    ) 
     ai_insights = relationship("AIInsight", back_populates="user", lazy="selectin")
     contributions = relationship(
         "Contribution", back_populates="user", cascade="all, delete-orphan"
