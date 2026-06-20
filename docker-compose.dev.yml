@@ -3,6 +3,7 @@ services:
     build:
       context: ./apps/backend
       dockerfile: Dockerfile
+    image: coopwise-backend:dev 
     container_name: coopwise_backend
     command: >
       uvicorn main:app
