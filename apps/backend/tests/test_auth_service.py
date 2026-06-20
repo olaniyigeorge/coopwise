@@ -1,150 +1,286 @@
-from fastapi import HTTPException
+from datetime import timedelta
+from uuid import uuid4
+
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timedelta, timezone
-from jose import jwt
 
-from src.domains.users.schemas import UserCreate
+from src.domains.auth.exceptions import (
+    EmailAlreadyRegisteredError,
+    InvalidTokenError,
+    InvalidTokenTypeError,
+    PhoneNumberAlreadyRegisteredError,
+    TokenExpiredError,
+    UserNotFoundError,
+    UsernameAlreadyRegisteredError,
+)
 from src.domains.auth.service import AuthService
-from src.shared.utils.crypto import verify_password
-from config import AppConfig as config
+from src.domains.users.models import UserRoles
+from src.domains.users.schemas import UserCreate, iAuthWallet
+
+from .fakes_auth import (
+    FakeAuthNotifier,
+    FakeClock,
+    FakePasswordHasher,
+    FakeTokenService,
+    FakeUserRepository,
+)
+
+pytestmark = pytest.mark.unit
 
 
-@pytest.mark.asyncio
-@pytest.mark.essential
-async def test_register_user(test_db_session: AsyncSession):
-    user_data = UserCreate(
-        full_name="Test User",
-        email="testuser1@example.com",
-        password="securepass",
-        phone_number="+2348000000001",
-        username="testuser1",
+@pytest.fixture
+def user_repo():
+    return FakeUserRepository()
+
+
+@pytest.fixture
+def notifier():
+    return FakeAuthNotifier()
+
+
+@pytest.fixture
+def clock():
+    return FakeClock()
+
+
+@pytest.fixture
+def auth_service(user_repo, notifier, clock):
+    return AuthService(
+        user_repo=user_repo,
+        password_hasher=FakePasswordHasher(),
+        token_service=FakeTokenService(),
+        clock=clock,
+        notifier=notifier,
+        client_domain="https://app.coopwise.example",
     )
 
-    user = await AuthService.register_user(user_data, test_db_session)
-    assert user.email == user_data.email
-    assert user.username == user_data.username
-    assert verify_password("securepass", user.password)
 
-
-@pytest.mark.asyncio
-async def test_duplicate_email_registration(test_db_session: AsyncSession):
-    user_data = UserCreate(
-        full_name="Test User 2",
-        email="testuser2@example.com",
-        password="securepass",
-        phone_number="+2348000000002",
-        username="testuser2",
+def make_user_create(**overrides) -> UserCreate:
+    defaults = dict(
+        username="ada",
+        email="ada@coopwise.example",
+        password="supersecret",
+        full_name="Ada Lovelace",
+        phone_number="+2348012345678",
     )
-    await AuthService.register_user(user_data, test_db_session)
-
-    with pytest.raises(Exception) as exc:
-        await AuthService.register_user(user_data, test_db_session)
-    assert "already registered" in str(
-        exc.value
-    )  # DOing this because I don't have standard format for wrapping response yet
+    defaults.update(overrides)
+    return UserCreate(**defaults)
 
 
-@pytest.mark.asyncio
-@pytest.mark.essential
-async def test_authenticate_user_success(test_db_session: AsyncSession):
-    user_data = UserCreate(
-        full_name="Auth Test",
-        email="authuser@example.com",
-        password="authpass",
-        phone_number="+2348000000003",
-        username="authuser",
-    )
-    await AuthService.register_user(user_data, test_db_session)
-    user = await AuthService.authenticate_user(
-        "authuser@example.com", "authpass", test_db_session
-    )
-    assert user is not None
-    assert user.email == "authuser@example.com"
+# ----------------------------------------------------------------- register
+
+class TestRegisterUser:
+    async def test_creates_user_with_hashed_password(self, auth_service, user_repo):
+        user = await auth_service.register_user(make_user_create())
+
+        assert user.email == "ada@coopwise.example"
+        assert user.password == "hashed::supersecret"
+        assert user.role == UserRoles.user
+        assert user.id in user_repo.users
+
+    async def test_defaults_username_from_email_local_part_when_missing(self, auth_service):
+        user = await auth_service.register_user(make_user_create(username=None))
+        assert user.username == "ada"
+
+    async def test_fires_registration_notification(self, auth_service, notifier):
+        user = await auth_service.register_user(make_user_create())
+        assert notifier.registered_calls == [user]
+
+    async def test_duplicate_email_rejected(self, auth_service):
+        await auth_service.register_user(make_user_create())
+        with pytest.raises(EmailAlreadyRegisteredError):
+            await auth_service.register_user(
+                make_user_create(username="other", phone_number="+2348000000000")
+            )
+
+    async def test_duplicate_username_rejected(self, auth_service):
+        await auth_service.register_user(make_user_create())
+        with pytest.raises(UsernameAlreadyRegisteredError):
+            await auth_service.register_user(
+                make_user_create(email="other@coopwise.example", phone_number="+2348000000000")
+            )
+
+    async def test_duplicate_phone_number_rejected(self, auth_service):
+        await auth_service.register_user(make_user_create())
+        with pytest.raises(PhoneNumberAlreadyRegisteredError):
+            await auth_service.register_user(
+                make_user_create(email="other@coopwise.example", username="other")
+            )
+
+    async def test_duplicate_checks_short_circuit_before_notification(
+        self, auth_service, notifier
+    ):
+        await auth_service.register_user(make_user_create())
+        notifier.registered_calls.clear()
+        with pytest.raises(EmailAlreadyRegisteredError):
+            await auth_service.register_user(
+                make_user_create(username="other", phone_number="+2348000000000")
+            )
+        assert notifier.registered_calls == []
 
 
-@pytest.mark.asyncio
-async def test_token_generation_and_decoding():
-    data = {"sub": "auth@example.com", "id": str("0000-00000-00000"), "role": "user", "flow_address": "FLOW_ADDR_00000000_111",}
-    token = await AuthService.create_access_token(data=data)
-    decoded = await AuthService.decode_token(token)
-    assert decoded["sub"] == "auth@example.com"
-    assert "exp" in decoded
+# ------------------------------------------------------------- authenticate
+
+class TestAuthenticateUser:
+    async def test_correct_credentials_returns_user(self, auth_service):
+        registered = await auth_service.register_user(make_user_create())
+        user = await auth_service.authenticate_user("ada@coopwise.example", "supersecret")
+        assert user.id == registered.id
+
+    async def test_wrong_password_returns_none(self, auth_service):
+        await auth_service.register_user(make_user_create())
+        user = await auth_service.authenticate_user("ada@coopwise.example", "wrong")
+        assert user is None
+
+    async def test_unknown_email_returns_none(self, auth_service):
+        user = await auth_service.authenticate_user("nobody@coopwise.example", "whatever")
+        assert user is None
 
 
-@pytest.mark.asyncio
-async def test_password_reset_token(test_db_session: AsyncSession):
-    user_data = UserCreate(
-        full_name="Reset Test",
-        email="reset@example.com",
-        password="resetpass",
-        phone_number="+2348000000004",
-        username="resetuser",
-    )
-    user = await AuthService.register_user(user_data, test_db_session)
+# -------------------------------------------------------------------- tokens
 
-    token = await AuthService.create_password_reset_token(user)
-    decoded = jwt.decode(token, config.APP_SECRET_KEY, algorithms=[config.ALGORITHM])
-    assert decoded["sub"] == user.email
-    assert decoded["type"] == "reset"
+class TestAccessTokens:
+    async def test_encodes_given_claims(self, auth_service):
+        token = await auth_service.create_access_token({"sub": "ada@coopwise.example", "id": "1"})
+        payload = await auth_service.decode_token(token)
+        assert payload["sub"] == "ada@coopwise.example"
+        assert payload["id"] == "1"
+        assert "exp" in payload
 
+    async def test_decode_invalid_token_raises(self, auth_service):
+        with pytest.raises(InvalidTokenError):
+            await auth_service.decode_token("not-a-real-token")
 
-@pytest.mark.asyncio
-async def test_confirm_reset_token_valid(test_db_session):
-    # Register a user
-    user_data = UserCreate(
-        full_name="Confirm Token",
-        email="confirmtoken@example.com",
-        password="tokenpass",
-        phone_number="+2348000000006",
-        username="tokenuser",
-    )
-    user = await AuthService.register_user(user_data, test_db_session)
-
-    # Generate reset token
-    token = await AuthService.create_password_reset_token(user)
-
-    # Confirm token
-    payload = await AuthService.confirm_reset_token(token)
-
-    assert payload["sub"] == user.email
-    assert payload["type"] == "reset"
+    async def test_respects_custom_expiry(self, auth_service, clock):
+        token = await auth_service.create_access_token(
+            {"sub": "ada@coopwise.example"}, expires_delta=timedelta(hours=2)
+        )
+        payload = await auth_service.decode_token(token)
+        expected_exp = (clock.now() + timedelta(hours=2)).timestamp()
+        assert payload["exp"] == expected_exp
 
 
-@pytest.mark.asyncio
-async def test_confirm_reset_token_invalid_type():
-    # Manually create a token with wrong type
-    payload = {
-        "sub": "fake@example.com",
-        "type": "access",
-        "exp": (datetime.now(timezone.utc) + timedelta(minutes=1)).timestamp(),
-    }
-    token = jwt.encode(payload, config.APP_SECRET_KEY, algorithm=config.ALGORITHM)
+# ------------------------------------------------------------- password reset
 
-    with pytest.raises(HTTPException) as exc_info:
-        await AuthService.confirm_reset_token(token)
+class TestPasswordReset:
+    async def test_send_reset_link_for_unknown_email_raises(self, auth_service):
+        with pytest.raises(UserNotFoundError):
+            await auth_service.send_reset_password_link("ghost@coopwise.example")
 
-    assert exc_info.value.status_code == 400
-    assert exc_info.value.detail == "Invalid token type"
+    async def test_send_reset_link_for_known_email_succeeds(self, auth_service):
+        await auth_service.register_user(make_user_create())
+        result = await auth_service.send_reset_password_link("ada@coopwise.example")
+        assert "message" in result
+
+    async def test_confirm_reset_token_round_trips(self, auth_service):
+        user = await auth_service.register_user(make_user_create())
+        token = await auth_service.create_password_reset_token(user)
+        payload = await auth_service.confirm_reset_token(token)
+        assert payload["sub"] == user.email
+        assert payload["type"] == "reset"
+
+    async def test_confirm_reset_token_rejects_wrong_type(self, auth_service):
+        # An access token (no type="reset") should not be accepted as a reset token.
+        token = await auth_service.create_access_token({"sub": "ada@coopwise.example"})
+        with pytest.raises(InvalidTokenTypeError):
+            await auth_service.confirm_reset_token(token)
+
+    async def test_confirm_reset_token_rejects_expired_token(self, auth_service, clock):
+        user = await auth_service.register_user(make_user_create())
+        token = await auth_service.create_password_reset_token(
+            user, expires_delta=timedelta(minutes=15)
+        )
+        clock.advance(timedelta(minutes=16))
+        with pytest.raises(TokenExpiredError):
+            await auth_service.confirm_reset_token(token)
+
+    async def test_change_password_updates_hash_and_allows_new_login(self, auth_service):
+        user = await auth_service.register_user(make_user_create())
+        token = await auth_service.create_password_reset_token(user)
+
+        result = await auth_service.change_password(token, "newpassword123")
+        assert result["status"] == "success"
+
+        assert await auth_service.authenticate_user("ada@coopwise.example", "supersecret") is None
+        relogged = await auth_service.authenticate_user("ada@coopwise.example", "newpassword123")
+        assert relogged is not None
+
+    async def test_change_password_with_expired_token_raises(self, auth_service, clock):
+        user = await auth_service.register_user(make_user_create())
+        token = await auth_service.create_password_reset_token(
+            user, expires_delta=timedelta(minutes=15)
+        )
+        clock.advance(timedelta(minutes=20))
+        with pytest.raises(TokenExpiredError):
+            await auth_service.change_password(token, "newpassword123")
 
 
-@pytest.mark.asyncio
-async def test_change_password_flow(test_db_session: AsyncSession):
-    user_data = UserCreate(
-        full_name="Change Me",
-        email="changepass@example.com",
-        password="oldpass",
-        phone_number="+2348000000005",
-        username="changeme",
-    )
-    user = await AuthService.register_user(user_data, test_db_session)
+# -------------------------------------------------------------------- wallet
 
-    token = await AuthService.create_password_reset_token(user)
-    result = await AuthService.change_password(token, "newpass123", test_db_session)
-    assert result["status"] == "success"
+class TestFlowSync:
+    async def test_creates_new_user_when_no_match_found(self, auth_service, user_repo):
+        wallet_data = iAuthWallet(
+            crossmint_user_id="cm_abc123",
+            email="",
+            flow_address="0xABCDEF1234567890",
+        )
+        result = await auth_service.flow_sync(wallet_data, current_user=None)
 
-    # Ensure login works with new password
-    auth_user = await AuthService.authenticate_user(
-        "changepass@example.com", "newpass123", test_db_session
-    )
-    assert auth_user is not None
+        assert result["user"]["crossmint_user_id"] == "cm_abc123"
+        assert result["user"]["flow_address"] == "0xABCDEF1234567890"
+        assert result["user"]["email"] == "cm_abc123@crossmint.local"
+        assert len(user_repo.users) == 1
+
+    async def test_finds_existing_user_by_crossmint_id(self, auth_service):
+        first = await auth_service.flow_sync(
+            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xAAA"),
+            current_user=None,
+        )
+        second = await auth_service.flow_sync(
+            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xAAA"),
+            current_user=None,
+        )
+        assert first["user"]["id"] == second["user"]["id"]
+
+    async def test_finds_existing_user_by_email_fallback(self, auth_service):
+        registered = await auth_service.register_user(make_user_create())
+        result = await auth_service.flow_sync(
+            iAuthWallet(
+                crossmint_user_id="cm_new",
+                email="ada@coopwise.example",
+                flow_address="0xBBB",
+            ),
+            current_user=None,
+        )
+        assert result["user"]["id"] == str(registered.id)
+        assert result["user"]["crossmint_user_id"] == "cm_new"
+        assert result["user"]["flow_address"] == "0xBBB"
+
+    async def test_updates_flow_address_on_existing_linked_user(self, auth_service):
+        first = await auth_service.flow_sync(
+            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xAAA"),
+            current_user=None,
+        )
+        second = await auth_service.flow_sync(
+            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xCCC"),
+            current_user=None,
+        )
+        assert first["user"]["id"] == second["user"]["id"]
+        assert second["user"]["flow_address"] == "0xCCC"
+
+    async def test_fires_wallet_linked_notification(self, auth_service, notifier):
+        await auth_service.flow_sync(
+            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xAAA"),
+            current_user=None,
+        )
+        assert len(notifier.wallet_linked_calls) == 1
+        linked_user, flow_address = notifier.wallet_linked_calls[0]
+        assert flow_address == "0xAAA"
+
+    async def test_returns_usable_access_token(self, auth_service):
+        result = await auth_service.flow_sync(
+            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xAAA"),
+            current_user=None,
+        )
+        payload = await auth_service.decode_token(result["access_token"])
+        assert payload["id"] == result["user"]["id"]
+        assert payload["flow_address"] == "0xAAA"

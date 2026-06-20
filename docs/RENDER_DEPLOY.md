@@ -35,7 +35,7 @@ Set these in the Render dashboard (or sync from a secrets store). Names match `b
 | `INVITE_CODE_PREFIX` | e.g. `CPW-INV-` |
 | `PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` | From Paystack dashboard (test vs live). |
 | `GEMINI_API_KEY` | If you use Gemini-backed features. |
-| `RATE_LIMIT_RULES_PATH` | e.g. `app/rate_limit_rules.json` |
+| `RATE_LIMIT_RULES_PATH` | e.g. `src/rate_limit_rules.json` |
 
 Copy from `backend/env.sample` and fill values; **never commit** real secrets (`.env` is gitignored).
 

@@ -3,70 +3,119 @@ description: CI workflow for Coopwise project
 
 on:
   push:
-    branches: [main, staging, 0G,]
-  
+    branches: [main, staging, 0G]
+  pull_request:
+    branches: [main, staging, 0G]
+
 jobs:
   backend:
     name: Backend Lint & Test
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
+        working-directory: apps/backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: coopwise
+          POSTGRES_PASSWORD: coopwise
+          POSTGRES_DB: coopwise_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U coopwise -d coopwise_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ENV: dev
+      PROJECT_NAME: Coopwise
+      DATABASE_URL: postgresql+asyncpg://coopwise:coopwise@localhost:5432/coopwise_db
+      APP_SECRET_KEY: secret
+      ALGORITHM: HS256
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/1
+      CELERY_RESULT_BACKEND: redis://localhost:6379/2
+      PAYSTACK_PUBLIC_KEY: test
+      PAYSTACK_SECRET_KEY: test
+      CASHRAMP_PUBKEY: test
+      CASHRAMP_SECKEY: test
+      GEMINI_API_KEY: test
+      CLIENT_DOMAIN: http://localhost:3000
+      DOMAIN: http://localhost:8000
+      INVITE_CODE_PREFIX: XYZ
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: apps/backend/requirements.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
+      - name: Lint with Ruff
+        run: ruff check .
+
       - name: Lint with Black
         run: black --check --diff .
 
-      - name: Create .env file
-        run: |
-          echo "ENV=dev" >> .env
-          echo "PROJECT_NAME=Coopwise" >> .env
-          echo "DATABASE_URL=sqlite+aiosqlite:///:memory:" >> .env
-          echo "APP_SECRET_KEY=secret" >> .env
-          echo "ALGORITHM=HS256" >> .env
-          echo "REDIS_URL=redis://localhost:6379" >> .env
-          echo "PAYSTACK_PUBLIC_KEY=test" >> .env
-          echo "PAYSTACK_SECRET_KEY=test" >> .env
-          echo "CASHRAMP_PUBKEY=test" >> .env
-          echo "CASHRAMP_SECKEY=test" >> .env
-          echo "GEMINI_API_KEY=test" >> .env
-          echo "CLIENT_DOMAIN=http://localhost:3000" >> .env
-          echo "DOMAIN=http://localhost:8000" >> .env
-          echo "INVITE_CODE_PREFIX=XYZ" >> .env
+      - name: Run database migrations
+        run: alembic upgrade head
 
-      - name: Run tests with Pytest
-        run: pytest
+      - name: Run unit tests (fast, no DB)
+        run: pytest -m unit -v
+
+      - name: Run full test suite
+        run: pytest -v --cov=src --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: apps/backend/coverage.xml
 
   frontend:
     name: Frontend Lint
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend
+        working-directory: apps/frontend
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-      
-      - name: Set up Node.Js
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm i
+        run: npm ci
 
       - name: Lint with ESLint
-        run: npm run lint 
+        run: npm run lint

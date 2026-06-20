@@ -1,112 +1,61 @@
-import pytest
-from httpx import AsyncClient, ASGITransport
-import pytest_asyncio
-from sqlalchemy import StaticPool
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import AsyncGenerator
 
-from main import app as fastapi_app
-from src.infra.db.database import Base, DatabaseManager
+import os
+import pytest
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.pool import NullPool
+
+from src.infra.db.database import db_manager
 from src.infra.db.dependencies import get_async_db_session
 
-# Global test database manager
-test_db_manager: DatabaseManager = None
+"""
+Import every model referenced by User's relationship() string names so
+SQLAlchemy's mapper registry can resolve them. This mirrors what happens
+in the real app: main.py / Base.metadata.create_all() touches every
+domain's models module, registering them all before any query runs.
+"""
+from src.domains.ai_chat import models as _ai_chat_models  # noqa: F401
+from src.domains.contributions import models as _contrib_models  # noqa: F401
+from src.domains.insights import models as _insights_models  # noqa: F401
+from src.domains.memberships import models as _membership_models  # noqa: F401
+from src.domains.notifications import models as _notification_models  # noqa: F401
+from src.domains.support import models as _support_models  # noqa: F401
+from src.domains.users import models as _user_models  # noqa: F401
+from src.domains.wallets import models as _wallet_models  # noqa: F401
 
 
-async def override_get_async_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Override function for database dependency in tests"""
-    if not test_db_manager:
-        raise RuntimeError("Test database manager not initialized")
+DATABASE_URL = os.environ["DATABASE_URL"]
 
-    async with test_db_manager.get_session() as session:
-        yield session
-
-
-@pytest_asyncio.fixture(scope="session")
-async def setup_test_database():
-    """Session-scoped fixture to set up test database"""
-    global test_db_manager
-
-    # Initialize test database manager
-    test_db_manager = DatabaseManager()
-    test_db_manager.initialize(
-        "sqlite+aiosqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-        echo=False,
-    )
-
-    # Create tables
-    await test_db_manager.create_tables()
-
-    # Override the dependency
-    fastapi_app.dependency_overrides[get_async_db_session] = (
-        override_get_async_db_session
-    )
-
-    yield test_db_manager
-
-    # Cleanup
-    await test_db_manager.close()
-    # Clear dependency overrides
-    fastapi_app.dependency_overrides.clear()
-
-
-@pytest_asyncio.fixture
-async def test_db_session(setup_test_database):
-    """Test database session fixture"""
-    async with setup_test_database.get_session() as session:
-        yield session
-
-
-@pytest_asyncio.fixture(autouse=True)
-async def reset_test_db(setup_test_database):
-    """Reset test database for each test function"""
-    # Drop and recreate all tables
-    async with setup_test_database.engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
+@pytest.fixture(scope="session", autouse=True)
+def _init_db_manager():
+    if not db_manager._is_initialized:
+        db_manager.initialize(DATABASE_URL, poolclass=NullPool)
     yield
 
+@pytest_asyncio.fixture
+async def db_session():
+    """Each test runs inside its own transaction, rolled back at the end."""
+    connection = await db_manager.engine.connect()
+    trans = await connection.begin()
+    session = AsyncSession(bind=connection, expire_on_commit=False)
+    try:
+        yield session
+    finally:
+        await session.close()
+        await trans.rollback()
+        await connection.close()
+
 
 @pytest_asyncio.fixture
-async def async_client(setup_test_database):
-    """Async client for FastAPI routes"""
-    transport = ASGITransport(app=fastapi_app)
+async def async_client(db_session):
+    from main import app  # import here, after _init_db_manager has run
+
+    async def override_get_async_db_session():
+        yield db_session
+
+    app.dependency_overrides[get_async_db_session] = override_get_async_db_session
+    transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
-
-
-# Alternative approach if you prefer function-scoped database
-@pytest_asyncio.fixture
-async def fresh_test_db():
-    """Function-scoped test database - creates a new DB for each test"""
-    manager = DatabaseManager()
-    manager.initialize(
-        "sqlite+aiosqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-        echo=False,
-    )
-
-    await manager.create_tables()
-
-    # Temporarily override dependency
-    original_override = fastapi_app.dependency_overrides.get(get_async_db_session)
-
-    async def temp_override():
-        async with manager.get_session() as session:
-            yield session
-
-    fastapi_app.dependency_overrides[get_async_db_session] = temp_override
-
-    yield manager
-
-    # Cleanup
-    await manager.close()
-
-    # Restore original override or clear
-    if original_override:
-        fastapi_app.dependency_overrides[get_async_db_session] = original_override
-    else:
-        fastapi_app.dependency_overrides.pop(get_async_db_session, None)
+    app.dependency_overrides.clear()

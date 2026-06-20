@@ -45,18 +45,9 @@ class User(Base):
     role = Column(Enum(UserRoles), default=UserRoles.user)
 
     #  Crossmint / Web3 identity 
-    # Crossmint's own stable user ID (e.g. "cm_usr_abc123").
-    # Indexed for fast lookup during camp-sync without touching email.
     crossmint_user_id = Column(String, unique=True, index=True, nullable=True)
-
-    # The user's on-chain wallet address (Flow or Solana depending on chain config).
-    # Stored as a plain string; unique so we can look up by address if needed.
     flow_address = Column(String, unique=True, index=True, nullable=True)
-
-    # Which wallet provider provisioned the address.
-    # "crossmint" is the default for smart-wallet users; "flow-native" for FCL wallets.
     wallet_provider = Column(String, nullable=True, default="crossmint")
-    #
 
     # Onboarding & preferences
     target_savings_amount = Column(Float, nullable=True)
@@ -67,6 +58,15 @@ class User(Base):
     # Verification flags
     is_email_verified = Column(Boolean, default=False)
     is_phone_verified = Column(Boolean, default=False)
+
+    # --- NEW (PR2): KYC verification fields ---
+    # These were already referenced by UserService.verify_user/.kyc but
+    # didn't exist on the model -> AttributeError on first call. Added
+    # here with matching alembic migration a1f3c9d2e4b7.
+    is_video_verified = Column(Boolean, default=False, nullable=False, server_default="false")
+    wallet_activated = Column(Boolean, default=False, nullable=False, server_default="false")
+    is_verified = Column(Boolean, default=False, nullable=False, server_default="false")
+    # --- end NEW ---
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.now, nullable=False)
@@ -104,9 +104,9 @@ class User(Base):
     notification_preferences = relationship(
         "UserNotificationPreferences",
         back_populates="user",
-        uselist=False,  # one-to-one
+        uselist=False,
         cascade="all, delete-orphan",
-    ) 
+    )
     ai_insights = relationship("AIInsight", back_populates="user", lazy="selectin")
     contributions = relationship(
         "Contribution", back_populates="user", cascade="all, delete-orphan"
