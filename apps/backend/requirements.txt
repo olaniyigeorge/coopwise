@@ -131,6 +131,7 @@ rich==14.0.0
 rich-toolkit==0.14.5
 rlp==4.1.0
 rsa==4.9.1
+ruff==0.15.18
 setuptools==80.9.0
 shellingham==1.5.4
 simple-websocket==1.1.0
