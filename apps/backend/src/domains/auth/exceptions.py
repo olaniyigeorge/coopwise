@@ -1,20 +1,9 @@
 """
-Domain exceptions for the auth domain.
+Domain exceptions for the auth domain (BYOA).
 
-Why these instead of raising HTTPException directly from AuthService:
-  - AuthService has zero FastAPI imports, so it's importable/testable in
-    any context (script, worker, another framework) without pulling in
-    fastapi.
-  - The router is the ONLY place that translates domain exceptions into
-    HTTP responses. One mapping point, not scattered try/excepts.
-
-CHANGED vs the password-auth version of this file:
-  - Dropped: EmailAlreadyRegisteredError, UsernameAlreadyRegisteredError,
-    PhoneNumberAlreadyRegisteredError, UserCreationError, InvalidCredentialsError.
-    These all belonged to local registration/login, which no longer exists.
-  - Added: CrossmintVerificationError. This is the new domain's primary
-    failure mode — "the token we were handed did not check out" — and the
-    router maps it to 401, same as the old InvalidCredentialsError did.
+Why these instead of raising HTTPException directly from AuthService: the
+router is the ONLY place that translates domain exceptions into HTTP
+responses, and AuthService stays importable/testable without fastapi.
 """
 
 
@@ -22,10 +11,27 @@ class AuthDomainError(Exception):
     """Base class for all auth domain errors."""
 
 
-class CrossmintVerificationError(AuthDomainError):
-    """Raised when a Crossmint JWT/session fails signature, issuer,
-    audience, or expiry verification, or when Crossmint's API rejects
-    a server-to-server profile fetch."""
+class OtpDeliveryError(AuthDomainError):
+    """SMS/email provider failed to send the code."""
+
+
+class OtpRateLimitedError(AuthDomainError):
+    """Too many OTP requests for this identifier too recently."""
+
+
+class OtpInvalidOrExpiredError(AuthDomainError):
+    """Code didn't match, expired, or was already used. Deliberately
+    generic — never reveals which, to avoid leaking whether a code
+    ever existed for a given identifier."""
+
+
+class FullNameRequiredError(AuthDomainError):
+    """First-time registration via OTP requires full_name; this identifier
+    has no existing account and none was supplied."""
+
+
+class FirebaseVerificationError(AuthDomainError):
+    """Firebase ID token failed verification."""
 
 
 class InvalidTokenError(AuthDomainError):
@@ -42,3 +48,9 @@ class InvalidTokenTypeError(AuthDomainError):
 
 class UserNotFoundError(AuthDomainError):
     pass
+
+
+class WalletProvisioningError(AuthDomainError):
+    """Crossmint BYOA wallet provisioning failed. Raised only inside the
+    background task — must never propagate into the login/registration
+    request path."""

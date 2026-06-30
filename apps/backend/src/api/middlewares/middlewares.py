@@ -20,38 +20,38 @@ class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
     """
 
     LUA_SCRIPT = r"""
-    local key = KEYS[1]
-    local capacity = tonumber(ARGV[1])
-    local refill_rate = tonumber(ARGV[2])          -- tokens per second
-    local now_ms = tonumber(ARGV[3])               -- current time in ms
-    local requested = tonumber(ARGV[4])
+        local key = KEYS[1]
+        local capacity = tonumber(ARGV[1])
+        local refill_rate = tonumber(ARGV[2])          -- tokens per second
+        local now_ms = tonumber(ARGV[3])               -- current time in ms
+        local requested = tonumber(ARGV[4])
 
-    -- Read stored state
-    local data = redis.call('HMGET', key, 'tokens', 'ts_ms')
-    local tokens = tonumber(data[1])
-    local ts_ms = tonumber(data[2])
+        -- Read stored state
+        local data = redis.call('HMGET', key, 'tokens', 'ts_ms')
+        local tokens = tonumber(data[1])
+        local ts_ms = tonumber(data[2])
 
-    if tokens == nil or ts_ms == nil then
-        tokens = capacity
-        ts_ms = now_ms
-    end
+        if tokens == nil or ts_ms == nil then
+            tokens = capacity
+            ts_ms = now_ms
+        end
 
-    -- Refill (fractional) based on elapsed milliseconds
-    local delta_ms = math.max(0, now_ms - ts_ms)
-    local refill = (delta_ms / 1000.0) * refill_rate
-    tokens = math.min(capacity, tokens + refill)
+        -- Refill (fractional) based on elapsed milliseconds
+        local delta_ms = math.max(0, now_ms - ts_ms)
+        local refill = (delta_ms / 1000.0) * refill_rate
+        tokens = math.min(capacity, tokens + refill)
 
-    local allowed = 0
-    if tokens >= requested then
-        tokens = tokens - requested
-        allowed = 1
-    end
+        local allowed = 0
+        if tokens >= requested then
+            tokens = tokens - requested
+            allowed = 1
+        end
 
-    -- Persist updated state every request
-    redis.call('HMSET', key, 'tokens', tokens, 'ts_ms', now_ms)
-    redis.call('EXPIRE', key, 3600)
+        -- Persist updated state every request
+        redis.call('HMSET', key, 'tokens', tokens, 'ts_ms', now_ms)
+        redis.call('EXPIRE', key, 3600)
 
-    return {allowed, tokens}
+        return {allowed, tokens}
     """
 
     def __init__(self, app: ASGIApp, capacity: int, refill_rate: float):

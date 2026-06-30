@@ -1,40 +1,63 @@
 """
-Auth domain schemas.
-  - AuthenticatedUser.email is now Optional — a user who signed up via
-    Crossmint SMS may have no email on file at all.
-"""
-from typing import Optional
-from uuid import UUID
-from pydantic import BaseModel, EmailStr
+Auth domain schemas (BYOA).
 
+CHANGED vs the Crossmint-Auth version:
+  - CrossmintSessionExchange is GONE — no incoming Crossmint JWT.
+  - Two-step OTP flow: RequestOtp -> VerifyOtp. full_name is optional on
+    VerifyOtp and only enforced by the SERVICE when no existing user is
+    found for that identifier (see service.py) — keeping that branch out
+    of the schema layer means the 422 the client sees on a missing-name-
+    on-registration is a clean, service-level FullNameRequiredError (400),
+    not a generic validation error that can't distinguish login vs signup.
+  - FirebaseSignIn is NEW — Google sign-in via Firebase ID token.
+  - AuthenticatedUser.email is Optional; phone is now a first-class,
+    equally-primary identifier alongside email (see product decision:
+    both are equal options at signup).
+"""
+from typing import Annotated, Optional
+from uuid import UUID
+from pydantic import BaseModel, ConfigDict, EmailStr, constr
+
+from src.domains.auth.ports import OtpChannel
 from src.domains.users.models import UserRoles
 
+PhoneNumberStr = Annotated[str, constr(pattern=r"^\+\d{7,15}$")]  # E.164 format
 
-class CrossmintSessionExchange(BaseModel):
-    """
-    POST body for exchanging a verified Crossmint session for a CoopWise
-    platform session. This is the ONLY auth entrypoint for end users.
 
-    crossmint_jwt: the JWT issued by Crossmint's client SDK after the user
-        completes email OTP / Google / SMS login. Mirrors the cookie key
-        `crossmint-jwt` Crossmint's own SSR examples use.
-    crossmint_refresh_token: mirrors `crossmint-refresh-token`. Optional —
-        if omitted we just verify the JWT as-is; if present and the JWT is
-        stale, the verifier can refresh it the same way Crossmint's own
-        getSession() does server-side.
-    """
+class RequestOtp(BaseModel):
+    channel: OtpChannel
+    identifier: str  # PhoneNumberStr when channel=phone, EmailStr when channel=email
 
-    crossmint_jwt: str
-    crossmint_refresh_token: Optional[str] = None
+    model_config = ConfigDict(use_enum_values=True)
+
+
+class VerifyOtp(BaseModel):
+    channel: OtpChannel
+    identifier: str
+    code: Annotated[str, constr(min_length=4, max_length=8)]
+    # Required only for brand-new registrations — enforced in the service,
+    # not here, so we can return a precise FullNameRequiredError rather
+    # than a generic 422 the client can't act on differently from "bad code".
+    full_name: Optional[str] = None
+
+    model_config = ConfigDict(use_enum_values=True)
+
+
+class FirebaseSignIn(BaseModel):
+    firebase_id_token: str
+    # Same reasoning as VerifyOtp.full_name — required only on first sight
+    # of a given firebase_uid with no email Firebase already gave us.
+    full_name: Optional[str] = None
 
 
 class AuthenticatedUser(BaseModel):
-    """Identity carried on OUR platform JWT, reconstructed by the request
-    pipeline on every authenticated call. Not the Crossmint identity."""
+    """Identity carried on OUR platform JWT, reconstructed on every
+    authenticated request."""
 
     id: UUID
     role: UserRoles
     email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
 
 
 class TokenData(BaseModel):
@@ -45,27 +68,22 @@ class TokenData(BaseModel):
 
 
 class SessionUser(BaseModel):
-    """User payload embedded in the session response."""
-
     id: UUID
     username: str
     email: Optional[EmailStr] = None
-    full_name: str
     phone_number: Optional[str] = None
+    full_name: str
     role: UserRoles
-    flow_address: Optional[str] = None
-    crossmint_user_id: Optional[str] = None
+    flow_address: Optional[str] = None  # populated once background provisioning completes
     profile_picture_url: Optional[str] = None
     onboarding_status: str  # "incomplete" | "complete" — informational, not a gate
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SessionResponse(BaseModel):
-    """Response of POST /api/v1/auth/session — our platform tokens, not Crossmint's."""
-
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    is_new_user: bool
     user: SessionUser

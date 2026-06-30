@@ -25,6 +25,14 @@ class GlobalConfig(BaseSettings):
     GEMINI_API_KEY: str
     RATE_LIMIT_RULES_PATH: str
     CELERY_BROKER_URL:str
+    CROSSMINT_SERVER_API_KEY: str
+    CROSSMINT_AUDIENCE: str
+    FIREBASE_PROJECT_ID: str
+    RESEND_API_KEY: str
+    EMAIL_FROM_ADDRESS: str
+    SMS_PROVIDER_API_KEY: str
+    SMS_SENDER_ID: str
+    SMS_PROVIDER_BASE_URL: str
 
     # Mail config: required for notification email delivery
     MAIL_USERNAME: str

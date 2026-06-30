@@ -1,40 +1,80 @@
 """
-Auth router.
-  - Two endpoints: POST /session (the only way to authenticate, ever)
-    and POST /session/refresh (renew without re-touching Crossmint).
-"""
+Auth router (BYOA).
 
+CHANGED vs the Crossmint-Auth version:
+  - /session (Crossmint JWT exchange) is GONE.
+  - Four endpoints now: request-otp, verify-otp, firebase, session/refresh.
+"""
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.domains.auth.dependencies import get_auth_service
 from src.domains.auth.exceptions import (
-    CrossmintVerificationError,
+    FirebaseVerificationError,
+    FullNameRequiredError,
     InvalidTokenTypeError,
+    OtpDeliveryError,
+    OtpInvalidOrExpiredError,
+    OtpRateLimitedError,
     TokenExpiredError,
     UserNotFoundError,
 )
-from src.domains.auth.schemas import CrossmintSessionExchange, SessionResponse
+from src.domains.auth.schemas import (
+    FirebaseSignIn,
+    RequestOtp,
+    SessionResponse,
+    VerifyOtp,
+)
 from src.domains.auth.service import AuthService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth & Onboarding"])
 
 
-@router.post("/session", response_model=SessionResponse)
-async def exchange_session(
-    payload: CrossmintSessionExchange,
+@router.post("/otp/request", status_code=204)
+async def request_otp(
+    payload: RequestOtp,
     auth_service: AuthService = Depends(get_auth_service),
 ):
-    """
-    The sole authentication entrypoint. Frontend calls this immediately
-    after Crossmint's client SDK completes login (email OTP / Google / SMS)
-    with the resulting Crossmint JWT. We verify it server-side against
-    Crossmint's JWKS, provision a local account on first sight, and return
-    our own short-lived platform access token + longer-lived refresh token.
-    """
+    """Sends a one-time code via SMS or email depending on `channel`.
+    Works identically whether this identifier belongs to an existing
+    user or not — the client doesn't need to know in advance which."""
     try:
-        return await auth_service.exchange_crossmint_session(payload)
-    except CrossmintVerificationError as e:
+        await auth_service.request_otp(payload)
+    except OtpRateLimitedError as e:
+        raise HTTPException(status_code=429, detail=str(e))
+    except OtpDeliveryError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post("/otp/verify", response_model=SessionResponse)
+async def verify_otp(
+    payload: VerifyOtp,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Verifies the code. full_name is required only when this identifier
+    has no existing account (first-time registration) — the service
+    raises FullNameRequiredError (400) in that case so the client can
+    prompt for a name and resubmit, rather than guessing up front."""
+    try:
+        return await auth_service.verify_otp(payload)
+    except OtpInvalidOrExpiredError as e:
         raise HTTPException(status_code=401, detail=str(e))
+    except FullNameRequiredError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/firebase", response_model=SessionResponse)
+async def sign_in_with_firebase(
+    payload: FirebaseSignIn,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Google sign-in via Firebase. Frontend completes Google OAuth through
+    Firebase client SDK, sends us the resulting Firebase ID token."""
+    try:
+        return await auth_service.sign_in_with_firebase(payload)
+    except FirebaseVerificationError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    except FullNameRequiredError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/session/refresh", response_model=SessionResponse)

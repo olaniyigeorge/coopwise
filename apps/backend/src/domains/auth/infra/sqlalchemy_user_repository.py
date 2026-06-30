@@ -3,13 +3,10 @@ SQLAlchemy adapter for the UserRepository port.
 
 This is the ONLY file in the auth domain allowed to import sqlalchemy.
 
-CHANGED vs the password-auth version:
-  - get_by_username / get_by_phone_number dropped from the auth domain's
-    repository. They existed solely to enforce uniqueness during local
-    registration, which no longer happens here. (The users domain's own
-    repository, if it needs these for profile-edit uniqueness checks,
-    keeps its own copies — this file is intentionally narrow to what
-    AuthService actually calls.)
+CHANGED vs the Crossmint-Auth version: get_by_crossmint_user_id replaced
+with get_by_firebase_uid; get_by_phone_number added back as a first-class
+lookup since phone is now an equally-primary identifier, not a secondary
+field.
 """
 from __future__ import annotations
 
@@ -29,14 +26,20 @@ class SqlAlchemyUserRepository:
     async def get_by_id(self, user_id: UUID) -> Optional[User]:
         return await self._db.get(User, user_id)
 
-    async def get_by_crossmint_user_id(self, crossmint_user_id: str) -> Optional[User]:
+    async def get_by_phone_number(self, phone_number: str) -> Optional[User]:
         result = await self._db.execute(
-            select(User).where(User.crossmint_user_id == crossmint_user_id)
+            select(User).where(User.phone_number == phone_number)
         )
         return result.scalars().first()
 
     async def get_by_email(self, email: str) -> Optional[User]:
         result = await self._db.execute(select(User).where(User.email == email))
+        return result.scalars().first()
+
+    async def get_by_firebase_uid(self, firebase_uid: str) -> Optional[User]:
+        result = await self._db.execute(
+            select(User).where(User.firebase_uid == firebase_uid)
+        )
         return result.scalars().first()
 
     async def add(self, user: User) -> User:
