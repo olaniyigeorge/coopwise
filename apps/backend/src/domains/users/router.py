@@ -4,11 +4,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domains.auth.router import (
-    get_current_user,
-    is_admin_or_owner,
-    is_admin_permissions,
-)
+
+from src.api.middlewares.dependencies import get_current_user, is_admin_or_owner, is_admin_permissions
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.users.dependencies import get_user_service
 from src.domains.users.exceptions import (

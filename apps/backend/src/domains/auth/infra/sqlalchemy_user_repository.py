@@ -2,9 +2,14 @@
 SQLAlchemy adapter for the UserRepository port.
 
 This is the ONLY file in the auth domain allowed to import sqlalchemy.
-Keeping all `select(User).where(...)` calls here means:
-  - AuthService tests never touch a real engine/session.
-  - If we ever swap ORMs, this is the one file that changes.
+
+CHANGED vs the password-auth version:
+  - get_by_username / get_by_phone_number dropped from the auth domain's
+    repository. They existed solely to enforce uniqueness during local
+    registration, which no longer happens here. (The users domain's own
+    repository, if it needs these for profile-edit uniqueness checks,
+    keeps its own copies — this file is intentionally narrow to what
+    AuthService actually calls.)
 """
 from __future__ import annotations
 
@@ -21,22 +26,6 @@ class SqlAlchemyUserRepository:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
-    async def get_by_email(self, email: str) -> Optional[User]:
-        result = await self._db.execute(select(User).where(User.email == email))
-        return result.scalars().first()
-
-    async def get_by_username(self, username: str) -> Optional[User]:
-        result = await self._db.execute(select(User).where(User.username == username))
-        return result.scalars().first()
-
-    async def get_by_phone_number(self, phone_number: Optional[str]) -> Optional[User]:
-        if phone_number is None:
-            return None
-        result = await self._db.execute(
-            select(User).where(User.phone_number == phone_number)
-        )
-        return result.scalars().first()
-
     async def get_by_id(self, user_id: UUID) -> Optional[User]:
         return await self._db.get(User, user_id)
 
@@ -44,6 +33,10 @@ class SqlAlchemyUserRepository:
         result = await self._db.execute(
             select(User).where(User.crossmint_user_id == crossmint_user_id)
         )
+        return result.scalars().first()
+
+    async def get_by_email(self, email: str) -> Optional[User]:
+        result = await self._db.execute(select(User).where(User.email == email))
         return result.scalars().first()
 
     async def add(self, user: User) -> User:

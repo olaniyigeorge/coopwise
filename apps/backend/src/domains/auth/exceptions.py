@@ -8,9 +8,13 @@ Why these instead of raising HTTPException directly from AuthService:
   - The router is the ONLY place that translates domain exceptions into
     HTTP responses. One mapping point, not scattered try/excepts.
 
-This PR keeps behavior identical to the pre-refactor code: the same
-status codes and messages are produced, just via this translation layer
-instead of raising HTTPException inline inside the service.
+CHANGED vs the password-auth version of this file:
+  - Dropped: EmailAlreadyRegisteredError, UsernameAlreadyRegisteredError,
+    PhoneNumberAlreadyRegisteredError, UserCreationError, InvalidCredentialsError.
+    These all belonged to local registration/login, which no longer exists.
+  - Added: CrossmintVerificationError. This is the new domain's primary
+    failure mode — "the token we were handed did not check out" — and the
+    router maps it to 401, same as the old InvalidCredentialsError did.
 """
 
 
@@ -18,30 +22,14 @@ class AuthDomainError(Exception):
     """Base class for all auth domain errors."""
 
 
-class EmailAlreadyRegisteredError(AuthDomainError):
-    pass
-
-
-class UsernameAlreadyRegisteredError(AuthDomainError):
-    pass
-
-
-class PhoneNumberAlreadyRegisteredError(AuthDomainError):
-    pass
-
-
-class UserCreationError(AuthDomainError):
-    def __init__(self, reason: str):
-        self.reason = reason
-        super().__init__(reason)
-
-
-class InvalidCredentialsError(AuthDomainError):
-    pass
+class CrossmintVerificationError(AuthDomainError):
+    """Raised when a Crossmint JWT/session fails signature, issuer,
+    audience, or expiry verification, or when Crossmint's API rejects
+    a server-to-server profile fetch."""
 
 
 class InvalidTokenError(AuthDomainError):
-    pass
+    """Our OWN platform JWT failed to decode/verify."""
 
 
 class TokenExpiredError(AuthDomainError):
@@ -53,8 +41,4 @@ class InvalidTokenTypeError(AuthDomainError):
 
 
 class UserNotFoundError(AuthDomainError):
-    pass
-
-
-class WalletSyncError(AuthDomainError):
     pass
