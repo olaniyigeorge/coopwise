@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AuthService, { LoginCredentials, RegisterData } from './auth-service';
-import UserService from './user-service';
+import AuthService, { LoginCredentials, RegisterData } from '@/services/auth-service';
+import UserService from '@/services/user-service';
 import { toast } from '@/components/ui/use-toast';
 
 // Define types
@@ -14,7 +14,7 @@ interface User {
   username: string;
   phone_number: string;
   role: string;
-  [key: string]: any; // For any additional user properties
+  [key: string]: any;
 }
 
 interface AuthContextType {

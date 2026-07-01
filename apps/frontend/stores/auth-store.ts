@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import AuthService from '../services/auth-service';
-import CookieService from '../services/cookie-service';
+import AuthService from '@/services/auth-service';
+import UserService from '@/services/user-service';
+import CookieService from '@/services/cookie-service';
 
 interface User {
   id: string;
@@ -33,15 +34,20 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  /** True only during the initial mount check; lets pages show a splash/skeleton instead of flashing the login form. */
+  isInitializing: boolean;
   error: string | null;
-  
+
   // Actions
-  login: (credentials: LoginCredentials) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  checkAuth: () => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<User>;
+  register: (data: RegisterData) => Promise<User>;
   logout: () => Promise<void>;
   setIsAuthenticated: (isAuthenticated: boolean) => void;
   setUser: (user: User | null) => void;
   updateUser: (userData: Partial<User>) => void;
+  updateUserProfile: (data: Partial<User>) => Promise<User>;
+  refreshUserData: () => Promise<void>;
   clearError: () => void;
   setLoading: (isLoading: boolean) => void;
 }
@@ -52,78 +58,74 @@ const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      isInitializing: true,
       error: null,
-      
+
+      /**
+       * Runs once on app mount (call from a top-level client component,
+       * e.g. AppWrapper or a small <AuthHydrator /> inside it).
+       * Confirms the session is actually valid rather than trusting
+       * the persisted localStorage snapshot alone.
+       */
+      checkAuth: async () => {
+        try {
+          const token = await AuthService.getToken();
+          if (token) {
+            const savedUser = AuthService.getCurrentUser();
+            if (savedUser) {
+              set({ user: savedUser, isAuthenticated: true });
+            }
+          } else {
+            set({ user: null, isAuthenticated: false });
+          }
+        } catch (err) {
+          console.error('checkAuth error:', err);
+          set({ user: null, isAuthenticated: false });
+        } finally {
+          set({ isInitializing: false });
+        }
+      },
+
       login: async (credentials) => {
         set({ isLoading: true, error: null });
         try {
           const response = await AuthService.login(credentials, credentials.rememberMe || false);
-          if (response.user) {
-            set({ 
-              user: response.user, 
-              isAuthenticated: true, 
-              isLoading: false 
-            });
-          } else {
-            throw new Error('Invalid response from server');
-          }
+          if (!response.user) throw new Error('Invalid response from server');
+          set({ user: response.user, isAuthenticated: true, isLoading: false });
+          return response.user;
         } catch (error: any) {
-          set({ 
-            error: error.message || 'Login failed', 
-            isLoading: false,
-            isAuthenticated: false
-          });
+          const message =
+            error?.response?.data?.detail || error?.message || 'Login failed';
+          set({ error: message, isLoading: false, isAuthenticated: false });
           throw error;
         }
       },
-      
+
       register: async (data) => {
         set({ isLoading: true, error: null });
         try {
           const response = await AuthService.register(data);
-          if (response.user) {
-            set({ 
-              user: response.user, 
-              isAuthenticated: true, 
-              isLoading: false 
-            });
-          } else {
-            throw new Error('Invalid response from server');
-          }
+          if (!response.user) throw new Error('Invalid response from server');
+          set({ user: response.user, isAuthenticated: true, isLoading: false });
+          return response.user;
         } catch (error: any) {
-          set({ 
-            error: error.message || 'Registration failed', 
-            isLoading: false,
-            isAuthenticated: false
-          });
+          const message =
+            error?.response?.data?.detail || error?.message || 'Registration failed';
+          set({ error: message, isLoading: false, isAuthenticated: false });
           throw error;
         }
       },
-      
+
       setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
 
-      
       logout: async () => {
         set({ isLoading: true });
         try {
           await AuthService.logout();
-          set({ 
-            user: null, 
-            isAuthenticated: false, 
-            isLoading: false 
-          });
-          // Clear persisted client state so we don't "auto-login" from cache.
-          try {
-            localStorage.removeItem('auth-storage');
-            localStorage.removeItem('notifications-storage');
-          } catch {}
         } catch (error: any) {
-          set({ 
-            error: error.message || 'Logout failed', 
-            isLoading: false 
-          });
-          // Even if the API call fails, we still want to clear the user state
-          set({ user: null, isAuthenticated: false });
+          console.warn('Logout API call failed, clearing local state anyway:', error);
+        } finally {
+          set({ user: null, isAuthenticated: false, isLoading: false, error: null });
           try {
             localStorage.removeItem('auth-storage');
             localStorage.removeItem('notifications-storage');
@@ -131,48 +133,76 @@ const useAuthStore = create<AuthState>()(
         }
       },
 
-            setUser: (user: User | null) => {
+      setUser: (user: User | null) => {
         const current = get().user || ({} as User);
-
         const merged: User = {
           ...current,
           ...user,
-          profile_picture_url: 
+          profile_picture_url:
             user?.profile_picture_url ||
             current.profile_picture_url ||
             user?.image ||
             null,
         };
-
-        //console.log("💾 Saving user to store:", merged);
-
         set({ user: merged });
         CookieService.setUser(merged);
       },
-      
+
       updateUser: (userData) => {
         const currentUser = get().user;
         if (currentUser) {
           const updatedUser = { ...currentUser, ...userData };
           set({ user: updatedUser });
-          // Also update in cookie for persistence
           CookieService.setUser(updatedUser);
         }
       },
-      
+
+      /** Persists a profile update to the backend, then updates local state. */
+      updateUserProfile: async (profileData) => {
+        const currentUser = get().user;
+        if (!currentUser) throw new Error('You must be logged in to update your profile');
+
+        set({ isLoading: true, error: null });
+        try {
+          const updatedUser = await UserService.updateUser(currentUser.id, profileData);
+          const merged = { ...currentUser, ...updatedUser };
+          set({ user: merged, isLoading: false });
+          CookieService.setUser(merged);
+          return merged;
+        } catch (error: any) {
+          const message = error?.response?.data?.detail || 'Failed to update your profile';
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      /** Re-fetches the current user from the backend (e.g. after external changes). */
+      refreshUserData: async () => {
+        const currentUser = get().user;
+        if (!currentUser?.id || !get().isAuthenticated) return;
+
+        set({ isLoading: true });
+        try {
+          const userData = await UserService.getUserById(currentUser.id);
+          set({ user: userData, isLoading: false });
+        } catch (error) {
+          console.error('Failed to refresh user data:', error);
+          set({ isLoading: false });
+        }
+      },
+
       clearError: () => set({ error: null }),
-      
-      setLoading: (isLoading) => set({ isLoading })
+
+      setLoading: (isLoading) => set({ isLoading }),
     }),
     {
       name: 'auth-storage',
-      // Only store non-sensitive data in localStorage
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         user: state.user,
-        isAuthenticated: state.isAuthenticated
+        isAuthenticated: state.isAuthenticated,
       }),
     }
   )
 );
 
-export default useAuthStore; 
+export default useAuthStore;

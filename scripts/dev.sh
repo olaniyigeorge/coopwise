@@ -54,20 +54,21 @@ fi
 BACKEND_PID=$!
 
 # --- Frontend (disabled for now — backend-only dev) ---
-# echo -e "${YELLOW}Starting frontend...${NC}"
-#
-# if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
-#   echo "node_modules not found, running npm install..."
-#   npm --prefix "$FRONTEND_DIR" install
-# fi
-#
-# npm --prefix "$FRONTEND_DIR" run dev &
-# FRONTEND_PID=$!
+echo -e "${YELLOW}Starting frontend...${NC}"
+
+if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
+  echo "node_modules not found, running npm install..."
+  npm --prefix "$FRONTEND_DIR" install
+fi
+
+npm --prefix "$FRONTEND_DIR" run dev &
+FRONTEND_PID=$!
 
 echo -e "${GREEN}
 ====================================
   CoopWise is running!
   Backend:  http://localhost:8000
+  Frontend: http://localhost:3000
   API Docs: http://localhost:8000/docs
 ====================================
 ${NC}"
@@ -76,7 +77,7 @@ ${NC}"
 cleanup() {
   echo -e "\n${RED}Shutting down...${NC}"
   kill $BACKEND_PID 2>/dev/null
-  # kill $FRONTEND_PID 2>/dev/null
+  kill $FRONTEND_PID 2>/dev/null
   echo -e "${YELLOW}Stopping Redis...${NC}"
   redis-cli shutdown 2>/dev/null || true
   echo -e "${GREEN}All services stopped. (Postgres left running)${NC}"

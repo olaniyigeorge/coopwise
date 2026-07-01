@@ -17,7 +17,7 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
   return (
     <CrossmintProvider apiKey={CROSSMINT_API_KEY}>
       <CrossmintAuthProvider
-        loginMethods={["email", "google"]}
+        loginMethods={["email", "google" ]}
         authModalTitle="Join CoopWise"
         termsOfServiceText="By continuing, you agree to CoopWise's Terms of Service and Privacy Policy."
         appearance={{
@@ -33,12 +33,13 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
       >
         {/* createOnLogin="all-users" auto-provisions a Flow smart wallet on every login — no seed phrases */}
         <CrossmintWalletProvider
-          createOnLogin={{ 
-            chain: "solana", 
-            signer: { type: "email" } 
-          }} 
+          createOnLogin={{
+            chain: "solana",
+            recovery: { type: "email", email: "olaniygeorge77@gmail.com" },
+            signers: [{ type: "email", email: "olaniygeorge77@gmail.com", locator: "olaniyi" }],
+          }}
         >
-          <FlowProvider
+          {/* <FlowProvider
             config={{
               accessNodeUrl:
                 process.env.NEXT_PUBLIC_FLOW_NETWORK === "mainnet"
@@ -52,13 +53,13 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
               appDetailUrl: "https://coopwise.app",
             }}
             flowJson={flowJSON}
-          > 
+          >  */}
             <AuthProvider>
               <NotificationProvider>
                 {children}
               </NotificationProvider>
             </AuthProvider>
-          </FlowProvider>
+          {/* </FlowProvider> */}
         </CrossmintWalletProvider>
       </CrossmintAuthProvider>
     </CrossmintProvider>
