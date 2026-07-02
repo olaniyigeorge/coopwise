@@ -43,6 +43,8 @@ class User(Base):
     profile_picture_url = Column(String, nullable=True)
 
     role = Column(Enum(UserRoles), default=UserRoles.user)
+    
+    firebase_uid = Column(String, unique=True, index=True, nullable=True)
 
     #  Crossmint / Web3 identity 
     crossmint_user_id = Column(String, unique=True, index=True, nullable=True)
