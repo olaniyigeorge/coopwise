@@ -35,7 +35,7 @@ class CrossmintWalletProvider:
         self,
         *,
         server_api_key: str,
-        chain: str = "base-sepolia",  # TODO: confirm target chain for production (mainnet vs testnet)
+        chain: str = "solana",  # TODO: confirm target chain for production (mainnet vs testnet)
         api_base_url: str = "https://www.crossmint.com/api",
     ) -> None:
         self._server_api_key = server_api_key

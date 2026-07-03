@@ -26,6 +26,7 @@ class GlobalConfig(BaseSettings):
     RATE_LIMIT_RULES_PATH: str
     CELERY_BROKER_URL:str
     CROSSMINT_SERVER_API_KEY: str
+    CROSSMINT_CHAIN: str
     CROSSMINT_AUDIENCE: str
     FIREBASE_PROJECT_ID: str
     RESEND_API_KEY: str

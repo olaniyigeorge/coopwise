@@ -24,7 +24,8 @@ from src.shared.utils.logger import logger
     name="auth.provision_wallet",
     bind=True,
     max_retries=5,
-    default_retry_delay=30,  # seconds, exponential-ish via retry count below
+    default_retry_delay=30,
+    ignore_result=True,
 )
 def provision_wallet_task(self, user_id_str: str, platform_jwt: str) -> None:
     """Sync Celery entrypoint — bridges to the async adapter + repo update.

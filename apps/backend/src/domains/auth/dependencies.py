@@ -4,6 +4,7 @@ from fastapi import Depends
 from redis.asyncio.client import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.shared.utils.logger import logger
 from config import AppConfig as config
 from src.api.middlewares.dependencies import get_redis
 from src.domains.auth.infra.firebase_verifier import FirebaseVerifier
@@ -62,9 +63,13 @@ _firebase_verifier = FirebaseVerifier(project_id=config.FIREBASE_PROJECT_ID)
 def _dispatch_wallet_provisioning(user, access_token: str) -> None:
     """Fire-and-forget Celery dispatch. Kept as a plain function (not a
     method) so it can be passed into AuthService as on_user_authenticated
-    without AuthService importing Celery itself."""
-    provision_wallet_task.delay(str(user.id), access_token)
-
+    """
+    try:
+        provision_wallet_task.delay(str(user.id), access_token)
+    except Exception as e:
+        logger.error(f"[_dispatch_wallet_provisioning] failed to enqueue for {user.id}: {e}")
+        # Don't let broker issues block sign-in — wallet provisioning
+        # can be retried/reconciled later; auth should still succeed.
 
 def get_auth_service(
     db: AsyncSession = Depends(get_async_db_session),
