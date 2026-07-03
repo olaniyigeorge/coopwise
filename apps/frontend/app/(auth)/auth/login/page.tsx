@@ -1,10 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter, useSearchParams } from "next/navigation"
-import { sendSignInLinkToEmail, signInWithPopup, GoogleAuthProvider } from "firebase/auth"
+import { sendSignInLinkToEmail, signInWithPopup, GoogleAuthProvider, User as FirebaseUser } from "firebase/auth"
 import { Loader2 } from "lucide-react"
+import { AxiosError } from "axios"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -22,6 +24,15 @@ const AuthPage = () => {
   const from = searchParams.get("from") ?? "/dashboard"
 
   const { walletStatus } = useFlowWallet()
+
+  // Holds the Google user + a manual name input, only used when Google
+  // didn't return a displayName and the backend asks us for one
+  // (FullNameRequiredError -> 400). Keeps the happy path (displayName
+  // present) completely untouched.
+  const [pendingGoogleUser, setPendingGoogleUser] = useState<FirebaseUser | null>(null)
+  const [fullNameInput, setFullNameInput] = useState("")
+  const [nameError, setNameError] = useState<string | null>(null)
+  const [isSubmittingName, setIsSubmittingName] = useState(false)
 
   const form = useForm<authFormValues>({
     resolver: zodResolver(authSchema),
@@ -43,13 +54,48 @@ const AuthPage = () => {
     }
   }
 
+  const completeSession = async (firebaseUser: FirebaseUser, fullNameOverride?: string) => {
+    try {
+      const { is_new_user } = await createSession(firebaseUser, fullNameOverride)
+      router.push(is_new_user ? "/onboarding" : from)
+    } catch (error) {
+      // Backend asked for a full_name we don't have yet (e.g. Google
+      // account has no displayName). Prompt for it instead of failing.
+      if (error instanceof AxiosError && error.response?.status === 400) {
+        setPendingGoogleUser(firebaseUser)
+        setNameError(null)
+        return
+      }
+      const message =
+        error instanceof AxiosError
+          ? error.response?.data?.detail ?? "Something went wrong signing you in."
+          : getFirebaseErrorMessage((error as any)?.code)
+      form.setError("root", { message })
+    }
+  }
+
   const handleGoogleSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider)
-      const { is_new_user } = await createSession(result.user)
-      router.push(is_new_user ? "/onboarding" : from)
+      await completeSession(result.user)
     } catch (error: any) {
       form.setError("root", { message: getFirebaseErrorMessage(error.code) })
+    }
+  }
+
+  const handleNameSubmit = async () => {
+    if (!pendingGoogleUser) return
+    const trimmed = fullNameInput.trim()
+    if (!trimmed) {
+      setNameError("Please enter your full name to continue.")
+      return
+    }
+    setIsSubmittingName(true)
+    try {
+      await completeSession(pendingGoogleUser, trimmed)
+      setPendingGoogleUser(null)
+    } finally {
+      setIsSubmittingName(false)
     }
   }
 
@@ -63,6 +109,37 @@ const AuthPage = () => {
     "provisioning-wallet": "Loading your wallet...",
     "syncing-backend": "Signing you in...",
     ready: "Welcome back! Redirecting...",
+  }
+
+  // Fallback: Google didn't give us a name, ask for it directly.
+  if (pendingGoogleUser) {
+    return (
+      <div className="relative min-h-screen bg-background flex items-center justify-center p-6 overflow-hidden">
+        <div className="w-full max-w-sm space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">What's your name?</h2>
+            <p className="text-sm text-muted-foreground">
+              We need this to finish setting up your account.
+            </p>
+          </div>
+          <Input
+            type="text"
+            placeholder="Full name"
+            value={fullNameInput}
+            onChange={(e) => setFullNameInput(e.target.value)}
+            autoFocus
+          />
+          {nameError && <p className="text-sm text-red-500">{nameError}</p>}
+          <Button
+            onClick={handleNameSubmit}
+            className="w-full h-11 rounded-xl"
+            disabled={isSubmittingName}
+          >
+            {isSubmittingName ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue"}
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
