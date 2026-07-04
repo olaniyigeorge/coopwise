@@ -168,6 +168,7 @@ urllib3==2.5.0
 uvicorn==0.34.2
 uvloop==0.22.1
 vine==5.1.0
+watchfiles==1.0.5
 wcwidth==0.5.0
 web3==7.14.0
 websocket-client==1.8.0
