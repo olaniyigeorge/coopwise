@@ -55,6 +55,9 @@ class GlobalConfig(BaseSettings):
 class DevConfig(GlobalConfig):
     pass
 
+class StagingConfig(GlobalConfig):
+    pass
+
 
 class TestConfig(GlobalConfig):
     pass
@@ -68,6 +71,7 @@ def get_config() -> GlobalConfig:
     env_state = GlobalConfig().ENV.lower()
     configs = {
         "development": DevConfig,
+        "staging": StagingConfig,
         "production": ProdConfig,
         "test": TestConfig,
     }
