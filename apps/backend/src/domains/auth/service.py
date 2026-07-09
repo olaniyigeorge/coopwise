@@ -240,6 +240,7 @@ class AuthService:
 
         if self._on_user_authenticated is not None:
             try:
+                logger.info(f"[AuthService] dispatching wallet provisioning for user {user.id}" )
                 self._on_user_authenticated(user, access_token)
             except Exception as e:
                 # Wallet provisioning dispatch must NEVER fail a login.

@@ -24,6 +24,8 @@ from src.domains.auth.service import AuthService
 from src.infra.db.dependencies import get_async_db_session
 from src.infra.emails.resend import get_email_sender
 
+from src.infra.celery.app import celery_app
+
 # No service account / private key needed — manual JWKS verification only
 # needs the public Firebase project id. See infra/firebase_verifier.py.
 
@@ -64,7 +66,9 @@ def _dispatch_wallet_provisioning(user, access_token: str) -> None:
     """Fire-and-forget Celery dispatch. Kept as a plain function (not a
     method) so it can be passed into AuthService as on_user_authenticated
     """
+    logger.info(f"[_dispatch_wallet_provisioning] broker={celery_app.conf.broker_url!r} backend={celery_app.conf.result_backend!r}")
     try:
+        logger.info(f"\n[_dispatch_wallet_provisioning] dispatching wallet provisioning for user {user.id}\n")
         provision_wallet_task.delay(str(user.id), access_token)
     except Exception as e:
         logger.error(f"[_dispatch_wallet_provisioning] failed to enqueue for {user.id}: {e}")

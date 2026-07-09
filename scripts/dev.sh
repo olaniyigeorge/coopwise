@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -m
 
 # Colors
 GREEN='\033[0;32m'
@@ -53,6 +54,22 @@ fi
 ) &
 BACKEND_PID=$!
 
+
+# --- Celery Worker ---
+echo -e "${YELLOW}Starting Celery worker...${NC}"
+mkdir -p "$PROJECT_ROOT/logs"
+CELERY_LOG="$PROJECT_ROOT/logs/celery.log"
+
+(
+  cd "$BACKEND_DIR" && \
+  "$BACKEND_DIR/venv/bin/celery" -A src.infra.celery.app.celery_app worker \
+    --loglevel=info \
+    --concurrency=2 \
+    -n auth_worker@%h \
+    2>&1 | tee -a "$CELERY_LOG"
+) &
+CELERY_PID=$!
+
 # --- Frontend (disabled for now — backend-only dev) ---
 echo -e "${YELLOW}Starting frontend...${NC}"
 
@@ -76,9 +93,9 @@ ${NC}"
 # --- Cleanup on Ctrl+C ---
 cleanup() {
   echo -e "\n${RED}Shutting down...${NC}"
-  kill $BACKEND_PID 2>/dev/null
-  kill $FRONTEND_PID 2>/dev/null
-  echo -e "${YELLOW}Stopping Redis...${NC}"
+  kill -- -$BACKEND_PID 2>/dev/null
+  kill -- -$FRONTEND_PID 2>/dev/null
+  kill -- -$CELERY_PID 2>/dev/null
   redis-cli shutdown 2>/dev/null || true
   echo -e "${GREEN}All services stopped. (Postgres left running)${NC}"
 }
