@@ -2,10 +2,15 @@ import {z} from "zod"
 
 const emailField = z.string().email('Invalid email address')
 // const passwordField = z.string().min(8, "Password must be at least 8 characters")
+const fullnameField = z.string()
 
 export const authSchema = z.object({
     email: emailField,
     // password: passwordField
+})
+export const devAuthSchema = z.object({
+    email: emailField,
+    full_name: fullnameField
 })
 
 // export const signUpSchema = z.object({
@@ -19,3 +24,6 @@ export const authSchema = z.object({
 
 export type authFormValues = z.infer<typeof authSchema>
 // export type signUpFormValues = z.infer<typeof signUpSchema>
+
+
+export type devAuthFormValues = z.infer<typeof devAuthSchema>

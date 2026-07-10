@@ -4,7 +4,7 @@ import config from '../config'
 
 
 const API = axios.create({
-    baseURL: config.publicApiUrl || "http://localhost:8000",
+    baseURL: config.publicAppUrl || "http://localhost:3000",
     timeout: 10000,
     headers: {
         'Content-Type': "application/json"

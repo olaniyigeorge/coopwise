@@ -6,10 +6,15 @@ export type SessionResult = {
     role: string
 }
 
+export type DevSessionResult = {
+    is_new_user: boolean
+    user: any
+}
+
 export const createSession = async (
   firebaseUser: User,
   fullNameOverride?: string
-): Promise<SessionResult> => {
+): Promise<DevSessionResult> => {
     const idToken = await firebaseUser.getIdToken()
     console.log("\ncreateSession idToken:", idToken, "\n")
     const response = await API.post('/api/v1/auth/firebase', {
@@ -18,8 +23,21 @@ export const createSession = async (
     })
     const {access_token, is_new_user, user} = response.data
     document.cookie = `jwt=${access_token}; path=/; SameSite=Strict`
-    return {is_new_user, role: user.role}
+    return {is_new_user, user}
 };
+
+export const getDevSession = async (
+  email: string,
+  fullName?: string
+): Promise<DevSessionResult> => {
+    const response = await API.post('/api/auth/dev-sign-in', {
+        email: email,
+        full_name: fullName || ""
+    })
+    console.log(`\nSign in res ${response} \n`)
+    return response.data
+};
+
 
 export const refreshSession = async (): Promise<void> => {
     try {

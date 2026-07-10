@@ -4,7 +4,7 @@ import AuthService from '@/services/auth-service';
 import UserService from '@/services/user-service';
 import CookieService from '@/services/cookie-service';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   full_name: string;
