@@ -22,6 +22,7 @@ from datetime import timedelta
 from typing import Callable, Optional
 from uuid import uuid4
 
+from config import AppConfig
 from src.domains.auth.exceptions import (
     FirebaseVerificationError,
     FullNameRequiredError,
@@ -41,6 +42,7 @@ from src.domains.auth.ports import (
     UserRepository,
 )
 from src.domains.auth.schemas import (
+    DevSignIn,
     FirebaseSignIn,
     RequestOtp,
     SessionResponse,
@@ -153,6 +155,79 @@ class AuthService:
                 changed = True
             if identity.email and not user.is_email_verified and identity.email_verified:
                 user.is_email_verified = True
+                changed = True
+            if changed:
+                user = await self._users.update(user)
+
+        return await self._issue_session(user, is_new_user)
+    
+        # --------------------------------------------------------------- OTP: phone/email
+    async def request_otp(self, payload: RequestOtp) -> None:
+        channel = OtpChannel(payload.channel)
+        code = await self._otp_store.issue_code(channel, payload.identifier)
+        sender = self._otp_senders[channel]
+        await sender.send_otp(payload.identifier, code)
+
+    async def verify_otp(self, payload: VerifyOtp) -> SessionResponse:
+        channel = OtpChannel(payload.channel)
+        ok = await self._otp_store.verify_and_consume(
+            channel, payload.identifier, payload.code
+        )
+        if not ok:
+            raise OtpInvalidOrExpiredError("Invalid or expired code")
+
+        if channel == OtpChannel.phone:
+            user = await self._users.get_by_phone_number(payload.identifier)
+        else:
+            user = await self._users.get_by_email(payload.identifier)
+
+        is_new_user = user is None
+        if user is None:
+            if not payload.full_name:
+                raise FullNameRequiredError(
+                    "full_name is required to complete registration"
+                )
+            user = await self._provision_user(
+                phone_number=payload.identifier if channel == OtpChannel.phone else None,
+                email=payload.identifier if channel == OtpChannel.email else None,
+                full_name=payload.full_name,
+                is_phone_verified=channel == OtpChannel.phone,
+                is_email_verified=channel == OtpChannel.email,
+            )
+        else:
+            user = await self._mark_verified_if_needed(user, channel)
+
+        return await self._issue_session(user, is_new_user)
+
+    # ------------------------------------------------------------- Offline dev sign in
+    async def sign_in_dev(self, payload: DevSignIn) -> SessionResponse:
+        allowed_emails = AppConfig.DEV_EMAILS.split(",")
+        print(allowed_emails)
+        if payload.email not in allowed_emails:
+            raise Exception("")
+
+        user = await self._users.get_by_email(payload.email)
+ 
+        is_new_user = user is None
+        if user is None:
+            full_name = payload.full_name or payload.full_name
+            if not full_name:
+                raise FullNameRequiredError(
+                    "full_name is required to complete registration"
+                )
+            user = await self._provision_user(
+                phone_number=None,
+                email=payload.email,
+                full_name=full_name,
+                is_phone_verified=False,
+                is_email_verified=False,
+                firebase_uid=None,
+                profile_picture_url="",
+            )
+        else:
+            changed = False
+            if user.firebase_uid is None:
+                user.firebase_uid = None
                 changed = True
             if changed:
                 user = await self._users.update(user)

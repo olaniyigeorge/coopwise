@@ -49,6 +49,10 @@ class FirebaseSignIn(BaseModel):
     # of a given firebase_uid with no email Firebase already gave us.
     full_name: Optional[str] = None
 
+class DevSignIn(BaseModel):
+    email: str
+    full_name: Optional[str] = None
+
 
 class AuthenticatedUser(BaseModel):
     """Identity carried on OUR platform JWT, reconstructed on every

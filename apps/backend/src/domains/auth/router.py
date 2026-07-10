@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.domains.auth.dependencies import get_auth_service
 from src.domains.auth.exceptions import (
+    AuthDomainError,
     FirebaseVerificationError,
     FullNameRequiredError,
     InvalidTokenTypeError,
@@ -19,6 +20,7 @@ from src.domains.auth.exceptions import (
     UserNotFoundError,
 )
 from src.domains.auth.schemas import (
+    DevSignIn,
     FirebaseSignIn,
     RequestOtp,
     SessionResponse,
@@ -88,3 +90,19 @@ async def refresh_session(
         raise HTTPException(status_code=404, detail=str(e))
     except (InvalidTokenTypeError, TokenExpiredError) as e:
         raise HTTPException(status_code=401, detail=str(e))
+
+
+
+@router.post("/dev-sign-in", response_model=SessionResponse)
+async def sign_in_dev(
+    payload: DevSignIn,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Ofline signin for developers with connecting to the internet. Same signature as 
+    OAuth but works offline."""
+    try:
+        return await auth_service.sign_in_dev(payload)
+    except AuthDomainError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    except FullNameRequiredError as e:
+        raise HTTPException(status_code=400, detail=str(e))
