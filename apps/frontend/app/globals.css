@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Stack+Sans+Notch:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -14,21 +14,53 @@ body {
   .text-balance {
     text-wrap: balance;
   }
-  
+
   .text-brand-dark {
     color: #1E1E1E;
   }
-  
+
   .text-brand-teal {
     color: #096157;
   }
-  
+
   .text-brand-olive {
     color: #6b8e23;
   }
-  
+
   .text-brand-secondary {
     color: #585858;
+  }
+
+  /* ---- Ledger design system ---- */
+  /* Deep ink — near-black, used for headline copy and dark sections */
+  .text-brand-ink { color: #0B1712; }
+  .bg-brand-ink { background-color: #0B1712; }
+
+  /* Paper — warm off-white background, the "passbook page" */
+  .bg-brand-paper { background-color: #F7F4EC; }
+
+  /* Ledger gold — the stamp/seal accent, used sparingly */
+  .text-brand-gold { color: #B8892B; }
+  .bg-brand-gold { background-color: #B8892B; }
+  .border-brand-gold { border-color: #B8892B; }
+
+  /* Display typeface — used only for headlines, sparingly and with weight */
+  .font-display {
+    font-family: 'Stack Sans Notch', 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  /* Tally-mark rule — a nod to how contributions were counted before CoopWise */
+  .tally-divider {
+    background-image: repeating-linear-gradient(
+      90deg,
+      currentColor 0px,
+      currentColor 2px,
+      transparent 2px,
+      transparent 10px
+    );
+    height: 2px;
+    opacity: 0.35;
   }
 
   /* Mobile Safe Areas */
@@ -43,61 +75,44 @@ body {
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0.5rem);
   }
-  
+
   /* Touch Target Improvements */
   .touch-manipulation {
     touch-action: manipulation;
   }
-  
+
   /* Mobile Fixes */
   .toast-responsive {
     max-width: calc(100vw - 2rem);
   }
-  
+
   /* Responsive Text Size Classes */
-  .text-responsive-xs {
-    @apply text-xs sm:text-sm;
-  }
-  
-  .text-responsive-sm {
-    @apply text-sm sm:text-base;
-  }
-  
-  .text-responsive-base {
-    @apply text-base sm:text-lg;
-  }
-  
-  .text-responsive-lg {
-    @apply text-lg sm:text-xl;
-  }
-  
-  .text-responsive-xl {
-    @apply text-xl sm:text-2xl;
-  }
+  .text-responsive-xs { @apply text-xs sm:text-sm; }
+  .text-responsive-sm { @apply text-sm sm:text-base; }
+  .text-responsive-base { @apply text-base sm:text-lg; }
+  .text-responsive-lg { @apply text-lg sm:text-xl; }
+  .text-responsive-xl { @apply text-xl sm:text-2xl; }
 
   /* Responsive Spacing */
-  .gap-responsive-sm {
-    @apply gap-1 sm:gap-2;
-  }
-  
-  .gap-responsive-md {
-    @apply gap-2 sm:gap-3 lg:gap-4;
-  }
-  
-  .gap-responsive-lg {
-    @apply gap-3 sm:gap-4 lg:gap-6;
-  }
+  .gap-responsive-sm { @apply gap-1 sm:gap-2; }
+  .gap-responsive-md { @apply gap-2 sm:gap-3 lg:gap-4; }
+  .gap-responsive-lg { @apply gap-3 sm:gap-4 lg:gap-6; }
 
-  .p-responsive-sm {
-    @apply p-2 sm:p-3 lg:p-4;
+  .p-responsive-sm { @apply p-2 sm:p-3 lg:p-4; }
+  .p-responsive-md { @apply p-3 sm:p-4 lg:p-5; }
+  .p-responsive-lg { @apply p-4 sm:p-6 lg:p-8; }
+
+  /* Marquee for the testimonials slider */
+  @keyframes marquee-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
   }
-  
-  .p-responsive-md {
-    @apply p-3 sm:p-4 lg:p-5;
+  .animate-marquee {
+    animation: marquee-scroll 42s linear infinite;
   }
-  
-  .p-responsive-lg {
-    @apply p-4 sm:p-6 lg:p-8;
+  .animate-marquee:hover,
+  .marquee-track:hover .animate-marquee {
+    animation-play-state: paused;
   }
 }
 
@@ -122,6 +137,9 @@ body {
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
     --ring: 168 94% 20%;
+    --gold: 38 61% 45%; /* #B8892B ledger gold */
+    --ink: 156 27% 7%; /* #0B1712 */
+    --paper: 43 33% 94%; /* #F7F4EC */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -144,7 +162,7 @@ body {
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 168 94% 20%; /* #096157 (teal) */
+    --primary: 168 94% 20%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
@@ -187,25 +205,16 @@ body {
     background-repeat: no-repeat;
   }
 
-  /* Add support for extra small screens */
   @media (min-width: 400px) {
-    .xs\:inline {
-      display: inline;
-    }
-    .xs\:block {
-      display: block;
-    }
-    .xs\:hidden {
-      display: none;
-    }
+    .xs\:inline { display: inline; }
+    .xs\:block { display: block; }
+    .xs\:hidden { display: none; }
   }
-  
-  /* Improve input focus states on mobile */
+
   input, textarea, select {
     @apply focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
   }
-  
-  /* Improve button touch target sizes */
+
   button, .button, [type="button"], [type="submit"] {
     @apply min-h-[40px] min-w-[40px];
   }

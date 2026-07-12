@@ -50,9 +50,9 @@ export const metadata: Metadata = {
     creator: '@coopwise',
   },
   icons: {
-    icon: '/images/coopwise-logo.svg',
-    shortcut: '/images/coopwise-logo.svg',
-    apple: '/images/coopwise-logo.svg',
+    icon: "/icons/coopwise-logo.png",
+    shortcut: "/icons/coopwise-logo.png",
+    apple: "/icons/coopwise-logo.png",
   },
   manifest: '/manifest.json',
 }

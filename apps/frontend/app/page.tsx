@@ -1,12 +1,13 @@
 "use client"
 
-import Navbar from '@/components/navbar'
-import Hero from '@/components/hero'
-import Features from '@/components/features'
-import HowItWorks from '@/components/how-it-works'
-import Testimonials from '@/components/testimonials'
-import Footer from '@/components/footer'
-import ScrollToTop from '@/components/scroll-to-top'
+import Navbar from '@/components/homepage/navbar'
+import Hero from '@/components/homepage/hero'
+import Features from '@/components/homepage/features'
+import ComingSoon from '@/components/homepage/coming-soon'
+import HowItWorks from '@/components/homepage/how-it-works'
+import Testimonials from '@/components/homepage/testimonials'
+import Footer from '@/components/homepage/footer'
+import ScrollToTop from '@/components/homepage/scroll-to-top'
 
 export default function HomePage() {
   return (
@@ -14,6 +15,9 @@ export default function HomePage() {
       <Navbar />
       <Hero />
       <Features />
+      <div id="coming-soon">
+        <ComingSoon />
+      </div>
       <HowItWorks />
       <Testimonials />
       <Footer />

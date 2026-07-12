@@ -4,6 +4,7 @@ from fastapi import Depends
 from redis.asyncio.client import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.infra.security.password_hasher import BcryptPasswordHasher
 from src.shared.utils.logger import logger
 from config import AppConfig as config
 from src.api.middlewares.dependencies import get_redis
@@ -85,6 +86,7 @@ def get_auth_service(
         otp_senders=_otp_senders,
         firebase_verifier=_firebase_verifier,
         token_service=JoseTokenService(config.APP_SECRET_KEY, config.ALGORITHM),
+        password_hasher=BcryptPasswordHasher(),
         clock=SystemClock(),
         notifier=NotificationServiceAuthNotifier(db),
         on_user_authenticated=_dispatch_wallet_provisioning,

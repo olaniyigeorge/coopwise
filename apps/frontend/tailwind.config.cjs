@@ -29,6 +29,9 @@ module.exports = {
         sans: ['Inter', 'sans-serif'],
       },
       colors: {
+        'brand-paper': '#fbf9f3',
+        'brand-ink': '#0B1712',
+        'brand-gold': '#B8892B',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

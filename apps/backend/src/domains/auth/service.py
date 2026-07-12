@@ -26,6 +26,7 @@ from config import AppConfig
 from src.domains.auth.exceptions import (
     FirebaseVerificationError,
     FullNameRequiredError,
+    InvalidCredentialsError,
     InvalidTokenTypeError,
     OtpInvalidOrExpiredError,
     TokenExpiredError,
@@ -38,12 +39,13 @@ from src.domains.auth.ports import (
     OtpChannel,
     OtpSenderPort,
     OtpStorePort,
+    PasswordHasherPort,
     TokenServicePort,
     UserRepository,
 )
 from src.domains.auth.schemas import (
-    DevSignIn,
     FirebaseSignIn,
+    PasswordSignIn,
     RequestOtp,
     SessionResponse,
     SessionUser,
@@ -65,6 +67,7 @@ class AuthService:
         otp_senders: dict[OtpChannel, OtpSenderPort],
         firebase_verifier: FirebaseVerifierPort,
         token_service: TokenServicePort,
+        password_hasher: PasswordHasherPort,
         clock: ClockPort,
         notifier: Optional[AuthNotifierPort] = None,
         on_user_authenticated: Optional[Callable[[User, str], None]] = None,
@@ -75,6 +78,7 @@ class AuthService:
         self._firebase = firebase_verifier
         self._tokens = token_service
         self._clock = clock
+        self._passwords = password_hasher
         self._notifier = notifier
         # Callback into infra/tasks.py's Celery dispatch. Injected rather
         # than imported so this file has zero Celery/infra dependency —
@@ -113,11 +117,65 @@ class AuthService:
                 full_name=payload.full_name,
                 is_phone_verified=channel == OtpChannel.phone,
                 is_email_verified=channel == OtpChannel.email,
+                password=payload.password,          # NEW — only used on registration
             )
         else:
             user = await self._mark_verified_if_needed(user, channel)
 
         return await self._issue_session(user, is_new_user)
+    
+    async def _provision_user(
+        self,
+        *,
+        phone_number: Optional[str],
+        email: Optional[str],
+        full_name: str,
+        is_phone_verified: bool,
+        is_email_verified: bool,
+        firebase_uid: Optional[str] = None,
+        profile_picture_url: Optional[str] = None,
+        password: Optional[str] = None,                 # NEW
+    ) -> User:
+        username = await self._generate_unique_username(email, phone_number)
+        user = User(
+            id=uuid4(),
+            username=username,
+            email=email,
+            phone_number=phone_number,
+            full_name=full_name,
+            firebase_uid=firebase_uid,
+            profile_picture_url=profile_picture_url,
+            is_email_verified=is_email_verified,
+            is_phone_verified=is_phone_verified,
+            role=UserRoles.user,
+            password=self._passwords.hash(password) if password else None,   # NEW
+        )
+        user = await self._users.add(user)
+        if self._notifier is not None:
+            await self._notifier.notify_user_registered(user)
+        return user
+    
+    # ------------------------------------------------------------- Password Sign In with Email or phonenumber
+    async def sign_in_with_password(self, payload: PasswordSignIn) -> SessionResponse:
+        identifier = payload.identifier.strip()
+        is_email = "@" in identifier
+
+        user = (
+            await self._users.get_by_email(identifier)
+            if is_email
+            else await self._users.get_by_phone_number(identifier)
+        )
+
+        # Deliberately identical error for "no such user", "no password set",
+        # and "wrong password" — don't give an attacker an account-enumeration
+        # oracle via three different failure messages.
+        if user is None or not user.password:
+            raise InvalidCredentialsError("Invalid email/phone or password")
+
+        if not self._passwords.verify(payload.password, user.password):
+            raise InvalidCredentialsError("Invalid email/phone or password")
+
+        return await self._issue_session(user, is_new_user=False)
 
     # ------------------------------------------------------------- Firebase / Google
     async def sign_in_with_firebase(self, payload: FirebaseSignIn) -> SessionResponse:
@@ -196,41 +254,6 @@ class AuthService:
             )
         else:
             user = await self._mark_verified_if_needed(user, channel)
-
-        return await self._issue_session(user, is_new_user)
-
-    # ------------------------------------------------------------- Offline dev sign in
-    async def sign_in_dev(self, payload: DevSignIn) -> SessionResponse:
-        allowed_emails = AppConfig.DEV_EMAILS.split(",")
-        print(allowed_emails)
-        if payload.email not in allowed_emails:
-            raise Exception("")
-
-        user = await self._users.get_by_email(payload.email)
- 
-        is_new_user = user is None
-        if user is None:
-            full_name = payload.full_name or payload.full_name
-            if not full_name:
-                raise FullNameRequiredError(
-                    "full_name is required to complete registration"
-                )
-            user = await self._provision_user(
-                phone_number=None,
-                email=payload.email,
-                full_name=full_name,
-                is_phone_verified=False,
-                is_email_verified=False,
-                firebase_uid=None,
-                profile_picture_url="",
-            )
-        else:
-            changed = False
-            if user.firebase_uid is None:
-                user.firebase_uid = None
-                changed = True
-            if changed:
-                user = await self._users.update(user)
 
         return await self._issue_session(user, is_new_user)
 

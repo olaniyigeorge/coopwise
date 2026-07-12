@@ -2,7 +2,7 @@ import axios from 'axios';
 import AuthService from './auth-service';
 import CookieService from './cookie-service';
 
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.com';
 
 interface UpdateUserData {
   id?: string;
@@ -12,15 +12,14 @@ interface UpdateUserData {
   income_range?: string | null;
   saving_frequency?: string | null;
   username?: string;
-  email?: string;
+  email?: string | null;
   full_name?: string;
-  phone_number?: string;
+  phone_number?: string | null;
   role?: string;
   is_email_verified?: boolean;
   is_phone_verified?: boolean;
   created_at?: string;
   updated_at?: string;
-  // Add more fields as needed
 }
 
 // Format the data to match the API expectations

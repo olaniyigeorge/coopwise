@@ -5,8 +5,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import Navbar from '@/components/navbar'
-import Footer from '@/components/footer'
+import Navbar from '@/components/homepage/navbar'
+import Footer from '@/components/homepage/footer'
 import CTA from '@/components/cta'
 import { CheckCircle, Users, DollarSign, TrendingUp, Shield, Zap } from 'lucide-react'
 import HowItWorksTimeline from '@/components/how-it-works-timeline'

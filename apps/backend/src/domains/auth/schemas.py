@@ -16,7 +16,7 @@ CHANGED vs the Crossmint-Auth version:
 """
 from typing import Annotated, Optional
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, EmailStr, constr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, constr
 
 from src.domains.auth.ports import OtpChannel
 from src.domains.users.models import UserRoles
@@ -49,9 +49,17 @@ class FirebaseSignIn(BaseModel):
     # of a given firebase_uid with no email Firebase already gave us.
     full_name: Optional[str] = None
 
-class DevSignIn(BaseModel):
-    email: str
+class VerifyOtp(BaseModel):
+    channel: str
+    identifier: str
+    code: str
     full_name: Optional[str] = None
+    password: Optional[str] = Field(default=None, min_length=8)  # registration only
+
+
+class PasswordSignIn(BaseModel):
+    identifier: str  # email or phone number
+    password: str
 
 
 class AuthenticatedUser(BaseModel):

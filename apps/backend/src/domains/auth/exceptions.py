@@ -14,6 +14,10 @@ class AuthDomainError(Exception):
 class OtpDeliveryError(AuthDomainError):
     """SMS/email provider failed to send the code."""
 
+    
+class InvalidCredentialsError(AuthDomainError):
+    """Identifier/password mismatch, or account has no password set.
+    Deliberately generic — don't let this leak whether an account exists."""
 
 class OtpRateLimitedError(AuthDomainError):
     """Too many OTP requests for this identifier too recently."""

@@ -12,6 +12,7 @@ from src.domains.auth.exceptions import (
     AuthDomainError,
     FirebaseVerificationError,
     FullNameRequiredError,
+    InvalidCredentialsError,
     InvalidTokenTypeError,
     OtpDeliveryError,
     OtpInvalidOrExpiredError,
@@ -20,8 +21,8 @@ from src.domains.auth.exceptions import (
     UserNotFoundError,
 )
 from src.domains.auth.schemas import (
-    DevSignIn,
     FirebaseSignIn,
+    PasswordSignIn,
     RequestOtp,
     SessionResponse,
     VerifyOtp,
@@ -63,7 +64,19 @@ async def verify_otp(
     except FullNameRequiredError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
+@router.post("/login", response_model=SessionResponse)
+async def sign_in_with_password(
+    payload: PasswordSignIn,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Traditional email/phone + password sign-in, for users who
+    registered via OTP and set a password (no Google account required)."""
+    try:
+        return await auth_service.sign_in_with_password(payload)
+    except InvalidCredentialsError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    
+    
 @router.post("/firebase", response_model=SessionResponse)
 async def sign_in_with_firebase(
     payload: FirebaseSignIn,
@@ -90,19 +103,3 @@ async def refresh_session(
         raise HTTPException(status_code=404, detail=str(e))
     except (InvalidTokenTypeError, TokenExpiredError) as e:
         raise HTTPException(status_code=401, detail=str(e))
-
-
-
-@router.post("/dev-sign-in", response_model=SessionResponse)
-async def sign_in_dev(
-    payload: DevSignIn,
-    auth_service: AuthService = Depends(get_auth_service),
-):
-    """Ofline signin for developers with connecting to the internet. Same signature as 
-    OAuth but works offline."""
-    try:
-        return await auth_service.sign_in_dev(payload)
-    except AuthDomainError as e:
-        raise HTTPException(status_code=401, detail=str(e))
-    except FullNameRequiredError as e:
-        raise HTTPException(status_code=400, detail=str(e))

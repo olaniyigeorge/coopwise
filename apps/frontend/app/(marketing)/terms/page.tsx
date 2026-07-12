@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { Separator } from "@/components/ui/separator"
-import Navbar from '@/components/navbar'
-import Footer from '@/components/footer'
+import Navbar from '@/components/homepage/navbar'
+import Footer from '@/components/homepage/footer'
 import { FileText, Shield, Users, AlertCircle } from 'lucide-react'
 
 export default function TermsPage() {

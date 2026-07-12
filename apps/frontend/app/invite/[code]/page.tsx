@@ -56,7 +56,7 @@ export default function InvitePreviewPage() {
     localStorage.setItem("pendingInviteCode", code);
     if (group?.name) localStorage.setItem("pendingGroupName", group.name);
     router.push(
-      `/auth/login?returnUrl=${decodeURIComponent(`/invite/${code}/join`)}`
+      `/login?returnUrl=${decodeURIComponent(`/invite/${code}/join`)}`
     );
   };
 

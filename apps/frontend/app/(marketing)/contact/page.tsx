@@ -10,8 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import Navbar from '@/components/navbar'
-import Footer from '@/components/footer'
+import Navbar from '@/components/homepage/navbar'
+import Footer from '@/components/homepage/footer'
 import ComingSoonWrapper from '@/components/ui/coming-soon-wrapper'
 import { 
   Mail, 

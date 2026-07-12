@@ -40,7 +40,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!isAuthenticated && !loading) {
-      router.push('/auth/login')
+      router.push('/login')
     }
   }, [isAuthenticated, router, loading])
 

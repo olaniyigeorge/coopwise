@@ -219,3 +219,72 @@ const AuthService = {
 };
 
 export default AuthService; 
+
+
+
+
+
+
+
+import type { User as FirebaseUser } from "firebase/auth"
+
+export type SessionUser = {
+  id: string
+  username: string
+  email: string | null
+  phone_number: string | null
+  full_name: string
+  role: string
+  profile_picture_url: string | null
+  onboarding_status: string
+}
+
+export type SessionResult = {
+  is_new_user: boolean
+  user: SessionUser
+}
+
+class ApiError extends Error {
+  detail: string
+  status: number
+  constructor(detail: string, status: number) {
+    super(detail)
+    this.detail = detail
+    this.status = status
+  }
+}
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new ApiError(data?.detail ?? "Something went wrong.", res.status)
+  }
+  return data as T
+}
+
+export const requestOtp = (channel: "email" | "phone", identifier: string) =>
+  postJson<void>("/api/auth/request-otp", { channel, identifier })
+
+export const verifyOtpAndRegister = (params: {
+  channel: "email" | "phone"
+  identifier: string
+  code: string
+  full_name: string
+  password: string
+}) => postJson<SessionResult>("/api/auth/verify-otp", params)
+
+export const signInWithPassword = (identifier: string, password: string) =>
+  postJson<SessionResult>("/api/auth/login", { identifier, password })
+
+export const signInWithFirebase = (firebaseUser: FirebaseUser, fullNameOverride?: string) =>
+  firebaseUser.getIdToken().then((firebase_id_token) =>
+    postJson<SessionResult>("/api/auth/firebase", {
+      firebase_id_token,
+      full_name: fullNameOverride || firebaseUser.displayName || "",
+    })
+  )

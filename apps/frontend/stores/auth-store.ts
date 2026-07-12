@@ -6,12 +6,11 @@ import CookieService from '@/services/cookie-service';
 
 export interface User {
   id: string;
-  email: string;
+  email: string | null;
   full_name: string;
   username: string;
-  phone_number: string;
+  phone_number: string | null;
   role: string;
-  /** Flow blockchain address — set after Crossmint wallet provisioning + backend sync */
   flow_address?: string | null;
   [key: string]: any;
 }

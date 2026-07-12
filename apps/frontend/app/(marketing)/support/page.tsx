@@ -1,510 +1,541 @@
 "use client"
 
 import React from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import Navbar from '@/components/navbar'
-import Footer from '@/components/footer'
-import { 
-  HelpCircle, 
-  MessageCircle, 
-  Phone, 
-  Mail, 
-  BookOpen, 
-  Users, 
-  Shield, 
+import Navbar from '@/components/homepage/navbar'
+import Footer from '@/components/homepage/footer'
+import ScrollToTop from '@/components/homepage/scroll-to-top'
+import {
+  HelpCircle,
+  MessageCircle,
+  Phone,
+  Mail,
+  BookOpen,
+  Users,
+  ShieldCheck,
   CreditCard,
   Settings,
   AlertTriangle,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Map,
+  ArrowRight
 } from 'lucide-react'
 
+// A card with the same liquid-fill hover used across the homepage and About page —
+// keeps Support visually part of the same product, not a bolted-on help widget.
+function LiquidCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`group relative overflow-hidden bg-white rounded-xl border border-brand-ink/10 hover:border-transparent hover:shadow-xl transition-[border-color,box-shadow] duration-500 ${className}`}>
+      <div
+        aria-hidden
+        className="absolute inset-x-[-10%] -bottom-[25%] h-[150%] rounded-b-[25%] bg-gradient-to-t from-primary to-[#0d7a6e]
+          -translate-y-full transition-transform duration-700 ease-in
+          group-hover:translate-y-0 group-hover:duration-300 group-hover:ease-out"
+      />
+      <div className="relative z-10">{children}</div>
+    </div>
+  )
+}
+
 export default function SupportPage() {
-    const supportOptions = [    {      icon: <MessageCircle className="w-6 h-6 text-primary" />,      title: "Live Chat",      description: "Get instant help from our support team",      availability: "Available 24/7",      action: "Start Chat",      recommended: true,      comingSoon: true    },    {      icon: <Phone className="w-6 h-6 text-primary" />,      title: "Phone Support",      description: "Speak directly with our experts",      availability: "Mon-Fri, 9AM-6PM EST",      action: "Call Now",      recommended: false,      link: "tel:+2348144441712"    },    {      icon: <Mail className="w-6 h-6 text-primary" />,      title: "Email Support",      description: "Send us a detailed message now",      availability: "Response within 24 hours",      action: "Send Email",      recommended: false,      link: "mailto:hellocoopwise@gmail.com"    },    {      icon: <BookOpen className="w-6 h-6 text-primary" />,      title: "Help Center",      description: "Browse our comprehensive guides",      availability: "Available anytime",      action: "Browse Guides",      recommended: false,      comingSoon: true    }  ]
+  const supportOptions = [
+    {
+      icon: <MessageCircle className="w-6 h-6" />,
+      title: "Live Chat",
+      description: "Instant answers from a real person on our team",
+      availability: "Launching soon",
+      action: "Start Chat",
+      comingSoon: true
+    },
+    {
+      icon: <Phone className="w-6 h-6" />,
+      title: "Phone",
+      description: "Talk it through with someone directly",
+      availability: "Mon–Fri, 9AM–6PM WAT",
+      action: "Call Now",
+      link: "tel:+2348144441712"
+    },
+    {
+      icon: <Mail className="w-6 h-6" />,
+      title: "Email",
+      description: "Send the details, we'll dig into it properly",
+      availability: "We reply within 24 hours",
+      action: "Send Email",
+      link: "mailto:hellocoopwise@gmail.com"
+    },
+    {
+      icon: <BookOpen className="w-6 h-6" />,
+      title: "Help Center",
+      description: "Self-serve guides for every part of CoopWise",
+      availability: "Launching soon",
+      action: "Browse Guides",
+      comingSoon: true
+    }
+  ]
 
   const supportCategories = [
     {
-      icon: <Users className="w-8 h-8 text-primary" />,
+      icon: <Users className="w-7 h-7" />,
       title: "Group Management",
-      description: "Creating, joining, and managing your savings groups",
+      description: "Creating, joining, and running your savings circle",
       topics: [
-        "How to create a new savings group",
-        "Inviting members to your group",
-        "Setting contribution schedules",
-        "Managing group permissions",
-        "Leaving or dissolving a group"
+        "Starting a new savings group",
+        "Inviting members you trust",
+        "Setting your contribution schedule",
+        "Admin permissions, explained",
+        "Leaving a group properly"
       ]
     },
     {
-      icon: <CreditCard className="w-8 h-8 text-primary" />,
-      title: "Payments & Transactions",
-      description: "Everything about contributions, withdrawals, and payments",
+      icon: <CreditCard className="w-7 h-7" />,
+      title: "Contributions & Payouts",
+      description: "Everything about money moving in and out",
       topics: [
-        "Adding payment methods",
-        "Making contributions",
-        "Withdrawal process",
-        "Transaction history",
-        "Payment troubleshooting"
+        "Adding a payment method",
+        "Making a contribution",
+        "How payouts are calculated",
+        "Reading your transaction history",
+        "When a payment doesn't go through"
       ]
     },
     {
-      icon: <Shield className="w-8 h-8 text-primary" />,
+      icon: <ShieldCheck className="w-7 h-7" />,
       title: "Security & Privacy",
-      description: "Account security, privacy settings, and data protection",
+      description: "Keeping your account and your circle's data safe",
       topics: [
-        "Two-factor authentication setup",
-        "Privacy settings management",
+        "Setting up two-factor login",
+        "Who can see your contribution history",
         "Reporting suspicious activity",
-        "Data export and deletion",
-        "Account recovery"
+        "Requesting your data",
+        "Recovering a locked account"
       ]
     },
     {
-      icon: <Settings className="w-8 h-8 text-primary" />,
+      icon: <Settings className="w-7 h-7" />,
       title: "Account Settings",
-      description: "Profile management, notifications, and preferences",
+      description: "Your profile, notifications, and verification",
       topics: [
-        "Updating profile information",
-        "Notification preferences",
-        "Linking bank accounts",
-        "Identity verification",
-        "Account deactivation"
+        "Updating your profile",
+        "Choosing what CoopWise reminds you about",
+        "Linking a bank account or card",
+        "Identity verification, explained",
+        "Deactivating your account"
       ]
     }
   ]
 
-    const quickAnswers = [    {      
-      question: "How do I reset my password?",      
+  const quickAnswers = [
+    {
+      question: "How do I reset my password?",
       answer: (
         <div className="space-y-2">
           <p>To reset your password:</p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Go to the CoopWise login page and click &apos;Forgot Password&apos;.</li>
-            <li>Enter the email address associated with your account.</li>
-            <li>Check your email for a secure reset link (also check spam/junk folders).</li>
-            <li>Click the link and create a new strong password with at least 8 characters, including uppercase, lowercase, numbers, and symbols.</li>
-            <li>Log in with your new password.</li>
+            <li>Go to the CoopWise login page and select "Forgot Password."</li>
+            <li>Enter the email address tied to your account.</li>
+            <li>Check your inbox for a reset link — and your spam folder, just in case.</li>
+            <li>Set a new password (8+ characters, a mix of letters, numbers, and symbols).</li>
+            <li>Log in as normal.</li>
           </ol>
-          <p>If you don&apos;t receive the email within 10 minutes, contact our support team for immediate assistance.</p>
+          <p>No email after 10 minutes? Reach out and we'll sort it out directly.</p>
         </div>
       )
-    },    {      
-      question: "Is my money safe with CoopWise?",      
+    },
+    {
+      question: "Is my money actually safe with CoopWise?",
       answer: (
         <div className="space-y-2">
-          <p>Absolutely. Your financial security is our highest priority. CoopWise employs multiple security layers:</p>
+          <p>
+            Contributions move through Paystack, a regulated payment processor already used across 
+            Nigerian fintech — CoopWise never stores your card or bank credentials directly. Every contribution and payout is logged
+            and visible to your group in real time, which is the actual safeguard: a record nobody
+            can quietly alter after the fact.
+          </p>
+          <p>
+            We're a small, early-stage team, and we'd rather say that plainly than borrow language
+            (deposit insurance, "bank-level" guarantees) that doesn't reflect where we are today.
+            As the roadmap below shows, we're building toward on-chain, independently auditable
+            escrow — that's the direction, not a promise about right now.
+          </p>
+        </div>
+      )
+    },
+    {
+      question: "Can I leave a savings group anytime?",
+      answer: (
+        <div className="space-y-2">
+          <p>Yes — you're never locked in. To leave:</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>Open your group settings and select "Leave Group."</li>
+            <li>Review any pending contributions or upcoming payouts your exit might affect.</li>
+            <li>Worth a conversation with the group first — your departure can shift others' plans.</li>
+            <li>Settle any outstanding obligations under your group's own rules.</li>
+            <li>Confirm.</li>
+          </ol>
+          <p>Your contribution history stays visible, and you're paid out according to the group's agreed structure.</p>
+        </div>
+      )
+    },
+    {
+      question: "How do I invite people to my group?",
+      answer: (
+        <div className="space-y-2">
+          <p>From your group dashboard, select "Invite Members." From there you can:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Bank-level 256-bit SSL encryption</li>
-            <li>Partnerships with FDIC-insured financial institutions</li>
-            <li>24/7 transaction monitoring</li>
-            <li>Multi-factor authentication</li>
-            <li>Segregated account management</li>
+            <li>Share your group's unique link by text, email, or social</li>
+            <li>Hand out the invite code for manual entry</li>
+            <li>Require admin approval before new members join</li>
           </ul>
-          <p>We never store banking credentials and undergo regular security audits. Your funds are held separately from our operational accounts and are always accessible to you. We maintain comprehensive insurance coverage and comply with all financial regulations.</p>
+          <p>Every invite carries the group's rules and contribution terms, so nobody joins without knowing what they're signing up for.</p>
         </div>
       )
-    },    {      
-      question: "Can I leave a savings group anytime?",      
+    },
+    {
+      question: "What happens if someone doesn't pay?",
       answer: (
         <div className="space-y-2">
-          <p>Yes, you have complete freedom to leave any savings group. Here&apos;s the process:</p>
+          <p>Today, that's handled by your group directly:</p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Navigate to your group settings and select &apos;Leave Group&apos;.</li>
-            <li>Review any pending contributions or upcoming payouts that might be affected.</li>
-            <li>Consider discussing with group members first, as your departure may impact their savings plans.</li>
-            <li>Complete any outstanding financial obligations according to your group&apos;s rules.</li>
-            <li>Confirm your departure.</li>
+            <li>Reminders go out before a due date, and again if it's missed.</li>
+            <li>Group admins can set grace periods or agree on a payment plan.</li>
+            <li>The full contribution record is visible to everyone, so there's no ambiguity about who owes what.</li>
+            <li>Persistent non-payment is a group decision — CoopWise doesn't override that.</li>
           </ol>
-          <p>Your contribution history remains transparent, and you&apos;ll receive your share according to the group&apos;s established payout structure.</p>
+          <p>
+            AI-assisted dispute resolution — reviewing the record and proposing a fair outcome
+            automatically — is on our roadmap, not live yet. We'll say so here the day it ships.
+          </p>
         </div>
       )
-    },    {      
-      question: "How do I invite people to my group?",      
+    },
+    {
+      question: "How much does CoopWise cost?",
       answer: (
         <div className="space-y-2">
-          <p>Inviting members is simple and secure:</p>
-          <ol className="list-decimal pl-5 space-y-1">
-            <li>Access your group dashboard and click &apos;Manage Members&apos; or &apos;Invite&apos;.</li>
-            <li>Choose your preferred method: share the unique group link via text, email, or social media; provide the group&apos;s invite code for manual entry; or send direct app invitations.</li>
-            <li>Set invitation permissions - you can require admin approval for new members.</li>
-            <li>Include personalized messages explaining your savings goals.</li>
-            <li>Track invitation status and approve/decline requests as needed.</li>
-          </ol>
-          <p>All invitations include group details, rules, and contribution requirements for transparency.</p>
+          <p>
+            Creating and joining a group is free today. We haven't finalized a pricing model yet,
+            and we're not going to publish numbers before they're real. When there's anything to
+            pay for, it'll be small, clearly disclosed, and never a surprise deducted from your
+            group's savings.
+          </p>
         </div>
       )
-    },    {      
-      question: "What happens if someone doesn&apos;t pay?",      
+    },
+    {
+      question: "How do I reach customer support?",
       answer: (
         <div className="space-y-2">
-          <p>CoopWise has comprehensive systems to handle missed payments fairly:</p>
-          <ol className="list-decimal pl-5 space-y-1">
-            <li>Automatic reminders are sent before due dates and after missed payments.</li>
-            <li>Flexible options include payment plans, deadline extensions, or temporary contribution adjustments.</li>
-            <li>Group admins can set grace periods and late payment policies.</li>
-            <li>Our mediation team can help resolve persistent issues and facilitate group discussions.</li>
-            <li>Repeat offenders may face group removal through democratic voting.</li>
-            <li>All communication is logged transparently to maintain group trust and accountability.</li>
-          </ol>
-        </div>
-      )
-    },    {      
-      question: "How much does CoopWise cost?",      
-      answer: (
-        <div className="space-y-2">
-          <p>CoopWise offers transparent, affordable pricing:</p>
-          <ul className="space-y-2">
+          <p>Two channels are live right now:</p>
+          <ul className="list-disc pl-5 space-y-1">
             <li>
-              <strong>FREE Basic Plan</strong> includes unlimited group creation, member invitations, contribution tracking, basic analytics, and standard support.
+              <strong>Email</strong> — <a href="mailto:hellocoopwise@gmail.com" className="text-primary hover:underline">hellocoopwise@gmail.com</a>, we reply within 24 hours.
             </li>
             <li>
-              <strong>Premium Plans</strong> start at $9.99/month for advanced features like detailed analytics, priority support, custom contribution schedules, automated reminders, and white-label options for organizations.
-            </li>
-            <li>
-              <strong>Enterprise Solutions</strong> available for large groups (50+ members) with dedicated support and custom features.
+              <strong>Phone</strong> — <a href="tel:+2348144441712" className="text-primary hover:underline">+234 903 7018 310</a>, Mon–Fri, 9AM–6PM WAT.
             </li>
           </ul>
-          <p>No hidden fees, no transaction charges, and all pricing is clearly displayed upfront.</p>
+          <p>Live chat and a full self-serve Help Center are next on the roadmap.</p>
         </div>
       )
-    },    {      
-      question: "How do I contact customer support?",      
+    },
+    {
+      question: "What types of savings groups can I create?",
       answer: (
         <div className="space-y-2">
-          <p>We offer multiple convenient support channels:</p>
-          <ol className="list-decimal pl-5 space-y-1">
-            <li><strong>Live Chat</strong> (recommended) - Available 24/7 through our website or app for instant assistance.</li>
-            <li><strong>Email Support</strong> - Send detailed inquiries to <a href="mailto:hellocoopwise@gmail.com" className="text-primary hover:underline">hellocoopwise@gmail.com</a> with response within 24 hours.</li>
-            <li><strong>Phone Support</strong> - Call <a href="tel:+2348144441712" className="text-primary hover:underline">+234 814 444 1712</a> during business hours (Mon-Fri, 9AM-6PM EST) for direct conversation.</li>
-            <li><strong>Help Center</strong> - Browse our comprehensive self-service knowledge base anytime.</li>
-            <li><strong>Emergency Line</strong> - Available 24/7 for security-related issues or urgent account problems.</li>
-          </ol>
-          <p>Choose the method that works best for your situation.</p>
-        </div>
-      )
-    },    {      
-      question: "What types of savings groups can I create?",      
-      answer: (
-        <div className="space-y-2">
-          <p>CoopWise supports diverse savings group structures to match your goals:</p>
+          <p>Whatever structure your circle already runs on:</p>
           <ul className="space-y-1">
-            <li><strong>Rotating Savings Groups (ROSCAs)</strong> - Members contribute regularly and take turns receiving the full pot.</li>
-            <li><strong>Goal-Based Groups</strong> - Save collectively toward specific targets like vacations, emergency funds, or major purchases.</li>
-            <li><strong>Individual Savings Groups</strong> - Personal accounts with community support and motivation.</li>
-            <li><strong>Family Savings</strong> - Coordinate household savings goals with spouse, children, or extended family.</li>
-            <li><strong>Workplace Groups</strong> - Colleague-based savings for team events or shared goals.</li>
-            <li><strong>Community Groups</strong> - Neighborhood or friend circles saving for mutual support.</li>
+            <li><strong>Rotating groups (ajo/esusu-style)</strong> — regular contributions, members take turns receiving the full pot.</li>
+            <li><strong>Goal-based groups</strong> — saving together toward one shared target.</li>
+            <li><strong>Family circles</strong> — coordinated household savings.</li>
+            <li><strong>Workplace or community groups</strong> — colleagues or neighbors saving side by side.</li>
           </ul>
-          <p>Each type offers customizable rules, contribution schedules, and payout structures.</p>
+          <p>Every group sets its own contribution amount, schedule, and payout order.</p>
         </div>
       )
-    }  ]
+    }
+  ]
 
   const statusItems = [
-    {
-      service: "Platform Status",
-      status: "Operational",
-      icon: <CheckCircle className="w-4 h-4 text-green-500" />
-    },
-    {
-      service: "Payment Processing",
-      status: "Operational", 
-      icon: <CheckCircle className="w-4 h-4 text-green-500" />
-    },
-    {
-      service: "Mobile App",
-      status: "Operational",
-      icon: <CheckCircle className="w-4 h-4 text-green-500" />
-    }
+    { service: "Platform", status: "Operational" },
+    { service: "Payments (Paystack)", status: "Operational" },
+    { service: "Web App", status: "Operational" }
   ]
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      
-      {/* Hero Section */}
-      <section className="max-w-6xl mx-auto px-4 pt-8 md:pt-12 pb-10 md:pb-16">
-        <div className="text-center space-y-4 md:space-y-6">
-          {/* <Badge variant="secondary" className="mb-4">
-            Help & Support
-          </Badge> */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-            How Can We{" "}
-            <span className="text-brand-teal relative">
-              Help
-              <span className="absolute -bottom-2 left-0 w-full">
-                <Image
-                  src="/assets/icons/Vector 85.svg"
-                  alt="Underline"
-                  width={120}
-                  height={8}
-                  className="w-full"
-                />
-              </span>
-            </span>{" "}
-            You?
+
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-brand-paper/90">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(100deg, #0B1712 0px, #0B1712 2px, transparent 20px, transparent 22px)',
+          }}
+        />
+        <div className="relative max-w-4xl mx-auto px-4 pt-16 md:pt-20 pb-12 md:pb-16 text-center">
+          <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-4">Support</p>
+          <h1 className="font-display text-4xl sm:text-5xl md:text-[3.2rem] font-bold text-brand-ink leading-[1.1] text-balance">
+            Answers, On the Record
           </h1>
-          <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
-            Find answers to common questions, get help with your account, or reach out to our support team. We&apos;re here to ensure your CoopWise experience is smooth and successful.
+          <p className="text-base md:text-lg text-brand-ink/70 max-w-2xl mx-auto mt-5">
+            Browse the guides below, or reach a real person directly. Same principle as the rest
+            of CoopWise — no runaround, no forms into a void.
           </p>
         </div>
       </section>
 
       {/* Support Options */}
-      <section className="py-16 md:py-20 bg-gray-50">
+      <section className="py-16 md:py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-              Get Support Your Way
+          <div className="text-center mb-12 max-w-2xl mx-auto">
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">Get in Touch</p>
+            <h2 className="font-display text-2xl md:text-3xl font-bold text-brand-ink text-balance">
+              Support, Your Way
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Choose the support method that works best for you. Our team is ready to help through multiple channels.
-            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {supportOptions.map((option, index) => (
-              <Card key={index} className="text-center border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="pb-4">
-                  <div className="flex justify-center mb-4">
-                    <div className="p-3 bg-primary/10 rounded-xl">
-                      {option.icon}
-                    </div>
+              <LiquidCard key={index} className="p-6 text-center flex flex-col">
+                <div className="flex justify-center mb-4">
+                  <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-white/15 group-hover:text-white transition-colors duration-300 group-hover:duration-500">
+                    {option.icon}
                   </div>
-                  <CardTitle className="text-lg mb-2">
+                </div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <h3 className="font-display font-semibold text-brand-ink group-hover:text-white transition-colors duration-300 group-hover:duration-500">
                     {option.title}
-                    {option.comingSoon && (
-                      <span className="ml-2 inline-block">
-                        <Badge className="bg-red-100 text-red-800">Coming Soon</Badge>
-                      </span>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-gray-600 mb-3">{option.description}</p>
-                  <div className="text-sm text-gray-500 mb-4 flex items-center justify-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    {option.availability}
-                  </div>
+                  </h3>
+                  {option.comingSoon && (
+                    <Badge className="bg-[#B8892B]/10 text-brand-gold border border-[#B8892B]/30 group-hover:bg-white/20 group-hover:text-white group-hover:border-white/30 transition-colors duration-300 group-hover:duration-500">
+                      Coming Soon
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-brand-ink/60 group-hover:text-white/80 mb-3 transition-colors duration-300 group-hover:duration-500">
+                  {option.description}
+                </p>
+                <div className="text-xs text-brand-ink/45 group-hover:text-white/60 mb-4 flex items-center justify-center gap-1 transition-colors duration-300 group-hover:duration-500">
+                  <Clock className="w-3.5 h-3.5" />
+                  {option.availability}
+                </div>
+                <div className="mt-auto">
                   {option.comingSoon ? (
-                    <Button 
-                      className="w-full"
-                      variant="outline"
-                      disabled
-                    >
+                    <Button className="w-full bg-brand-ink/5 text-brand-ink/40 group-hover:bg-white/10 group-hover:text-white/50" variant="outline" disabled>
                       {option.action}
                     </Button>
                   ) : (
-                    <a href={option.link} className="w-full">
-                    <Button 
-                      className="w-full"
-                      variant="outline"
-                    >
-                      {option.action}
-                    </Button>
+                    <a href={option.link} className="block">
+                      <Button className="w-full border-primary text-primary group-hover:bg-white group-hover:text-primary group-hover:border-white transition-colors duration-300 group-hover:duration-500" variant="outline">
+                        {option.action}
+                      </Button>
                     </a>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </LiquidCard>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Support Categories */}
-      <section className="py-16 md:py-20">
+      {/* Browse by Topic */}
+      <section className="py-16 md:py-20 bg-brand-paper">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-              Browse by Topic
+          <div className="text-center mb-12 max-w-2xl mx-auto">
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">Browse</p>
+            <h2 className="font-display text-2xl md:text-3xl font-bold text-brand-ink text-balance">
+              Find It by Topic
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Find help articles and guides organized by category to quickly locate the information you need.
-            </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {supportCategories.map((category, index) => (
-              <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center space-x-4 mb-3">
-                    <div className="p-3 bg-primary/10 rounded-xl">
-                      {category.icon}
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">{category.title}</CardTitle>
-                      <p className="text-gray-600 text-sm">{category.description}</p>
-                    </div>
+              <LiquidCard key={index} className="p-7">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-white/15 group-hover:text-white flex-shrink-0 transition-colors duration-300 group-hover:duration-500">
+                    {category.icon}
                   </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    {category.topics.map((topic, idx) => (
-                      <Link key={idx} href="#" className="flex items-center text-gray-600 hover:text-primary transition-colors">
-                        <HelpCircle className="w-4 h-4 mr-2 flex-shrink-0" />
-                        <span className="text-sm">{topic}</span>
-                      </Link>
-                    ))}
+                  <div>
+                    <h3 className="font-display font-semibold text-lg text-brand-ink group-hover:text-white transition-colors duration-300 group-hover:duration-500">
+                      {category.title}
+                    </h3>
+                    <p className="text-sm text-brand-ink/55 group-hover:text-white/75 transition-colors duration-300 group-hover:duration-500">
+                      {category.description}
+                    </p>
                   </div>
-                  <Button variant="outline" className="w-full mt-4" disabled>
-                    View All Articles
-                    <Badge className="ml-2 bg-red-100 text-red-800">Coming Soon</Badge>
-                  </Button>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="space-y-2 mb-4">
+                  {category.topics.map((topic, idx) => (
+                    <div key={idx} className="flex items-center text-sm text-brand-ink/60 group-hover:text-white/80 transition-colors duration-300 group-hover:duration-500">
+                      <HelpCircle className="w-3.5 h-3.5 mr-2 flex-shrink-0" />
+                      {topic}
+                    </div>
+                  ))}
+                </div>
+                <Badge className="bg-[#B8892B]/10 text-brand-gold border border-[#B8892B]/30 group-hover:bg-white/20 group-hover:text-white group-hover:border-white/30 transition-colors duration-300 group-hover:duration-500">
+                  Full guides coming soon
+                </Badge>
+              </LiquidCard>
             ))}
           </div>
         </div>
       </section>
 
       {/* Quick Answers */}
-      <section className="py-16 md:py-20 bg-gray-50">
+      <section className="py-16 md:py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-12 max-w-2xl mx-auto">
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">FAQ</p>
+            <h2 className="font-display text-2xl md:text-3xl font-bold text-brand-ink text-balance">
               Quick Answers
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Get instant answers to the most commonly asked questions about CoopWise.
-            </p>
           </div>
 
-          <Accordion type="single" collapsible className="space-y-4">
+          <Accordion type="single" collapsible className="space-y-3">
             {quickAnswers.map((qa, index) => (
-              <AccordionItem 
-                key={index} 
+              <AccordionItem
+                key={index}
                 value={`item-${index}`}
-                className="bg-white rounded-lg border shadow-sm"
+                className="bg-brand-paper rounded-lg border border-brand-ink/10"
               >
-                <AccordionTrigger className="px-6 py-4 text-left hover:no-underline hover:bg-gray-50">
-                  <span className="font-semibold text-gray-900">{qa.question}</span>
+                <AccordionTrigger className="px-6 py-4 text-left hover:no-underline">
+                  <span className="font-semibold text-brand-ink font-display">{qa.question}</span>
                 </AccordionTrigger>
-                <AccordionContent className="px-6 pb-4 text-gray-600">
+                <AccordionContent className="px-6 pb-5 text-brand-ink/65 leading-relaxed">
                   {qa.answer}
                 </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
 
-          <div className="text-center mt-8">
-            <p className="text-gray-600 mb-4">Can&apos;t find what you&apos;re looking for?</p>
-            <div className="flex items-center space-x-4 justify-center">
+          <div className="text-center mt-10">
+            <p className="text-brand-ink/60 mb-4">Still stuck on something?</p>
+            <div className="flex items-center gap-3 justify-center flex-wrap">
               <a href="mailto:hellocoopwise@gmail.com">
-              <Button 
-                variant="outline" 
-                className="text-primary border-primary hover:bg-primary hover:text-white"
-              >
-                Contact Support
-              </Button>
+                <Button variant="outline" className="text-primary border-primary hover:bg-primary hover:text-white">
+                  Email Us Directly
+                </Button>
               </a>
-              <Button disabled>
+              <Button disabled variant="outline" className="text-brand-ink/40 border-brand-ink/15">
                 <MessageCircle className="w-4 h-4 mr-2" />
-                Start Live Chat
-                <Badge className="ml-2 bg-red-100 text-red-800">Coming Soon</Badge>
+                Live Chat
+                <Badge className="ml-2 bg-[#B8892B]/10 text-brand-gold border border-[#B8892B]/30">Coming Soon</Badge>
               </Button>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Where We Are Right Now — transparency section */}
+      <section className="relative overflow-hidden bg-brand-ink py-16 md:py-20">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(120deg, #F7F4EC 0px, #F7F4EC 1.5px, transparent 15px, transparent 22px)',
+          }}
+        />
+        <div className="relative max-w-3xl mx-auto px-4 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#B8892B]/50 bg-[#B8892B]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-gold mb-5">
+            <Map className="h-3.5 w-3.5" />
+            Where We Are Right Now
+          </div>
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-white mb-5 text-balance">
+            We'd Rather Tell You What's Not Built Yet
+          </h2>
+          <p className="text-white/60 leading-relaxed mb-2">
+            CoopWise is early — Phase 1 of a longer roadmap. Group creation, contributions, and
+            transparent transaction tracking are live today. Live chat, a full self-serve Help
+            Center, and AI-assisted dispute resolution are being built next.
+          </p>
+          <p className="text-white/60 leading-relaxed">
+            Until those ship, email and phone reach an actual person on our team — not a queue.
+            Every gap on this page is one we're actively closing.
+          </p>
         </div>
       </section>
 
       {/* System Status */}
       <section className="py-12 bg-white">
-        <div className="max-w-4xl mx-auto px-4">
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="text-center">
-              <CardTitle className="text-xl">System Status</CardTitle>
-              <p className="text-gray-600">Current operational status of CoopWise services</p>
+        <div className="max-w-3xl mx-auto px-4">
+          <Card className="border border-brand-ink/10 shadow-none">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="font-display text-xl text-brand-ink">System Status</CardTitle>
+              <p className="text-brand-ink/55 text-sm">Current status of CoopWise services</p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {statusItems.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="font-medium text-gray-900">{item.service}</span>
-                    <div className="flex items-center space-x-2">
-                      {item.icon}
-                      <span className="text-sm text-gray-600">{item.status}</span>
+                  <div key={index} className="flex items-center justify-between p-3 bg-brand-paper rounded-lg">
+                    <span className="text-sm font-medium text-brand-ink">{item.service}</span>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                      <span className="text-sm text-brand-ink/60">{item.status}</span>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 text-center">
-                <Link href="#" className="text-primary hover:underline text-sm">
-                  View detailed status page →
-                </Link>
-              </div>
             </CardContent>
           </Card>
         </div>
       </section>
 
-      {/* Emergency Support */}
-      <section className="py-12 bg-red-50 border-y border-red-100">
-        <div className="max-w-4xl mx-auto px-4">
-          <Card className="border-red-200 bg-white">
-            <CardContent className="p-6">
-              <div className="flex items-start space-x-3">
-                <AlertTriangle className="w-6 h-6 text-red-500 mt-1 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Emergency Support</h3>
-                  <p className="text-gray-600 text-sm mb-4">
-                    If you suspect unauthorized access to your account, notice suspicious transactions, 
-                    or encounter any security-related issues, contact us immediately.
-                  </p>
-                  <div className="flex items-center space-x-4">
-                    <a href="tel:+2348144441712">
-                    <Button 
-                      size="sm" 
-                      className="bg-red-600 hover:bg-red-700 text-white"
-                    >
-                      <Phone className="w-4 h-4 mr-2" />
-                      Emergency Line
-                    </Button>
-                    </a>
-                    <span className="text-sm text-gray-500">Available 24/7</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-        <section className="py-16 md:py-20 bg-primary">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-              Still Need Help?
-            </h2>
-            <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
-              Our support team is standing by to help you succeed with CoopWise. Don&apos;t hesitate to reach out.
-            </p>
-            <div className="flex items-center space-x-4 justify-center">
-              <Button 
-                variant="secondary" 
-                className="bg-white text-primary hover:bg-gray-100 px-6 py-3 transition-colors duration-200"
-                disabled
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Start Live Chat
-                <Badge className="ml-2 bg-red-100 text-red-800">Coming Soon</Badge>
-              </Button>
-              <a href="mailto:hellocoopwise@gmail.com">
-              <Button 
-                variant="secondary" 
-                className="bg-white text-primary hover:bg-gray-100 px-6 py-3 transition-colors duration-200"
-              >
-                Contact Us
-              </Button>
+      {/* Security Concerns */}
+      <section className="py-12 bg-brand-paper">
+        <div className="max-w-3xl mx-auto px-4">
+          <div className="rounded-xl border border-red-200 bg-white p-6 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 mt-1 flex-shrink-0" />
+            <div>
+              <h3 className="font-display font-semibold text-brand-ink mb-1.5">Notice something wrong with your account?</h3>
+              <p className="text-sm text-brand-ink/60 mb-4">
+                Unauthorized access, a transaction you don't recognize, anything security-related —
+                treat it as urgent and contact us right away. We'll treat it the same way.
+              </p>
+              <a href="tel:+2349037018310">
+                <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white">
+                  <Phone className="w-4 h-4 mr-2" />
+                  Call Us
+                </Button>
               </a>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
+
+      {/* Closing CTA */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-brand-ink mb-4 text-balance">
+            Still Need Help?
+          </h2>
+          <p className="text-brand-ink/65 mb-8 max-w-xl mx-auto">
+            No bots, no ticket number to remember — just tell us what's going on.
+          </p>
+          <div className="flex items-center gap-3 justify-center flex-wrap">
+            <a href="mailto:hellocoopwise@gmail.com">
+              <Button className="bg-primary hover:bg-primary/90 text-white px-6 group">
+                Contact Support
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Button>
+            </a>
+            <Link href="/about-us">
+              <Button variant="outline" className="text-primary border-primary hover:bg-primary hover:text-white">
+                About CoopWise
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
 
       <Footer />
+      <ScrollToTop />
     </div>
   )
-} 
+}
