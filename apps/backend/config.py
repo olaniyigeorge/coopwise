@@ -34,7 +34,6 @@ class GlobalConfig(BaseSettings):
     SMS_PROVIDER_API_KEY: str
     SMS_SENDER_ID: str
     SMS_PROVIDER_BASE_URL: str
-    DEV_EMAILS: str
 
     # Mail config: required for notification email delivery
     MAIL_USERNAME: str
