@@ -67,6 +67,7 @@ class EmailOtpSender:
             "It expires in 10 minutes.</p>"
         )
         try:
+            print(html)
             await self._email_sender.send(to=identifier, subject=subject, html=html)
         except Exception as e:
             logger.error(f"[EmailOtpSender] delivery failed for {identifier}: {e}")

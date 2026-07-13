@@ -60,7 +60,7 @@ class UserUpdate(BaseModel):
 class UserDetail(BaseModel):
     id: UUID
     username: str
-    email: EmailStr
+    email: Optional[EmailStr] = None
     full_name: str
     phone_number: Optional[PhoneNumberStr]
     role: UserRoles

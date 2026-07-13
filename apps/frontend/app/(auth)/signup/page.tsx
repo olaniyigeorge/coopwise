@@ -181,7 +181,7 @@ const SignUpPage = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 rounded-xl bg-brand-teal hover:bg-brand-teal/90"
+                  className="w-full h-11 rounded-xl bg-brand-ink hover:bg-brand-ink/90"
                   disabled={detailsForm.formState.isSubmitting}
                 >
                   {detailsForm.formState.isSubmitting ? (
@@ -250,7 +250,7 @@ const SignUpPage = () => {
 
               <Button
                 type="submit"
-                className="w-full h-11 rounded-xl bg-brand-teal hover:bg-brand-teal/90"
+                className="w-full h-11 rounded-xl bg-brand-ink hover:bg-brand-ink/90"
                 disabled={otpForm.formState.isSubmitting}
               >
                 {otpForm.formState.isSubmitting ? (

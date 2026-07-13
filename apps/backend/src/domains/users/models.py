@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import uuid4
 from src.domains.memberships.models import GroupMembership
 from src.infra.db.database import Base
-from sqlalchemy import Boolean, Column, String, Enum, DateTime, Float
+from sqlalchemy import Boolean, CheckConstraint, Column, String, Enum, DateTime, Float
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 import enum
@@ -31,11 +31,18 @@ class IncomeRange(enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
+    __table_args__ = (
+        CheckConstraint(
+            "email IS NOT NULL OR phone_number IS NOT NULL",
+            name="ck_users_email_or_phone_required",
+        ),
+    )
+
     id = Column(
         PGUUID(as_uuid=True), primary_key=True, default=lambda: uuid4(), index=True
     )
     username = Column(String, unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=True)
     # password is nullable so Crossmint-only users don't need one
     password = Column(String, nullable=True)
     full_name = Column(String, nullable=False)

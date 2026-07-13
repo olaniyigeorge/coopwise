@@ -111,6 +111,7 @@ class AuthService:
                 raise FullNameRequiredError(
                     "full_name is required to complete registration"
                 )
+            
             user = await self._provision_user(
                 phone_number=payload.identifier if channel == OtpChannel.phone else None,
                 email=payload.identifier if channel == OtpChannel.email else None,
@@ -124,6 +125,7 @@ class AuthService:
 
         return await self._issue_session(user, is_new_user)
     
+    # ------------------------------------------------------------- provisioning
     async def _provision_user(
         self,
         *,
@@ -165,6 +167,10 @@ class AuthService:
             if is_email
             else await self._users.get_by_phone_number(identifier)
         )
+
+        print()
+        print(user.__dict__)
+        print()
 
         # Deliberately identical error for "no such user", "no password set",
         # and "wrong password" — don't give an attacker an account-enumeration
@@ -218,44 +224,7 @@ class AuthService:
                 user = await self._users.update(user)
 
         return await self._issue_session(user, is_new_user)
-    
-        # --------------------------------------------------------------- OTP: phone/email
-    async def request_otp(self, payload: RequestOtp) -> None:
-        channel = OtpChannel(payload.channel)
-        code = await self._otp_store.issue_code(channel, payload.identifier)
-        sender = self._otp_senders[channel]
-        await sender.send_otp(payload.identifier, code)
 
-    async def verify_otp(self, payload: VerifyOtp) -> SessionResponse:
-        channel = OtpChannel(payload.channel)
-        ok = await self._otp_store.verify_and_consume(
-            channel, payload.identifier, payload.code
-        )
-        if not ok:
-            raise OtpInvalidOrExpiredError("Invalid or expired code")
-
-        if channel == OtpChannel.phone:
-            user = await self._users.get_by_phone_number(payload.identifier)
-        else:
-            user = await self._users.get_by_email(payload.identifier)
-
-        is_new_user = user is None
-        if user is None:
-            if not payload.full_name:
-                raise FullNameRequiredError(
-                    "full_name is required to complete registration"
-                )
-            user = await self._provision_user(
-                phone_number=payload.identifier if channel == OtpChannel.phone else None,
-                email=payload.identifier if channel == OtpChannel.email else None,
-                full_name=payload.full_name,
-                is_phone_verified=channel == OtpChannel.phone,
-                is_email_verified=channel == OtpChannel.email,
-            )
-        else:
-            user = await self._mark_verified_if_needed(user, channel)
-
-        return await self._issue_session(user, is_new_user)
 
     # --------------------------------------------------------------- session refresh
     async def refresh_platform_session(self, refresh_token: str) -> SessionResponse:
@@ -273,36 +242,6 @@ class AuthService:
             raise UserNotFoundError("User not found")
 
         return await self._issue_session(user, is_new_user=False)
-
-    # ------------------------------------------------------------- provisioning
-    async def _provision_user(
-        self,
-        *,
-        phone_number: Optional[str],
-        email: Optional[str],
-        full_name: str,
-        is_phone_verified: bool,
-        is_email_verified: bool,
-        firebase_uid: Optional[str] = None,
-        profile_picture_url: Optional[str] = None,
-    ) -> User:
-        username = await self._generate_unique_username(email, phone_number)
-        user = User(
-            id=uuid4(),
-            username=username,
-            email=email,
-            phone_number=phone_number,
-            full_name=full_name,
-            firebase_uid=firebase_uid,
-            profile_picture_url=profile_picture_url,
-            is_email_verified=is_email_verified,
-            is_phone_verified=is_phone_verified,
-            role=UserRoles.user,
-        )
-        user = await self._users.add(user)
-        if self._notifier is not None:
-            await self._notifier.notify_user_registered(user)
-        return user
 
     async def _mark_verified_if_needed(self, user: User, channel: OtpChannel) -> User:
         changed = False

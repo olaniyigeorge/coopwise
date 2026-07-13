@@ -143,8 +143,7 @@ const useAuthStore = create<AuthState>()(
             user?.image ||
             null,
         };
-        set({ user: merged });
-        CookieService.setUser(merged);
+        set({ user: merged, isAuthenticated: !!user });
       },
 
       updateUser: (userData) => {
