@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 60 * 15, // matches backend DEFAULT_ACCESS_TOKEN_TTL
+      maxAge: 60 * 15, 
       path: "/",
     })
     res.cookies.set({
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 60 * 60 * 24 * 30, // matches backend DEFAULT_REFRESH_TOKEN_TTL
+      maxAge: 60 * 60 * 24 * 30, 
       path: "/",
     })
     return res
