@@ -14,7 +14,7 @@ export default function AIInsightsSummary() {
   
   // Get a limited set of insights for the dashboard
   const insights = useMemo(() => {
-    const allInsights = getUserInsights(user?.id || '1')
+    const allInsights = getUserInsights() // user?.id || '1'
     // Return only the first 3 insights
     return allInsights.slice(0, 3)
   }, [user?.id])
@@ -73,7 +73,7 @@ export default function AIInsightsSummary() {
                   index === 0 ? 'scale-100' : index === 1 ? 'scale-[0.98]' : 'scale-[0.96]'
                 }`}
               >
-                <AIInsightCard insight={insight} compact={true} />
+                {/* <AIInsightCard insight={insight} compact={true} /> */}
               </div>
             ))}
             

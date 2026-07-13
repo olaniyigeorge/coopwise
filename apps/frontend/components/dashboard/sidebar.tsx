@@ -144,9 +144,9 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           <item.icon className="w-5 h-5" />
                 </div>
         <span className="ml-3 text-sm font-medium">{item.name}</span>
-                {!!item.badge && item.badge > 0 && (
+                {!!item.icon && item.icon.length > 0 && (
                   <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
-                    {item.badge > 9 ? '9+' : item.badge}
+                    {item.icon.length > 9 ? '9+' : item.icon.length}
                   </span>
                 )}
               </Link>

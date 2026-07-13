@@ -18,7 +18,7 @@ export default function NotificationDropdown() {
     unreadCount, 
     markAsRead, 
     markAllAsRead, 
-    clearNotifications 
+    clearAllNotifications 
   } = useNotificationStore();
 
   // Format the timestamp to a relative time (e.g. "2 hours ago")
@@ -69,20 +69,20 @@ export default function NotificationDropdown() {
             notifications.map(notification => (
               <DropdownMenuItem 
                 key={notification.id}
-                className={`p-3 cursor-default ${!notification.read ? 'bg-accent/50' : ''}`}
+                className={`p-3 cursor-default ${!notification.is_read ? 'bg-accent/50' : ''}`}
                 onClick={() => markAsRead(notification.id)}
               >
                 <div className="flex flex-col space-y-1 w-full">
                   <div className="flex items-start justify-between">
-                    <span className={`text-sm ${!notification.read ? 'font-medium' : ''}`}>
+                    <span className={`text-sm ${!notification.is_read ? 'font-medium' : ''}`}>
                       {notification.message}
                     </span>
-                    {!notification.read && (
+                    {!notification.is_read && (
                       <span className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-1"></span>
                     )}
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {formatTime(notification.timestamp)}
+                    {formatTime(notification.created_at)}
                   </span>
                 </div>
               </DropdownMenuItem>
@@ -98,7 +98,7 @@ export default function NotificationDropdown() {
                 variant="outline" 
                 size="sm" 
                 className="w-full text-xs"
-                onClick={() => clearNotifications()}
+                onClick={() => clearAllNotifications()}
               >
                 Clear all
               </Button>

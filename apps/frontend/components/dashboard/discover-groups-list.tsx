@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Copy } from 'lucide-react'
-import AuthService from '@/lib/auth-service'
+import AuthService from '@/services/auth-service'
 
 interface DiscoverGroupsListProps {
   searchQuery: string

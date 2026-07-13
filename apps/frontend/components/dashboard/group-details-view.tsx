@@ -15,13 +15,14 @@ import {
 } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import AuthService from '@/lib/auth-service'
+
 import ContributionService from '@/services/contribution-service'
 import useAuthStore from '@/stores/auth-store'
 import { UserDetail } from '@/services/dashboard-service'
 import { formatCurrency } from '@/lib/contribution-utils'
 import Link from 'next/link'
 import GroupStats from '../web3_conn'
+import AuthService from '@/services/auth-service'
 
 interface GroupDetailsViewProps {
   groupId: string

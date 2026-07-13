@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import AuthService from '@/lib/auth-service';
+import AuthService from './auth-service';
+
 
 // Get API key from environment variables or use the provided key
 const getApiKey = (): string => {

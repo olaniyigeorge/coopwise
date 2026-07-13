@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import * as fcl from "@onflow/fcl";
+// import * as fcl from "@onflow/fcl";
 import axios from "axios";
-import AuthService from "@/lib/auth-service";
+
 import { CONTRIBUTE_CDC } from "@/lib/flow/config";
+import AuthService from "@/services/auth-service";
 
 export type ContributionStatus =
   | "idle"
@@ -97,28 +98,28 @@ export function useContribution(circleId: number | string): UseContributionRetur
 
       setStatus("signing");
 
-      const submittedTxId: string = await fcl.mutate({
-        cadence: CONTRIBUTE_CDC,
-        args: (arg: any, t: any) => [
-          arg(circle_chain_id.toString(), t.UInt64),
-          arg(hexToBytes(encrypted_amount), t.Array(t.UInt8)),
-          arg(hexToBytes(input_proof), t.Array(t.UInt8)),
-        ],
-        proposer: fcl.currentUser,
-        authorizations: [fcl.currentUser],
-        limit: 9999,
-      });
+      // const submittedTxId: string = await fcl.mutate({
+      //   cadence: CONTRIBUTE_CDC,
+      //   args: (arg: any, t: any) => [
+      //     arg(circle_chain_id.toString(), t.UInt64),
+      //     arg(hexToBytes(encrypted_amount), t.Array(t.UInt8)),
+      //     arg(hexToBytes(input_proof), t.Array(t.UInt8)),
+      //   ],
+      //   proposer: fcl.currentUser,
+      //   authorizations: [fcl.currentUser],
+      //   limit: 9999,
+      // });
 
-      setTxId(submittedTxId);
-      setStatus("confirming");
+      // setTxId(submittedTxId);
+      // setStatus("confirming");
 
-      await fcl.tx(submittedTxId).onceSealed();
+      // await fcl.tx(submittedTxId).onceSealed();
 
       setStatus("done");
 
       return {
-        txId: submittedTxId,
-        explorerUrl: `${EXPLORER_BASE}/${submittedTxId}`,
+        txId: "submittedTxId",  // submittedTxId
+        explorerUrl: "${EXPLORER_BASE}/${submittedTxId}", // ${EXPLORER_BASE}/${submittedTxId}
       };
     } catch (err: unknown) {
       const message =

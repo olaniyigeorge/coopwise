@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import AuthService from "@/lib/auth-service";
+import AuthService from "@/services/auth-service";
+
 
 // ─── Types─
 
