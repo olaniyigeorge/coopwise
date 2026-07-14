@@ -1,0 +1,6 @@
+
+
+
+
+class NotificationServiceKYCNotifier():
+    pass

@@ -19,6 +19,7 @@ from src.domains.auth.exceptions import (
     OtpRateLimitedError,
     TokenExpiredError,
     UserNotFoundError,
+    InvalidTokenError
 )
 from src.domains.auth.schemas import (
     FirebaseSignIn,
@@ -101,5 +102,5 @@ async def refresh_session(
         return await auth_service.refresh_platform_session(refresh_token)
     except UserNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    except (InvalidTokenTypeError, TokenExpiredError) as e:
+    except (InvalidTokenTypeError, TokenExpiredError, InvalidTokenError) as e:
         raise HTTPException(status_code=401, detail=str(e))

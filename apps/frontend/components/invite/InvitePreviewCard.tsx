@@ -26,7 +26,7 @@ export default function InvitePreviewCard({
       localStorage.setItem("pendingCircleId", `${circle.id}`);
     }
     router.push(
-      `/auth/login?returnUrl=${encodeURIComponent(`/invite/${inviteCode}/join`)}`
+      `/signin?returnUrl=${encodeURIComponent(`/invite/${inviteCode}/join`)}`
     );
   };
 

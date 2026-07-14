@@ -331,7 +331,7 @@ export default function ProfileSetupPage() {
   // Check if user is authenticated
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push('/auth/login')
+      router.push('/signin')
     }
   }, [isAuthenticated, router])
 

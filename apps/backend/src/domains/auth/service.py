@@ -20,13 +20,14 @@ from __future__ import annotations
 import secrets
 from datetime import timedelta
 from typing import Callable, Optional
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from config import AppConfig
 from src.domains.auth.exceptions import (
     FirebaseVerificationError,
     FullNameRequiredError,
     InvalidCredentialsError,
+    InvalidTokenError,
     InvalidTokenTypeError,
     OtpInvalidOrExpiredError,
     TokenExpiredError,
@@ -168,10 +169,6 @@ class AuthService:
             else await self._users.get_by_phone_number(identifier)
         )
 
-        print()
-        print(user.__dict__)
-        print()
-
         # Deliberately identical error for "no such user", "no password set",
         # and "wrong password" — don't give an attacker an account-enumeration
         # oracle via three different failure messages.
@@ -231,13 +228,20 @@ class AuthService:
         payload = self._tokens.decode(refresh_token)
         if payload.get("type") != "refresh":
             raise InvalidTokenTypeError("Not a refresh token")
+
         exp = payload.get("exp")
         if exp is not None and self._clock.now().timestamp() > float(exp):
             raise TokenExpiredError("Refresh token has expired")
 
-        from uuid import UUID
+        raw_id = payload.get("id")
+        if not raw_id:
+            raise InvalidTokenError("Token payload missing subject id")
+        try:
+            user_id = UUID(raw_id)
+        except (ValueError, AttributeError, TypeError):
+            raise InvalidTokenError("Token payload has an invalid subject id")
 
-        user = await self._users.get_by_id(UUID(payload["id"]))
+        user = await self._users.get_by_id(user_id)
         if not user:
             raise UserNotFoundError("User not found")
 
@@ -335,4 +339,5 @@ class AuthService:
             flow_address=user.flow_address,
             profile_picture_url=user.profile_picture_url,
             onboarding_status=self._onboarding_status(user),
+            is_kyc_verified=user.is_kyc_verified
         )

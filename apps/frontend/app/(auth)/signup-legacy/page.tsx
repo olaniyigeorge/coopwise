@@ -178,7 +178,7 @@ export default function LegacySignupPage() {
             </Button>
           </form>
           <div className="text-center mt-4">
-            <p className="text-sm text-secondary">Already have an account? <Link href="/auth/login" className="text-primary font-medium">Sign In</Link></p>
+            <p className="text-sm text-secondary">Already have an account? <Link href="/signin" className="text-primary font-medium">Sign In</Link></p>
           </div>
         </div>
       </div>

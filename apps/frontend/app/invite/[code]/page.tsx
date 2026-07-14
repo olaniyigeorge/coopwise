@@ -107,7 +107,7 @@ export default function InvitePreviewPage() {
           <div className="flex items-center gap-3 text-sm">
             {
               !isAuthenticated &&
-              <> <Link href="/auth/login" className="text-primary font-medium">
+              <> <Link href="/signin" className="text-primary font-medium">
               Log in
             </Link>
             <Link

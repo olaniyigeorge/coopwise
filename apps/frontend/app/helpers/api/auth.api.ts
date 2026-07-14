@@ -30,7 +30,7 @@ export const signInWithPassword = async (
   identifier: string,
   password: string
 ): Promise<SessionResult> => {
-  const { data } = await API.post<SessionResult>("/auth/login", {
+  const { data } = await API.post<SessionResult>("/signin", {
     identifier,
     password,
   })

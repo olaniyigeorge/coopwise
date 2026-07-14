@@ -49,7 +49,7 @@ export default function Hero() {
               <Link href="/how-it-works" className="w-full sm:w-auto">
                 <Button
                   variant="outline"
-                  className="w-full sm:w-auto text-primary border-primary hover:text-brand-ink hover:border-brand-ink transition-colors"
+                  className="w-full sm:w-auto text-primary border-primary hover:bg-brand-ink hover:border-brand-ink transition-colors"
                 >
                   See How It Works
                 </Button>

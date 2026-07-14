@@ -60,7 +60,7 @@ export default function JoinCirclePage() {
     if (!user) {
       localStorage.setItem("pendingInviteCode", decoded?.raw ?? code);
       router.replace(
-        `/auth/login?returnUrl=${encodeURIComponent(`/invite/${code}/join`)}`
+        `/signin?returnUrl=${encodeURIComponent(`/invite/${code}/join`)}`
       );
     }
   }, [user]);

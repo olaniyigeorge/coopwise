@@ -1,65 +1,79 @@
- "use client"
+"use client"
 
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Navbar from '@/components/homepage/navbar'
 import Footer from '@/components/homepage/footer'
-import CTA from '@/components/cta'
-import { CheckCircle, Users, DollarSign, TrendingUp, Shield, Zap } from 'lucide-react'
+import ScrollToTop from '@/components/homepage/scroll-to-top'
 import HowItWorksTimeline from '@/components/how-it-works-timeline'
+import { Users, HandCoins, BellRing, Eye, Timer, Landmark, ArrowRight } from 'lucide-react'
+
+// Same liquid-fill hover card used across Home, About, and Support —
+// keeps this page visually part of the same product.
+function LiquidCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`group relative overflow-hidden bg-white rounded-xl border border-brand-ink/10 hover:border-transparent hover:shadow-xl transition-[border-color,box-shadow] duration-500 ${className}`}>
+      <div
+        aria-hidden
+        className="absolute inset-x-[-10%] -bottom-[25%] h-[150%] rounded-b-[25%] bg-gradient-to-t from-primary to-[#0d7a6e]
+          -translate-y-full transition-transform duration-700 ease-in
+          group-hover:translate-y-0 group-hover:duration-300 group-hover:ease-out"
+      />
+      <div className="relative z-10">{children}</div>
+    </div>
+  )
+}
 
 export default function HowItWorksPage() {
-
   const benefits = [
     {
-      icon: <Users className="w-6 h-6 text-primary" />,
-      title: "Community Powered",
-      description: "Join trusted friends and family to achieve your savings goals together."
+      icon: Users,
+      title: "Powered by People You Trust",
+      description: "No app replaces the accountability of saving with people you already know. CoopWise just gives that trust a record to stand on.",
     },
     {
-      icon: <DollarSign className="w-6 h-6 text-primary" />,
-      title: "Flexible Contributions",
-      description: "Set contribution amounts and schedules that work for your group."
+      icon: HandCoins,
+      title: "Your Group Sets the Terms",
+      description: "Contribution amount, frequency, payout order — your circle decides the rules. CoopWise enforces them, it doesn't dictate them.",
     },
     {
-      icon: <TrendingUp className="w-6 h-6 text-primary" />,
-      title: "Smart Insights",
-      description: "AI-powered tips and reminders to help you stay on track."
+      icon: BellRing,
+      title: "Nudges, Not Nagging",
+      description: "CoopWise tracks your group's schedule and reminds members ahead of a due date, so discipline doesn't rely on memory alone.",
     },
     {
-      icon: <Shield className="w-6 h-6 text-primary" />,
-      title: "Secure & Transparent",
-      description: "Bank-level security with full transparency on all transactions."
+      icon: Eye,
+      title: "Transparent by Default",
+      description: "Every contribution and payout is visible to your whole group, logged in real time. That visibility is the security model, not a marketing claim.",
     },
     {
-      icon: <Zap className="w-6 h-6 text-primary" />,
-      title: "Quick Setup",
-      description: "Get started in under 2 minutes with our streamlined onboarding."
+      icon: Timer,
+      title: "Live in Under Two Minutes",
+      description: "Sign up, set a goal, join or start a group. No paperwork, no waiting period before you can start saving.",
     },
     {
-      icon: <CheckCircle className="w-6 h-6 text-primary" />,
-      title: "Proven Results",
-      description: "Join thousands who've successfully achieved their savings goals."
-    }
+      icon: Landmark,
+      title: "Built on a Model That Already Works",
+      description: "Rotating savings groups have financed households and small businesses across the continent for generations. CoopWise didn't invent the discipline — it just gives it better bookkeeping.",
+    },
   ]
 
   const features = [
     {
-      title: "Smart Notifications",
-      description: "Never miss a contribution deadline with intelligent reminders tailored to your schedule.",
+      title: "Reminders That Read the Calendar",
+      description: "Contribution due dates, payout timing — CoopWise tracks your group's schedule and nudges members before a deadline slips, not after.",
       image: "/assets/images/Phone8.png"
     },
     {
-      title: "Group Management",
-      description: "Easily manage group members, track contributions, and monitor progress in real-time.",
+      title: "One Dashboard for the Whole Group",
+      description: "Add members, track who's contributed, and watch progress update in real time. No separate spreadsheet required.",
       image: "/assets/images/Phone3.png"
     },
     {
-      title: "Financial Insights",
-      description: "Get personalized savings tips and insights based on your group's performance.",
+      title: "A Clearer Picture of Your Saving",
+      description: "See how your group is trending against its goal, with simple insights that help you adjust before a cycle ends, not after.",
       image: "/assets/images/Phone7.png"
     }
   ]
@@ -67,42 +81,38 @@ export default function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      
-      {/* Hero Section */}
-      <section className="max-w-6xl mx-auto px-4 pt-8 md:pt-12 pb-10 md:pb-16">
-        <div className="text-center space-y-4 md:space-y-6">
-      
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-            Simple Steps to{" "}
-            <span className="text-brand-teal relative">
-              Financial
-              <span className="absolute -bottom-2 left-0 w-full">
-                <Image
-                  src="/assets/icons/Vector 85.svg"
-                  alt="Underline"
-                  width={120}
-                  height={8}
-                  className="w-full"
-                />
-              </span>
-            </span>{" "}
-            Success
+
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-brand-paper">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(120deg, #0B1712 0px, #0B1712 2px, transparent 20px, transparent 22px)',
+          }}
+        />
+        <div className="relative max-w-4xl mx-auto px-4 pt-16 md:pt-20 pb-12 md:pb-16 text-center">
+          <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-4">The Process</p>
+          <h1 className="font-display text-4xl sm:text-5xl md:text-[3.2rem] font-bold text-brand-ink leading-[1.1] text-balance">
+            How CoopWise Actually Works
           </h1>
-          <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
-            CoopWise makes group savings simple, secure, and rewarding. Follow these easy steps to start your savings journey with friends and family.
+          <p className="text-base md:text-lg text-brand-ink/70 max-w-2xl mx-auto mt-5">
+            No app tour needed. Six steps, start to finish — from opening the link to watching
+            your group's ledger fill up.
           </p>
-          <div className="flex items-center space-x-4 pt-2 md:pt-4 justify-center">
-            <Link href="/auth/signup">
-              <Button className="bg-primary hover:bg-primary/90 text-white px-4 md:px-6">
+          <div className="flex flex-col sm:flex-row items-center gap-3 justify-center mt-8">
+            <Link href="/signup" className="w-full sm:w-auto">
+              <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white px-6 group">
                 Start Saving Now
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Button>
             </Link>
-            <Link href="/contact">
-              <Button 
-                variant="outline" 
-                className="text-primary border-primary hover:bg-primary hover:text-white transition-colors"
+            <Link href="/support" className="w-full sm:w-auto">
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto text-primary border-primary hover:border-brand-ink hover:bg-brand-ink hover:text-white transition-colors"
               >
-                Ask Questions
+                Get Support
               </Button>
             </Link>
           </div>
@@ -110,63 +120,57 @@ export default function HowItWorksPage() {
       </section>
 
       {/* Step-by-Step Process */}
-      <section className="py-10 md:py-20 bg-gray-50">
+      <section className="py-14 md:py-24 bg-white">
         <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-10 md:mb-20 text-primary">
-            Your Savings Journey in 6 Simple Steps
-          </h2>
+          <div className="text-center mb-10 md:mb-20 max-w-2xl mx-auto">
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">The Full Walkthrough</p>
+            <h2 className="font-display text-2xl md:text-4xl font-bold text-brand-ink text-balance">
+              Every Step, Laid Out
+            </h2>
+          </div>
           <HowItWorksTimeline />
-      
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-16 md:py-20">
+      {/* Why It Works */}
+      <section className="py-16 md:py-24 bg-brand-paper">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-              Why Choose CoopWise?
+          <div className="text-center mb-14 max-w-2xl mx-auto">
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">Why It Works</p>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-brand-ink text-balance">
+              Built Around How Groups Actually Save
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Join thousands of people who are already saving smarter with CoopWise&apos;s powerful features and community support.
-            </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {benefits.map((benefit, index) => (
-              <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      {benefit.icon}
-                    </div>
-                    <CardTitle className="text-lg">{benefit.title}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <CardDescription className="text-gray-600">
-                    {benefit.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
+              <LiquidCard key={index} className="p-7">
+                <div className="w-12 h-12 rounded-full bg-primary/10 group-hover:bg-brand-gold/15 flex items-center justify-center mb-6 transition-colors duration-300 group-hover:duration-500">
+                  <benefit.icon className="h-5 w-5 text-primary group-hover:text-brand-gold transition-colors duration-300 group-hover:duration-500" strokeWidth={1.75} />
+                </div>
+                <h3 className="text-lg font-semibold text-brand-ink group-hover:text-white mb-2 font-display transition-colors duration-300 group-hover:duration-500">
+                  {benefit.title}
+                </h3>
+                <p className="text-sm text-brand-ink/65 group-hover:text-white/85 leading-relaxed transition-colors duration-300 group-hover:duration-500">
+                  {benefit.description}
+                </p>
+              </LiquidCard>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16 md:py-20 bg-gray-50">
+      {/* What's in the App */}
+      <section className="py-16 md:py-24 bg-white">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-              Powerful Features for Success
+          <div className="text-center mb-14 max-w-2xl mx-auto">
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">Inside CoopWise</p>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-brand-ink text-balance">
+              What's Actually in the App
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              CoopWise provides everything you need to successfully manage and grow your savings group.
-            </p>
           </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             {features.map((feature, index) => (
               <div key={index} className="text-center">
                 <div className="relative w-32 h-64 mx-auto mb-6">
@@ -177,17 +181,41 @@ export default function HowItWorksPage() {
                     className="object-contain"
                   />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <h3 className="text-xl font-bold text-brand-ink mb-3 font-display">{feature.title}</h3>
+                <p className="text-brand-ink/65 leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <CTA />
+      {/* Closing CTA */}
+      <section className="py-16 md:py-20 bg-brand-paper">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-brand-ink mb-4 text-balance">
+            Ready to See It in Action?
+          </h2>
+          <p className="text-brand-ink/65 mb-8 max-w-xl mx-auto">
+            Six steps, one ledger everyone can trust. Start your circle today.
+          </p>
+          <div className="flex items-center gap-3 justify-center flex-wrap">
+            <Link href="/signup">
+              <Button className="bg-primary hover:bg-primary/90 text-white px-6 group">
+                Start Saving Now
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Button>
+            </Link>
+            <Link href="/support">
+              <Button variant="outline" className="text-primary border-brand-ink hover:bg-brand-ink hover:text-white">
+                Talk to Us
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <Footer />
+      <ScrollToTop />
     </div>
   )
-} 
+}

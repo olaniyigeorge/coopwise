@@ -45,6 +45,7 @@ class GlobalConfig(BaseSettings):
     MAIL_TLS: bool = True
     MAIL_SSL: bool = False
     MAIL_USE_CREDENTIALS: bool = True
+    SECRET_ENCRYPTION_KEY: str
 
     # Sentry: optional, only active in production
     SENTRY_DSN: Optional[str] = None

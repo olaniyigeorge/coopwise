@@ -28,7 +28,7 @@ This abstracts blockchain complexity while preserving on-chain capabilities.
 
 ### Step 1 — User Initiates Login
 
-**Route**: `/auth/login`
+**Route**: `/signin`
 
 **User Action**: Clicks **"Continue with Email (Google)"**
 

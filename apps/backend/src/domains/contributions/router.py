@@ -18,7 +18,7 @@ from src.domains.notifications.service import NotificationService
 from src.domains.payments.service import PaymentService
 from src.domains.users.service import UserService
 from src.domains.contributions.schemas import ContributionCreate, ContributionDetail
-from src.api.middlewares.dependencies import get_current_user, is_admin_permissions
+from src.api.middlewares.dependencies import get_current_user, get_current_admin_user
 from src.domains.contributions.service import ContributionService
 from src.domains.auth.schemas import AuthenticatedUser
 from src.infra.db.dependencies import get_async_db_session
@@ -128,7 +128,7 @@ async def get_contribution(
 async def get_contributions(
     skip: int = 0,
     limit: int = 10,
-    user: AuthenticatedUser = Depends(is_admin_permissions),
+    user: AuthenticatedUser = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_async_db_session),
 ) -> List[ContributionDetail]:
     """
@@ -173,7 +173,7 @@ from src.domains.notifications.service import NotificationService
 from src.domains.payments.service import PaymentService
 from src.domains.users.service import UserService
 from src.domains.contributions.schemas import ContributionCreate, ContributionDetail
-from src.api.middlewares.dependencies import get_current_user, is_admin_permissions
+from src.api.middlewares.dependencies import get_current_user, get_current_admin_user
 from src.domains.contributions.service import ContributionService
 from src.domains.auth.schemas import AuthenticatedUser
 from src.infra.db.dependencies import get_async_db_session
@@ -283,7 +283,7 @@ async def get_contribution(
 async def get_contributions(
     skip: int = 0,
     limit: int = 10,
-    user: AuthenticatedUser = Depends(is_admin_permissions),
+    user: AuthenticatedUser = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_async_db_session),
 ) -> List[ContributionDetail]:
     """

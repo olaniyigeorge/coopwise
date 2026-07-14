@@ -23,7 +23,7 @@ export default function PublicGroupPreview({ inviteCode, groupData }: PublicGrou
     localStorage.setItem('pendingGroupName', groupData.name || 'this group')
     
     // Redirect to login page with return URL to join page
-    router.push(`/auth/login?returnUrl=${encodeURIComponent(`/invite/${inviteCode}/join`)}`)
+    router.push(`/signin?returnUrl=${encodeURIComponent(`/invite/${inviteCode}/join`)}`)
   }
 
   const handleSignUpClick = () => {

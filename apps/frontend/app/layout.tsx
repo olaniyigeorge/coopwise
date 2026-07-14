@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   creator: 'CoopWise',
   publisher: 'CoopWise',
   formatDetection: { email: false, telephone: false },
-  metadataBase: new URL('https://coopwise-seven.vercel.app'),
+  metadataBase: new URL('https://coopwise-one.vercel.app'),
   alternates: { canonical: '/' },
   robots: {
     index: true,
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://coopwise-seven.vercel.app',
+    url: 'https://coopwise-one.vercel.app',
     title: 'CoopWise | Smart Cooperative Savings Groups Management Platform',
     description: 'Join CoopWise to create, manage, and grow your savings groups.',
     siteName: 'CoopWise',

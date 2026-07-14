@@ -1,0 +1,8 @@
+
+
+
+
+
+class CloudinaryService():
+
+    pass

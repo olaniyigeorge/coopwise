@@ -7,7 +7,6 @@ class BcryptPasswordHasher:
 
     def verify(self, password: str, hashed: str) -> bool:
         try:
-            print("hashing ", password)
             return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
         except ValueError:
             # stored hash is malformed/legacy — never crash the login path

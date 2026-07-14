@@ -267,6 +267,7 @@ export interface UserDetail {
   saving_frequency?: SavingFrequency;
   is_email_verified: boolean;
   is_phone_verified: boolean;
+  is_kyc_verified?: boolean;
   created_at: string; // ISO datetime string
   updated_at: string;
 }

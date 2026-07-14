@@ -40,7 +40,7 @@ export default function Header({
   showMobileMenu = false
 }: HeaderProps) {
   const router = useRouter()
-  const { isAuthenticated, isLoading, logout, user } = useAuthStore();
+  const { logout, user } = useAuthStore();
 
   const { notifications, markAsRead, markAllAsRead, unreadCount, fetchNotifications } = useNotificationStore();
   
@@ -92,7 +92,7 @@ export default function Header({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white border-b border-gray-200 shadow-sm">
+    <header className="sticky top-0 z-40 w-full bg-white border-b border-brand-ink/10 shadow-sm">
       <div className="flex items-center justify-between w-full px-3 sm:px-4 py-2 sm:py-3">
         {/* Left section: Menu, Back Button, Title */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -100,10 +100,10 @@ export default function Header({
           {showMobileMenu && (
             <button 
               onClick={onMenuClick}
-              className="p-2 rounded-md hover:bg-gray-100 active:bg-gray-200 transition-colors lg:hidden touch-manipulation"
+              className="p-2 rounded-md hover:bg-brand-paper active:bg-brand-ink/10 transition-colors lg:hidden touch-manipulation"
               aria-label="Open menu"
             >
-              <Menu className="w-5 h-5 text-gray-600" />
+              <Menu className="w-5 h-5 text-brand-ink/70" />
             </button>
           )}
           
@@ -111,46 +111,34 @@ export default function Header({
           {showBackButton && (
             <Link 
               href={backUrl}
-              className="p-2 rounded-md hover:bg-gray-100 active:bg-gray-200 transition-colors flex items-center gap-1 touch-manipulation"
+              className="p-2 rounded-md hover:bg-brand-paper active:bg-brand-ink/10 transition-colors flex items-center gap-1 touch-manipulation"
             >
-              <ArrowLeft className="w-4 h-4 text-gray-600" />
-              <span className="text-sm text-gray-600 hidden xs:inline">Back</span>
+              <ArrowLeft className="w-4 h-4 text-brand-ink/70" />
+              <span className="text-sm text-brand-ink/70 hidden xs:inline">Back</span>
             </Link>
           )}
           
           {/* Page Title */}
           {title && (
             <div className="min-w-0 max-w-full">
-              <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{title}</h1>
+              <h1 className="font-display text-base sm:text-lg font-semibold text-brand-ink truncate">{title}</h1>
               {subtitle && (
-                <p className="text-xs text-gray-500 truncate hidden xs:block">{subtitle}</p>
+                <p className="text-xs text-brand-ink/50 truncate hidden xs:block">{subtitle}</p>
               )}
             </div>
           )}
         </div>
 
-
-        
-        
         {/* Right section: Notifications & Profile */}
         <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
-          <span className={`block border-2  ${isAuthenticated
-              ? "border-green-700 font-medium"
-              : !isLoading ? "bg-primary"
-              : `border-orange-300`
-
-          }`}>
-         
-          </span>
-         
           {/* Notification Bell */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button 
-                className="relative p-2 hover:bg-gray-50 active:bg-gray-100 rounded-full transition-colors touch-manipulation"
+                className="relative p-2 hover:bg-brand-paper active:bg-brand-ink/10 rounded-full transition-colors touch-manipulation"
                 aria-label="Notifications"
               >
-                <Bell className="w-5 h-5 text-gray-600" />
+                <Bell className="w-5 h-5 text-brand-ink/70" />
                 {unreadCount > 0 && (
                   <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full flex items-center justify-center">
                     {unreadCount > 9 && (
@@ -176,7 +164,7 @@ export default function Header({
               
               <div className="max-h-[60vh] sm:max-h-[400px] overflow-y-auto">
                 {notifications.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-gray-500">
+                  <div className="py-8 text-center text-sm text-brand-ink/50">
                     <p>No notifications</p>
                   </div>
                 ) : (
@@ -186,7 +174,7 @@ export default function Header({
                       onClick={() => markAsRead(notification.id)}
                       className={cn(
                         "cursor-pointer py-3", 
-                        notification.is_read ? '' : 'font-medium bg-gray-50'
+                        notification.is_read ? '' : 'font-medium bg-brand-paper'
                       )}
                     >
                       <div className="flex flex-col w-full">
@@ -194,7 +182,7 @@ export default function Header({
                         <span className="text-xs line-clamp-2 font-normal">
                           {notification.message}
                         </span>
-                        <span className="text-xs text-gray-500 mt-1">
+                        <span className="text-xs text-brand-ink/50 mt-1">
                           {formatDate(notification.created_at)}
                         </span>
                       </div>
@@ -218,17 +206,17 @@ export default function Header({
           {/* User Profile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 active:bg-gray-100 rounded-full sm:rounded-lg px-1 sm:px-2 py-1 transition-colors touch-manipulation">
+              <div className="flex items-center gap-2 cursor-pointer hover:bg-brand-paper active:bg-brand-ink/10 rounded-full sm:rounded-lg px-1 sm:px-2 py-1 transition-colors touch-manipulation">
                 <Avatar className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0">
                   <AvatarFallback style={{ backgroundColor: avatarColor }} className="text-white">
                     {firstNameInitial}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden sm:flex items-center gap-1 min-w-0">
-                  <span className="text-sm font-medium text-gray-900 truncate max-w-[100px]">
+                  <span className="text-sm font-medium text-brand-ink truncate max-w-[100px]">
                     {firstName}
                   </span>
-                  <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                  <ChevronDown className="h-4 w-4 text-brand-ink/50 flex-shrink-0" />
                 </div>
               </div>
             </DropdownMenuTrigger>
@@ -245,7 +233,7 @@ export default function Header({
               <DropdownMenuItem 
                 onClick={async () => {
                   await logout()
-                  router.replace('/auth/login')
+                  router.replace('/signin')
                 }} 
                 className="cursor-pointer py-2.5 text-red-600 focus:text-red-600"
               >
@@ -258,4 +246,4 @@ export default function Header({
       </div>
     </header>
   );
-} 
+}

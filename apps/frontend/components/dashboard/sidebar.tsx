@@ -117,7 +117,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         description: 'You have been securely logged out.'
       })
       
-      router.replace('/auth/login')
+      router.replace('/signin')
       
     } catch (error) {
       console.error('Logout error:', error)
@@ -137,7 +137,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         className={`flex items-center px-4 py-3 transition-colors ${
                   isActive(item.href) 
             ? 'bg-white/10 text-white' 
-                    : 'text-white/80 hover:bg-white/5 hover:text-white'
+                    : 'text-white/75 hover:bg-white/5 hover:text-white'
                 }`}
               >
         <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
@@ -156,7 +156,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex w-[208px] bg-[#06413F] h-screen overflow-y-auto fixed left-0 top-0 flex-col ">
+      <div className="hidden lg:flex w-[208px] bg-brand-ink h-screen overflow-y-auto fixed left-0 top-0 flex-col ">
         {/* Logo */}
         <div className="p-4 flex items-center justify-center">
           <Link href="/" className="flex gap-6 items-center">
@@ -166,7 +166,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               width={36} 
               height={36}
             />
-            <span className="text-white font-semibold -ml-2 text-lg">CoopWise</span>
+            <span className="text-white font-display font-semibold -ml-2 text-lg">CoopWise</span>
           </Link>
         </div>
         
@@ -182,7 +182,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           <button 
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="flex items-center text-white/80 hover:text-white w-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            className="flex items-center text-white/75 hover:text-white w-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
           >
           <div className="w-6 h-6 flex items-center justify-center">
               <LogOut className="w-5 h-5" />
@@ -195,7 +195,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       </div>
 
       {/* Mobile Sidebar */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-[#06413F] transform transition-transform duration-300 ease-in-out ${
+      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-brand-ink transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex flex-col h-full">
@@ -208,11 +208,11 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   width={30} 
                   height={30}
                 />
-              <span className="text-white font-semibold ml-2 text-lg">CoopWise</span>
+              <span className="text-white font-display font-semibold ml-2 text-lg">CoopWise</span>
             </div>
             <button 
               onClick={onClose}
-              className="text-white/80 hover:text-white p-1"
+              className="text-white/75 hover:text-white p-1"
               aria-label="Close menu"
             >
               <X className="w-5 h-5" />
@@ -231,7 +231,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             <button 
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="flex items-center text-white/80 hover:text-white w-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              className="flex items-center text-white/75 hover:text-white w-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
               <div className="w-6 h-6 flex items-center justify-center">
                 <LogOut className="w-5 h-5" />
@@ -245,4 +245,4 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       </div>
     </>
   )
-} 
+}

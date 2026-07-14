@@ -89,6 +89,7 @@ class SessionUser(BaseModel):
     flow_address: Optional[str] = None  # populated once background provisioning completes
     profile_picture_url: Optional[str] = None
     onboarding_status: str  # "incomplete" | "complete" — informational, not a gate
+    is_kyc_verified: Optional[bool] = False
 
     model_config = ConfigDict(from_attributes=True)
 

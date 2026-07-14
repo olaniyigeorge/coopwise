@@ -47,7 +47,7 @@ export default function InviteJoinHandler({ inviteCode, groupName }: InviteJoinH
         localStorage.setItem('pendingGroupName', groupName)
         
         // Redirect to login page with return URL to join page
-        router.push(`/auth/login?returnUrl=${encodeURIComponent(`/invite/${inviteCode}`)}`)
+        router.push(`/signin?returnUrl=${encodeURIComponent(`/invite/${inviteCode}`)}`)
         return
       }
       

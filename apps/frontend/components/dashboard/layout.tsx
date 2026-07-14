@@ -142,7 +142,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" onClick={handleCloseSidebar}>
+    <div className="min-h-screen bg-brand-paper" onClick={handleCloseSidebar}>
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div 
@@ -198,4 +198,4 @@ export default function DashboardLayout({
       />
     </div>
   )
-} 
+}

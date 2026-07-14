@@ -19,7 +19,7 @@ const navLinks = [
   { href: '/support', label: 'Support', icon: LifeBuoy },
 ]
 
-export default function Navbar() {
+export default function   Navbar() {
   const pathname = usePathname();
   const { isAuthenticated, user, logout } = useAuthStore()
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -154,7 +154,7 @@ export default function Navbar() {
                         title: "👋 Logged Out",
                         description: "We hate to see you leave. Come back soon! ❤️.",
                       })
-                      window.location.replace("/auth/login");
+                      window.location.replace("/signin");
                     }}
                     className="cursor-pointer py-2.5 text-red-600 focus:text-red-600"
                   >

@@ -49,6 +49,7 @@ interface AuthState {
   refreshUserData: () => Promise<void>;
   clearError: () => void;
   setLoading: (isLoading: boolean) => void;
+  clearAuthLocal: () => void;
 }
 
 const useAuthStore = create<AuthState>()(
@@ -68,12 +69,10 @@ const useAuthStore = create<AuthState>()(
        */
       checkAuth: async () => {
         try {
-          const token = await AuthService.getToken();
-          if (token) {
-            const savedUser = AuthService.getCurrentUser();
-            if (savedUser) {
-              set({ user: savedUser, isAuthenticated: true });
-            }
+          const res = await fetch('/api/auth/me');
+          if (res.ok) {
+            const { user } = await res.json();
+            set({ user, isAuthenticated: true });
           } else {
             set({ user: null, isAuthenticated: false });
           }
@@ -131,6 +130,8 @@ const useAuthStore = create<AuthState>()(
           } catch {}
         }
       },
+
+      clearAuthLocal: () => set({ user: null, isAuthenticated: false }),
 
       setUser: (user: User | null) => {
         const current = get().user || ({} as User);

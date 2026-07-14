@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.api.middlewares.dependencies import get_current_user, is_admin_or_owner, is_admin_permissions
+from src.api.middlewares.dependencies import get_current_admin_user, get_current_user, is_admin_or_owner, get_current_admin_user
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.users.schemas import UserDetail, UserUpdate
 from src.domains.users.service import UserService
@@ -33,12 +33,12 @@ async def get_my_profile(
 async def get_users(
     skip: int = 0,
     limit: int = 10,
-    user: AuthenticatedUser = Depends(is_admin_permissions),
+    user: AuthenticatedUser = Depends(get_current_admin_user),
     user_service: UserService = Depends(get_user_service),
 ) -> List[UserDetail]:
     """Fetch a list of users with optional pagination. Admin only."""
     # NOTE: the old "if not user: raise 401" check here was dead code —
-    # is_admin_permissions already raises on failure before this body runs.
+    # get_current_admin_user already raises on failure before this body runs.
     try:
         return await user_service.get_users(skip=skip, limit=limit)
     except UserFetchError as e:

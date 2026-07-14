@@ -1,0 +1,6 @@
+
+
+
+
+class UserKYCFlager():
+    pass
