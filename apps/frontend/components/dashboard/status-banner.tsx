@@ -1,19 +1,14 @@
 "use client"
 
-import React from 'react'
 import Link from 'next/link'
 import { AlertCircle, ArrowRight } from 'lucide-react'
 
 interface StatusBannerProps {
-  // Mirrors the real `is_kyc_verified` field the backend will send on the
-  // user object. Left optional on purpose: until that field is actually
-  // wired up, this stays `undefined` and the banner renders nothing rather
-  // than guessing at a user's KYC state.
   isKycVerified?: boolean
 }
 
 export default function StatusBanner({ isKycVerified }: StatusBannerProps) {
-  console.log(`\n\n${isKycVerified}\n\n`)
+
   if (isKycVerified !== false) return null
 
   return (
