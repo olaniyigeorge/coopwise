@@ -30,7 +30,9 @@ class RequestOtp(BaseModel):
 
     model_config = ConfigDict(use_enum_values=True)
 
-
+class RefreshSessionRequest(BaseModel):
+    refresh_token: str
+    
 class VerifyOtp(BaseModel):
     channel: OtpChannel
     identifier: str

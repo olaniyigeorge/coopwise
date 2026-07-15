@@ -9,7 +9,6 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.domains.auth.dependencies import get_auth_service
 from src.domains.auth.exceptions import (
-    AuthDomainError,
     FirebaseVerificationError,
     FullNameRequiredError,
     InvalidCredentialsError,
@@ -24,6 +23,7 @@ from src.domains.auth.exceptions import (
 from src.domains.auth.schemas import (
     FirebaseSignIn,
     PasswordSignIn,
+    RefreshSessionRequest,
     RequestOtp,
     SessionResponse,
     VerifyOtp,
@@ -95,11 +95,11 @@ async def sign_in_with_firebase(
 
 @router.post("/session/refresh", response_model=SessionResponse)
 async def refresh_session(
-    refresh_token: str,
+    payload: RefreshSessionRequest,
     auth_service: AuthService = Depends(get_auth_service),
 ):
     try:
-        return await auth_service.refresh_platform_session(refresh_token)
+        return await auth_service.refresh_platform_session(payload.refresh_token)
     except UserNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except (InvalidTokenTypeError, TokenExpiredError, InvalidTokenError) as e:
