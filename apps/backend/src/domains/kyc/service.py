@@ -3,6 +3,7 @@ from datetime import datetime, date
 from typing import Optional
 from uuid import UUID, uuid4
 
+from src.shared.utils.matcher import classify_name_match
 from src.domains.kyc.models import KYCStatus, KYCStepType, KYCStepStatus
 from src.domains.kyc.ports import (
     KYCNotifierPort, KYCRepositoryPort, FieldEncryptorPort, IdentityVerificationProviderPort,
@@ -212,7 +213,7 @@ class KYCService:
 
         # name-match check happens here, not just success — resolve can succeed but return
         # a name that doesn't match the KYC'd identity
-        if not _names_reasonably_match(bank_result.resolved_account_name, kyc.personal_info.legal_full_name):
+        if classify_name_match(bank_result.resolved_account_name, kyc.personal_info.legal_full_name) == 'no_match':
             await self._repo.set_step_status(
                 kyc.id, KYCStepType.banking_info, KYCStepStatus.rejected,
                 rejection_reason="Account name does not match KYC identity",
@@ -222,6 +223,11 @@ class KYCService:
         step_status = KYCStepStatus.submitted  # always routes to review for banking, never auto-approve
         await self._repo.set_step_status(kyc.id, KYCStepType.banking_info, step_status)
         await self._advance_if_ready(kyc.id)
+
+
+
+    # TODO: service.begin_identity_submission(user.id)  # sets step status to "processing", cheap DB write only
+
 
     # ---- Async provider callback ----
 
@@ -268,10 +274,69 @@ class KYCService:
         await self._repo.set_overall_status(kyc.id, rejection_reason=reason)
         await self._user_flags.set_kyc_verified(kyc.user_id, False)
 
-    # ---- Internal helpers ----
 
-    async def _names_reasonably_match(resolved_account_name, provided_legal_full_name):
-        pass
+    async def begin_identity_submission(self, user_id: UUID):
+        kyc = await self._require_editable(user_id, KYCStepType.identity_verification)
+        await self._repo.set_step_status(kyc.id, KYCStepType.identity_verification, KYCStepStatus.processing)
+        return kyc
+
+    async def complete_identity_submission(self, kyc_id: UUID, data: IdentityInput):
+        """Called from the Celery task once begin_identity_submission has
+        already validated editability and marked the step 'processing'."""
+        kyc = await self._repo.get_by_id(kyc_id)
+        if kyc is None:
+            raise KYCNotFoundError(str(kyc_id))
+        await self._process_identity(kyc, data)
+
+    async def _process_identity(self, kyc, data: IdentityInput):
+        doc_key = await self._storage.upload(
+            key=f"kyc/{kyc.id}/document/{uuid4()}", content=data.document_image_bytes,
+            content_type=data.document_image_content_type,
+        )
+        selfie_key = await self._storage.upload(
+            key=f"kyc/{kyc.id}/selfie/{uuid4()}", content=data.selfie_image_bytes,
+            content_type=data.selfie_image_content_type,
+        )
+        video_key = None
+        if data.video_bytes:
+            video_key = await self._storage.upload(
+                key=f"kyc/{kyc.id}/video/{uuid4()}", content=data.video_bytes,
+                content_type=data.video_content_type or "video/mp4",
+            )
+
+        result = await self._identity_provider.verify_identity(
+            document_type=data.document_type,
+            document_number=data.document_number,
+            document_image_key=doc_key,
+            selfie_image_key=selfie_key,
+            video_key=video_key,
+        )
+
+        await self._repo.upsert_identity(kyc.id, {
+                "document_type": data.document_type,
+                "document_number_encrypted": self._encryptor.encrypt(data.document_number),
+                "document_image_key": doc_key,
+                "selfie_image_key": selfie_key,
+                "video_key": video_key,
+                "liveness_check_passed": result.liveness_passed,
+                "liveness_score": result.liveness_score,
+                "provider_reference_id": result.reference_id,
+                "provider_response": result.raw_response,
+            })
+
+        if not result.success:
+            await self._repo.set_step_status(
+                kyc.id, KYCStepType.identity_verification, KYCStepStatus.rejected,
+                rejection_reason="Provider verification failed",
+            )
+            raise IdentityVerificationFailedError(result.raw_response)
+
+        step_status = KYCStepStatus.submitted if result.requires_manual_review else KYCStepStatus.approved
+        await self._repo.set_step_status(kyc.id, KYCStepType.identity_verification, step_status)
+        await self._advance_if_ready(kyc.id)
+
+
+    # ---- Internal helpers ----
 
     async def _require_editable(self, user_id: UUID, step: KYCStepType):
         """Loads the kyc record and guards against editing an already-approved step

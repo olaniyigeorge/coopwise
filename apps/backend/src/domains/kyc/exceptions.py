@@ -23,4 +23,14 @@ class IdentityVerificationFailedError(KYCError):
 
 
 class BankAccountNameMismatchError(KYCError):
-    pass
+    def __init__(self, message: str, reason: str = "mismatch"):
+        super().__init__(message)
+        self.reason = reason  # "resolution_failed" | "name_mismatch"
+
+
+class TransientProviderError(Exception):
+    """Retryable provider failure: timeout, 5xx, rate limit. Distinct from
+    IdentityVerificationFailedError, which means the provider gave a
+    definitive 'this person failed verification' answer and must NOT be
+    retried — retrying a hard rejection just re-charges you for the same
+    no."""

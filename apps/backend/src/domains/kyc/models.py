@@ -1,9 +1,10 @@
 import enum
 from uuid import uuid4
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, DateTime, Enum, ForeignKey, Text, Date, Float
+import uuid
+from sqlalchemy import JSON, Column, String, Boolean, DateTime, Enum, ForeignKey, Text, Date, Float
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infra.db.database import Base
 
@@ -65,6 +66,7 @@ class KYCVerification(Base):
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False, index=True)
 
     status = Column(Enum(KYCStatus), default=KYCStatus.not_started, nullable=False)
+    #TODO: Drop the current_step field as its derivable
     current_step = Column(Enum(KYCStepType), nullable=True)
 
     submitted_at = Column(DateTime, nullable=True)
@@ -149,6 +151,7 @@ class KYCIdentityVerification(Base):
 
     provider = Column(String, nullable=True)
     provider_reference_id = Column(String, nullable=True)
+    # TODO: COnsider encypting in case it contains sensitive data 
     provider_response = Column(Text, nullable=True)
 
     status = Column(Enum(KYCStepStatus), default=KYCStepStatus.pending, nullable=False)
@@ -157,6 +160,19 @@ class KYCIdentityVerification(Base):
     rejection_reason = Column(Text, nullable=True)
 
     kyc = relationship("KYCVerification", back_populates="identity")
+
+
+class KYCIdentitySubmissionHistory(Base):
+    __tablename__ = "kyc_identity_submission_history"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    kyc_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("kyc_verifications.id"), index=True)
+    document_image_key: Mapped[str]
+    selfie_image_key: Mapped[str]
+    video_key: Mapped[str | None]
+    provider_reference_id: Mapped[str | None]
+    outcome: Mapped[str]  # "approved" | "rejected" | "manual_review"
+    rejection_reason: Mapped[str | None]
+    submitted_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
 
 # ---- Step 4: Banking ----
