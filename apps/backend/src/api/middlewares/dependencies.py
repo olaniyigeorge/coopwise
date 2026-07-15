@@ -213,7 +213,7 @@ async def get_current_user_ws(
         role=role,
     )
 
-
+# TODO: Consider a new of this with different admin priviledges eg per group
 async def get_current_admin_user(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ) -> AuthenticatedUser:
