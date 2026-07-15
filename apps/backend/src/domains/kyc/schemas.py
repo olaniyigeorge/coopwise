@@ -181,3 +181,7 @@ class StartKYCResponse(BaseModel):
     current_step: Optional[KYCStepType]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class VerificationResult(BaseModel):
+    pass
