@@ -280,7 +280,7 @@ export default function Dashboard() {
                   variant="ghost"
                   size="sm"
                   className="text-xs text-primary h-7 px-2 hover:bg-primary/5"
-                  onClick={() => router.push('/dashboard/profile?focus=savings-goal')}
+                  onClick={() => router.push('/dashboard/account/profile?focus=savings-goal')}
                 >
                   Edit
                 </Button>
@@ -309,7 +309,7 @@ export default function Dashboard() {
                     variant="outline"
                     size="sm"
                     className="w-full mt-4 border-brand-ink/15 text-brand-ink/65 hover:border-primary hover:text-primary text-xs"
-                    onClick={() => router.push('/dashboard/profile?focus=savings-goal')}
+                    onClick={() => router.push('/dashboard/account/profile?focus=savings-goal')}
                   >
                     Update Goal
                   </Button>
@@ -321,7 +321,7 @@ export default function Dashboard() {
                     variant="outline"
                     size="sm"
                     className="border-primary text-primary hover:bg-primary hover:text-white text-xs w-full"
-                    onClick={() => router.push('/dashboard/profile?focus=savings-goal')}
+                    onClick={() => router.push('/dashboard/account/profile?focus=savings-goal')}
                   >
                     Set a Goal
                   </Button>
