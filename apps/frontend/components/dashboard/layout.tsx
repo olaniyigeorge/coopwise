@@ -111,10 +111,26 @@ export default function DashboardLayout({
           title: 'Help & Support',
           showBackButton: false
         }
-      
-      case '/dashboard/profile':
+
+      // Consolidated account hub — replaces the old standalone /dashboard/profile
+      case '/dashboard/account':
+      case '/dashboard/account/profile':
         return {
           title: 'My Profile',
+          subtitle: 'Manage your details and account settings',
+          showBackButton: false
+        }
+
+      case '/dashboard/account/notifications':
+        return {
+          title: 'Notification Preferences',
+          subtitle: 'Manage your details and account settings',
+          showBackButton: false
+        }
+
+      case '/dashboard/account/settings':
+        return {
+          title: 'Settings',
           subtitle: 'Manage your details and account settings',
           showBackButton: false
         }
