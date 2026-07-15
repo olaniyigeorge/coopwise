@@ -31,7 +31,7 @@ export async function proxy(request: NextRequest) {
 
   if (isDashboard && !isAuthenticated) {
     const loginUrl = request.nextUrl.clone()
-    loginUrl.pathname = '/auth/login'
+    loginUrl.pathname = '/signin'
     loginUrl.searchParams.set('returnUrl', `${pathname}${request.nextUrl.search || ''}`)
     const res = NextResponse.redirect(loginUrl)
     if (refreshFailed) clearAuthCookies(res) // dead refresh token, stop dragging it around
