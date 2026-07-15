@@ -34,6 +34,7 @@ class GlobalConfig(BaseSettings):
     SMS_PROVIDER_API_KEY: str
     SMS_SENDER_ID: str
     SMS_PROVIDER_BASE_URL: str
+    KYC_WEBHOOK_SECRET: str
 
     # Mail config: required for notification email delivery
     MAIL_USERNAME: str
@@ -83,15 +84,25 @@ def get_config() -> GlobalConfig:
 
 
 def load_rate_limit_rules(path: str) -> Dict[str, Any]:
+    default = {"default": {"capacity": 10, "refill_rate": 1}, "rules": []}
     try:
         with open(path, "r") as f:
             rules = json.load(f)
-            logger.info(f"Loaded rate limiting rules from {path}")
-            return rules
     except (FileNotFoundError, json.JSONDecodeError) as e:
         logger.warning(f"Could not load rate limit rules from {path}: {e}. Using defaults.")
-        return {"default": {"capacity": 10, "refill_rate": 1}}
+        return default
 
+    try:
+        assert "capacity" in rules.get("default", {}) and "refill_rate" in rules.get("default", {})
+        for rule in rules.get("rules", []):
+            assert "path_prefix" in rule and "capacity" in rule and "refill_rate" in rule
+            float(rule["capacity"]); float(rule["refill_rate"])
+    except (AssertionError, TypeError, ValueError) as e:
+        logger.error(f"Invalid rate_limit_rules.json shape: {e}. Falling back to safe default.")
+        return default
+
+    logger.info(f"Loaded rate limiting rules from {path}")
+    return rules
 
 AppConfig: GlobalConfig = get_config()
 

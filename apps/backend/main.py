@@ -64,12 +64,11 @@ for router in router_list:
     app.include_router(router)
 
 # --- Middleware (order matters: last added = outermost = first to run) ---
-default_rule = rate_limit_rules.get("default", {"capacity": 10, "refill_rate": 1})
 
 app.add_middleware(
     DistributedTokenBucketMiddleware,
-    capacity=default_rule["capacity"],
-    refill_rate=default_rule["refill_rate"],
+    rules=rate_limit_rules.get("rules", []),
+    default=rate_limit_rules.get("default", {"capacity": 10, "refill_rate": 1}),
 )
 
 app.add_middleware(

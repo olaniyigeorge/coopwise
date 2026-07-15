@@ -6,5 +6,12 @@
   "special_path": {
     "capacity": 50,
     "refill_rate": 10
-  }
+  },
+  "rules": [
+    { "path_prefix": "/api/v1/kyc/identity",     "capacity": 5,  "refill_rate": 0.0014 },
+    { "path_prefix": "/api/v1/kyc/banking-info", "capacity": 5,  "refill_rate": 0.0014 },
+    { "path_prefix": "/api/v1/kyc/webhook",      "capacity": 30, "refill_rate": 0.5 },
+    { "path_prefix": "/api/v1/auth/otp",         "capacity": 3,  "refill_rate": 0.0008 },
+    { "path_prefix": "/api/v1",                  "capacity": 20, "refill_rate": 2 }
+  ]
 }
