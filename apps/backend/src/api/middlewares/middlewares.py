@@ -1,7 +1,6 @@
 import uuid
 from fastapi import Request, Response
 from typing import Callable
-import json
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 import time
@@ -10,13 +9,12 @@ from src.shared.utils.logger import logger
 import redis.asyncio as redis
 from redis.asyncio.client import Redis as RedisClient
 
-
 class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
     """
-    Distributed token bucket rate limiter using Redis + Lua (atomic).
-    - Uses millisecond timestamps for smooth refill.
-    - Uses fractional tokens (floats) so refill works even during fast loops.
-    - Handles Redis NOSCRIPT by reloading script automatically.
+        Distributed token bucket rate limiter using Redis + Lua (atomic).
+        - Uses millisecond timestamps for smooth refill.
+        - Uses fractional tokens (floats) so refill works even during fast loops.
+        - Handles Redis NOSCRIPT by reloading script automatically.
     """
 
     LUA_SCRIPT = r"""
@@ -54,105 +52,81 @@ class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
         return {allowed, tokens}
     """
 
-    def __init__(self, app: ASGIApp, capacity: int, refill_rate: float):
+    def __init__(self, app: ASGIApp, rules: list[dict], default: dict):
         super().__init__(app)
-        self.capacity = float(capacity)
-        self.refill_rate = float(refill_rate)
+        # sort longest-prefix-first so "/api/v1/kyc/identity" matches before "/api/v1"
+        self.rules = sorted(rules, key=lambda r: -len(r["path_prefix"]))
+        self.default = default
         self._script_sha: str | None = None
 
-    async def _ensure_script(self, r: RedisClient) -> None:
-        if self._script_sha is None:
-            self._script_sha = await r.script_load(self.LUA_SCRIPT)
-            logger.info("Rate limiter Lua script loaded (sha=%s)", self._script_sha)
+    def _resolve_rule(self, path: str) -> dict:
+        for rule in self.rules:
+            if path.startswith(rule["path_prefix"]):
+                return rule
+        return self.default
 
     def _get_client_id(self, request: Request) -> str:
-        # Prefer X-Forwarded-For (first IP), else socket IP
+        #TODO: Render's XFF handling isn't documented as strictly append-only for
+        # all plan tiers — don't trust client-supplied values for a security
+        # control. Revisit if/when Render ships a dedicated client-IP header
         xff = request.headers.get("x-forwarded-for")
-        if xff:
-            client_ip = xff.split(",")[0].strip()
-        else:
-            client_ip = request.client.host if request.client else "unknown"
-
-        # Optional: make rate limit per route:
-        # return f"{client_ip}:{request.method}:{request.url.path}"
+        client_ip = xff.split(",")[0].strip() if xff else (request.client.host if request.client else "unknown")
         return client_ip
 
-    def _retry_after_seconds(self, tokens_left: float) -> int:
-        # If blocked, how long until 1 token is available?
-        # tokens_left is < 1 in blocked scenario (or < requested).
-        if self.refill_rate <= 0:
-            return 1
-        missing = max(0.0, 1.0 - tokens_left)
-        seconds = missing / self.refill_rate
-        return max(1, int(seconds + 0.999))  # ceil, min 1
-
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        r: RedisClient | None = getattr(request.app.state, "redis", None)
+        r = getattr(request.app.state, "redis", None)
         if r is None:
             logger.error("Redis client not found in app.state.redis. Rate limiting disabled.")
             return await call_next(request)
 
+        rule = self._resolve_rule(request.url.path)
+        capacity = float(rule["capacity"])
+        refill_rate = float(rule["refill_rate"])
+
         client_id = self._get_client_id(request)
-        key = f"rate-limit:{client_id}"
+        # keyed by rule's path_prefix, not just client — so a user's KYC
+        # bucket and their general API bucket are independent
+        key = f"rate-limit:{rule.get('path_prefix', 'default')}:{client_id}"
 
         now_ms = int(time.time() * 1000)
-
         try:
             await self._ensure_script(r)
-
-            try:
-                result = await r.evalsha(
-                    self._script_sha,
-                    1,
-                    key,
-                    str(self.capacity),
-                    str(self.refill_rate),
-                    str(now_ms),
-                    "1",
-                )
-            except Exception as e:
-                # Redis restarted or script cache flushed -> NOSCRIPT
-                if "NOSCRIPT" in str(e).upper():
-                    self._script_sha = None
-                    await self._ensure_script(r)
-                    result = await r.evalsha(
-                        self._script_sha,
-                        1,
-                        key,
-                        str(self.capacity),
-                        str(self.refill_rate),
-                        str(now_ms),
-                        "1",
-                    )
-                else:
-                    raise
-
-            allowed = bool(result[0])
-            tokens_left = float(result[1])
+            result = await self._eval(r, key, capacity, refill_rate, now_ms)
+            allowed, tokens_left = bool(result[0]), float(result[1])
 
             if allowed:
                 response = await call_next(request)
-                response.headers["X-RateLimit-Limit"] = str(int(self.capacity))
+                response.headers["X-RateLimit-Limit"] = str(int(capacity))
                 response.headers["X-RateLimit-Remaining"] = str(max(0, int(tokens_left)))
                 return response
 
-            retry_after = self._retry_after_seconds(tokens_left)
-            logger.warning("Rate limit exceeded for client '%s' (tokens_left=%.3f)", client_id, tokens_left)
+            retry_after = self._retry_after_seconds(tokens_left, refill_rate)
+            logger.warning("Rate limit exceeded for '%s' on rule '%s' (tokens_left=%.3f)",
+                            client_id, rule.get("path_prefix"), tokens_left)
             return Response(
-                content="Too Many Requests",
-                status_code=429,
-                headers={
-                    "Retry-After": str(retry_after),
-                    "X-RateLimit-Limit": str(int(self.capacity)),
-                    "X-RateLimit-Remaining": "0",
-                },
+                content="Too Many Requests", status_code=429,
+                headers={"Retry-After": str(retry_after), "X-RateLimit-Limit": str(int(capacity)),
+                         "X-RateLimit-Remaining": "0"},
             )
-
         except Exception as e:
             logger.error("Rate limiter error: %s. Allowing request.", e)
             return await call_next(request)
 
+    async def _eval(self, r, key, capacity, refill_rate, now_ms):
+        try:
+            return await r.evalsha(self._script_sha, 1, key, str(capacity), str(refill_rate), str(now_ms), "1")
+        except Exception as e:
+            if "NOSCRIPT" in str(e).upper():
+                self._script_sha = None
+                await self._ensure_script(r)
+                return await r.evalsha(self._script_sha, 1, key, str(capacity), str(refill_rate), str(now_ms), "1")
+            raise
 
+    def _retry_after_seconds(self, tokens_left: float, refill_rate: float) -> int:
+        if refill_rate <= 0:
+            return 1
+        missing = max(0.0, 1.0 - tokens_left)
+        return max(1, int(missing / refill_rate + 0.999))
 
 async def app_middleware(request: Request, call_next):
     request_id = str(uuid.uuid4())
