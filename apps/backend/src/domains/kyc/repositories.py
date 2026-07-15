@@ -15,9 +15,13 @@ from src.domains.kyc.models import (
     KYCStepStatus,
     KYCStepType,
 )
+from src.domains.kyc.audit_models import KYCAuditLog
+
 from src.domains.kyc.ports import KYCRepositoryPort
 
-class SqlAlchemyKYCRepository(KYCRepositoryPort):
+
+
+class SQLAlchemyKYCRepository(KYCRepositoryPort):
     _STEP_MODEL = {
         KYCStepType.personal_info: KYCPersonalInfo,
         KYCStepType.contact_info: KYCContactInfo,
@@ -229,3 +233,19 @@ class SqlAlchemyKYCRepository(KYCRepositoryPort):
         )
 
         return await self._db.scalar(stmt)
+    
+
+
+
+class SQLAlchemyKYCAuditRepository:
+    def __init__(self, session: AsyncSession):
+        self._session = session
+
+    async def create(self, *, kyc_id, admin_id, action, step, reason, metadata, ip_address, user_agent):
+        entry = KYCAuditLog(
+            kyc_id=kyc_id, admin_id=admin_id, action=action, step=step,
+            reason=reason, metadata_=metadata, ip_address=ip_address, user_agent=user_agent,
+        )
+        self._session.add(entry)
+        await self._session.commit()
+        return entry

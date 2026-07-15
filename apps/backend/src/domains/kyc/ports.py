@@ -5,6 +5,25 @@ from uuid import UUID
 from src.domains.kyc.models import (
     KYCVerification, KYCStepType, KYCStepStatus
 )
+from src.domains.kyc.audit_models import KYCAuditLog
+
+class KYCAuditRepositoryPort(ABC):
+    async def create(
+        self, *, kyc_id, admin_id, action: str, step: str | None,
+        reason: str | None, metadata: dict, ip_address: str | None, user_agent: str | None,
+    ): ...
+        
+    # @abstractmethod
+    # async def fetch(self) -> Optional[KYCAuditLog]: ...
+
+    # @abstractmethod
+    # async def get_by_user_id(self, user_id: UUID) -> Optional[KYCAuditLog]: ...
+
+    # @abstractmethod
+    # async def get_by_kyc_id(self, kyc_id: UUID) -> Optional[KYCAuditLog]: ...
+
+    # @abstractmethod
+    # async def get_by_admin_id(self, kyc_id: UUID) -> Optional[KYCAuditLog]: ...
 
 
 class KYCRepositoryPort(ABC):
