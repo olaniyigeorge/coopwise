@@ -8,8 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { useAuth } from '@/lib/auth-context'
-import useAuthStore from '@/stores/auth-store'
+import { useUserProfile } from '@/lib/hooks/use-user-profile"
 
 interface ProfileData {
   fullName: string
@@ -90,10 +89,21 @@ function BadgePill({ verified }: { verified: boolean }) {
     </span>
   )
 }
+function RolePill({ role }: { role: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+      role!=="admin"
+        ? 'bg-green-50 text-green-700 border border-green-200'
+        : 'bg-blue-50 text-blue-700 border border-blue-200'
+    }`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${role!=='admin' ? 'bg-green-500' : 'bg-blue-400'}`} />
+      {role}
+    </span>
+  )
+}
 
 export default function ProfileContent() {
-  const { updateUserProfile, refreshUserData } = useAuth()
-  const { user } = useAuthStore()
+  const { profile, isLoading: isProfileLoading, isUpdating, updateProfile } = useUserProfile()
   const searchParams = useSearchParams()
   const focusSection = searchParams.get('focus')
   const savingsGoalRef = useRef<HTMLDivElement>(null)
@@ -111,20 +121,20 @@ export default function ProfileContent() {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (user) {
+    if (profile) {
       setProfileData({
-        fullName: user.full_name || '',
-        phoneNumber: user.phone_number || '',
-        email: user.email || '',
-        monthlySavingsTarget: user.income_range || '',
-        savingAmountGoal: user.target_savings_amount?.toString() || '',
-        savingGoal: user.savings_purpose || '',
-        savingFrequency: user.saving_frequency || '',
+        fullName: profile.full_name || '',
+        phoneNumber: profile.phone_number || '',
+        email: profile.email || '',
+        monthlySavingsTarget: profile.income_range || '',
+        savingAmountGoal: profile.target_savings_amount?.toString() || '',
+        savingGoal: profile.savings_purpose || '',
+        savingFrequency: profile.saving_frequency || '',
       })
-    } else {
-      refreshUserData()
     }
-  }, [user, refreshUserData])
+    }, [profile])
+  
+
 
   useEffect(() => {
     if (focusSection === 'savings-goal' && savingsGoalRef.current) {
@@ -144,47 +154,15 @@ export default function ProfileContent() {
   }
 
   const handleSaveChanges = async () => {
-    if (!user) {
-      toast.error('You must be logged in to update your profile')
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      const updateData = {
-        id: user.id,
-        resource_owner_id: user.id,
-        username: user.username,
+       await updateProfile({
         email: profileData.email,
         full_name: profileData.fullName,
         phone_number: profileData.phoneNumber,
-        role: user.role || 'user',
         target_savings_amount: profileData.savingAmountGoal ? parseFloat(profileData.savingAmountGoal) : 0,
         savings_purpose: profileData.savingGoal || '',
         income_range: profileData.monthlySavingsTarget || 'Below 50K',
         saving_frequency: profileData.savingFrequency || 'daily',
-        is_email_verified: user.is_email_verified ?? false,
-        is_phone_verified: user.is_phone_verified ?? false,
-        created_at: user.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-
-      await updateUserProfile(updateData)
-      toast.success('Profile updated successfully!', { description: 'Your changes have been saved.' })
-    } catch (error: any) {
-      let errorMessage = 'Failed to update your profile'
-      if (error.response?.data?.detail) {
-        errorMessage = Array.isArray(error.response.data.detail)
-          ? error.response.data.detail.map((e: any) => `${e.loc.join('.')}: ${e.msg}`).join(', ')
-          : error.response.data.detail
-      } else if (error.message) {
-        errorMessage = error.message
-      }
-      toast.error('Update failed', { description: errorMessage })
-    } finally {
-      setIsLoading(false)
-    }
+      })
   }
 
   return (
@@ -220,6 +198,8 @@ export default function ProfileContent() {
               <p className="font-semibold text-gray-900 truncate">{user?.full_name || '—'}</p>
               <p className="text-sm text-gray-500 truncate">{user?.email}</p>
             </div>
+
+            <RolePill role={user!.role} />
             <BadgePill verified={!!user?.is_email_verified} />
           </div>
 
@@ -228,10 +208,6 @@ export default function ProfileContent() {
             <div className="bg-gray-50 rounded-lg px-3 py-2">
               <p className="text-xs text-gray-400 mb-0.5">Username</p>
               <p className="font-medium text-gray-700 truncate">{user?.username || '—'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg px-3 py-2">
-              <p className="text-xs text-gray-400 mb-0.5">Role</p>
-              <p className="font-medium text-gray-700 capitalize">{user?.role || '—'}</p>
             </div>
           </div>
 
