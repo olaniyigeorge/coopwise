@@ -99,7 +99,6 @@ const OnboardingWizard = () => {
   const router = useRouter()
   const setUser = useAuthStore((s) => s.setUser)
   const user = useAuthStore((s) => s.user)
-
   const [stepIndex, setStepIndex] = useState(0)
   const [direction, setDirection] = useState(1)
   const [rootError, setRootError] = useState<string | null>(null)
@@ -157,8 +156,12 @@ const OnboardingWizard = () => {
         const uploadResult = await uploadAvatar(user!.id, avatarFile)
         profile_picture_url = uploadResult.profile_picture_url
       }
-      const payload = { ...data, profile_picture_url }
-      const result = await completeOnboarding(user!.id, payload)
+      // const payload = { ...data, profile_picture_url }
+      if (!useAuthStore.getState().user) {
+        throw new Error("User is not loaded.");
+      }
+      const currentUser = useAuthStore.getState().user
+      const result = await completeOnboarding(currentUser!.id, data)
       setUser(result.user)
       setJustCompleted(true)
       setTimeout(() => router.push("/dashboard"), 650)
@@ -174,7 +177,7 @@ const OnboardingWizard = () => {
   }
 
   return (
-    <div className="bg-brand-paper min-h-screen flex items-center justify-center p-6">
+    <div className="auth_bg min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-white rounded-2xl border border-brand-gold/20 shadow-xl p-8 space-y-6">
         {/* Header: tally progress + step title */}
         <div className="flex flex-col items-center gap-4">
@@ -264,7 +267,7 @@ const OnboardingWizard = () => {
                                       className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm text-left transition-colors touch-manipulation
                                         ${
                                           selected
-                                            ? "border-brand-teal bg-brand-teal/5 text-brand-teal font-medium"
+                                            ? "border-brand-teal bg-brand-gold text-brand-ink font-medium"
                                             : "border-brand-gold/20 text-brand-ink"
                                         }`}
                                     >
@@ -363,19 +366,21 @@ const OnboardingWizard = () => {
                                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-colors touch-manipulation
                                       ${
                                         selected
-                                          ? "border-brand-teal bg-brand-teal/5"
+                                          ? "border-brand-teal bg-brand-gold "
                                           : "border-brand-gold/20"
                                       }`}
                                   >
                                     <div>
                                       <p
                                         className={`text-sm font-medium ${
-                                          selected ? "text-brand-teal" : "text-brand-ink"
+                                          selected ? "text-brand-paper" : "text-brand-ink"
                                         }`}
                                       >
                                         {opt.label}
                                       </p>
-                                      <p className="text-xs text-brand-secondary">{opt.blurb}</p>
+                                      <p className={`text-xs ${
+                                          selected ? "text-brand-teal" : "text-brand-ink"
+                                        }`}>{opt.blurb}</p>
                                     </div>
                                   </button>
                                 )
