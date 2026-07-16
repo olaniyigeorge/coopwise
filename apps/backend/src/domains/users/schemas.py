@@ -36,23 +36,31 @@ class iAuthWallet(BaseModel):
     flow_address: str
     wallet_provider: Optional[str] = "crossmint"
 
+
+
+class AvatarUploadResponse(BaseModel):
+    task_id: str
+    status: str = "processing"
+
 class UserUpdate(BaseModel):
+    """Fields a user can update on themselves, or an admin can update on their behalf."""
     username: Optional[Annotated[str, constr(min_length=3, max_length=50)]] = None
     email: Optional[EmailStr] = None
-    password: Optional[Annotated[str, constr(min_length=6)]] = None
     full_name: Optional[str] = None
     phone_number: Optional[PhoneNumberStr] = None  # E.164 international format
-    role: Optional[UserRoles] = None
 
+    # Onboarding fields
     target_savings_amount: Optional[float] = None
     savings_purpose: Optional[str] = None
     income_range: Optional[IncomeRange] = None
     saving_frequency: Optional[SavingFrequency] = None
-    # is_email_verified: Optional[bool] = None
-    # is_phone_verified: Optional[bool] = None
-    # is_verified: Optional[bool] = None
-    # is_video_verified: Optional[bool] = None
-    # wallet_activated: Optional[bool] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserRoleUpdate(BaseModel):
+    """Admin-only. Kept separate so it never rides through the self-service endpoint."""
+    role: UserRoles
 
     model_config = ConfigDict(from_attributes=True)
 
