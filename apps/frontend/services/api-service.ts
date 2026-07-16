@@ -1,74 +1,183 @@
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-import AuthService from './auth-service';
+import { emitAuthInvalidated } from "@/lib/auth/events"
 
-// Create an axios instance with defaults
-const apiClient = axios.create({
-  baseURL: '/api', // Use our Next.js API routes as a proxy
-  timeout: 15000,  // 15 seconds
-  headers: {
-    'Content-Type': 'application/json',
-  }
-});
 
-// Request interceptor for API calls
-apiClient.interceptors.request.use(
-  (config) => {
-    // Get the auth token from our service
-    const token = AuthService.getToken();
-    
-    // If the token exists, add it to the Authorization header
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
+type RequestOptions = RequestInit & {
+  skipAuthRedirect?: boolean
+}
+
+
+const API_BASE = "/api"
+
+
+async function request<T>(
+  path: string,
+  options: RequestOptions = {}
+): Promise<T> {
+
+  const {
+    skipAuthRedirect,
+    ...fetchOptions
+  } = options
+
+
+  const isFormData = fetchOptions.body instanceof FormData
+
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    credentials: "include",
+
+    headers: isFormData
+      ? {
+          ...(fetchOptions.headers || {}),
+        }
+      : {
+          "Content-Type": "application/json",
+          ...(fetchOptions.headers || {}),
+        },
+
+    ...fetchOptions,
+  })
+
+  /**
+   * Session expired / invalid.
+   *
+   * This means:
+   * - proxy could not refresh token
+   * - backend rejected auth
+   *
+   * Notify client stores.
+   */
+  if (response.status === 401) {
+
+    if (!skipAuthRedirect) {
+      emitAuthInvalidated()
     }
-    
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
-// Response interceptor for API calls
-apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // Handle 401 errors (unauthorized) - could implement token refresh here
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      // For now, just log the user out if their token is invalid
-      // In a more advanced implementation, you could try to refresh the token
-      console.error('Unauthorized API request - token may be invalid');
-    }
-    
-    return Promise.reject(error);
+    throw new Error(
+      "Authentication expired"
+    )
   }
-);
 
-// Export a typed API service
+
+  if (!response.ok) {
+
+    const body = await response
+      .text()
+      .catch(() => "")
+
+
+    throw new Error(
+      `API request failed (${response.status}): ${body}`
+    )
+  }
+
+
+  /**
+   * FastAPI uses 204 for successful mutations.
+   *
+   * Calling response.json()
+   * on an empty body throws:
+   *
+   * Unexpected end of JSON input
+   */
+  if (response.status === 204) {
+    return null as T
+  }
+
+
+  return response.json() as Promise<T>
+}
+
+
+
 const ApiService = {
-  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    return apiClient.get<T>(url, config);
-  },
-  
-  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    return apiClient.post<T>(url, data, config);
-  },
-  
-  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    return apiClient.put<T>(url, data, config);
-  },
-  
-  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    return apiClient.patch<T>(url, data, config);
-  },
-  
-  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    return apiClient.delete<T>(url, config);
-  }
-};
 
-export default ApiService; 
+  get<T>(
+    path: string,
+    options?: RequestOptions
+  ) {
+    return request<T>(
+      path,
+      {
+        method: "GET",
+        ...options,
+      }
+    )
+  },
+
+
+  post<T>(
+    path: string,
+    body?: unknown,
+    options?: RequestOptions
+  ) {
+    return request<T>(
+      path,
+      {
+        method: "POST",
+        body: body instanceof FormData
+          ? body
+          : body !== undefined
+            ? JSON.stringify(body)
+            : undefined,
+        ...options,
+      }
+    )
+  },
+
+  put<T>(
+    path: string,
+    body?: unknown,
+    options?: RequestOptions
+  ) {
+    return request<T>(
+      path,
+      {
+        method: "PUT",
+        body: body instanceof FormData
+          ? body
+          : body !== undefined
+            ? JSON.stringify(body)
+            : undefined,
+        ...options,
+      }
+    )
+  },
+
+
+  patch<T>(
+    path: string,
+    body?: unknown,
+    options?: RequestOptions
+  ) {
+    return request<T>(
+      path,
+      {
+        method: "PATCH",
+        body: body instanceof FormData
+          ? body
+          : body !== undefined
+            ? JSON.stringify(body)
+            : undefined,
+        ...options,
+      }
+    )
+  },
+
+  delete<T>(
+    path: string,
+    options?: RequestOptions
+  ) {
+    return request<T>(
+      path,
+      {
+        method: "DELETE",
+        ...options,
+      }
+    )
+  },
+
+}
+
+
+export default ApiService
