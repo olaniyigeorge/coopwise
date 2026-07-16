@@ -68,7 +68,7 @@ const NotificationService = {
         }
     
         const ws_notification_endpoint = `${NEXT_PUBLIC_WS_URL}/api/v1/notifications/ws?token=${token}`
-        console.log(`🔌 Connecting to WebSocket: ${ws_notification_endpoint}`);
+        console.log(`🔌 Connecting to WebSocket: ${ws_notification_endpoint.slice(0,10)}`);
     
         const socket = new WebSocket(ws_notification_endpoint);
     
