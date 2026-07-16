@@ -389,7 +389,7 @@ class KYCService:
 
     async def _advance_if_ready(self, kyc_id: UUID):
         kyc = await self._repo.get_by_id(kyc_id)
-        steps = [kyc.personal_info, kyc.contact_info, kyc.identity, kyc.banking_info]
+        steps = [kyc.personal_info, kyc.contact_info, kyc.identity_verification, kyc.banking_info]
         if all(s is not None and s.status in (KYCStepStatus.submitted, KYCStepStatus.approved) for s in steps):
             if kyc.status == KYCStatus.in_progress:
                 await self._transition(kyc, KYCStatus.pending_review)
