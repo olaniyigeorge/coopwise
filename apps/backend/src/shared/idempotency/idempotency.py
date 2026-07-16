@@ -1,11 +1,12 @@
 import hashlib
+import json
 
 from redis.asyncio import Redis
 import redis as sync_redis
 from fastapi import HTTPException, Header, Depends, status
 
 from config import AppConfig as config
-from src.api.middlewares.dependencies import get_redis
+from src.infra.cache.redis_client import get_redis
 
 IDEMPOTENCY_TTL_SECONDS = 24 * 3600
 
@@ -37,22 +38,57 @@ class IdempotencyGuard:
         self._scope = scope
 
     def _key(self, user_id, idempotency_key: str) -> str:
-        # scope by user so one user can't collide/spoof another's key
         return f"idem:{self._scope}:{user_id}:{idempotency_key}"
 
-    async def acquire(self, user_id, idempotency_key: str) -> bool:
-        """Returns True if this is a new request (proceed), False if a
-        duplicate (already processed or currently in-flight — caller decides)."""
+    async def start(
+        self,
+        user_id,
+        idempotency_key: str,
+    ) -> bool:
+        """
+        Returns True if this request owns execution.
+        Returns False if another request already started.
+        """
         key = self._key(user_id, idempotency_key)
-        acquired = await self._redis.set(key, "in_progress", nx=True, ex=IDEMPOTENCY_TTL_SECONDS)
-        return acquired is True
 
-    async def mark_complete(self, user_id, idempotency_key: str, result_marker: str = "done"):
-        key = self._key(user_id, idempotency_key)
-        await self._redis.set(key, result_marker, ex=IDEMPOTENCY_TTL_SECONDS)
+        return await self._redis.set(
+            key,
+            json.dumps({
+                "status": "processing"
+            }),
+            nx=True,
+            ex=IDEMPOTENCY_TTL_SECONDS,
+        )
 
-    async def release_on_failure(self, user_id, idempotency_key: str):
-        # if the request fails validation before any side effect happened,
-        # free the key so the client's retry isn't permanently blocked
+
+    async def get_result(
+        self,
+        user_id,
+        idempotency_key: str,
+    ):
         key = self._key(user_id, idempotency_key)
-        await self._redis.delete(key)
+
+        value = await self._redis.get(key)
+
+        if not value:
+            return None
+
+        return json.loads(value)
+
+
+    async def complete(
+        self,
+        user_id,
+        idempotency_key: str,
+        response: dict,
+    ):
+        key = self._key(user_id, idempotency_key)
+
+        await self._redis.set(
+            key,
+            json.dumps({
+                "status": "completed",
+                "response": response,
+            }),
+            ex=IDEMPOTENCY_TTL_SECONDS,
+        )

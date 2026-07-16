@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from redis.asyncio import Redis
 from fastapi import HTTPException, Request, Depends, status
 
-from src.api.middlewares.dependencies import get_redis, get_optional_current_user
+from src.api.middlewares.dependencies import get_optional_current_user
+from src.infra.cache.redis_client import get_redis
 
 _INCR_EXPIRE_LUA = """
 local current = redis.call("INCR", KEYS[1])
