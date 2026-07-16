@@ -3,7 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
-from src.api.middlewares.dependencies import get_current_user, get_redis
+
+from src.shared.utils.logger import logger
+from src.api.middlewares.dependencies import get_current_user
+from src.infra.cache.redis_client import get_redis
 from src.infra.db.dependencies import get_async_db_session
 from src.domains.ai_chat.schemas import AiChatHistoryResponse, AiChatBody
 from src.domains.ai_chat.service import load_messages, save_messages, clear_messages, openai_chat_with_messages, AI_CHAT_SYSTEM, MAX_HISTORY_MESSAGES

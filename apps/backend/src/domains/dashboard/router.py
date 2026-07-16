@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.infra.db.dependencies import get_async_db_session
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.dashboard.schemas import DashboardData
-from src.api.middlewares.dependencies import get_current_user, get_redis
+from src.api.middlewares.dependencies import get_current_user
+from src.infra.cache.redis_client import get_redis
 from src.domains.dashboard.service import DashboardService
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["Dashboard"])

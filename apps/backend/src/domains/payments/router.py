@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from src.shared.utils.logger import logger
-from src.api.middlewares.dependencies import get_cashramp_service, get_redis
+from src.infra.cache.redis_client import get_redis
 from src.api.middlewares.dependencies import get_current_user
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.payments.schemas import PaystackPayload
@@ -30,7 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from src.shared.utils.logger import logger
-from src.api.middlewares.dependencies import get_redis
+from src.infra.cache.redis_client import get_redis
 from src.api.middlewares.dependencies import get_current_user
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.payments.schemas import PaystackPayload
@@ -268,59 +268,59 @@ async def paystack_callback(
 
 
 
-@router.get("/cashramp/account-info", summary="Get merchant account information")
-async def get_account_info(cashramp: CashRampService = Depends(get_cashramp_service)):
-    """
-    Retrieves the current merchant account info from CacheRAMP, including balance.
-    """
-    return await cashramp.get_account_info()
+# @router.get("/cashramp/account-info", summary="Get merchant account information")
+# async def get_account_info(cashramp: CashRampService = Depends(get_cashramp_service)):
+#     """
+#     Retrieves the current merchant account info from CacheRAMP, including balance.
+#     """
+#     return await cashramp.get_account_info()
 
 
-@router.post("/cashramp/customer", response_model=CustomerResponse)
-async def create_customer(
-    email: str,
-    first_name: str,
-    last_name: str,
-    country_id: str,
-    cashramp: CashRampService = Depends(get_cashramp_service),
-):
-    return await cashramp.create_customer(email, first_name, last_name, country_id)
+# @router.post("/cashramp/customer", response_model=CustomerResponse)
+# async def create_customer(
+#     email: str,
+#     first_name: str,
+#     last_name: str,
+#     country_id: str,
+#     cashramp: CashRampService = Depends(get_cashramp_service),
+# ):
+#     return await cashramp.create_customer(email, first_name, last_name, country_id)
 
 
-@router.get("/cashramp/quote", response_model=RampQuoteResponse)
-async def get_quote(
-    amount: float,
-    currency: str,
-    customer_id: str,
-    payment_type: str,
-    payment_method_type: str,
-    cashramp: CashRampService = Depends(get_cashramp_service),
-):
-    return await cashramp.get_ramp_quote(
-        amount, currency, customer_id, payment_type, payment_method_type
-    )
+# @router.get("/cashramp/quote", response_model=RampQuoteResponse)
+# async def get_quote(
+#     amount: float,
+#     currency: str,
+#     customer_id: str,
+#     payment_type: str,
+#     payment_method_type: str,
+#     cashramp: CashRampService = Depends(get_cashramp_service),
+# ):
+#     return await cashramp.get_ramp_quote(
+#         amount, currency, customer_id, payment_type, payment_method_type
+#     )
 
 
-@router.post("/cashramp/deposit", response_model=InitiateDepositResponse)
-async def initiate_deposit(
-    ramp_quote_id: str,
-    reference: Optional[str] = None,
-    cashramp: CashRampService = Depends(get_cashramp_service),
-):
-    return await cashramp.initiate_deposit(ramp_quote_id, reference)
+# @router.post("/cashramp/deposit", response_model=InitiateDepositResponse)
+# async def initiate_deposit(
+#     ramp_quote_id: str,
+#     reference: Optional[str] = None,
+#     cashramp: CashRampService = Depends(get_cashramp_service),
+# ):
+#     return await cashramp.initiate_deposit(ramp_quote_id, reference)
 
 
-@router.post("/cashramp/deposit/paid")
-async def mark_deposit_as_paid(
-    payment_request_id: str,
-    receipt_url: Optional[str] = None,
-    cashramp: CashRampService = Depends(get_cashramp_service),
-):
-    return await cashramp.mark_deposit_as_paid(payment_request_id, receipt_url)
+# @router.post("/cashramp/deposit/paid")
+# async def mark_deposit_as_paid(
+#     payment_request_id: str,
+#     receipt_url: Optional[str] = None,
+#     cashramp: CashRampService = Depends(get_cashramp_service),
+# ):
+#     return await cashramp.mark_deposit_as_paid(payment_request_id, receipt_url)
 
 
-@router.post("/cashramp/deposit/cancel")
-async def cancel_deposit(
-    payment_request_id: str, cashramp: CashRampService = Depends(get_cashramp_service)
-):
-    return await cashramp.cancel_deposit(payment_request_id)
+# @router.post("/cashramp/deposit/cancel")
+# async def cancel_deposit(
+#     payment_request_id: str, cashramp: CashRampService = Depends(get_cashramp_service)
+# ):
+#     return await cashramp.cancel_deposit(payment_request_id)

@@ -27,7 +27,8 @@ from src.domains.wallets.schemas import (
     WalletBalance,
     WalletDetail,
 )
-from src.api.middlewares.dependencies import get_current_user, get_redis
+from src.api.middlewares.dependencies import get_current_user
+from src.infra.cache.redis_client import get_redis
 from src.shared.utils.logger import logger
 
 

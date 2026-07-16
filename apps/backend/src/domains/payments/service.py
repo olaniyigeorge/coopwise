@@ -8,7 +8,6 @@ from src.domains.auth.schemas import AuthenticatedUser
 
 from src.domains.wallets.schemas import WalletLedgerCreate
 from src.domains.wallets.service import WalletService
-from src.api.middlewares.dependencies import get_cashramp_service
 from src.infra.payments.cashramp_service import CashRampService
 from src.domains.wallets.models import LocalCurrency
 from config import AppConfig as config
@@ -253,7 +252,7 @@ class PaymentService:
         # TODO  Open a realtime session
 
         # Init CashrampServicse Deposit Flow
-        cashramp: CashRampService = Depends(get_cashramp_service)
+        cashramp: CashRampService = {}
 
         # 1. Get a valid ramp quote
         ramp_quote = await cashramp.get_ramp_quote(

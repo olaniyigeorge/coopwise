@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import AppConfig as config
 from src.shared.utils.logger import logger
-from src.api.middlewares.dependencies import get_redis
+from src.infra.cache.redis_client import get_redis
 from src.domains.insights.service import InsightEngine
 from src.api.middlewares.dependencies import get_current_user
 from src.domains.auth.schemas import AuthenticatedUser

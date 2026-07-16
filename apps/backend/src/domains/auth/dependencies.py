@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.infra.security.password_hasher import BcryptPasswordHasher
 from src.shared.utils.logger import logger
 from config import AppConfig as config
-from src.api.middlewares.dependencies import get_redis
+from src.infra.cache.redis_client import get_redis
 from src.domains.auth.infra.firebase_verifier import FirebaseVerifier
 from src.domains.auth.infra.jose_token_service import JoseTokenService
 from src.domains.auth.infra.notifier_adapter import NotificationServiceAuthNotifier
