@@ -206,22 +206,17 @@ async def get_current_admin_user(
 
     return current_user
 
-
-async def is_admin_or_owner(
-    resource_owner_id: UUID,
-    current_user: AuthenticatedUser = Depends(get_current_user),
-) -> AuthenticatedUser:
-
-    if (
-        current_user.role.value == "admin"
-        or current_user.id == resource_owner_id
-    ):
-        return current_user
-
-    raise HTTPException(
-        status_code=403,
-        detail="Not authorized",
-    )
+# This doesn't work the way i want it yet
+def is_admin_or_owner(path_param: str = "user_id"):
+    async def _dependency(
+        request: Request,
+        current_user: AuthenticatedUser = Depends(get_current_user),
+    ) -> AuthenticatedUser:
+        resource_owner_id = UUID(request.path_params[path_param])
+        if current_user.role.value == "admin" or current_user.id == resource_owner_id:
+            return current_user
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return _dependency
 
 
 user_dependency = Depends(get_current_user)
