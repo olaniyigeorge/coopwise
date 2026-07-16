@@ -3,15 +3,16 @@ import { backendFetch } from "@/lib/server/backend"
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
-  const { userId } = params
+  const { userId } = await params
+
   const body = await req.json()
 
-  const resourceOwnerId = body.resource_owner_id ?? userId
-
+  // const resourceOwnerId = body.resource_owner_id ?? userId
+  //?resource_owner_id=${resourceOwnerId}
   const backendRes = await backendFetch(
-    `/api/v1/users/${userId}?resource_owner_id=${resourceOwnerId}`,
+    `/api/v1/users/${userId}`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
