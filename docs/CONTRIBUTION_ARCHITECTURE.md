@@ -356,9 +356,6 @@ DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/coopwise_db
 APP_SECRET_KEY=your_secret_key_here
 JWT_ALGORITHM=HS256
 
-# Celery (for scheduled contributions)
-CELERY_BROKER_URL=redis://localhost:6379/0
-CELERY_RESULT_BACKEND=redis://localhost:6379/0
 
 # Optional: Monitoring
 SENTRY_DSN=https://...@sentry.io/...

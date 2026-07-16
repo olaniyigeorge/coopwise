@@ -47,8 +47,6 @@ jobs:
       APP_SECRET_KEY: secret
       ALGORITHM: HS256
       REDIS_URL: redis://localhost:6379/0
-      CELERY_BROKER_URL: redis://localhost:6379/1
-      CELERY_RESULT_BACKEND: redis://localhost:6379/2
       PAYSTACK_PUBLIC_KEY: test
       PAYSTACK_SECRET_KEY: test
       CASHRAMP_PUBKEY: test

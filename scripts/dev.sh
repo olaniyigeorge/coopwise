@@ -1,5 +1,9 @@
 #!/bin/bash
 set -e
+set -o pipefail   # NEW: without this, `celery ... | tee file` always "succeeds"
+                   # from bash's point of view even if celery itself crashed,
+                   # since tee is the last command in the pipe. That's how a
+                   # dead worker goes unnoticed.
 set -m
 
 # Colors
@@ -8,7 +12,6 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Resolve project root (wherever the script is called from)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 BACKEND_DIR="$PROJECT_ROOT/apps/backend"
@@ -54,23 +57,46 @@ fi
 ) &
 BACKEND_PID=$!
 
-
 # --- Celery Worker ---
 echo -e "${YELLOW}Starting Celery worker...${NC}"
 mkdir -p "$PROJECT_ROOT/logs"
 CELERY_LOG="$PROJECT_ROOT/logs/celery.log"
+: > "$CELERY_LOG"   # NEW: truncate so old runs don't mislead you into
+                     # thinking a stale log line is from this run
 
 (
   cd "$BACKEND_DIR" && \
   "$BACKEND_DIR/venv/bin/celery" -A src.infra.celery.app.celery_app worker \
     --loglevel=info \
     --concurrency=2 \
+    -Q celery,push,sms,email \
     -n auth_worker@%h \
     2>&1 | tee -a "$CELERY_LOG"
 ) &
 CELERY_PID=$!
 
-# --- Frontend (disabled for now — backend-only dev) ---
+# NEW: don't just assume the worker came up — prove it. This is the
+# single biggest source of "jobs silently don't run": the worker process
+# died on startup (import error, bad broker URL, etc.) and nothing in the
+# interleaved terminal output made that obvious.
+echo -e "${YELLOW}Waiting for Celery worker to report ready...${NC}"
+WORKER_UP=0
+for i in $(seq 1 15); do
+  if "$BACKEND_DIR/venv/bin/celery" -A src.infra.celery.app.celery_app \
+      inspect ping -d auth_worker@$(hostname) --timeout 1 &>/dev/null; then
+    WORKER_UP=1
+    break
+  fi
+  sleep 1
+done
+
+if [ "$WORKER_UP" -eq 1 ]; then
+  echo -e "${GREEN}Celery worker is up and responding to pings.${NC}"
+else
+  echo -e "${RED}Celery worker did NOT respond to ping after 15s — check $CELERY_LOG${NC}"
+fi
+
+# --- Frontend ---
 echo -e "${YELLOW}Starting frontend...${NC}"
 
 if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
@@ -87,10 +113,10 @@ echo -e "${GREEN}
   Backend:  http://localhost:8000
   Frontend: http://localhost:3000
   API Docs: http://localhost:8000/docs
+  Celery log: $CELERY_LOG
 ====================================
 ${NC}"
 
-# --- Cleanup on Ctrl+C ---
 cleanup() {
   echo -e "\n${RED}Shutting down...${NC}"
   kill -- -$BACKEND_PID 2>/dev/null
