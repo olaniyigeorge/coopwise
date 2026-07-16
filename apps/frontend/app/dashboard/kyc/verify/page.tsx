@@ -74,6 +74,8 @@ function KYCVerifyContent() {
   const [identity, setIdentity] = useState(EMPTY_IDENTITY)
   const [banking, setBanking] = useState(EMPTY_BANKING)
 
+  const [identityKey] = useState(() => crypto.randomUUID())
+
   const isLastStage = stageIndex === STAGE_ORDER.length - 1
 
   const goToStage = (index: number) => {
@@ -87,7 +89,7 @@ function KYCVerifyContent() {
     try {
       if (stageIndex === 0) await submitPersonalInfo(personal)
       if (stageIndex === 1) await submitContactInfo(contact)
-      if (stageIndex === 2) await submitIdentityVerification(identity)
+      if (stageIndex === 2) await submitIdentityVerification(identity, identityKey)
       if (stageIndex === 3) await submitBankingInfo(banking)
 
       if (isLastStage) {

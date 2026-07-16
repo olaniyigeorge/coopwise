@@ -116,13 +116,15 @@ export interface KYCBankingInfoInput {
 export interface KYCStageSummary {
   step: KYCStepType
   status: KYCStepStatus
+  submitted_at: string
   rejection_reason?: string | null
 }
 
 export interface KYCOverview {
-  status: KYCStatus
+  overall_status: KYCStatus
   current_step: KYCStepType | null
-  stages: KYCStageSummary[] // always length 4, in stage order
+  total_steps: number
+  steps: KYCStageSummary[] // always length 4, in stage order
 }
 
 export const STAGE_ORDER: { step: KYCStepType; label: string; title: string }[] = [

@@ -9,7 +9,7 @@ import { getKYCOverview } from '@/services/kyc-service'
 import { STAGE_ORDER, type KYCOverview } from '@/types/kyc'
 import StageStatusBadge from '@/components/dashboard/kyc/stage-status-badge'
 
-const STATUS_COPY: Record<KYCOverview['status'], { label: string; className: string }> = {
+const STATUS_COPY: Record<KYCOverview['overall_status'], { label: string; className: string }> = {
   not_started: { label: 'Not started', className: 'bg-brand-ink/5 text-brand-ink/60' },
   in_progress: { label: 'In progress', className: 'bg-brand-gold/10 text-brand-gold' },
   pending_review: { label: 'Pending review', className: 'bg-brand-gold/10 text-brand-gold' },
@@ -25,12 +25,14 @@ export default function KYCOverviewPage() {
 
   useEffect(() => {
     getKYCOverview()
-      .then(setOverview)
-      .finally(() => setLoading(false))
+    .then((data) => {
+      setOverview(data)
+    })
   }, [])
 
-  const stages = overview?.stages ?? []
-  const submittedCount = stages.filter((s) => s.status !== 'pending').length
+  const stages = overview?.steps ?? []
+
+  const submittedCount = stages.filter((s) => s.status == 'submitted').length
   const approvedCount = stages.filter((s) => s.status === 'approved').length
   const rejectedCount = stages.filter((s) => s.status === 'rejected').length
 
@@ -60,8 +62,8 @@ export default function KYCOverviewPage() {
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-medium text-brand-ink/50 uppercase tracking-wide">Current Status</span>
             {overview && (
-              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COPY[overview.status].className}`}>
-                {STATUS_COPY[overview.status].label}
+              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COPY[overview.overall_status]?.className ?? ''}`}>
+                {STATUS_COPY[overview.overall_status]?.label || overview.overall_status}
               </span>
             )}
           </div>
