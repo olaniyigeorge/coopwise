@@ -30,6 +30,7 @@ celery_app = Celery(
         "src.domains.notifications.tasks",
         "src.domains.auth.infra.tasks",
         "src.domains.kyc.tasks",
+        "src.domains.users.tasks",
     ],
 )
 
@@ -55,7 +56,7 @@ celery_app.conf.task_routes = {
     "src.domains.notifications.tasks.deliver_sms":         {"queue": "sms"},
     "src.domains.notifications.tasks.deliver_email":       {"queue": "email"},
     "src.domains.notifications.tasks.review_manual_queue": {"queue": "celery"},
-    # kyc + auth.provision_wallet are intentionally unrouted -> default
+    "src.domains.users.tasks.object_storage_tasks.upload_avatar_task": {"queue": "media"},
     # "celery" queue, which the worker always consumes.
 }
 
@@ -68,6 +69,7 @@ def _bootstrap_worker_process(**kwargs) -> None:
     import sqlalchemy
     from config import AppConfig as config
     from src.infra.db.database import db_manager
+    from src.infra.storage.cloudinary_storage import configure_cloudinary
     import src.infra.db.all_models  # noqa: F401
 
     engine_kwargs = {}
@@ -80,6 +82,8 @@ def _bootstrap_worker_process(**kwargs) -> None:
         config.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1),
         **engine_kwargs,
     )
+
+    configure_cloudinary()
     logger.info("[worker_process_init] worker process bootstrap complete")
 
 # --- General config ---------------------------------------------------------
