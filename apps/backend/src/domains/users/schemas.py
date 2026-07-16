@@ -72,11 +72,15 @@ class UserDetail(BaseModel):
     full_name: str
     phone_number: Optional[PhoneNumberStr]
     role: UserRoles
+    firebase_uid: Optional[str] = None
     profile_picture_url: Optional[str]
     target_savings_amount: Optional[float] = None
     savings_purpose: Optional[str] = None
     income_range: Optional[IncomeRange] = None
     saving_frequency: Optional[SavingFrequency] = None
+    crossmint_user_id:  Optional[str] = None
+    flow_address:  Optional[str] = None
+    wallet_provider:  Optional[str] = None
     is_email_verified: bool = False
     is_phone_verified: bool = False
     created_at: datetime
