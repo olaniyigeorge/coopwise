@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { backendFetch } from "@/lib/server/backend"
 
-export async function POST(
+export async function PATCH(
   req: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await params
   // Forward the incoming multipart body as-is — do NOT set Content-Type
   // manually here, fetch will set the correct multipart boundary from the
   // FormData object itself.
   const formData = await req.formData()
 
   const backendRes = await backendFetch(
-    `/api/v1/users/${params.userId}/avatar`, // confirm actual backend path
+    `/api/v1/users/${userId}/avatar`, // confirm actual backend path
     {
-      method: "POST",
+      method: "PATCH",
       body: formData,
     }
   )
