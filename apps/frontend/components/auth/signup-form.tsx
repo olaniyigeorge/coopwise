@@ -12,13 +12,13 @@ import { Loader2, Lock, Mail, Phone, ArrowLeft } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form"
-import { auth, getFirebaseErrorMessage } from "@/app/helpers/firebase"
+import { auth, getFirebaseErrorMessage } from "@/helpers/firebase"
 import {
   signUpDetailsSchema,
   signUpDetailsFormValues,
   otpCodeSchema,
   otpCodeFormValues,
-} from "@/app/helpers/validators/auth.schemas"
+} from "@/helpers/validators/auth.schemas"
 import useAuthStore from "@/stores/auth-store"
 import { requestOtp, signInWithFirebase, verifyOtpAndRegister } from "@/services/auth-service"
 

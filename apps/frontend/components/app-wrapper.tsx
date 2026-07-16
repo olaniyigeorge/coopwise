@@ -10,6 +10,7 @@ import {
 } from "@crossmint/client-sdk-react-ui";
 import { FlowProvider } from "@onflow/react-sdk";
 import flowJSON from "../flow.json";
+import AuthListener from "./auth/listener";
 
 const CROSSMINT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_API_KEY as string;
 
@@ -55,6 +56,7 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
             flowJson={flowJSON}
           >  */}
             <AuthProvider>
+              <AuthListener />
               <NotificationProvider>
                 {children}
               </NotificationProvider>
