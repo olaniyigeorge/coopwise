@@ -59,7 +59,7 @@ export default function   Navbar() {
       <nav
         className={`fixed top-0 left-0 right-0 z-40  transition-all duration-300 px-4 py-3 md:py-4
           ${scrolled ? 'bg-brand-paper/95 shadow-sm border-b border-brand-ink/10' : 'bg-brand-paper/80 backdrop-blur-md'}
-          max-w-6xl mx-auto`}
+          max-w-6xl mx-auto border border-red`}
         suppressHydrationWarning
       >
         <div className="flex items-center justify-between">
@@ -258,7 +258,7 @@ export default function   Navbar() {
         )}
       </AnimatePresence>
 
-      <div className="h-16"></div>
+      <div className="h-16 md:h-[73px]"></div>
     </>
   )
 }
