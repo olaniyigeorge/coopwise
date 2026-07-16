@@ -18,10 +18,15 @@ Changes from the original (per agreed PR2 scope):
 """
 from __future__ import annotations
 
+import base64
 from typing import List
 from uuid import UUID
 
+
+from src.domains.users.tasks import upload_avatar_task
+from src.domains.kyc.ports import ObjectStoragePort
 from src.domains.users.exceptions import (
+    UserConflictError,
     UserFetchError,
     UserNotFoundError,
     UserUpdateError,
@@ -48,6 +53,23 @@ class UserService:
         if not user:
             raise UserNotFoundError("User not found")
         return user
+    
+
+    async def queue_avatar_upload(
+        self, user_id: UUID, file_bytes: bytes, filename: str, content_type: str
+    ) -> str:
+        user = await self._users.get_by_id(user_id)
+        if not user:
+            raise UserNotFoundError(f"User {user_id} not found")
+
+        encoded = base64.b64encode(file_bytes).decode("utf-8")
+        result = upload_avatar_task.delay(
+            user_id=str(user_id),
+            file_data=encoded,
+            filename=filename,
+            content_type=content_type,
+        )
+        return result.id
 
     async def update_user(self, user_id: UUID, user_data: UserUpdate) -> User:
         user = await self._users.get_by_id(user_id)
@@ -59,6 +81,8 @@ class UserService:
 
         try:
             return await self._users.update(user)
+        except UserConflictError:
+            raise
         except Exception as e:
             logger.error(f"Failed to update user: {e}")
             raise UserUpdateError(str(e))
@@ -75,47 +99,7 @@ class UserService:
         return all(
             [
                 user.is_email_verified,
-                user.is_video_verified,
                 user.is_phone_verified,
                 user.wallet_activated,
             ]
         )
-
-    async def kyc(
-        self,
-        user_id: UUID,
-        *,
-        video_verified: bool = False,
-        email_verified: bool = False,
-        wallet_activated: bool = False,
-    ) -> dict:
-        """
-        Updates verification flags as part of KYC. is_verified is derived,
-        not independently settable, so it can never drift from its inputs.
-        """
-        user = await self._users.get_by_id(user_id)
-        if not user:
-            raise UserNotFoundError("User not found")
-
-        user.is_video_verified = video_verified or user.is_video_verified
-        user.is_email_verified = email_verified or user.is_email_verified
-        user.wallet_activated = wallet_activated or user.wallet_activated
-        user.is_verified = all(
-            [user.is_email_verified, user.is_video_verified, user.wallet_activated]
-        )
-
-        try:
-            user = await self._users.update(user)
-        except Exception as e:
-            logger.error(f"KYC update failed: {e}")
-            raise UserUpdateError(str(e))
-
-        return {
-            "status": "success",
-            "is_verified": user.is_verified,
-            "details": {
-                "is_email_verified": user.is_email_verified,
-                "is_video_verified": user.is_video_verified,
-                "wallet_activated": user.wallet_activated,
-            },
-        }
