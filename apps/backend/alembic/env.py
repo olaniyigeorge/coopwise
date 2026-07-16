@@ -17,6 +17,7 @@ from src.domains.notifications.models import *
 from src.domains.support.models import *
 from src.domains.wallets.models import *
 from src.domains.insights.models import *
+from src.domains.kyc.models import *
 
 print("Registered tables:", Base.metadata.tables.keys())
 

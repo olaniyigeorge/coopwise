@@ -77,7 +77,7 @@ async def create_cooperative_group(
         )
         chain_circle_id = await flow_service.await_cicle_created_event(tx_id)
 
-        print(f"\ tx_id: {tx_id} \n chain_circle_id: {chain_circle_id} \n")
+        print(f"\n tx_id: {tx_id} \n chain_circle_id: {chain_circle_id} \n")
 
         # Update record with chain data
         coop.chain_circle_id = chain_circle_id

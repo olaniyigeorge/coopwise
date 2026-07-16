@@ -58,7 +58,7 @@ export default function SupportPage() {
       description: "Talk it through with someone directly",
       availability: "Mon–Fri, 9AM–6PM WAT",
       action: "Call Now",
-      link: "tel:+2348144441712"
+      link: "tel:+2348144913556"
     },
     {
       icon: <Mail className="w-6 h-6" />,
