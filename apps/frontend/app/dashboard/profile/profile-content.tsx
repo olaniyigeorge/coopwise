@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +9,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { useUserProfile } from '@/lib/hooks/use-user-profile"
+import { useUserProfile } from '@/lib/hooks/use-user-profile'
+import Link from 'next/link'
 
 interface ProfileData {
   fullName: string
@@ -154,8 +156,7 @@ export default function ProfileContent() {
   }
 
   const handleSaveChanges = async () => {
-       await updateProfile({
-        email: profileData.email,
+       await updateProfile(profile!.id, {
         full_name: profileData.fullName,
         phone_number: profileData.phoneNumber,
         target_savings_amount: profileData.savingAmountGoal ? parseFloat(profileData.savingAmountGoal) : 0,
@@ -191,33 +192,66 @@ export default function ProfileContent() {
         <CardContent className="space-y-4">
           {/* Identity Row */}
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg shrink-0">
-              {user?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?'}
+            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg shrink-0 overflow-hidden relative">
+              {profile?.profile_picture_url ? (
+                <Image
+                    src={profile.profile_picture_url}
+                    alt={profile.full_name || 'Profile picture'}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                profile?.full_name?.charAt(0)?.toUpperCase() ||
+                profile?.email?.charAt(0)?.toUpperCase() ||
+                '?'
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 truncate">{user?.full_name || '—'}</p>
-              <p className="text-sm text-gray-500 truncate">{user?.email}</p>
+              <p className="font-semibold text-gray-900 truncate">{profile?.full_name || '—'}</p>
+              <p className="text-sm text-gray-500 truncate">{profile?.email}</p>
             </div>
 
-            <RolePill role={user!.role} />
-            <BadgePill verified={!!user?.is_email_verified} />
+            {/* <RolePill role={profile!.role} /> */}
+            <BadgePill verified={!!profile?.is_email_verified} />
           </div>
 
           {/* Meta info */}
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="bg-gray-50 rounded-lg px-3 py-2">
               <p className="text-xs text-gray-400 mb-0.5">Username</p>
-              <p className="font-medium text-gray-700 truncate">{user?.username || '—'}</p>
+              <p className="font-medium text-gray-700 truncate">{profile?.username || '—'}</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg px-3 py-2">
+              <p className="text-xs text-gray-400 mb-0.5">Email</p>
+              <p className="font-medium text-gray-700 truncate">{profile?.email || '—'}</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg px-3 py-2">
+              <p className="text-xs text-gray-400 mb-0.5">Sign-in method</p>
+              <p className="font-medium text-gray-700 truncate">
+                {profile?.firebase_uid ? 'Google / Firebase' : 'Email & password'}
+              </p>
+            </div>
+            <div className={`bg-gray-50 rounded-lg px-3 py-2 border ${profile?.is_kyc_verified ? "border-green-600" : "border-brand-gold"}`}>
+              <p className="text-xs text-gray-400 mb-0.5">KYC status</p>
+              {profile?.is_kyc_verified ?
+                <p className="font-medium text-green-600 truncate">
+                   Verified
+                </p>
+                :
+                 <Link href="/dashboard/kyc" className="font-medium text-brand-gold truncate">
+                   Not verified
+                </Link>
+              }
             </div>
           </div>
 
           {/* Wallet Address */}
-          {user?.flow_address && (
+          {profile?.flow_address && (
             <WalletAddressCard
-              address={user.flow_address}
-              provider={user.wallet_provider || 'wallet'}
+              address={profile.flow_address}
+              provider={profile.wallet_provider || 'wallet'}
             />
-          )}
+          )} 
         </CardContent>
       </Card>
 
@@ -245,17 +279,6 @@ export default function ProfileContent() {
                 value={profileData.phoneNumber}
                 onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                 placeholder="+234 000 0000 000"
-              />
-            </div>
-
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                value={profileData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="you@example.com"
               />
             </div>
 
@@ -347,10 +370,10 @@ export default function ProfileContent() {
       <div className="flex justify-end pb-4">
         <Button
           onClick={handleSaveChanges}
-          disabled={isLoading}
+          disabled={isUpdating || isProfileLoading}
           className="min-w-[140px]"
         >
-          {isLoading ? 'Saving...' : 'Save Changes'}
+          {isUpdating ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
     </div>
