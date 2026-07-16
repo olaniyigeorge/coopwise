@@ -12,7 +12,6 @@ const firebaseConfig = {
   appId: config.firebaseAppId
 };
 
-console.log(`\n\nFIREBASE CONFIG: ${JSON.stringify(firebaseConfig, null, 2)}\n\n`)
 const app = initializeApp(firebaseConfig)
 
 
