@@ -64,16 +64,33 @@ CELERY_LOG="$PROJECT_ROOT/logs/celery.log"
 : > "$CELERY_LOG"   # NEW: truncate so old runs don't mislead you into
                      # thinking a stale log line is from this run
 
+# --- Notifications + default worker ---
 (
   cd "$BACKEND_DIR" && \
   "$BACKEND_DIR/venv/bin/celery" -A src.infra.celery.app.celery_app worker \
     --loglevel=info \
-    --concurrency=2 \
+    --pool=solo \
     -Q celery,push,sms,email \
-    -n auth_worker@%h \
+    -n default_worker@%h \
     2>&1 | tee -a "$CELERY_LOG"
 ) &
-CELERY_PID=$!
+DEFAULT_WORKER_PID=$!
+
+# --- Media worker (avatar/image uploads) ---
+# Isolated on its own queue + process so a slow Cloudinary upload
+# can never delay push/sms/email delivery.
+MEDIA_LOG="$PROJECT_ROOT/logs/media_worker.log"
+: > "$MEDIA_LOG"
+(
+  cd "$BACKEND_DIR" && \
+  "$BACKEND_DIR/venv/bin/celery" -A src.infra.celery.app.celery_app worker \
+    --loglevel=info \
+    --pool=solo \
+    -Q media \
+    -n media_worker@%h \
+    2>&1 | tee -a "$MEDIA_LOG"
+) &
+MEDIA_WORKER_PID=$!
 
 # NEW: don't just assume the worker came up — prove it. This is the
 # single biggest source of "jobs silently don't run": the worker process
