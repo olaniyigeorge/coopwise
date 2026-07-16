@@ -24,7 +24,6 @@ class GlobalConfig(BaseSettings):
     REDIS_URL: str
     GEMINI_API_KEY: str
     RATE_LIMIT_RULES_PATH: str
-    CELERY_BROKER_URL:str
     CROSSMINT_SERVER_API_KEY: str
     CROSSMINT_CHAIN: str
     CROSSMINT_AUDIENCE: str
@@ -35,6 +34,7 @@ class GlobalConfig(BaseSettings):
     SMS_SENDER_ID: str
     SMS_PROVIDER_BASE_URL: str
     KYC_WEBHOOK_SECRET: str
+    CLOUDINARY_URL: str
 
     # Mail config: required for notification email delivery
     MAIL_USERNAME: str

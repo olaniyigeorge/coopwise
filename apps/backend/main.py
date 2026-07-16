@@ -6,10 +6,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
-from dotenv import load_dotenv
 import uvicorn
-
-load_dotenv()
 
 from src.api.middlewares.middlewares import app_middleware, DistributedTokenBucketMiddleware
 from src.infra.cache.redis_client import redis_manager

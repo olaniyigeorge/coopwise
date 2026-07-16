@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from fastapi import Request, Response
 from typing import Callable
@@ -58,12 +59,25 @@ class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
         self.rules = sorted(rules, key=lambda r: -len(r["path_prefix"]))
         self.default = default
         self._script_sha: str | None = None
+        self._script_lock = asyncio.Lock()
 
     def _resolve_rule(self, path: str) -> dict:
         for rule in self.rules:
             if path.startswith(rule["path_prefix"]):
                 return rule
         return self.default
+
+    async def _ensure_script(self, r):
+        """
+        Load Lua script into Redis and cache its SHA.
+        Handles concurrent calls safely enough because script loading is idempotent.
+        """
+        if self._script_sha is not None:
+            return
+
+        async with self._script_lock:
+            if self._script_sha is None:
+                self._script_sha = await r.script_load(self.LUA_SCRIPT)
 
     def _get_client_id(self, request: Request) -> str:
         #TODO: Render's XFF handling isn't documented as strictly append-only for
@@ -127,6 +141,8 @@ class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
             return 1
         missing = max(0.0, 1.0 - tokens_left)
         return max(1, int(missing / refill_rate + 0.999))
+
+
 
 async def app_middleware(request: Request, call_next):
     request_id = str(uuid.uuid4())
