@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domains.kyc.models import (
+    KYCIdDocumentType,
     KYCVerification,
     KYCPersonalInfo,
     KYCContactInfo,
@@ -83,7 +84,7 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
             .options(
                 selectinload(KYCVerification.personal_info),
                 selectinload(KYCVerification.contact_info),
-                selectinload(KYCVerification.identity),
+                selectinload(KYCVerification.identity_verification),
                 selectinload(KYCVerification.banking_info),
             )
             .where(KYCVerification.user_id == user_id)
@@ -166,6 +167,28 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
             kyc_id,
             data,
         )
+
+    async def ensure_identity_exists(self, kyc_id: UUID) -> None:
+        stmt = select(KYCIdentityVerification).where(
+            KYCIdentityVerification.kyc_verification_id == kyc_id
+        )
+
+        instance = await self._db.scalar(stmt)
+
+        if instance is not None:
+            return
+
+        self._db.add(
+            KYCIdentityVerification(
+                kyc_verification_id=kyc_id,
+                document_type=KYCIdDocumentType.nin,  # temporary placeholder
+                document_number_encrypted="",
+                status=KYCStepStatus.pending,
+            )
+        )
+
+        await self._db.flush()
+
 
     async def set_step_status(
         self,

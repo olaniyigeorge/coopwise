@@ -23,10 +23,15 @@ class IdentityVerificationFailedError(KYCError):
 
 
 class BankAccountNameMismatchError(KYCError):
-    def __init__(self, message: str, reason: str = "mismatch"):
+    def __init__(self, message: str, reason: str):
         super().__init__(message)
-        self.reason = reason  # "resolution_failed" | "name_mismatch"
+        self.reason = reason # resolution_failed | name_mismatch 
 
+    def to_dict(self):
+        return {
+            "reason": self.reason,
+        }
+    
 
 class TransientProviderError(Exception):
     """Retryable provider failure: timeout, 5xx, rate limit. Distinct from

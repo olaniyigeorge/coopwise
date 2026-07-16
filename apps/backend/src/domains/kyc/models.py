@@ -78,7 +78,7 @@ class KYCVerification(Base):
 
     personal_info = relationship("KYCPersonalInfo", back_populates="kyc", uselist=False, lazy="selectin")
     contact_info = relationship("KYCContactInfo", back_populates="kyc", uselist=False, lazy="selectin")
-    identity = relationship("KYCIdentityVerification", back_populates="kyc", uselist=False, lazy="selectin")
+    identity_verification = relationship("KYCIdentityVerification", back_populates="kyc", uselist=False, lazy="selectin")
     banking_info = relationship("KYCBankingInfo", back_populates="kyc", uselist=False, lazy="selectin")
 
 
@@ -159,7 +159,7 @@ class KYCIdentityVerification(Base):
 
     rejection_reason = Column(Text, nullable=True)
 
-    kyc = relationship("KYCVerification", back_populates="identity")
+    kyc = relationship("KYCVerification", back_populates="identity_verification")
 
 
 class KYCIdentitySubmissionHistory(Base):

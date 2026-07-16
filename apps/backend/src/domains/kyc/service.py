@@ -68,6 +68,7 @@ class BankingInfoInput:
     bank_name: str
     bank_code: str
     account_number: str
+    account_name: str
 
 
 class KYCService:
@@ -209,16 +210,34 @@ class KYCService:
                 kyc.id, KYCStepType.banking_info, KYCStepStatus.rejected,
                 rejection_reason="Bank could not resolve account",
             )
-            raise BankAccountNameMismatchError("Account resolution failed")
+            raise BankAccountNameMismatchError(
+                "Account resolution failed",
+                "resolution_failed"
+            )
 
         # name-match check happens here, not just success — resolve can succeed but return
         # a name that doesn't match the KYC'd identity
+        print("\n classinfying name match\n")
         if classify_name_match(bank_result.resolved_account_name, kyc.personal_info.legal_full_name) == 'no_match':
+            print("\n No match with legal name", bank_result.resolved_account_name, kyc.personal_info.legal_full_name)
             await self._repo.set_step_status(
                 kyc.id, KYCStepType.banking_info, KYCStepStatus.rejected,
                 rejection_reason="Account name does not match KYC identity",
             )
-            raise BankAccountNameMismatchError(bank_result.resolved_account_name)
+            raise BankAccountNameMismatchError(
+                "Account name does not match KYC identity",
+                "name_mismatch"
+            )
+        if classify_name_match(bank_result.resolved_account_name, kyc.personal_info.legal_full_name) == 'no_match':
+            print("\n No match with provided accoutn name", bank_result.resolved_account_name, kyc.personal_info.legal_full_name )
+            await self._repo.set_step_status(
+                kyc.id, KYCStepType.banking_info, KYCStepStatus.rejected,
+                rejection_reason="Account name does not match KYC identity",
+            )
+            raise BankAccountNameMismatchError(
+                "Account name does not match KYC identity",
+                "name_mismatch"
+            )
         
         step_status = KYCStepStatus.submitted  # always routes to review for banking, never auto-approve
         await self._repo.set_step_status(kyc.id, KYCStepType.banking_info, step_status)
@@ -276,8 +295,19 @@ class KYCService:
 
 
     async def begin_identity_submission(self, user_id: UUID):
-        kyc = await self._require_editable(user_id, KYCStepType.identity_verification)
-        await self._repo.set_step_status(kyc.id, KYCStepType.identity_verification, KYCStepStatus.processing)
+        kyc = await self._require_editable(
+            user_id,
+            KYCStepType.identity_verification,
+        )
+
+        await self._repo.ensure_identity_exists(kyc.id)
+
+        await self._repo.set_step_status(
+            kyc.id,
+            KYCStepType.identity_verification,
+            KYCStepStatus.pending,
+        )
+
         return kyc
 
     async def complete_identity_submission(self, kyc_id: UUID, data: IdentityInput):

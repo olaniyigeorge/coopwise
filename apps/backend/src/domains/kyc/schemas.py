@@ -51,6 +51,7 @@ class BankingInfoRequest(BaseModel):
     bank_name: str
     bank_code: str
     account_number: str = Field(..., min_length=10, max_length=10)
+    account_name: str
 
     @field_validator("account_number")
     @classmethod

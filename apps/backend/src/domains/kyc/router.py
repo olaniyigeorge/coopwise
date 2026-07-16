@@ -5,6 +5,8 @@ from uuid import UUID
 
 from redis import Redis
 
+from src.shared.utils.logger import logger
+from src.domains.auth.schemas import AuthenticatedUser
 from src.shared.ratelimit.limiter import rate_limit
 from src.domains.kyc.audit_service import KYCAuditService
 from src.domains.kyc.tasks import process_identity_submission
@@ -14,7 +16,8 @@ import filetype
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Header, Request, UploadFile, status
 
 from config import AppConfig as config
-from src.api.middlewares.dependencies import get_current_admin_user, get_current_user, get_redis
+from src.api.middlewares.dependencies import get_current_admin_user, get_current_user
+from src.infra.cache.redis_client import get_redis
 from src.domains.kyc.exceptions import (
     KYCNotFoundError, KYCAlreadyVerifiedError, InvalidKYCStateTransitionError,
     StepAlreadyApprovedError, IdentityVerificationFailedError, BankAccountNameMismatchError,
@@ -49,13 +52,21 @@ _EXCEPTION_STATUS_MAP = {
 def _raise_mapped(exc: Exception):
     for exc_type, http_status in _EXCEPTION_STATUS_MAP.items():
         if isinstance(exc, exc_type):
-            raise HTTPException(status_code=http_status, detail=str(exc)) from exc
-    raise  # unmapped — let it bubble to your global handler / 500
+            raise HTTPException(
+                status_code=http_status,
+                detail={
+                    "message": str(exc),
+                    **getattr(exc, "to_dict", lambda: {})(),
+                },
+            ) from exc
+
+    raise
+
 
 def _current_step(kyc) -> Optional[KYCStepType]:
     for step_type, record in [(KYCStepType.personal_info, kyc.personal_info),
                                (KYCStepType.contact_info, kyc.contact_info),
-                               (KYCStepType.identity_verification, kyc.identity),
+                               (KYCStepType.identity_verification, kyc.identity_verification),
                                (KYCStepType.banking_info, kyc.banking_info)]:
         if record is None or record.status not in (KYCStepStatus.submitted, KYCStepStatus.approved):
             return step_type
@@ -65,7 +76,7 @@ def _build_summary(kyc) -> KYCSummaryResponse:
     step_fields = [
         (KYCStepType.personal_info, kyc.personal_info),
         (KYCStepType.contact_info, kyc.contact_info),
-        (KYCStepType.identity_verification, kyc.identity),
+        (KYCStepType.identity_verification, kyc.identity_verification),
         (KYCStepType.banking_info, kyc.banking_info),
     ]
     steps = []
@@ -206,16 +217,36 @@ async def submit_identity(
     selfie_image: UploadFile = File(...),
     video: UploadFile | None = File(None),
     idempotency_key: str = Depends(require_idempotency_key),
-    user=Depends(get_current_user),
+    user: AuthenticatedUser =Depends(get_current_user),
     redis: Redis = Depends(get_redis),
     service: KYCService = Depends(get_kyc_service),
 ):
     guard = IdempotencyGuard(redis, scope="kyc:identity")
-    if not await guard.acquire(user.id, idempotency_key):
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "This submission was already received (duplicate Idempotency-Key).",
+    acquired = await guard.start(
+        user.id,
+        idempotency_key,
+    )
+
+    if not acquired:
+        previous = await guard.get_result(
+            user.id,
+            idempotency_key,
         )
+
+        if previous:
+            if previous["status"] == "completed":
+                return previous["response"]
+
+            raise HTTPException(
+                status_code=409,
+                detail="Request is currently processing",
+            )
+
+        raise HTTPException(
+            status_code=409,
+            detail="Request is currently processing",
+        )
+
     doc_bytes = await _read_validated(document_image, _ALLOWED_IMAGE_TYPES, _MAX_IMAGE_BYTES)
     selfie_bytes = await _read_validated(selfie_image, _ALLOWED_IMAGE_TYPES, _MAX_IMAGE_BYTES)
     video_bytes = video_content_type = None
@@ -225,6 +256,10 @@ async def submit_identity(
 
     kyc = await service.begin_identity_submission(user.id)
 
+    logger.info(
+        "Queueing identity task for kyc=%s",
+        kyc.id,
+    )
     process_identity_submission.delay(
         kyc_id=str(kyc.id),
         document_type=document_type.value,
@@ -238,8 +273,18 @@ async def submit_identity(
         idempotency_key=idempotency_key,
     )
 
-    await guard.mark_complete(user.id, idempotency_key)
-    return {"status": "processing", "kyc_id": str(kyc.id)}
+    response = {
+        "status": "processing",
+        "kyc_id": str(kyc.id),
+    }
+
+    await guard.complete(
+        user.id,
+        idempotency_key,
+        response,
+    )
+
+    return response
 
 @router.post(
     "/banking-info",

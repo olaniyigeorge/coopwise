@@ -11,14 +11,14 @@ from config import AppConfig as config
 
 from src.domains.kyc.service import KYCService
 from src.domains.kyc.audit_service import KYCAuditService
-from src.domains.kyc.infra.bank_verification_provider import BankVerificationProvider
+from src.domains.kyc.infra.bank_verification_provider import MockBankVerificationProvider
 from src.domains.kyc.infra.identity_provider import HttpIdentityVerificationProvider, IdentityVerificationProvider
 from src.domains.kyc.infra.user_kyc_flag import UserKYCFlager
 from src.domains.kyc.repositories import SQLAlchemyKYCAuditRepository, SQLAlchemyKYCRepository
-from src.domains.kyc.infra.cloudinary_service import CloudinaryService
+from src.domains.kyc.infra.cloudinary_storage import CloudinaryStorage
 from src.infra.db.dependencies import get_async_db_session
 from src.infra.security.field_encryptor import FieldEncryptor
-from src.api.middlewares.dependencies import get_redis
+from src.infra.cache.redis_client import get_redis
 from src.domains.kyc.infra.notifier_adapter import NotificationServiceKYCNotifier
 
 
@@ -33,8 +33,8 @@ def get_kyc_service(
         encryptor=FieldEncryptor(config.SECRET_ENCRYPTION_KEY),
         notifier=NotificationServiceKYCNotifier(),
         identity_provider=IdentityVerificationProvider(),
-        bank_provider=BankVerificationProvider(),
-        storage=CloudinaryService(),
+        bank_provider=MockBankVerificationProvider(),
+        storage=CloudinaryStorage(),
         user_flag_port=UserKYCFlager(),
     )
 
@@ -64,8 +64,8 @@ def build_kyc_service() -> KYCService:
             repository=SQLAlchemyKYCRepository(session_factory),
             encryptor=FieldEncryptor(config.FIELD_ENCRYPTION_KEY),
             identity_provider=HttpIdentityVerificationProvider(config.IDENTITY_PROVIDER_BASE_URL),
-            bank_provider=BankVerificationProvider(config.BANK_PROVIDER_BASE_URL),
-            storage=CloudinaryService(),
+            bank_provider=MockBankVerificationProvider(config.BANK_PROVIDER_BASE_URL),
+            storage=CloudinaryStorage(),
             user_flag_port=UserKYCFlager(session_factory),
             notifier=NotificationServiceKYCNotifier(),
         )
