@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ShieldCheck } from 'lucide-react'
-import { getKYCOverview } from '@/services/kyc-service'
+import { getKYCOverview, startKYC } from '@/services/kyc-service'
 import { STAGE_ORDER, type KYCOverview } from '@/types/kyc'
 import StageStatusBadge from '@/components/dashboard/kyc/stage-status-badge'
+import { toast } from 'sonner'
 
 const STATUS_COPY: Record<KYCOverview['overall_status'], { label: string; className: string }> = {
   not_started: { label: 'Not started', className: 'bg-brand-ink/5 text-brand-ink/60' },
@@ -18,16 +19,43 @@ const STATUS_COPY: Record<KYCOverview['overall_status'], { label: string; classN
   expired: { label: 'Expired', className: 'bg-red-50 text-red-600' },
 }
 
+// Matches the shape ApiService throws on a non-2xx response:
+// `API request failed (${status}): ${body}`
+function isNotFoundError(err: unknown): boolean {
+  return err instanceof Error && err.message.includes('API request failed (404)')
+}
+
 export default function KYCOverviewPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [starting, setStarting] = useState(false)
   const [overview, setOverview] = useState<KYCOverview | null>(null)
+  const [hasNoRecord, setHasNoRecord] = useState(false)
+
+  const loadOverview = () => {
+    setLoading(true)
+    getKYCOverview()
+      .then((data) => {
+        setOverview(data)
+        setHasNoRecord(false)
+      })
+      .catch((err) => {
+        if (isNotFoundError(err)) {
+          // User hasn't started KYC yet — this is expected, not an error state.
+          setOverview(null)
+          setHasNoRecord(true)
+        } else {
+          console.error('Failed to load KYC overview:', err)
+          toast.error('Failed to load KYC status', {
+            description: 'Please refresh the page and try again.',
+          })
+        }
+      })
+      .finally(() => setLoading(false))
+  }
 
   useEffect(() => {
-    getKYCOverview()
-    .then((data) => {
-      setOverview(data)
-    })
+    loadOverview()
   }, [])
 
   const stages = overview?.steps ?? []
@@ -42,6 +70,31 @@ export default function KYCOverviewPage() {
   )
 
   const goToStage = (index: number) => router.push(`/dashboard/kyc/verify?stage=${index + 1}`)
+
+  const handleContinueClick = async () => {
+    if (!hasNoRecord) {
+      goToStage(currentStageIndex)
+      return
+    }
+
+    setStarting(true)
+    try {
+      await startKYC()
+      // Re-fetch so overview/current_step reflect the freshly created record
+      // instead of assuming stage 0.
+      const data = await getKYCOverview()
+      setOverview(data)
+      setHasNoRecord(false)
+      goToStage(Math.max(0, STAGE_ORDER.findIndex((s) => s.step === data.current_step)))
+    } catch (err) {
+      console.error('Failed to start KYC:', err)
+      toast.error('Failed to start KYC', {
+        description: 'Please try again in a moment.',
+      })
+    } finally {
+      setStarting(false)
+    }
+  }
 
   return (
     <DashboardLayout>
@@ -66,6 +119,11 @@ export default function KYCOverviewPage() {
                 {STATUS_COPY[overview.overall_status]?.label || overview.overall_status}
               </span>
             )}
+            {!overview && hasNoRecord && !loading && (
+              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COPY.not_started.className}`}>
+                {STATUS_COPY.not_started.label}
+              </span>
+            )}
           </div>
 
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -74,17 +132,23 @@ export default function KYCOverviewPage() {
                 <ShieldCheck className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-brand-ink">Continue KYC</p>
-                <p className="text-xs text-brand-ink/50 mt-0.5">Continue from your current stage.</p>
+                <p className="text-sm font-semibold text-brand-ink">
+                  {hasNoRecord ? 'Start KYC' : 'Continue KYC'}
+                </p>
+                <p className="text-xs text-brand-ink/50 mt-0.5">
+                  {hasNoRecord
+                    ? 'Begin your identity verification to unlock full account access.'
+                    : 'Continue from your current stage.'}
+                </p>
               </div>
             </div>
             <Button
               size="sm"
               className="gap-1.5 sm:w-auto w-full"
-              onClick={() => goToStage(currentStageIndex)}
-              disabled={loading}
+              onClick={handleContinueClick}
+              disabled={loading || starting}
             >
-              Continue KYC
+              {starting ? 'Starting...' : hasNoRecord ? 'Start KYC' : 'Continue KYC'}
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>
@@ -114,12 +178,19 @@ export default function KYCOverviewPage() {
           {STAGE_ORDER.map((stage, index) => {
             const stageData = stages.find((s) => s.step === stage.step)
             const status = stageData?.status ?? 'pending'
-            const isLocked = index > currentStageIndex && status === 'pending'
+            const isLocked = hasNoRecord ? index > 0 : index > currentStageIndex && status === 'pending'
 
             return (
               <button
                 key={stage.step}
-                onClick={() => !isLocked && goToStage(index)}
+                onClick={() => {
+                  if (isLocked) return
+                  if (hasNoRecord) {
+                    handleContinueClick()
+                  } else {
+                    goToStage(index)
+                  }
+                }}
                 disabled={isLocked}
                 className={`text-left bg-white rounded-2xl border border-brand-ink/10 shadow-sm p-5 transition-colors ${
                   isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:border-primary/30'
