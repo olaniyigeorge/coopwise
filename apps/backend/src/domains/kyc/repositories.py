@@ -49,7 +49,7 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
             attribute_names=[
                 "personal_info",
                 "contact_info",
-                "identity",
+                "identity_verification",
                 "banking_info",
             ],
         )
@@ -66,7 +66,7 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
             .options(
                 selectinload(KYCVerification.personal_info),
                 selectinload(KYCVerification.contact_info),
-                selectinload(KYCVerification.identity),
+                selectinload(KYCVerification.identity_verification),
                 selectinload(KYCVerification.banking_info),
             )
             .where(KYCVerification.id == kyc_id)
