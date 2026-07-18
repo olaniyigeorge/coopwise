@@ -20,15 +20,18 @@ export default function AboutHero() {
           About CoopWise
         </div>
 
+        <p className="font-display text-lg md:text-xl font-semibold text-brand-ink/60 mb-2">
+          We're Not Reinventing Cooperative Savings.
+        </p>
+
         <h1 className="font-display text-4xl sm:text-5xl md:text-[3.2rem] font-bold text-brand-ink leading-[1.1] text-balance">
-          We're Not Reinventing Cooperative Savings. We're Bringing It Online.
+          We're Building Trust Infrastructure for People Without Collateral or Credit History.
         </h1>
 
         <p className="text-base md:text-lg text-brand-ink/70 max-w-2xl mx-auto mt-6">
           Ajo, esusu, chamas — rotating savings groups have moved money across Africa for
-          generations, on trust and word of mouth alone. CoopWise keeps what already works and
-          removes what doesn't: forgotten contributions, disputed payouts, and records nobody
-          can agree on.
+          generations, on trust and word of mouth alone. CoopWise keeps what already works,
+          and engineers that trust to work beyond the group.
         </p>
       </div>
     </section>

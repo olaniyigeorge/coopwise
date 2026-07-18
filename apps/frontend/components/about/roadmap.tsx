@@ -53,29 +53,43 @@ export default function Roadmap() {
             Members onboard entirely through tools they already know. Decentralized infrastructure
             is phased in underneath, on our timeline — not theirs to figure out.
           </p>
+          <p className="text-white/50 mt-3 text-sm">
+            Each phase exists to make one thing true: your group's discipline becomes worth
+            something outside the group.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {phases.map((phase, index) => (
-            <div key={index} className="relative rounded-xl border border-white/10 bg-white/[0.04] p-7">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-gold mb-3">{phase.tag}</p>
-              <h3 className="text-white font-semibold font-display text-lg mb-4">{phase.title}</h3>
-              <ul className="space-y-2.5">
-                {phase.points.map((point, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-sm text-white/60">
-                    <span className="mt-1.5 h-1 w-1 rounded-full bg-brand-gold flex-shrink-0" />
-                    {point}
-                  </li>
-                ))}
-              </ul>
-              {index < phases.length - 1 && (
-                <div
-                  aria-hidden
-                  className="hidden md:block absolute top-1/2 -right-3 w-6 h-px bg-white/15"
-                />
-              )}
-            </div>
-          ))}
+          {phases.map((phase, index) => {
+            const isFinalPhase = index === phases.length - 1
+            return (
+              <div
+                key={index}
+                className={`relative rounded-xl border p-7 ${
+                  isFinalPhase
+                    ? "border-brand-gold/40 bg-brand-gold/[0.06]"
+                    : "border-white/10 bg-white/[0.04]"
+                }`}
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-gold mb-3">{phase.tag}</p>
+                <h3 className="text-white font-semibold font-display text-lg mb-4">{phase.title}</h3>
+                <ul className="space-y-2.5">
+                  {phase.points.map((point, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-white/60">
+                      <span className="mt-1.5 h-1 w-1 rounded-full bg-brand-gold flex-shrink-0" />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+                {index < phases.length - 1 && (
+                  <div
+                    aria-hidden
+                    className="hidden md:block absolute top-1/2 -right-3 w-6 h-px bg-white/15"
+                  />
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     </section>

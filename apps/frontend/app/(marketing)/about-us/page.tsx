@@ -14,7 +14,7 @@ import ScrollToTop from '@/components/homepage/scroll-to-top'
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
+      <Navbar />  
       <AboutHero />
       <Mission />
       <Values />

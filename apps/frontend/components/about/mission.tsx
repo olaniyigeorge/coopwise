@@ -29,11 +29,13 @@ export default function Mission() {
               running on nothing more than trust between members.
             </p>
             <p>
-              It's also worth being precise about what this is. A savings circle isn't a loan
-              product, and CoopWise is built to respect that distinction — this is discipline and
-              delayed gratification, not credit. What breaks these groups isn't the model; it's the
-              bookkeeping. Someone forgets who paid. A payout order gets disputed because nobody
-              wrote it down. A treasurer moves cities and takes the records along.
+              It's also worth being precise about what this is, today. A savings circle is a 
+              discipline product, not a lending product — you're not borrowing against a promise, 
+              you're building a record through delivery. That record is what eventually makes 
+              credit possible, on terms that don't require collateral you don't have. What breaks 
+              these groups isn't the model; it's the bookkeeping. Someone forgets who paid. A 
+              payout order gets disputed because nobody wrote it down. A treasurer moves cities 
+              and takes the records along.
             </p>
             <p>
               CoopWise exists to fix that layer, not replace the tradition underneath it. Every

@@ -13,7 +13,7 @@ export default function AboutCta() {
     <section className="py-16 md:py-20 bg-brand-paper">
       <div className="max-w-3xl mx-auto px-4 text-center">
         <h2 className="font-display text-2xl md:text-3xl font-bold text-brand-ink mb-4 text-balance">
-          Bring Your Circle Onto a Ledger It Can Trust
+          Start Building a Record That Works for You — Not Just Your Group
         </h2>
         <p className="text-brand-ink/65 mb-8 max-w-xl mx-auto">
           Start a group in minutes, or join one with an invite code. No wallet, no jargon —
