@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -8,9 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { toast } from 'sonner'
 import { useUserProfile } from '@/lib/hooks/use-user-profile'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 interface ProfileData {
   fullName: string
@@ -104,6 +104,77 @@ function RolePill({ role }: { role: string }) {
   )
 }
 
+function getFriendlyErrorMessage(error: unknown): string {
+  const fieldLabels: Record<string, string> = {
+    income_range: "Monthly income range",
+    saving_frequency: "Saving frequency",
+    target_savings_amount: "Target savings amount",
+    full_name: "Full name",
+    phone_number: "Phone number",
+  }
+
+  // Adjust this shape to match whatever your fetch/axios wrapper actually throws
+  const detail = (error as any)?.response?.data?.detail ?? (error as any)?.detail
+
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0]
+    const field = first?.loc?.[first.loc.length - 1]
+    const label = fieldLabels[field] || "One of the fields"
+
+    if (first?.type?.includes("enum")) {
+      return `${label} has an invalid value. Please choose from the available options.`
+    }
+    return `${label}: ${first?.msg || "is invalid"}.`
+  }
+
+  return "Something went wrong while saving your profile. Please try again."
+}
+
+
+function GoalPurposeInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const options = ["Education", "House Rent", "Emergency Fund", "Investment", "Business", "Travel", "Car Purchase", "Wedding", "Other"]
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div className="relative" ref={wrapperRef}>
+      <Input
+        id="savingGoal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setOpen(true)}
+        placeholder="What are you saving for?"
+        autoComplete="off"
+      />
+      {open && (
+        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-md max-h-48 overflow-y-auto">
+          {options
+            .filter(opt => opt.toLowerCase().includes(value.toLowerCase()))
+            .map(opt => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => { onChange(opt); setOpen(false) }}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700"
+              >
+                {opt}
+              </button>
+            ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 export default function ProfileContent() {
   const { profile, isLoading: isProfileLoading, isUpdating, updateProfile } = useUserProfile()
   const searchParams = useSearchParams()
@@ -137,7 +208,6 @@ export default function ProfileContent() {
     }, [profile])
   
 
-
   useEffect(() => {
     if (focusSection === 'savings-goal' && savingsGoalRef.current) {
       const timer = setTimeout(() => {
@@ -156,14 +226,24 @@ export default function ProfileContent() {
   }
 
   const handleSaveChanges = async () => {
-       await updateProfile(profile!.id, {
+    if (!profileData.monthlySavingsTarget) {
+      toast.error("Please select your monthly income range before saving.")
+      return
+    }
+
+    try {
+      await updateProfile(profile!.id, {
         full_name: profileData.fullName,
         phone_number: profileData.phoneNumber,
         target_savings_amount: profileData.savingAmountGoal ? parseFloat(profileData.savingAmountGoal) : 0,
         savings_purpose: profileData.savingGoal || '',
-        income_range: profileData.monthlySavingsTarget || 'Below 50K',
+        income_range: profileData.monthlySavingsTarget,
         saving_frequency: profileData.savingFrequency || 'daily',
       })
+      toast.success("Profile updated successfully.")
+    } catch (error) {
+      toast.error(getFriendlyErrorMessage(error))
+    }
   }
 
   return (
@@ -342,25 +422,10 @@ export default function ProfileContent() {
 
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="savingGoal" className="text-sm font-medium text-gray-700">Goal Purpose</Label>
-              <Select
+              <GoalPurposeInput
                 value={profileData.savingGoal}
-                onValueChange={(value) => handleInputChange('savingGoal', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="What are you saving for?" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Education">Education</SelectItem>
-                  <SelectItem value="House Rent">House Rent</SelectItem>
-                  <SelectItem value="Emergency Fund">Emergency Fund</SelectItem>
-                  <SelectItem value="Investment">Investment</SelectItem>
-                  <SelectItem value="Business">Business</SelectItem>
-                  <SelectItem value="Travel">Travel</SelectItem>
-                  <SelectItem value="Car Purchase">Car Purchase</SelectItem>
-                  <SelectItem value="Wedding">Wedding</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(v) => handleInputChange('savingGoal', v)}
+              />
             </div>
           </div>
         </CardContent>
