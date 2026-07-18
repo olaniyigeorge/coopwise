@@ -67,7 +67,8 @@ class AuthService:
         otp_store: OtpStorePort,
         otp_senders: dict[OtpChannel, OtpSenderPort],
         firebase_verifier: FirebaseVerifierPort,
-        token_service: TokenServicePort,
+        access_token_service: TokenServicePort,
+        refresh_token_service: TokenServicePort,
         password_hasher: PasswordHasherPort,
         clock: ClockPort,
         notifier: Optional[AuthNotifierPort] = None,
@@ -77,7 +78,8 @@ class AuthService:
         self._otp_store = otp_store
         self._otp_senders = otp_senders
         self._firebase = firebase_verifier
-        self._tokens = token_service
+        self._access_tokens = access_token_service
+        self._refresh_tokens = refresh_token_service
         self._clock = clock
         self._passwords = password_hasher
         self._notifier = notifier
@@ -225,7 +227,7 @@ class AuthService:
 
     # --------------------------------------------------------------- session refresh
     async def refresh_platform_session(self, refresh_token: str) -> SessionResponse:
-        payload = self._tokens.decode(refresh_token)
+        payload = self._refresh_tokens.decode(refresh_token)
         if payload.get("type") != "refresh":
             raise InvalidTokenTypeError("Not a refresh token")
 
@@ -298,23 +300,23 @@ class AuthService:
         claims = {
             "sub": user.email or user.phone_number,
             "id": str(user.id),
+            "iss": "https://coopwise-qhgd.onrender.com", 
             "role": user.role.value,
             "onboarding_status": self._onboarding_status(user),
             "type": "access",
         }
-        return await self._encode(claims, DEFAULT_ACCESS_TOKEN_TTL)
+        to_encode = claims.copy()
+        to_encode["exp"] = self._clock.now() + DEFAULT_ACCESS_TOKEN_TTL
+        return self._access_tokens.encode(to_encode, DEFAULT_ACCESS_TOKEN_TTL)
 
     async def _mint_refresh_token(self, user: User) -> str:
         claims = {"id": str(user.id), "type": "refresh"}
-        return await self._encode(claims, DEFAULT_REFRESH_TOKEN_TTL)
-
-    async def _encode(self, claims: dict, ttl: timedelta) -> str:
         to_encode = claims.copy()
-        to_encode["exp"] = self._clock.now() + ttl
-        return self._tokens.encode(to_encode, ttl)
+        to_encode["exp"] = self._clock.now() + DEFAULT_REFRESH_TOKEN_TTL
+        return self._refresh_tokens.encode(to_encode, DEFAULT_REFRESH_TOKEN_TTL)
 
     async def decode_token(self, token: str) -> dict:
-        return self._tokens.decode(token)
+        return self._access_tokens.decode(token)
 
     # ----------------------------------------------------------------- helpers
     @staticmethod

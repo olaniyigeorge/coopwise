@@ -54,7 +54,17 @@ class UserNotFoundError(AuthDomainError):
     pass
 
 
-class WalletProvisioningError(AuthDomainError):
+class CrossmintApiError(AuthDomainError):
+    """Base for any non-2xx response from Crossmint's REST API."""
+
+class WalletProvisioningError(CrossmintApiError):
     """Crossmint BYOA wallet provisioning failed. Raised only inside the
     background task — must never propagate into the login/registration
     request path."""
+
+class WalletNotFoundError(CrossmintApiError):
+    pass
+
+class WalletTransferError(CrossmintApiError):
+    pass
+

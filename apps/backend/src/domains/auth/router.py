@@ -33,6 +33,7 @@ from src.domains.auth.service import AuthService
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth & Onboarding"])
 
 
+
 @router.post("/otp/request", status_code=204)
 async def request_otp(
     payload: RequestOtp,

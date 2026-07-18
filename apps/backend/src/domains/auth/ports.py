@@ -105,17 +105,19 @@ class FirebaseVerifierPort(Protocol):
 @runtime_checkable
 class WalletProviderPort(Protocol):
     """
-    Narrow boundary around Crossmint's BYOA custom-token wallet
-    provisioning. ONE method. Called from a background task after a
-    session already exists — never inline in login/registration, and a
-    failure here must never surface as an auth failure to the user.
+    Narrow boundary around wallet provisioning, called from a background
+    task after a session already exists — never inline in login/
+    registration, and a failure here must never surface as an auth
+    failure to the user.
+
+    Deliberately minimal: this port only provisions. Balance checks,
+    transfers, and retrieval live in src/domains/wallet/ports.py — auth
+    has no business reason to depend on them.
     """
 
-    async def provision_wallet(self, user_id: UUID, platform_jwt: str) -> str:
-        """Returns the provisioned wallet address. platform_jwt is OUR
-        token (the one whose signing key is registered in Crossmint's
-        console under JWT Authentication > Custom tokens) — Crossmint
-        extracts user_id from it and assigns wallet ownership accordingly.
+    async def provision_wallet(self, user_id: UUID, user_email: str) -> str:
+        """Returns the provisioned wallet address, creating it if one
+        doesn't already exist for this user (idempotent by user_id).
         Raises WalletProvisioningError on failure."""
         ...
 
