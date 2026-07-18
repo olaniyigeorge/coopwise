@@ -22,14 +22,14 @@ def provision_wallet_task(self, user_id_str: str, platform_jwt: str) -> None:
 
     async def _run() -> None:
         from config import AppConfig as config
-        from src.domains.auth.infra.wallet_provider import CrossmintWalletProvider
+        from apps.backend.src.domains.auth.infra.crossmint_wallet_client import CrossmintWalletClient
         from src.domains.auth.infra.sqlalchemy_user_repository import (
             SqlAlchemyUserRepository,
         )
         from src.infra.db.database import db_manager
 
         user_id = UUID(user_id_str)
-        provider = CrossmintWalletProvider(
+        provider = CrossmintWalletClient(
             server_api_key=config.CROSSMINT_SERVER_API_KEY,
             chain=config.CROSSMINT_CHAIN,
         )
