@@ -27,7 +27,7 @@ from src.domains.auth.exceptions import (
     TokenExpiredError,
 )
 
-from src.domains.auth.infra.jose_token_service import JoseTokenService
+from src.domains.auth.infra.jose_token_service import AsymmetricTokenService
 from src.domains.auth.schemas import AuthenticatedUser
 
 
@@ -36,9 +36,10 @@ from src.domains.auth.schemas import AuthenticatedUser
 
 oauth2_scheme = HTTPBearer(auto_error=False)
 
-_token_service = JoseTokenService(
-    config.APP_SECRET_KEY,
-    config.ALGORITHM,
+_token_service = AsymmetricTokenService(
+    config.JWT_PRIVATE_KEY,
+    config.JWT_PUBLIC_KEY,
+    config.JWT_KID
 )
 
 

@@ -1,32 +1,23 @@
-
-
 from __future__ import annotations
 import logging
 
-from fastapi import Depends
-
 from contextlib import asynccontextmanager
+from fastapi import Depends
 from redis.asyncio.client import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
-
-
 from config import AppConfig as config
-
+from src.infra.storage.cloudinary_storage import CloudinaryStorage
+from src.infra.db.dependencies import get_async_db_session
+from src.infra.security.field_encryptor import FieldEncryptor
+from src.infra.cache.redis_client import get_redis
 from src.domains.kyc.service import KYCService
 from src.domains.kyc.audit_service import KYCAuditService
 from src.domains.kyc.infra.bank_verification_provider import MockBankVerificationProvider
 from src.domains.kyc.infra.identity_provider import MockIdentityVerificationProvider
 from src.domains.kyc.infra.user_kyc_flag import UserKYCFlager
 from src.domains.kyc.repositories import SQLAlchemyKYCAuditRepository, SQLAlchemyKYCRepository
-from src.infra.storage.cloudinary_storage import CloudinaryStorage
-from src.infra.db.dependencies import get_async_db_session
-from src.infra.security.field_encryptor import FieldEncryptor
-from src.infra.cache.redis_client import get_redis
 from src.domains.kyc.infra.notifier_adapter import NotificationServiceKYCNotifier
-
-
-
 
 
 def get_kyc_service(

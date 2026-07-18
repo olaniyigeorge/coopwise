@@ -9,7 +9,7 @@ from src.shared.utils.logger import logger
 from config import AppConfig as config
 from src.infra.cache.redis_client import get_redis
 from src.domains.auth.infra.firebase_verifier import FirebaseVerifier
-from src.domains.auth.infra.jose_token_service import JoseTokenService
+from src.domains.auth.infra.jose_token_service import AsymmetricTokenService, JoseTokenService
 from src.domains.auth.infra.notifier_adapter import NotificationServiceAuthNotifier
 from src.domains.auth.infra.otp_senders import (
     EmailOtpSender,
@@ -67,10 +67,15 @@ def _dispatch_wallet_provisioning(user, access_token: str) -> None:
     """Fire-and-forget Celery dispatch. Kept as a plain function (not a
     method) so it can be passed into AuthService as on_user_authenticated
     """
+    # access_token kept in signature for now (on_user_authenticated callback
+    # shape) but unused — wallet provisioning no longer needs the platform
+    # JWT now that ownership is set via explicit owner locator, not BYOA
+    # JWT inference. TODO: drop the param once callback signature is free
+    # to change without touching every call site.
     logger.info(f"[_dispatch_wallet_provisioning] broker={celery_app.conf.broker_url!r} backend={celery_app.conf.result_backend!r}")
     try:
         logger.info(f"\n[_dispatch_wallet_provisioning] dispatching wallet provisioning for user {user.id}\n")
-        provision_wallet_task.delay(str(user.id), access_token)
+        provision_wallet_task.delay(str(user.id), user.email)
     except Exception as e:
         logger.error(f"[_dispatch_wallet_provisioning] failed to enqueue for {user.id}: {e}")
         # Don't let broker issues block sign-in — wallet provisioning
@@ -85,9 +90,18 @@ def get_auth_service(
         otp_store=RedisOtpStore(redis),
         otp_senders=_otp_senders,
         firebase_verifier=_firebase_verifier,
-        token_service=JoseTokenService(config.APP_SECRET_KEY, config.ALGORITHM),
+        access_token_service=get_access_token_service(),
+        refresh_token_service=JoseTokenService(config.APP_SECRET_KEY, config.ALGORITHM),
         password_hasher=BcryptPasswordHasher(),
         clock=SystemClock(),
         notifier=NotificationServiceAuthNotifier(db),
         on_user_authenticated=_dispatch_wallet_provisioning,
+    )
+
+
+def get_access_token_service() -> AsymmetricTokenService:
+    return AsymmetricTokenService(
+        private_key_pem=config.JWT_PRIVATE_KEY,   # from env/secrets
+        public_key_pem=config.JWT_PUBLIC_KEY,
+        kid=config.JWT_KID,                       # e.g. "coopwise-2026-07"
     )
