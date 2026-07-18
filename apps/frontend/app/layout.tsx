@@ -15,7 +15,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'CoopWise | Smart Cooperative Savings Groups Management Platform',
   description: 'Join CoopWise to create, manage, and grow your savings groups. Track contributions, schedule payouts, and build wealth together with our secure cooperative management platform.',
-  keywords: ['ajo', 'cooperative savings', 'savings groups', 'charas', 'susu', 'tontine', 'rotating savings', 'financial cooperation', 'group savings', 'community savings', 'money management', 'cooperative finance'],
+  keywords: ['ajo', 'cooperative savings', 'savings groups', 'tontine', 'chamas', 'esusu', 'rotating savings', 'financial cooperation', 'group savings', 'community savings', 'money management', 'cooperative finance'],
   authors: [{ name: 'CoopWise Team' }],
   creator: 'CoopWise',
   publisher: 'CoopWise',

@@ -12,8 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { toast } from '../ui/use-toast'
 import { Avatar, AvatarFallback } from '../ui/avatar'
 
-// Nav is deliberately short: a saver deciding whether to trust CoopWise needs
-// to know who runs it and how to reach a human — everything else is noise.
+
 const navLinks = [
   { href: '/about-us', label: 'About Us', icon: Info },
   { href: '/support', label: 'Support', icon: LifeBuoy },
@@ -59,7 +58,7 @@ export default function   Navbar() {
       <nav
         className={`fixed top-0 left-0 right-0 z-40  transition-all duration-300 px-4 py-3 md:py-4
           ${scrolled ? 'bg-brand-paper/95 shadow-sm border-b border-brand-ink/10' : 'bg-brand-paper/80 backdrop-blur-md'}
-          max-w-6xl mx-auto border border-red`}
+          max-w-7xl mx-auto border border-red`}
         suppressHydrationWarning
       >
         <div className="flex items-center justify-between">
