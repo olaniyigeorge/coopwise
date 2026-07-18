@@ -1,5 +1,7 @@
+import base64
 import json
 from typing import Any, Dict, Optional
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 
@@ -47,11 +49,22 @@ class GlobalConfig(BaseSettings):
     MAIL_SSL: bool = False
     MAIL_USE_CREDENTIALS: bool = True
     SECRET_ENCRYPTION_KEY: str
+    JWT_PRIVATE_KEY: str
+    JWT_PUBLIC_KEY: str
+    JWT_KID: str
 
     # Sentry: optional, only active in production
     SENTRY_DSN: Optional[str] = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @field_validator("JWT_PRIVATE_KEY", "JWT_PUBLIC_KEY", mode="after")
+    @classmethod
+    def _decode_pem(cls, v: str) -> str:
+        # If it's already a PEM (e.g. someone pastes raw during local dev), pass through.
+        if v.strip().startswith("-----BEGIN"):
+            return v
+        return base64.b64decode(v).decode()
 
 
 class DevConfig(GlobalConfig):
