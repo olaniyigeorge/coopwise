@@ -1,12 +1,12 @@
+from contextlib import asynccontextmanager
+import uvicorn
 from fastapi import FastAPI, Request
-import sqlalchemy
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from contextlib import asynccontextmanager
-import uvicorn
+import sqlalchemy
 
 from src.api.middlewares.middlewares import app_middleware, DistributedTokenBucketMiddleware
 from src.infra.cache.redis_client import redis_manager
@@ -14,7 +14,6 @@ from src.infra.db.database import db_manager
 from src.shared.utils.logger import logger
 from src.api.routers import router_list
 from config import AppConfig as config, rate_limit_rules
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

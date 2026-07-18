@@ -5,6 +5,7 @@ and domain-level route ownership is easier to reason about.
 """
 
 from src.domains.auth.router import router as auth_router
+from src.domains.auth.router_pub import router as pub_auth_router
 from src.domains.users.router import router as users_router
 from src.domains.kyc.router import router as kyc_router
 from src.domains.circles.router import router as circles_router
@@ -21,6 +22,7 @@ from src.domains.ai_chat.router import router as ai_chat_router
 
 router_list = [
     auth_router,
+    pub_auth_router,
     users_router,
     kyc_router,
     circles_router,
