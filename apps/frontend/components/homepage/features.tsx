@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import { NotebookPen, ShieldCheck, Gavel, Landmark } from 'lucide-react'
+import { NotebookPen, ShieldCheck, Gavel, Fingerprint } from 'lucide-react'
 
 const features = [
   {
@@ -10,6 +10,13 @@ const features = [
     title: "Every Contribution, On the Record",
     description:
       "No more mental math or WhatsApp screenshots. Every naira in and every payout out is logged and visible to your whole group, in real time.",
+  },
+  {
+    icon: Fingerprint,
+    eyebrow: "Portable Trust",
+    title: "Your Record Travels With You",
+    description:
+      "Once your group verifies your contribution history, it doesn't stay locked in the group. It becomes something you can show a lender, a landlord, a BNPL provider — proof of discipline, not just a savings log.",
   },
   {
     icon: ShieldCheck,
@@ -25,13 +32,7 @@ const features = [
     description:
       "When a payout is contested, CoopWise reviews the group's full contribution history and proposes a resolution backed by evidence, not opinion.",
   },
-  {
-    icon: Landmark,
-    eyebrow: "Familiar Rails",
-    title: "No Crypto Wallet Required",
-    description:
-      "Fund your contribution with the same bank transfer or card you already use. The infrastructure underneath gets smarter — your habits don't have to change.",
-  },
+
 ]
 
 export default function Features() {

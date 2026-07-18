@@ -21,8 +21,7 @@ export default function Footer() {
               <span className="font-display text-lg font-bold text-white">CoopWise</span>
             </Link>
             <p className="text-sm text-white/50 max-w-xs leading-relaxed">
-              Digitizing cooperative savings for Africa — ajo, esusu, and tontine, brought online
-              without losing what made them work.
+              Trust infrastructure for people the credit system doesn't see yet — built on ajo, esusu, and tontine.
             </p>
           </div>
 

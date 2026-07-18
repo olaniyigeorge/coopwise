@@ -46,7 +46,7 @@ export default function ComingSoon() {
       <div className="relative max-w-6xl mx-auto px-4">
         <div className="text-center mb-14 md:mb-16 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 rounded-full border border-brand-gold/50 bg-brand-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-gold mb-4">
-            Coming Soon · Phase 3
+            History, Put to Work
           </div>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-white text-balance">
             The Ledger Goes On-Chain

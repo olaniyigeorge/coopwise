@@ -30,13 +30,13 @@ export default function Hero() {
             </div> */}
 
             <h1 className="font-display text-4xl sm:text-5xl md:text-[3.4rem] font-bold text-brand-ink leading-[1.08] text-balance">
-              Your Savings Circle Deserves a Ledger It Can Trust
+              Every Contribution Is Proof You Can Be Trusted
             </h1>
 
             <p className="text-base md:text-lg text-brand-ink/70 max-w-lg mx-auto md:mx-0">
-              CoopWise brings the discipline of your cooperative online — every contribution logged,
-              every payout accounted for, and an AI that keeps the group on schedule instead of on
-              WhatsApp screenshots.
+              CoopWise turns your cooperative savings into a verified track record — 
+              one that can work for you beyond the group, the same way a credit score 
+              does for people who already have one.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 md:pt-4 justify-center md:justify-start">
