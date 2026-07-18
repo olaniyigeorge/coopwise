@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict
@@ -184,5 +184,21 @@ class StartKYCResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class VerificationResult(BaseModel):
-    pass
+class BankAccountVerificationResult(BaseModel):
+    success: bool
+    resolved_account_name: Optional[str] = None
+    raw_response: Any
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class IdentityVerificationResult(BaseModel):
+    success: bool
+    reference_id: str
+    raw_response: Any
+    requires_manual_review: bool = False
+    liveness_score: Optional[float] = None,
+    liveness_check_passed: Optional[bool] =  None
+
+
+    model_config = ConfigDict(from_attributes=True)

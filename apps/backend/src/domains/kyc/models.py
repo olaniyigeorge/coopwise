@@ -3,7 +3,7 @@ from uuid import uuid4
 from datetime import datetime
 import uuid
 from sqlalchemy import JSON, Column, String, Boolean, DateTime, Enum, ForeignKey, Text, Date, Float
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infra.db.database import Base
@@ -152,7 +152,7 @@ class KYCIdentityVerification(Base):
     provider = Column(String, nullable=True)
     provider_reference_id = Column(String, nullable=True)
     # TODO: COnsider encypting in case it contains sensitive data 
-    provider_response = Column(Text, nullable=True)
+    provider_response: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     status = Column(Enum(KYCStepStatus), default=KYCStepStatus.pending, nullable=False)
     submitted_at = Column(DateTime, nullable=True)

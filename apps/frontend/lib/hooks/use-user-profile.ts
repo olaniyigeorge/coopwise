@@ -11,6 +11,33 @@ interface UseUserProfileReturn {
   updateProfile: (userId: string, updates: UpdateUserPayload) => Promise<boolean>
 }
 
+
+function getFriendlyErrorMessage(error: unknown): string {
+  const fieldLabels: Record<string, string> = {
+    income_range: "Monthly income range",
+    saving_frequency: "Saving frequency",
+    target_savings_amount: "Target savings amount",
+    full_name: "Full name",
+    phone_number: "Phone number",
+  }
+
+  // Adjust this shape to match whatever your fetch/axios wrapper actually throws
+  const detail = (error as any)?.response?.data?.detail ?? (error as any)?.detail
+
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0]
+    const field = first?.loc?.[first.loc.length - 1]
+    const label = fieldLabels[field] || "One of the fields"
+
+    if (first?.type?.includes("enum")) {
+      return `${label} has an invalid value. Please choose from the available options.`
+    }
+    return `${label}: ${first?.msg || "is invalid"}.`
+  }
+
+  return "Something went wrong while saving your profile. Please try again."
+}
+
 export function useUserProfile(): UseUserProfileReturn {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -58,7 +85,7 @@ export function useUserProfile(): UseUserProfileReturn {
       } catch (err: any) {
         const message = err?.message || 'Failed to update your profile'
         setError(message)
-        toast.error('Update failed', { description: message })
+        toast.error(getFriendlyErrorMessage(err))
         return false
       } finally {
         setIsUpdating(false)

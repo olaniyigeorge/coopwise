@@ -104,33 +104,6 @@ function RolePill({ role }: { role: string }) {
   )
 }
 
-function getFriendlyErrorMessage(error: unknown): string {
-  const fieldLabels: Record<string, string> = {
-    income_range: "Monthly income range",
-    saving_frequency: "Saving frequency",
-    target_savings_amount: "Target savings amount",
-    full_name: "Full name",
-    phone_number: "Phone number",
-  }
-
-  // Adjust this shape to match whatever your fetch/axios wrapper actually throws
-  const detail = (error as any)?.response?.data?.detail ?? (error as any)?.detail
-
-  if (Array.isArray(detail) && detail.length > 0) {
-    const first = detail[0]
-    const field = first?.loc?.[first.loc.length - 1]
-    const label = fieldLabels[field] || "One of the fields"
-
-    if (first?.type?.includes("enum")) {
-      return `${label} has an invalid value. Please choose from the available options.`
-    }
-    return `${label}: ${first?.msg || "is invalid"}.`
-  }
-
-  return "Something went wrong while saving your profile. Please try again."
-}
-
-
 function GoalPurposeInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false)
   const options = ["Education", "House Rent", "Emergency Fund", "Investment", "Business", "Travel", "Car Purchase", "Wedding", "Other"]
@@ -230,20 +203,14 @@ export default function ProfileContent() {
       toast.error("Please select your monthly income range before saving.")
       return
     }
-
-    try {
-      await updateProfile(profile!.id, {
-        full_name: profileData.fullName,
-        phone_number: profileData.phoneNumber,
-        target_savings_amount: profileData.savingAmountGoal ? parseFloat(profileData.savingAmountGoal) : 0,
-        savings_purpose: profileData.savingGoal || '',
-        income_range: profileData.monthlySavingsTarget,
-        saving_frequency: profileData.savingFrequency || 'daily',
-      })
-      toast.success("Profile updated successfully.")
-    } catch (error) {
-      toast.error(getFriendlyErrorMessage(error))
-    }
+    await updateProfile(profile!.id, {
+      full_name: profileData.fullName,
+      phone_number: profileData.phoneNumber,
+      target_savings_amount: profileData.savingAmountGoal ? parseFloat(profileData.savingAmountGoal) : 0,
+      savings_purpose: profileData.savingGoal || '',
+      income_range: profileData.monthlySavingsTarget,
+      saving_frequency: profileData.savingFrequency || 'daily',
+    })
   }
 
   return (

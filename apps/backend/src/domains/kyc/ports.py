@@ -1,6 +1,7 @@
 from typing import Optional, Protocol
 from uuid import UUID
 
+from src.domains.kyc.schemas import BankAccountVerificationResult, IdentityVerificationResult
 from src.domains.kyc.models import (
     KYCVerification, KYCStepType, KYCStepStatus
 )
@@ -45,19 +46,6 @@ class FieldEncryptorPort(Protocol):
     def decrypt(self, token: str) -> str: ...
 
 
-class IdentityVerificationResult:
-    def __init__(
-        self, success: bool, reference_id: str, raw_response: str,
-        requires_manual_review: bool = False,
-        liveness_passed: Optional[bool] = None, liveness_score: Optional[float] = None,
-    ):
-        self.success = success
-        self.reference_id = reference_id
-        self.raw_response = raw_response
-        self.requires_manual_review = requires_manual_review
-        self.liveness_passed = liveness_passed
-        self.liveness_score = liveness_score
-
 
 class IdentityVerificationProviderPort(Protocol):
     async def verify_identity(
@@ -70,16 +58,6 @@ class IdentityVerificationProviderPort(Protocol):
 from typing import Optional, Any
 
 
-class BankAccountVerificationResult:
-    def __init__(
-        self,
-        success: bool,
-        resolved_account_name: Optional[str],
-        raw_response: Any,
-    ):
-        self.success = success
-        self.resolved_account_name = resolved_account_name
-        self.raw_response = raw_response
 
 class BankVerificationProviderPort(Protocol):
     async def resolve_account_name(self, bank_code: str, account_number: str) -> BankAccountVerificationResult: ...

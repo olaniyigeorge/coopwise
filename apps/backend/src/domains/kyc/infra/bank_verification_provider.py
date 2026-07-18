@@ -31,7 +31,7 @@ class MockBankVerificationProvider:
         # Simulate successful verification
         return BankAccountVerificationResult(
             success=True,
-            resolved_account_name="OG bellz",
+            resolved_account_name="OG Bellz | Abeleje Olaniyi | Olaniyi George",
             raw_response={
                 "provider": "mock",
                 "message": "Account resolved successfully",

@@ -124,22 +124,22 @@ celery_app.conf.update(
 
 @task_prerun.connect
 def _log_task_prerun(sender=None, task_id=None, task=None, args=None, kwargs=None, **kw):
-    logger.info(f"[celery] START {task.name} id={task_id} args={args} kwargs={kwargs}")
+    logger.info(f"\n[celery] START {task.name} id={task_id} args={args} kwargs=\n")
 
 
 @task_postrun.connect
 def _log_task_postrun(sender=None, task_id=None, task=None, state=None, **kw):
-    logger.info(f"[celery] DONE {task.name} id={task_id} state={state}")
+    logger.info(f"\n[celery] DONE {task.name} id={task_id} state={state}\n")
 
 
 @task_failure.connect
 def _log_task_failure(sender=None, task_id=None, exception=None, traceback=None, **kw):
-    logger.error(f"[celery] FAILED {sender.name} id={task_id} exc={exception!r}", exc_info=True)
+    logger.error(f"\n[celery] FAILED {sender.name} id={task_id} exc={exception!r}\n", exc_info=True)
 
 
 @task_retry.connect
 def _log_task_retry(sender=None, request=None, reason=None, **kw):
-    logger.warning(f"[celery] RETRY {sender.name} id={request.id} reason={reason}")
+    logger.warning(f"\n[celery] RETRY {sender.name} id={request.id} reason={reason}\n")
 
 
 def _attach_handlers(logger=None, logfile=None, **_kw):
