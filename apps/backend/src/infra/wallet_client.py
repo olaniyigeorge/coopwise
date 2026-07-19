@@ -1,6 +1,6 @@
 from config import AppConfig as config
 
-from apps.backend.src.domains.auth.infra.crossmint_wallet_client import CrossmintWalletClient
+from src.domains.auth.infra.crossmint_wallet_client import CrossmintWalletClient
 
 
 def get_crossmint_wallet_client() -> CrossmintWalletClient:

@@ -22,7 +22,7 @@ def provision_wallet_task(self, user_id_str: str, platform_jwt: str) -> None:
 
     async def _run() -> None:
         from config import AppConfig as config
-        from apps.backend.src.domains.auth.infra.crossmint_wallet_client import CrossmintWalletClient
+        from src.domains.auth.infra.crossmint_wallet_client import CrossmintWalletClient
         from src.domains.auth.infra.sqlalchemy_user_repository import (
             SqlAlchemyUserRepository,
         )
