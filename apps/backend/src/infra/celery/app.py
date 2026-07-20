@@ -78,6 +78,15 @@ def _bootstrap_worker_process(**kwargs) -> None:
             "connect_args": {"check_same_thread": False},
             "poolclass": sqlalchemy.StaticPool,
         })
+    else:
+        # Each Celery task runs asyncio.run(), which tears down its event
+        # loop on completion. A pooled connection persists across that
+        # teardown and gets handed to the *next* task's new loop, which
+        # asyncpg refuses ("another operation is in progress"). NullPool
+        # opens a fresh connection per checkout and closes it on checkin,
+        # so nothing ever survives past the loop that created it.
+        engine_kwargs.update({"poolclass": sqlalchemy.pool.NullPool})
+    
     db_manager.initialize(
         config.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1),
         **engine_kwargs,
