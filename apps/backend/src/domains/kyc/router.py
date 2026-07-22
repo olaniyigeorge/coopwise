@@ -13,7 +13,7 @@ from src.domains.kyc.tasks import process_identity_submission
 from src.shared.idempotency.idempotency import IdempotencyGuard, require_idempotency_key
 from src.shared.security.webhook_signing import verify_hmac_signature
 import filetype  
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Header, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Header, Query, Request, UploadFile, status
 
 from config import AppConfig as config
 from src.api.middlewares.dependencies import get_current_admin_user, get_current_user
@@ -22,12 +22,12 @@ from src.domains.kyc.exceptions import (
     KYCNotFoundError, KYCAlreadyVerifiedError, InvalidKYCStateTransitionError,
     StepAlreadyApprovedError, IdentityVerificationFailedError, BankAccountNameMismatchError,
 )
-from src.domains.kyc.models import KYCStepStatus, KYCStepType, KYCIdDocumentType
+from src.domains.kyc.models import KYCStatus, KYCStepStatus, KYCStepType, KYCIdDocumentType
 from src.domains.kyc.service import (
     KYCService, PersonalInfoInput, ContactInfoInput, IdentityInput, BankingInfoInput,
 )
 from src.domains.kyc.schemas import (
-    PersonalInfoRequest, ContactInfoRequest, BankingInfoRequest,
+    KYCAdminDetailResponse, KYCAdminListResponse, PersonalInfoRequest, ContactInfoRequest, BankingInfoRequest,
     RejectStepRequest, FinalizeRejectRequest,
     KYCStatusResponse, KYCSummaryResponse, StartKYCResponse, StepSummary,
 )
@@ -321,6 +321,50 @@ async def identity_webhook(
     await service.handle_identity_webhook(reference_id, payload)
 
 # ---------- Admin / compliance ----------
+
+@router.get(
+    "/admin/submissions",
+    response_model=KYCAdminListResponse,
+)
+async def get_kyc_submissions(
+    status: Optional[KYCStatus] = None,
+    search: Optional[str] = None,
+    min_score: Optional[float] = Query(None, ge=0, le=100),
+    max_score: Optional[float] = Query(None, ge=0, le=100),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    admin=Depends(get_current_admin_user),
+    service: KYCService = Depends(get_kyc_service),
+):
+    try:
+        return await service.list_admin_submissions(
+            status=status,
+            search=search,
+            min_score=min_score,
+            max_score=max_score,
+            page=page,
+            page_size=page_size,
+        )
+    except Exception as exc:
+        _raise_mapped(exc)
+
+
+@router.get(
+    "/admin/{kyc_id}",
+    response_model=KYCAdminDetailResponse,
+)
+async def get_kyc_submission_detail(
+    kyc_id: UUID,
+    admin=Depends(get_current_admin_user),
+    service: KYCService = Depends(get_kyc_service),
+):
+    try:
+        return await service.get_admin_detail(kyc_id)
+    except Exception as exc:
+        _raise_mapped(exc)
+
+
+
 @router.post("/admin/{kyc_id}/steps/{step}/approve", status_code=status.HTTP_204_NO_CONTENT)
 async def approve_step(
     kyc_id: UUID, step: KYCStepType, request: Request,
