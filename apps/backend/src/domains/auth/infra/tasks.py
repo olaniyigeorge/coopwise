@@ -44,7 +44,7 @@ def provision_wallet_task(self, user_id_str: str, platform_jwt: str) -> None:
                 return  # already provisioned — idempotent no-op (e.g. retried task)
 
             logger.info(f"[provision_wallet_task] provisioning wallet for {user_id}")
-            address = await provider.provision_wallet(user_id, platform_jwt)
+            address = await provider.create_wallet(user_id, user.email, )
             user.flow_address = address
             user.wallet_provider = "crossmint"
             await repo.update(user)
