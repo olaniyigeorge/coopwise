@@ -3,10 +3,11 @@ from datetime import datetime, date
 from typing import Optional
 from uuid import UUID, uuid4
 
-from src.shared.utils.matcher import classify_name_match
+from src.domains.kyc.schemas import KYCAdminDetailResponse, KYCAdminListResponse
+from src.shared.utils.matcher import classify_name_match, score_name_match
 from src.domains.kyc.models import KYCStatus, KYCStepType, KYCStepStatus
 from src.domains.kyc.ports import (
-    KYCNotifierPort, KYCRepositoryPort, FieldEncryptorPort, IdentityVerificationProviderPort,
+    KYCAuditRepositoryPort, KYCNotifierPort, KYCRepositoryPort, FieldEncryptorPort, IdentityVerificationProviderPort,
     BankVerificationProviderPort, ObjectStoragePort, UserKYCFlagPort,
 )
 from src.domains.kyc.exceptions import (
@@ -75,6 +76,7 @@ class KYCService:
     def __init__(
         self,
         repository: KYCRepositoryPort,
+        audit_repository: KYCAuditRepositoryPort,
         encryptor: FieldEncryptorPort,
         identity_provider: IdentityVerificationProviderPort,
         bank_provider: BankVerificationProviderPort,
@@ -83,6 +85,7 @@ class KYCService:
         notifier: KYCNotifierPort,
     ):
         self._repo = repository
+        self._audit_repo = audit_repository
         self._encryptor = encryptor
         self._identity_provider = identity_provider
         self._bank_provider = bank_provider
@@ -196,6 +199,9 @@ class KYCService:
         # step-order check below.
         bank_result = await self._bank_provider.resolve_account_name(data.bank_code, data.account_number)
 
+        match_score = score_name_match(bank_result.resolved_account_name, kyc.personal_info.legal_full_name)
+        match_result = classify_name_match(bank_result.resolved_account_name, kyc.personal_info.legal_full_name)
+
         await self._repo.upsert_banking_info(kyc.id, {
             "bank_name": data.bank_name,
             "bank_code": data.bank_code,
@@ -203,6 +209,7 @@ class KYCService:
             "account_number_last4": data.account_number[-4:],
             "account_name": bank_result.resolved_account_name or "",
             "provider_verified": bank_result.success,
+            "account_name_match_score": match_score,
         })
 
         if not bank_result.success:
@@ -210,39 +217,20 @@ class KYCService:
                 kyc.id, KYCStepType.banking_info, KYCStepStatus.rejected,
                 rejection_reason="Bank could not resolve account",
             )
+            raise BankAccountNameMismatchError("Account resolution failed", "resolution_failed")
+
+        if match_result == "no_match":
+            await self._repo.set_step_status(
+                kyc.id, KYCStepType.banking_info, KYCStepStatus.rejected,
+                rejection_reason="Account name does not match KYC identity",
+            )
             raise BankAccountNameMismatchError(
-                "Account resolution failed",
-                "resolution_failed"
+                "Account name does not match KYC identity", "name_mismatch"
             )
 
-        # name-match check happens here, not just success — resolve can succeed but return
-        # a name that doesn't match the KYC'd identity
-        print("\n classinfying name match\n")
-        if classify_name_match(bank_result.resolved_account_name, kyc.personal_info.legal_full_name) == 'no_match':
-            print("\n No match with legal name", bank_result.resolved_account_name, kyc.personal_info.legal_full_name)
-            await self._repo.set_step_status(
-                kyc.id, KYCStepType.banking_info, KYCStepStatus.rejected,
-                rejection_reason="Account name does not match KYC identity",
-            )
-            raise BankAccountNameMismatchError(
-                "Account name does not match KYC identity",
-                "name_mismatch"
-            )
-        if classify_name_match(bank_result.resolved_account_name, kyc.personal_info.legal_full_name) == 'no_match':
-            print("\n No match with provided accoutn name", bank_result.resolved_account_name, kyc.personal_info.legal_full_name )
-            await self._repo.set_step_status(
-                kyc.id, KYCStepType.banking_info, KYCStepStatus.rejected,
-                rejection_reason="Account name does not match KYC identity",
-            )
-            raise BankAccountNameMismatchError(
-                "Account name does not match KYC identity",
-                "name_mismatch"
-            )
-        
         step_status = KYCStepStatus.submitted  # always routes to review for banking, never auto-approve
         await self._repo.set_step_status(kyc.id, KYCStepType.banking_info, step_status)
         await self._advance_if_ready(kyc.id)
-
 
 
     # TODO: service.begin_identity_submission(user.id)  # sets step status to "processing", cheap DB write only
@@ -262,6 +250,51 @@ class KYCService:
         )
         await self._advance_if_ready(kyc.id)
 
+
+    # ---- Admin: discovery ----
+
+    async def list_admin_submissions(
+            self,
+            status: Optional[KYCStatus],
+            search: Optional[str],
+            min_score: Optional[float],
+            max_score: Optional[float],
+            page: int,
+            page_size: int,
+        ) -> KYCAdminListResponse:
+            rows, total = await self._repo.list_submissions(
+                status=status, search=search, min_score=min_score,
+                max_score=max_score, page=page, page_size=page_size,
+            )
+            return KYCAdminListResponse(
+                items=[self._repo._to_list_item(kyc) for kyc in rows],
+                total=total,
+                page=page,
+                page_size=page_size,
+            )
+
+    async def get_admin_detail(
+            self, 
+            kyc_id: UUID
+            ) -> KYCAdminDetailResponse:
+            kyc = await self._repo.get_by_id(kyc_id)
+            if kyc is None:
+                raise KYCNotFoundError(str(kyc_id))
+
+            audit_log = await self._audit_repo.list_for_kyc(kyc_id)
+
+            return KYCAdminDetailResponse(
+                kyc_id=kyc.id,
+                user_id=kyc.user_id,
+                user_email=None,
+                status=kyc.status,
+                personal_info=kyc.personal_info,
+                contact_info=kyc.contact_info,
+                identity_verification=kyc.identity_verification,
+                banking_info=kyc.banking_info,
+                audit_log=audit_log,
+            )
+    
     # ---- Admin / compliance review ----
 
     async def approve_step(self, kyc_id: UUID, step: KYCStepType):
