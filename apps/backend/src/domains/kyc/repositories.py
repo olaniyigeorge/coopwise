@@ -148,23 +148,6 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
         rows = result.unique().scalars().all()
         return rows, total
     
-    def _to_list_item(kyc: KYCVerification) -> KYCAdminListItem:
-        return KYCAdminListItem(
-            kyc_id=kyc.id,
-            user_id=kyc.user_id,
-            user_email=None,  # fill in once email-join question below is resolved
-            legal_full_name=kyc.personal_info.legal_full_name if kyc.personal_info else None,
-            status=kyc.status,
-            current_step=kyc.current_step,
-            personal_info_status=kyc.personal_info.status if kyc.personal_info else None,
-            contact_info_status=kyc.contact_info.status if kyc.contact_info else None,
-            identity_status=kyc.identity_verification.status if kyc.identity_verification else None,
-            banking_status=kyc.banking_info.status if kyc.banking_info else None,
-            full_name_match_score=kyc.banking_info.account_name_match_score if kyc.banking_info else None,
-            submitted_at=kyc.submitted_at,
-            updated_at=kyc.updated_at,
-        )
-    
     async def _upsert(
         self,
         model,
@@ -330,6 +313,19 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
 
         return await self._db.scalar(stmt)
     
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

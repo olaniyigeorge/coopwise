@@ -1,11 +1,11 @@
-from dataclasses import dataclass
+
 from datetime import datetime, date
 from typing import Optional
 from uuid import UUID, uuid4
 
-from src.domains.kyc.schemas import KYCAdminDetailResponse, KYCAdminListResponse
+from src.domains.kyc.schemas import BankingInfoInput, ContactInfoInput, IdentityInput, KYCAdminDetailResponse, KYCAdminListItem, KYCAdminListResponse, PersonalInfoInput
 from src.shared.utils.matcher import classify_name_match, score_name_match
-from src.domains.kyc.models import KYCStatus, KYCStepType, KYCStepStatus
+from src.domains.kyc.models import KYCStatus, KYCStepType, KYCStepStatus, KYCVerification
 from src.domains.kyc.ports import (
     KYCAuditRepositoryPort, KYCNotifierPort, KYCRepositoryPort, FieldEncryptorPort, IdentityVerificationProviderPort,
     BankVerificationProviderPort, ObjectStoragePort, UserKYCFlagPort,
@@ -25,51 +25,6 @@ _ALLOWED_TRANSITIONS: dict[KYCStatus, set[KYCStatus]] = {
     KYCStatus.verified: {KYCStatus.expired},
     KYCStatus.expired: {KYCStatus.in_progress},
 }
-
-
-# ---- Domain-level input DTOs (router maps its pydantic schemas to these — keeps service FastAPI-agnostic) ----
-@dataclass
-class PersonalInfoInput:
-    legal_full_name: str
-    date_of_birth: date
-    nationality: str
-    employment_status: str
-    source_of_funds: str
-    income_currency: str
-    gender: Optional[str] = None
-    occupation_or_business_type: Optional[str] = None
-    monthly_income_range: Optional[str] = None
-
-
-@dataclass
-class ContactInfoInput:
-    residential_address: str
-    city: str
-    state: str
-    postal_code: str
-    country: str
-    next_of_kin_name: Optional[str] = None
-    next_of_kin_phone: Optional[str] = None
-
-
-@dataclass
-class IdentityInput:
-    document_type: str
-    document_number: str
-    document_image_bytes: bytes
-    document_image_content_type: str
-    selfie_image_bytes: bytes
-    selfie_image_content_type: str
-    video_bytes: Optional[bytes] = None
-    video_content_type: Optional[str] = None
-
-
-@dataclass
-class BankingInfoInput:
-    bank_name: str
-    bank_code: str
-    account_number: str
-    account_name: str
 
 
 class KYCService:
@@ -267,34 +222,38 @@ class KYCService:
                 max_score=max_score, page=page, page_size=page_size,
             )
             return KYCAdminListResponse(
-                items=[self._repo._to_list_item(kyc) for kyc in rows],
+                items=[self._to_list_item(kyc) for kyc in rows],
                 total=total,
                 page=page,
                 page_size=page_size,
             )
 
-    async def get_admin_detail(
-            self, 
-            kyc_id: UUID
-            ) -> KYCAdminDetailResponse:
+    @staticmethod
+    def _to_list_item(kyc: KYCVerification) -> KYCAdminListItem:
+        return KYCAdminListItem(
+            kyc_id=kyc.id,
+            user_id=kyc.user_id,
+            user_email=None,
+            legal_full_name=kyc.personal_info.legal_full_name if kyc.personal_info else None,
+            status=kyc.status,
+            current_step=kyc.current_step,
+            personal_info_status=kyc.personal_info.status if kyc.personal_info else None,
+            contact_info_status=kyc.contact_info.status if kyc.contact_info else None,
+            identity_status=kyc.identity_verification.status if kyc.identity_verification else None,
+            banking_status=kyc.banking_info.status if kyc.banking_info else None,
+            full_name_match_score=kyc.banking_info.account_name_match_score if kyc.banking_info else None,
+            submitted_at=kyc.submitted_at,
+            updated_at=kyc.updated_at,
+        )
+
+
+    async def get_admin_detail(self, kyc_id: UUID) -> KYCAdminDetailResponse:
             kyc = await self._repo.get_by_id(kyc_id)
             if kyc is None:
                 raise KYCNotFoundError(str(kyc_id))
-
             audit_log = await self._audit_repo.list_for_kyc(kyc_id)
-
-            return KYCAdminDetailResponse(
-                kyc_id=kyc.id,
-                user_id=kyc.user_id,
-                user_email=None,
-                status=kyc.status,
-                personal_info=kyc.personal_info,
-                contact_info=kyc.contact_info,
-                identity_verification=kyc.identity_verification,
-                banking_info=kyc.banking_info,
-                audit_log=audit_log,
-            )
-    
+            return KYCAdminDetailResponse.from_kyc(kyc, audit_log)
+        
     # ---- Admin / compliance review ----
 
     async def approve_step(self, kyc_id: UUID, step: KYCStepType):

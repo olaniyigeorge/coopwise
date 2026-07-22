@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional, Any
 from uuid import UUID
@@ -6,8 +7,56 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from src.domains.kyc.models import (
     KYCStatus, KYCStepType, KYCStepStatus,
-    KYCIdDocumentType, EmploymentStatus, SourceOfFunds,
+    KYCIdentityVerification,
+    KYCIdDocumentType, EmploymentStatus, KYCVerification, SourceOfFunds,
 )
+
+
+
+# ---- Domain-level input DTOs (router maps its pydantic schemas to these — keeps service FastAPI-agnostic) ----
+@dataclass
+class PersonalInfoInput:
+    legal_full_name: str
+    date_of_birth: date
+    nationality: str
+    employment_status: str
+    source_of_funds: str
+    income_currency: str
+    gender: Optional[str] = None
+    occupation_or_business_type: Optional[str] = None
+    monthly_income_range: Optional[str] = None
+
+
+@dataclass
+class ContactInfoInput:
+    residential_address: str
+    city: str
+    state: str
+    postal_code: str
+    country: str
+    next_of_kin_name: Optional[str] = None
+    next_of_kin_phone: Optional[str] = None
+
+
+@dataclass
+class IdentityInput:
+    document_type: str
+    document_number: str
+    document_image_bytes: bytes
+    document_image_content_type: str
+    selfie_image_bytes: bytes
+    selfie_image_content_type: str
+    video_bytes: Optional[bytes] = None
+    video_content_type: Optional[str] = None
+
+
+@dataclass
+class BankingInfoInput:
+    bank_name: str
+    bank_code: str
+    account_number: str
+    account_name: str
+
 
 
 # ---------- Requests ----------
@@ -221,26 +270,50 @@ class IdentityVerificationResult(BaseModel):
 
 
 
+class KYCAdminPersonalInfo(BaseModel):
+    legal_full_name: str
+    date_of_birth: date
+    gender: str | None
+    nationality: str
+    employment_status: EmploymentStatus
+    occupation_or_business_type: str | None
+    source_of_funds: SourceOfFunds
+    monthly_income_range: str | None
+    income_currency: str
+    status: KYCStepStatus
+    submitted_at: datetime | None
+    rejection_reason: str | None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
+class KYCAdminContactInfo(BaseModel):
+    residential_address: str
+    city: str
+    state: str
+    postal_code: str
+    country: str
+    next_of_kin_name: str | None
+    next_of_kin_phone: str | None
+    status: KYCStepStatus
+    submitted_at: datetime | None
+    rejection_reason: str | None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
+class KYCAdminBankingInfo(BaseModel):
+    bank_name: str
+    bank_code: str
+    account_number_last4: str
+    account_name: str
+    provider_verified: bool
+    account_name_match_score: float | None
+    status: KYCStepStatus
+    submitted_at: datetime | None
+    rejection_reason: str | None
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    model_config = ConfigDict(from_attributes=True)
 
 
 
@@ -250,7 +323,7 @@ class IdentityVerificationResult(BaseModel):
 class KYCAdminListItem(BaseModel):
     kyc_id: UUID
     user_id: UUID
-    user_email: str
+    user_email: str | None
     legal_full_name: str | None
     status: KYCStatus
     current_step: KYCStepType | None
@@ -293,21 +366,57 @@ class KYCAdminIdentityDetail(BaseModel):
     liveness_check_passed: bool | None
     liveness_score: float | None
     extracted_document_name: str | None
-    legal_full_name: str | None          # from personal_info, for side-by-side comparison
+    legal_full_name: str | None
     full_name_match_score: float | None
     provider: str | None
     provider_reference_id: str | None
     submitted_at: datetime | None
     rejection_reason: str | None
 
+    @classmethod
+    def from_kyc(cls, kyc: "KYCVerification") -> Optional["KYCAdminIdentityDetail"]:
+        idv: KYCIdentityVerification = kyc.identity_verification
+        if idv is None:
+            return None
+        return cls(
+            status=idv.status,
+            document_type=idv.document_type,
+            document_image_url=idv.document_image_key,   # already a full secure_url, not a raw key
+            selfie_image_url=idv.selfie_image_key,
+            video_url=idv.video_key,
+            liveness_check_passed=idv.liveness_check_passed,
+            liveness_score=idv.liveness_score,
+            extracted_document_name=getattr(idv, "extracted_document_name", None),
+            legal_full_name=kyc.personal_info.legal_full_name if kyc.personal_info else None,
+            full_name_match_score=kyc.banking_info.account_name_match_score if kyc.banking_info else None,
+            provider=idv.provider,
+            provider_reference_id=idv.provider_reference_id,
+            submitted_at=idv.submitted_at,
+            rejection_reason=idv.rejection_reason,
+        )
+    
 
 class KYCAdminDetailResponse(BaseModel):
     kyc_id: UUID
     user_id: UUID
-    user_email: str
+    user_email: str | None
     status: KYCStatus
-    personal_info: dict | None      # reuse existing PersonalInfoResponse if you have one
-    contact_info: dict | None
+    personal_info: KYCAdminPersonalInfo | None
+    contact_info: KYCAdminContactInfo | None
     identity_verification: KYCAdminIdentityDetail | None
-    banking_info: dict | None
+    banking_info: KYCAdminBankingInfo | None
     audit_log: list[KYCAuditLogEntry]
+
+    @classmethod
+    def from_kyc(cls, kyc: "KYCVerification", audit_log: list, user_email: str | None = None) -> "KYCAdminDetailResponse":
+        return cls(
+            kyc_id=kyc.id,
+            user_id=kyc.user_id,
+            user_email=user_email,
+            status=kyc.status,
+            personal_info=KYCAdminPersonalInfo.model_validate(kyc.personal_info) if kyc.personal_info else None,
+            contact_info=KYCAdminContactInfo.model_validate(kyc.contact_info) if kyc.contact_info else None,
+            identity_verification=KYCAdminIdentityDetail.from_kyc(kyc),
+            banking_info=KYCAdminBankingInfo.model_validate(kyc.banking_info) if kyc.banking_info else None,
+            audit_log=[KYCAuditLogEntry.model_validate(a) for a in audit_log],
+        )
