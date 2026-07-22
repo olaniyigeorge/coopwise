@@ -23,9 +23,12 @@ def _names_reasonably_match(bank_name: str, kyc_name: str, threshold: int = 82) 
     return score >= threshold
 
 
-def classify_name_match(bank_name: str, kyc_name: str) -> Literal["match", "review", "no_match"]:
+def score_name_match(bank_name: str, kyc_name: str) -> float:
     a, b = _normalize_name(bank_name), _normalize_name(kyc_name)
-    score = max(fuzz.token_sort_ratio(a, b), fuzz.token_set_ratio(a, b))
+    return max(fuzz.token_sort_ratio(a, b), fuzz.token_set_ratio(a, b))
+
+def classify_name_match(bank_name: str, kyc_name: str) -> Literal["match", "review", "no_match"]:
+    score = score_name_match(bank_name, kyc_name)
     if score >= 90:
         return "match"
     if score >= 70:
