@@ -184,10 +184,11 @@ class KYCBankingInfo(Base):
 
     bank_name = Column(String, nullable=False)
     bank_code = Column(String, nullable=False)
-    account_number_encrypted = Column(String, nullable=False)   # via FieldEncryptor
+    account_number_encrypted = Column(String, nullable=False) 
     account_number_last4 = Column(String(4), nullable=False)
     account_name = Column(String, nullable=False)
     provider_verified = Column(Boolean, default=False, nullable=False)
+    account_name_match_score = Column(Float, nullable=True)  
 
     status = Column(Enum(KYCStepStatus), default=KYCStepStatus.pending, nullable=False)
     submitted_at = Column(DateTime, nullable=True)
