@@ -2,12 +2,14 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.domains.kyc.schemas import KYCAdminListItem
 from src.domains.kyc.models import (
     KYCIdDocumentType,
+    KYCStatus,
     KYCVerification,
     KYCPersonalInfo,
     KYCContactInfo,
@@ -92,6 +94,77 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
 
         return await self._db.scalar(stmt)
 
+    async def list_for_kyc(self, kyc_id: UUID) -> list[KYCAuditLog]:
+        stmt = (
+            select(KYCAuditLog)
+            .where(KYCAuditLog.kyc_id == kyc_id)
+            .order_by(KYCAuditLog.created_at.desc())
+        )
+        result = await self._db.execute(stmt)
+        return result.scalars().all()
+    
+    async def list_submissions(
+        self,
+        status: Optional[KYCStatus],
+        search: Optional[str],
+        min_score: Optional[float],
+        max_score: Optional[float],
+        page: int,
+        page_size: int,
+    ) -> tuple[list[KYCVerification], int]:
+
+        stmt = (
+            select(KYCVerification)
+            .outerjoin(KYCPersonalInfo, KYCPersonalInfo.kyc_verification_id == KYCVerification.id)
+            .outerjoin(KYCBankingInfo, KYCBankingInfo.kyc_verification_id == KYCVerification.id)
+            .options(
+                selectinload(KYCVerification.personal_info),
+                selectinload(KYCVerification.contact_info),
+                selectinload(KYCVerification.identity_verification),
+                selectinload(KYCVerification.banking_info),
+            )
+        )
+
+        if status:
+            stmt = stmt.where(KYCVerification.status == status)
+        if search:
+            like = f"%{search}%"
+            stmt = stmt.where(KYCPersonalInfo.legal_full_name.ilike(like))
+        if min_score is not None:
+            stmt = stmt.where(KYCBankingInfo.account_name_match_score >= min_score)
+        if max_score is not None:
+            stmt = stmt.where(KYCBankingInfo.account_name_match_score <= max_score)
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = await self._db.scalar(count_stmt)
+
+        stmt = (
+            stmt.order_by(KYCVerification.submitted_at.desc().nullslast())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+
+        result = await self._db.execute(stmt)
+        rows = result.unique().scalars().all()
+        return rows, total
+    
+    def _to_list_item(kyc: KYCVerification) -> KYCAdminListItem:
+        return KYCAdminListItem(
+            kyc_id=kyc.id,
+            user_id=kyc.user_id,
+            user_email=None,  # fill in once email-join question below is resolved
+            legal_full_name=kyc.personal_info.legal_full_name if kyc.personal_info else None,
+            status=kyc.status,
+            current_step=kyc.current_step,
+            personal_info_status=kyc.personal_info.status if kyc.personal_info else None,
+            contact_info_status=kyc.contact_info.status if kyc.contact_info else None,
+            identity_status=kyc.identity_verification.status if kyc.identity_verification else None,
+            banking_status=kyc.banking_info.status if kyc.banking_info else None,
+            full_name_match_score=kyc.banking_info.account_name_match_score if kyc.banking_info else None,
+            submitted_at=kyc.submitted_at,
+            updated_at=kyc.updated_at,
+        )
+    
     async def _upsert(
         self,
         model,
@@ -272,3 +345,12 @@ class SQLAlchemyKYCAuditRepository:
         self._session.add(entry)
         await self._session.commit()
         return entry
+    
+    async def list_for_kyc(self, kyc_id: UUID) -> list[KYCAuditLog]:
+        stmt = (
+            select(KYCAuditLog)
+            .where(KYCAuditLog.kyc_id == kyc_id)
+            .order_by(KYCAuditLog.created_at.desc())
+        )
+        result = await self._session.execute(stmt)
+        return result.scalars().all()

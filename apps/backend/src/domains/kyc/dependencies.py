@@ -26,6 +26,7 @@ def get_kyc_service(
 ) -> KYCService:
     return KYCService(
         repository=SQLAlchemyKYCRepository(db),
+        audit_repository=SQLAlchemyKYCAuditRepository(db),
         encryptor=FieldEncryptor(config.SECRET_ENCRYPTION_KEY),
         notifier=NotificationServiceKYCNotifier(),
         identity_provider=MockIdentityVerificationProvider(),
@@ -68,6 +69,7 @@ async def build_kyc_service():
     async with session_factory() as session:
         service = KYCService(
             repository=SQLAlchemyKYCRepository(session),
+            audit_repository=SQLAlchemyKYCAuditRepository(session),
             encryptor=FieldEncryptor(config.SECRET_ENCRYPTION_KEY),
             identity_provider=MockIdentityVerificationProvider(),
             bank_provider=MockBankVerificationProvider(),

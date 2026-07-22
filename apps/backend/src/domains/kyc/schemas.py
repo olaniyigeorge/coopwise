@@ -202,3 +202,112 @@ class IdentityVerificationResult(BaseModel):
 
 
     model_config = ConfigDict(from_attributes=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class KYCAdminListItem(BaseModel):
+    kyc_id: UUID
+    user_id: UUID
+    user_email: str
+    legal_full_name: str | None
+    status: KYCStatus
+    current_step: KYCStepType | None
+    personal_info_status: KYCStepStatus | None
+    contact_info_status: KYCStepStatus | None
+    identity_status: KYCStepStatus | None
+    banking_status: KYCStepStatus | None
+    full_name_match_score: float | None
+    submitted_at: datetime | None
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class KYCAdminListResponse(BaseModel):
+    items: list[KYCAdminListItem]
+    total: int
+    page: int
+    page_size: int
+
+
+class KYCAuditLogEntry(BaseModel):
+    id: UUID
+    admin_id: UUID
+    action: str
+    step: str | None
+    reason: str | None
+    metadata_: dict = Field(alias="metadata")
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class KYCAdminIdentityDetail(BaseModel):
+    status: KYCStepStatus
+    document_type: KYCIdDocumentType
+    document_image_url: str | None
+    selfie_image_url: str | None
+    video_url: str | None
+    liveness_check_passed: bool | None
+    liveness_score: float | None
+    extracted_document_name: str | None
+    legal_full_name: str | None          # from personal_info, for side-by-side comparison
+    full_name_match_score: float | None
+    provider: str | None
+    provider_reference_id: str | None
+    submitted_at: datetime | None
+    rejection_reason: str | None
+
+
+class KYCAdminDetailResponse(BaseModel):
+    kyc_id: UUID
+    user_id: UUID
+    user_email: str
+    status: KYCStatus
+    personal_info: dict | None      # reuse existing PersonalInfoResponse if you have one
+    contact_info: dict | None
+    identity_verification: KYCAdminIdentityDetail | None
+    banking_info: dict | None
+    audit_log: list[KYCAuditLogEntry]

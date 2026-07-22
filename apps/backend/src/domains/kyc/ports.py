@@ -1,9 +1,9 @@
 from typing import Optional, Protocol
 from uuid import UUID
 
-from src.domains.kyc.schemas import BankAccountVerificationResult, IdentityVerificationResult
+from src.domains.kyc.schemas import BankAccountVerificationResult, IdentityVerificationResult, KYCAdminListItem
 from src.domains.kyc.models import (
-    KYCVerification, KYCStepType, KYCStepStatus
+    KYCStatus, KYCVerification, KYCStepType, KYCStepStatus
 )
 from src.domains.kyc.audit_models import KYCAuditLog
 
@@ -19,6 +19,18 @@ class KYCRepositoryPort(Protocol):
     async def get_by_id(self, kyc_id: UUID) -> Optional[KYCVerification]: ...
 
     async def create(self, user_id: UUID) -> KYCVerification: ...
+
+    async def list_submissions(
+        self,
+        status: Optional[KYCStatus],
+        search: Optional[str],
+        min_score: Optional[float],
+        max_score: Optional[float],
+        page: int,
+        page_size: int,
+    ) -> tuple[list[KYCVerification], int]: ...
+
+    def _to_list_item(self, kyc: KYCVerification) -> KYCAdminListItem: ...
 
     async def upsert_personal_info(self, kyc_id: UUID, data: dict) -> None: ...
 
@@ -40,6 +52,13 @@ class KYCRepositoryPort(Protocol):
     async def find_by_provider_reference(self, reference_id: str) -> Optional[KYCVerification]: ...
 
 
+class KYCAuditRepositoryPort(Protocol):
+    
+    async def create(self, kyc_id: UUID, admin_id   , action, step, reason, metadata, ip_address, user_agent) -> KYCAuditLog: ...
+    
+    async def list_for_kyc(self, kyc_id: UUID) -> list[KYCAuditLog]: ...
+
+    
 class FieldEncryptorPort(Protocol):
     def encrypt(self, value: str) -> str: ...
 
