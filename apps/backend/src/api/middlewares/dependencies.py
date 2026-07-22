@@ -74,13 +74,11 @@ async def get_current_user(
 
     try:
         payload = _decode_platform_token(token)
-
     except TokenExpiredError:
         raise HTTPException(
             status_code=401,
             detail="Token has expired",
         )
-
     except InvalidTokenError:
         raise HTTPException(
             status_code=401,
