@@ -427,6 +427,10 @@
       font-family: 'IBM Plex Mono', monospace;
       letter-spacing: 0.03em;
     }
+
+    .hidden {
+        display: none;
+    }
   </style>
 </head>
 
@@ -439,10 +443,11 @@
         </div>
         <span class="name">CoopWise</span>
       </div>
-      <h1>Digitizing African Cooperative Finance</h1>
+      <h1>Trust Infrastructure for People Without Collateral or Credit History</h1>
       <p class="subtitle">
         An AI-assisted cooperative savings platform for ajo, esusu, and tontine-style groups —
-        built on familiar Web2 rails today, with blockchain infrastructure quietly powering it underneath.
+        turning verified contribution history into a portable trust record, on familiar Web2 rails today,
+        with blockchain infrastructure quietly powering it underneath.
       </p>
       <div class="button-group">
         <a class="button primary" href="{{ docs_href }}">API Documentation</a>
@@ -462,12 +467,19 @@
       <span class="eyebrow">Overview</span>
       <h2>What CoopWise is</h2>
       <p>
-        African rotating-savings cooperatives are already a trusted, working system — CoopWise doesn't
-        reinvent them, it brings them online. The platform digitizes group savings, layers in AI to
-        automate the repetitive parts of running a cooperative (rules, reminders, scheduling, dispute
-        triage), and works toward blockchain-based decentralization and escrow underneath — without ever
-        requiring members to understand or touch Web3 directly. People save money the way they always have;
-        the infrastructure just gets more transparent and more automated over time.
+        We're not reinventing cooperative savings. Ajo, esusu, chamas — rotating 
+        savings groups have moved money across Africa for generations, on trust 
+        and word of mouth alone. CoopWise keeps what already works, and engineers 
+        that trust to work beyond the group. The platform digitizes group savings, 
+        layers in AI to automate the repetitive parts of running a cooperative 
+        (rules, reminders, scheduling, dispute triage), and turns every 
+        contribution into proof a member can be trusted — a verified track record 
+        that can eventually work for them beyond the group, the same way a credit 
+        score does for people who already have one. All of this runs toward 
+        blockchain-based decentralization and escrow underneath, without ever 
+        requiring members to understand or touch Web3 directly. People save money 
+        the way they always have; the infrastructure just gets more transparent, 
+        more automated, and more useful outside the group over time.
       </p>
     </section>
 
@@ -481,8 +493,8 @@
           <div class="stamp mono">0</div>
           <span class="tag">MVP core</span>
           <h3>Group Savings</h3>
-          <p>The foundational feature: members pool funds together toward a shared goal. Nothing else in
-          CoopWise matters until this works reliably.</p>
+          <p>The foundational feature: members pool funds together toward a shared goal. This is where the
+          trust record starts — nothing else in CoopWise matters until this works reliably.</p>
         </div>
 
         <div class="entry">
@@ -508,7 +520,8 @@
           <span class="tag">Trust</span>
           <h3>Transparency</h3>
           <p>Every group transaction is logged and visible on the CoopWise dashboard, backed by a robust
-          notification system from day one. On-chain event logs are introduced once escrow moves on-chain.</p>
+          notification system from day one. This log is the raw material the trust record is built from.
+          On-chain event logs are introduced once escrow moves on-chain.</p>
         </div>
 
         <div class="entry">
@@ -517,7 +530,7 @@
           <h3>Dispute Resolution</h3>
           <p>AI-driven workflows resolve contribution and payout disputes — flagged either by group members
           or automatically by the system when a contribution is missed. Dispute history feeds directly into
-          each member's credit standing.</p>
+          each member's trust standing, the same standing that later informs credit decisions.</p>
         </div>
 
         <div class="entry">
@@ -526,7 +539,8 @@
           <h3>Smart Contract Automation</h3>
           <p>Fully programmable, on-chain escrow — Solana first. Each group defines its own contract rules,
           which can also plug into liquidity pools, letting members use their cooperative standing as
-          proof-of-stake to access external funds.</p>
+          proof-of-stake to access external funds — collateral-less financing backed by a verified record
+          instead of property or paperwork.</p>
         </div>
       </div>
     </section>
@@ -534,7 +548,7 @@
     <section>
       <span class="eyebrow">Sequencing</span>
       <h2>Rollout Phases</h2>
-      <p>Web3 is the long-term engine, not the entry point. Members onboard entirely through Web2-native tools; decentralized infrastructure is phased in underneath.</p>
+      <p>Web3 is the long-term engine, not the entry point. Members onboard entirely through Web2-native tools; decentralized infrastructure is phased in underneath, on our timeline — not theirs to figure out.</p>
 
       <div class="phases">
         <div class="phase-card">
@@ -575,7 +589,7 @@
     <section>
       <span class="eyebrow">Architecture</span>
       <h2>Identity &amp; Wallets</h2>
-      <p>CoopWise owns identity end-to-end; wallet infrastructure is a separate, pluggable concern.</p>
+      <p>CoopWise owns identity end-to-end; wallet infrastructure is a separate, pluggable concern. Identity is what a trust record ultimately attaches to, so it has to be solid from day one.</p>
 
       <div class="cols">
         <div class="card">
@@ -625,13 +639,13 @@
     <section>
       <span class="eyebrow">Workflows</span>
       <h2>Dispute Resolution</h2>
-      <p>Disputes are raised by a member or auto-flagged by the AI system when a contribution is missed, then routed through a structured resolution path — evidence, member communication, deadlines, admin escalation — before an AI-suggested resolution or, if needed, a group vote. Outcomes feed each member's credit standing over time.</p>
+      <p>Disputes are raised by a member or auto-flagged by the AI system when a contribution is missed, then routed through a structured resolution path — evidence, member communication, deadlines, admin escalation — before an AI-suggested resolution or, if needed, a group vote. Outcomes feed each member's trust standing over time, the same standing that later determines what they can access outside the group.</p>
     </section>
 
-    <section>
+    <section class="hidden">
       <span class="eyebrow">To be confirmed</span>
       <h2>Monetization Strategy</h2>
-      <p>Not yet revisited against the current roadmap — carried forward from the earlier draft pending confirmation:</p>
+      <p>Not yet revisited against the current roadmap — carried forward from the earlier draft pending confirmation. Worth noting: this draft predates the trust-infrastructure repositioning and skews toward transaction-fee revenue rather than the standing-as-collateral model Phase 3 implies (e.g. origination or spread revenue on financing unlocked by group standing).</p>
       <div class="card" style="max-width:700px;">
         <ul>
           <li>Transaction fee: $0.05 per transaction</li>
@@ -650,5 +664,4 @@
   </footer>
 
 </body>
-
 </html>
