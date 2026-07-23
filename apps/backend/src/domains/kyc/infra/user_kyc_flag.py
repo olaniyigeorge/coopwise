@@ -13,6 +13,6 @@ class UserKYCFlager():
 
     async def set_kyc_verified(self, user_id, verified: bool) -> None:
         await self._db.execute(
-            update(User).where(User.id == user_id).values(kyc_verified=verified)
+            update(User).where(User.id == user_id).values(is_kyc_verified=verified)
         )
         await self._db.commit()
