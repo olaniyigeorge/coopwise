@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/hooks/use-app-store'
 import DashboardLayout from '@/components/dashboard/layout'
@@ -14,12 +14,16 @@ import Link from 'next/link'
 import { Bot, MessageSquare, Sparkles, Plus, Users, TrendingUp, ArrowUpRight, Wallet, Clock } from 'lucide-react'
 import AIInsightCard from '@/components/dashboard/ai-insight-card'
 import { formatDate } from '@/lib/contribution-utils'
+import { getKYCOverview } from '@/services/kyc-service'
+
+
 
 export default function Dashboard() {
   const router = useRouter()
   const { user, isAuthenticated } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<DashboardData>(defDashData)
+  const [kycVerified, setKycVerified] = useState<boolean | undefined>(undefined)
 
   const firstName = user?.full_name?.split(' ')[0] || 'User'
 
@@ -44,6 +48,31 @@ export default function Dashboard() {
       router.push('/login')
     }
   }, [isAuthenticated, router, loading])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (isAuthenticated) {
+        try {
+          const data = await getDashboardData()
+          setDashboardData(data)
+        } catch (error) {
+          console.error('Error fetching dashboard data:', error)
+        } finally {
+          setLoading(false)
+        }
+
+        // live KYC status, independent of stale auth-store snapshot
+        try {
+          const kyc = await getKYCOverview()
+          setKycVerified(kyc.overall_status === 'verified')
+        } catch (err) {
+          // 404 = no KYC record yet, that's fine — leave kycVerified undefined
+          setKycVerified(false)
+        }
+      }
+    }
+    fetchData()
+  }, [isAuthenticated])
 
   if (!isAuthenticated && !loading) return null
 
@@ -70,7 +99,7 @@ export default function Dashboard() {
   // Reading them defensively so StatusBanner activates the moment the
   // backend ships these fields, without breaking the build today.
   const onboardingStatus = (dashboardData?.user as any)?.onboarding_status as string | undefined
-  const kycStatus = (user as any)?.is_kyc_verified as boolean | undefined
+  const kycStatus = kycVerified
 
   return (
     <DashboardLayout>
