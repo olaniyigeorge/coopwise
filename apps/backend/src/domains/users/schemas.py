@@ -81,6 +81,7 @@ class UserDetail(BaseModel):
     crossmint_user_id:  Optional[str] = None
     flow_address:  Optional[str] = None
     wallet_provider:  Optional[str] = None
+    is_kyc_verified: bool = False
     is_email_verified: bool = False
     is_phone_verified: bool = False
     created_at: datetime
