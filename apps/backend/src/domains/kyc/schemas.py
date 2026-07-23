@@ -351,7 +351,7 @@ class KYCAuditLogEntry(BaseModel):
     action: str
     step: str | None
     reason: str | None
-    metadata_: dict = Field(alias="metadata")
+    metadata_: dict = Field(serialization_alias="metadata")
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
