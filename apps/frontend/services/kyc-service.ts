@@ -5,10 +5,20 @@ import type {
   KYCIdentityVerificationInput,
   KYCBankingInfoInput,
 } from "@/types/kyc"
+import type {
+  KycSubmissionListParams,
+  KycSubmissionListResponse,
+  KycSubmissionDetail,
+  KycStep,
+  RejectPayload,
+} from "@/types/kyc-admin"
 
 import ApiService from "@/services/api-service"
 
 
+
+
+const ADMIN_BASE = "/kyc/admin"
 const BASE = "/kyc"
 
 
@@ -122,5 +132,71 @@ export async function submitIdentityVerification(
         "Idempotency-Key": idempotencyKey,
       },
     }
+  )
+}
+
+
+
+
+
+function buildAdminQuery(params: KycSubmissionListParams): string {
+  const qs = new URLSearchParams()
+  if (params.status && params.status !== "all") qs.set("status", params.status)
+  if (params.page) qs.set("page", String(params.page))
+  if (params.page_size) qs.set("page_size", String(params.page_size))
+  if (params.search) qs.set("search", params.search)
+  const s = qs.toString()
+  return s ? `?${s}` : ""
+}
+
+export async function listKycSubmissions(
+  params: KycSubmissionListParams = {}
+): Promise<KycSubmissionListResponse> {
+  return ApiService.get<KycSubmissionListResponse>(
+    `${ADMIN_BASE}/submissions${buildAdminQuery(params)}`
+  )
+}
+
+export async function getKycSubmission(
+  kycId: string
+): Promise<KycSubmissionDetail> {
+  return ApiService.get<KycSubmissionDetail>(`${ADMIN_BASE}/${kycId}`)
+}
+
+export async function approveStep(
+  kycId: string,
+  step: KycStep
+): Promise<KycSubmissionDetail> {
+  return ApiService.post<KycSubmissionDetail>(
+    `${ADMIN_BASE}/${kycId}/steps/${step}/approve`
+  )
+}
+
+export async function rejectStep(
+  kycId: string,
+  step: KycStep,
+  payload: RejectPayload
+): Promise<KycSubmissionDetail> {
+  return ApiService.post<KycSubmissionDetail>(
+    `${ADMIN_BASE}/${kycId}/steps/${step}/reject`,
+    payload
+  )
+}
+
+export async function finalizeVerified(
+  kycId: string
+): Promise<KycSubmissionDetail> {
+  return ApiService.post<KycSubmissionDetail>(
+    `${ADMIN_BASE}/${kycId}/finalize/verify`
+  )
+}
+
+export async function finalizeRejected(
+  kycId: string,
+  payload: RejectPayload
+): Promise<KycSubmissionDetail> {
+  return ApiService.post<KycSubmissionDetail>(
+    `${ADMIN_BASE}/${kycId}/finalize/reject`,
+    payload
   )
 }
