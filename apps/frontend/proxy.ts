@@ -2,9 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { performRefresh, setAuthCookies, clearAuthCookies, ACCESS_COOKIE, REFRESH_COOKIE } from '@/lib/auth/refresh'
 import { isExpiredOrExpiringSoon } from '@/lib/auth/jwt'
 
+// Decodes the JWT payload without verifying the signature. Only used to
+// read the `role` claim for a route gate — the backend still enforces
+// authorization on every admin endpoint, this is purely UX (avoid flashing
+// admin UI at a non-admin user before their first API call 401s).
+function decodeRole(token: string): string | null {
+  try {
+    const payload = token.split('.')[1]
+    const json = JSON.parse(
+      Buffer.from(payload, 'base64').toString('utf-8')
+    )
+    return typeof json?.role === 'string' ? json.role : null
+  } catch {
+    return null
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isDashboard = pathname.startsWith('/dashboard')
+  const isAdminDashboard = pathname.startsWith('/dashboard/admin')
   const isProtectedApi = pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/')
 
   if (!isDashboard && !isProtectedApi) {
@@ -36,6 +53,19 @@ export async function proxy(request: NextRequest) {
     const res = NextResponse.redirect(loginUrl)
     if (refreshFailed) clearAuthCookies(res) // dead refresh token, stop dragging it around
     return res
+  }
+
+  // Admin-only dashboard routes: redirect non-admins to the regular dashboard.
+  if (isDashboard && isAdminDashboard && isAuthenticated) {
+    const role = decodeRole(accessToken!)
+    if (role !== 'admin') {
+      const homeUrl = request.nextUrl.clone()
+      homeUrl.pathname = '/dashboard'
+      homeUrl.search = ''
+      const res = NextResponse.redirect(homeUrl)
+      if (refreshed) setAuthCookies(res, refreshed.access_token, refreshed.refresh_token)
+      return res
+    }
   }
 
   if (isProtectedApi) {
