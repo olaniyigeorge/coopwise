@@ -19,7 +19,7 @@ from src.domains.kyc.exceptions import (
 # ---- Allowed status transitions — the actual state machine ----
 _ALLOWED_TRANSITIONS: dict[KYCStatus, set[KYCStatus]] = {
     KYCStatus.not_started: {KYCStatus.in_progress},
-    KYCStatus.in_progress: {KYCStatus.pending_review},
+    KYCStatus.in_progress: {KYCStatus.pending_review, KYCStatus.rejected}, 
     KYCStatus.pending_review: {KYCStatus.verified, KYCStatus.rejected, KYCStatus.in_progress},
     KYCStatus.rejected: {KYCStatus.in_progress},
     KYCStatus.verified: {KYCStatus.expired},
@@ -258,14 +258,29 @@ class KYCService:
 
     async def approve_step(self, kyc_id: UUID, step: KYCStepType):
         await self._repo.set_step_status(kyc_id, step, KYCStepStatus.approved)
-        await self._advance_if_ready(kyc_id)
+        kyc = await self._repo.get_by_id(kyc_id)
+        if kyc is None:
+            raise KYCNotFoundError(str(kyc_id))
+
+        steps = [kyc.personal_info, kyc.contact_info, kyc.identity_verification, kyc.banking_info]
+        if all(s is not None and s.status == KYCStepStatus.approved for s in steps):
+            await self._mark_verified(kyc)
+
+    async def _mark_verified(self, kyc: KYCVerification):
+        if kyc.status == KYCStatus.verified:
+            return
+        kyc = await self._transition(kyc, KYCStatus.verified)
+        await self._repo.set_overall_status(kyc.id, verified_at=datetime.now())
+        await self._user_flags.set_kyc_verified(kyc.user_id, True)
 
     async def reject_step(self, kyc_id: UUID, step: KYCStepType, reason: str):
         kyc = await self._repo.get_by_id(kyc_id)
         if kyc is None:
             raise KYCNotFoundError(str(kyc_id))
         await self._repo.set_step_status(kyc_id, step, KYCStepStatus.rejected, rejection_reason=reason)
-        await self._transition(kyc, KYCStatus.rejected)
+        if kyc.status != KYCStatus.rejected:
+            await self._transition(kyc, KYCStatus.rejected)
+            await self._repo.set_overall_status(kyc.id, rejection_reason=reason)  # optional — see note below
 
     async def finalize_verified(self, kyc_id: UUID):
         kyc = await self._repo.get_by_id(kyc_id)
