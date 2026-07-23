@@ -25,8 +25,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get the response text first
-    const responseText = await response.text();
-    console.log(`User me API response status: ${response.status}`);
+    const responseText = await response.text();;
     
     // Try to parse as JSON if possible
     let data;
