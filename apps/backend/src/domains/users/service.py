@@ -48,7 +48,7 @@ class UserService:
             logger.error(f"Failed to fetch users: {e}")
             raise UserFetchError(str(e))
 
-    async def get_user_by_id(self, user_id: UUID) -> User:
+    async def  get_user_by_id(self, user_id: UUID) -> User:
         user = await self._users.get_by_id(user_id)
         if not user:
             raise UserNotFoundError("User not found")
