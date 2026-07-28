@@ -17,7 +17,8 @@ def provision_wallet_task(self, user_id_str: str, platform_jwt: str) -> None:
     Retries on failure (network blip, Crossmint transient error) up to
     max_retries; a final failure is logged, not raised loudly, since a
     user without a provisioned wallet yet is a degraded-but-functional
-    state (see User.flow_address being nullable), not a broken account."""
+    state (see User.flow_address being nullable), not a broken account.
+    """
     import asyncio
 
     async def _run() -> None:
