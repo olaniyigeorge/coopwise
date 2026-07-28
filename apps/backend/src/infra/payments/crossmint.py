@@ -1,13 +1,20 @@
 """
-Crossmint Wallets REST client.
+Crossmint Wallets REST client. Server-to-server only — authenticates with
+X-API-KEY, never the platform JWT (that's the separate, client-side BYOA
+mechanism used for user-initiated signing flows, not this adapter).
 
-Server-to-server only — authenticates with X-API-KEY, never the platform
-JWT (that's a separate, client-side BYOA mechanism; see module docstring
-history in previous versions of this file for why that distinction matters).
+Implements both:
+  - auth.ports.WalletProviderPort   (provision_wallet)
+  - wallet.ports.WalletQueryPort    (get_wallet, get_balance, transfer_tokens)
+so DI can hand out ONE instance satisfying both narrow ports, rather than
+maintaining two separate HTTP clients against the same API.
 
-Covers: wallet creation, retrieval, balance checks, token transfers.
-Extend with additional methods (e.g. NFT operations, delegated signers)
-following the same _request() pattern.
+Signer model: server signer. Crossmint's REST API requires the admin
+signer's blockchain address to be derived from a secret key you manage —
+see https://docs.crossmint.com/wallets/guides/signers/server-signer.
+`server_signer_address` must be that derived address, NOT the user's
+email. (An email-typed adminSigner is not a valid config for this
+server-to-server flow — that's the separate client-side BYOA path.)
 """
 from __future__ import annotations
 
@@ -16,27 +23,20 @@ from uuid import UUID
 
 import httpx
 
-from src.domains.auth.exceptions import (
+from src.domains.auth.exceptions import WalletProvisioningError
+from src.domains.wallets.exceptions import (
     CrossmintApiError,
-    WalletProvisioningError,
     WalletNotFoundError,
     WalletTransferError,
+    WalletBalanceError,
 )
 from src.shared.utils.logger import logger
 
 
-class WalletLocator:
+class _WalletLocator:
     @staticmethod
     def by_user_id(user_id: UUID, chain: str, wallet_type: str = "smart") -> str:
         return f"userId:{user_id}:{chain}:{wallet_type}"
-
-    @staticmethod
-    def by_email(email: str, chain: str, wallet_type: str = "smart") -> str:
-        return f"email:{email}:{chain}:{wallet_type}"
-
-    @staticmethod
-    def by_address(address: str) -> str:
-        return address
 
 
 class CrossmintWalletClient:
@@ -44,18 +44,18 @@ class CrossmintWalletClient:
         self,
         *,
         server_api_key: str,
-        chain: str = "evm",
+        server_signer_address: str,
+        chain: str = "solana",
         api_base_url: str = "https://www.crossmint.com/api",
     ) -> None:
         self._server_api_key = server_api_key
+        self._server_signer_address = server_signer_address
         self._chain = chain
         self._api_base_url = api_base_url.rstrip("/")
         self._http = httpx.AsyncClient(timeout=15.0)
 
     async def aclose(self) -> None:
         await self._http.aclose()
-
-    # ---- shared request helper -------------------------------------------
 
     async def _request(
         self,
@@ -78,87 +78,79 @@ class CrossmintWalletClient:
             resp.raise_for_status()
         except httpx.HTTPStatusError as e:
             logger.error(f"[CrossmintWalletClient] {method} {path} failed: {e.response.status_code} {e.response.text} {error_context}")
-            raise error_cls(f"Crossmint API error ({e.response.status_code}): {error_context}") from e
+            raise error_cls(f"Crossmint API error ({e.response.status_code}): {e.response.text} {error_context}") from e
         except httpx.HTTPError as e:
             logger.error(f"[CrossmintWalletClient] {method} {path} failed: {e} {error_context}")
             raise error_cls(f"Crossmint API request failed: {error_context}") from e
 
         return resp.json()
 
-    # ---- wallet lifecycle ---------------------------------------------
+    # ---- WalletProviderPort (auth domain) ---------------------------------
 
-    async def create_wallet(
-        self,
-        *,
-        user_id: UUID,
-        user_email: str,
-        admin_signer_type: str = "email",
-        idempotency_key: Optional[str] = None,
-    ) -> dict[str, Any]:
-        """Creates (or, if owner already has one, returns) a smart wallet.
-        Server-signer variant would swap adminSigner for {"type": "server",
-        "address": <derived address>} — see Crossmint's server-signer guide
-        if you move to that model later.
-        """
+    async def provision_wallet(self, user_id: UUID, user_email: str) -> str:
         payload = {
             "chainType": self._chain,
             "type": "smart",
             "config": {
-                "adminSigner": {"type": admin_signer_type, "email": user_email},
+                "adminSigner": {
+                    "type": "server",
+                    "address": self._server_signer_address,
+                },
             },
-            "owner": f"userId:{user_id}",
+            "owner": f"email:{user_email}",
         }
         data = await self._request(
             "POST", "/wallets",
             json=payload,
-            idempotency_key=idempotency_key or f"provision-{user_id}",
+            idempotency_key=f"provision-{user_id}",
             error_cls=WalletProvisioningError,
             error_context=f"user_id={user_id}",
         )
         address = data.get("address")
         if not address:
             raise WalletProvisioningError(f"Crossmint response missing wallet address for user {user_id}")
-        return data
+        return address
 
-    async def get_wallet(self, locator: str) -> dict[str, Any]:
+    # ---- WalletQueryPort (wallet domain) -----------------------------
+
+    async def get_wallet(self, user_id: UUID) -> dict[str, Any]:
+        locator = _WalletLocator.by_user_id(user_id, self._chain)
         return await self._request(
             "GET", f"/wallets/{locator}",
             error_cls=WalletNotFoundError,
-            error_context=f"locator={locator}",
+            error_context=f"user_id={user_id}",
         )
-
-    # ---- balances --------------------------------------------------------
 
     async def get_balance(
         self,
-        locator: str,
+        user_id: UUID,
         tokens: list[str],
         chains: Optional[list[str]] = None,
     ) -> dict[str, Any]:
+        locator = _WalletLocator.by_user_id(user_id, self._chain)
         params: dict[str, Any] = {"tokens": ",".join(tokens)}
         if chains:
             params["chains"] = ",".join(chains)
         return await self._request(
             "GET", f"/wallets/{locator}/balances",
             params=params,
-            error_context=f"locator={locator}",
+            error_cls=WalletBalanceError,
+            error_context=f"user_id={user_id}",
         )
-
-    # ---- transfers ---------------------------------------------------
 
     async def transfer_tokens(
         self,
-        locator: str,
+        user_id: UUID,
         token_locator: str,
         recipient: str,
         amount: str,
         idempotency_key: Optional[str] = None,
     ) -> dict[str, Any]:
-        """amount is decimal-string (e.g. "0.001"), not raw units."""
+        locator = _WalletLocator.by_user_id(user_id, self._chain)
         return await self._request(
             "POST", f"/wallets/{locator}/tokens/{token_locator}/transfers",
             json={"recipient": recipient, "amount": amount},
             idempotency_key=idempotency_key,
             error_cls=WalletTransferError,
-            error_context=f"locator={locator} token={token_locator} recipient={recipient} amount={amount}",
+            error_context=f"user_id={user_id} token={token_locator} recipient={recipient} amount={amount}",
         )

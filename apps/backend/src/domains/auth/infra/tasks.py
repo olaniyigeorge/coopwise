@@ -21,18 +21,14 @@ def provision_wallet_task(self, user_id_str: str, platform_jwt: str) -> None:
     import asyncio
 
     async def _run() -> None:
-        from config import AppConfig as config
-        from src.domains.auth.infra.crossmint_wallet_client import CrossmintWalletClient
+        from src.infra.wallet_client import get_crossmint_wallet_client
         from src.domains.auth.infra.sqlalchemy_user_repository import (
             SqlAlchemyUserRepository,
         )
         from src.infra.db.database import db_manager
 
         user_id = UUID(user_id_str)
-        provider = CrossmintWalletClient(
-            server_api_key=config.CROSSMINT_SERVER_API_KEY,
-            chain=config.CROSSMINT_CHAIN,
-        )
+        provider = get_crossmint_wallet_client()
 
         async with db_manager.get_session() as db:
             repo = SqlAlchemyUserRepository(db)
@@ -44,11 +40,12 @@ def provision_wallet_task(self, user_id_str: str, platform_jwt: str) -> None:
                 return  # already provisioned — idempotent no-op (e.g. retried task)
 
             logger.info(f"[provision_wallet_task] provisioning wallet for {user_id}")
-            address = await provider.create_wallet(user_id, user.email, )
-            user.flow_address = address
+            address = await provider.provision_wallet(user_id, user.email)
+            user.flow_address = address 
             user.wallet_provider = "crossmint"
             await repo.update(user)
             logger.info(f"[provision_wallet_task] wallet provisioned for {user_id}: {address}")
+
 
     try:
         asyncio.run(_run())

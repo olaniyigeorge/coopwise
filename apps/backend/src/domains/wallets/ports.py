@@ -4,38 +4,25 @@ from typing import Any, Optional, Protocol, runtime_checkable
 from uuid import UUID
 
 
+
 @runtime_checkable
-class WalletQueryPort(Protocol):
+class WalletProviderPort(Protocol):
     """
-    Read/write boundary for wallet operations beyond provisioning:
-    retrieval, balance checks, token transfers. Provisioning itself lives
-    in src/domains/auth/ports.py's WalletProviderPort — this port assumes
-    a wallet already exists.
+    Narrow boundary around wallet provisioning, called from a background
+    task after a session already exists — never inline in login/
+    registration, and a failure here must never surface as an auth
+    failure to the user.
     """
 
-    async def get_wallet(self, user_id: UUID) -> dict[str, Any]:
-        """Returns wallet details for the given user. Raises
-        WalletNotFoundError if no wallet has been provisioned yet."""
-        ...
-
-    async def get_balance(
+    async def create_wallet(
         self,
+        *,
         user_id: UUID,
-        tokens: list[str],
-        chains: Optional[list[str]] = None,
-    ) -> dict[str, Any]:
-        """Returns balance info for the given tokens. Raises
-        WalletBalanceError on failure."""
-        ...
-
-    async def transfer_tokens(
-        self,
-        user_id: UUID,
-        token_locator: str,
-        recipient: str,
-        amount: str,
+        user_email: str,
+        admin_signer_type: str = "email",
         idempotency_key: Optional[str] = None,
     ) -> dict[str, Any]:
-        """amount is a decimal string (e.g. "0.001"), not raw units.
-        Raises WalletTransferError on failure."""
+        """Creates (or, if owner already has one, returns) a smart wallet.
+        Raises WalletProvisioningError on failure. Caller extracts
+        `data["address"]`."""
         ...
