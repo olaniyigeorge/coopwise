@@ -71,13 +71,15 @@ const SignInPage = () => {
       <div className="w-full max-w-sm bg-brand-paper rounded-2xl border border-brand-gold/20 shadow-xl p-6 space-y-4">
         <div className="flex flex-col items-center gap-2">
           <div className="w-12 h-12 rounded-full bg-brand-gold/10 border border-brand-gold flex items-center justify-center overflow-hidden">
-            <Image
-              src="/images/coopwise-logo.svg"
-              alt="CoopWise"
-              width={28}
-              height={28}
-              className="object-contain"
-            />
+            <Link href="/">
+              <Image
+                src="/images/coopwise-logo.svg"
+                alt="CoopWise"
+                width={28}
+                height={28}
+                className="object-contain"
+              />
+            </Link>
           </div>
           <div className="text-center space-y-1">
             <h1 className="font-display text-xl text-brand-ink">Welcome back</h1>
@@ -209,15 +211,10 @@ const SignInPage = () => {
           )}
         </button>
 
-        <div className="text-center text-sm text-brand-secondary">
+        <div className="text-center text-sm mb-3 text-brand-secondary">
           Don&apos;t have an account?{" "}
           <Link href="/signup" className="text-brand-teal font-medium">
             Sign up
-          </Link>
-        </div>
-        <div className="text-center">
-          <Link href="/" className="text-xs text-brand-secondary underline underline-offset-2">
-            Back to home
           </Link>
         </div>
       </div>
