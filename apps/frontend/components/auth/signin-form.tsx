@@ -31,9 +31,10 @@ const SignInPage = () => {
   const [mode, setMode] = useState<IdentifierMode>("email")
   const [rootError, setRootError] = useState<string | null>(null)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const isEmailAuthEnabled = process.env.NODE_ENV === "development"
   const [showDisabledNotice, setShowDisabledNotice] = useState(false)
 
-
+  console.log(isEmailAuthEnabled)
   const form = useForm<passwordSignInFormValues>({
     resolver: zodResolver(passwordSignInSchema),
     defaultValues: { identifier: "", password: "" },
@@ -84,20 +85,28 @@ const SignInPage = () => {
           </div>
         </div>
 
-        {/* Email / password block — visually present, functionally disabled */}
+        {/* Email / password block */}
         <div className="relative">
-          <div
-            className="absolute inset-0 z-10 cursor-not-allowed"
-            onClick={() => setShowDisabledNotice(true)}
-          />
+          {!isEmailAuthEnabled && (
+            <div
+              className="absolute inset-0 z-10 cursor-not-allowed"
+              onClick={() => setShowDisabledNotice(true)}
+            />
+          )}
 
-          <div className="flex text-sm opacity-50">
+          <div className={`flex text-sm ${!isEmailAuthEnabled ? "opacity-50" : ""}`}>
             {(["email", "phone"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
-                tabIndex={-1}
-                className={`flex-1 py-1 flex items-center justify-center gap-1.5 border-b-2 transition-colors
+                tabIndex={isEmailAuthEnabled ? 0 : -1}
+                onClick={() => {
+                  if (!isEmailAuthEnabled) return
+                  setMode(m)
+                  form.setValue("identifier", "")
+                  form.clearErrors("identifier")
+                }}
+                className={`flex-1 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors
                   ${mode === m
                     ? "border-brand-teal text-brand-teal font-medium"
                     : "border-brand-gold/20 text-brand-secondary"
@@ -110,7 +119,10 @@ const SignInPage = () => {
           </div>
 
           <Form {...form}>
-            <form className="space-y-3 mt-2 opacity-50">
+            <form
+              onSubmit={isEmailAuthEnabled ? form.handleSubmit(onSubmit) : undefined}
+              className={`space-y-4 mt-4 ${!isEmailAuthEnabled ? "opacity-50" : ""}`}
+            >
               <FormField
                 control={form.control}
                 name="identifier"
@@ -120,7 +132,8 @@ const SignInPage = () => {
                       <Input
                         type={mode === "email" ? "email" : "tel"}
                         placeholder={mode === "email" ? "you@example.com" : "+234 800 000 0000"}
-                        disabled
+                        autoComplete={mode === "email" ? "email" : "tel"}
+                        disabled={!isEmailAuthEnabled}
                         {...field}
                       />
                     </FormControl>
@@ -134,22 +147,34 @@ const SignInPage = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <Input type="password" placeholder="Password" disabled {...field} />
+                      <Input
+                        type="password"
+                        placeholder="Password"
+                        autoComplete="current-password"
+                        disabled={!isEmailAuthEnabled}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <Button type="button" disabled className="w-full h-11 rounded-xl bg-brand-ink">
-                Sign in
+              {rootError && <p className="text-sm text-red-500">{rootError}</p>}
+
+              <Button
+                type={isEmailAuthEnabled ? "submit" : "button"}
+                disabled={!isEmailAuthEnabled || form.formState.isSubmitting}
+                className="w-full h-11 rounded-xl bg-brand-ink hover:bg-brand-ink/90"
+              >
+                {form.formState.isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign in"}
               </Button>
             </form>
           </Form>
         </div>
 
-        {showDisabledNotice && (
-          <p className="text-xs text-center text-brand-secondary bg-brand-gold/10 rounded-lg py-1 px-3">
+        {!isEmailAuthEnabled && showDisabledNotice && (
+          <p className="text-xs text-center text-brand-secondary bg-brand-gold/10 rounded-lg py-2 px-3">
             Email &amp; password sign-in is currently disabled. Please continue with Google below.
           </p>
         )}

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -8,7 +7,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
-import { Loader2, Lock, Mail, Phone, ArrowLeft } from "lucide-react"
+import { Loader2, Mail, Phone, ArrowLeft } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -37,6 +36,7 @@ const SignUpPage = () => {
   const [step, setStep] = useState<Step>("details")
   const [rootError, setRootError] = useState<string | null>(null)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const isEmailAuthEnabled = process.env.NODE_ENV === "development"
   const [showDisabledNotice, setShowDisabledNotice] = useState(false)
 
 
@@ -121,19 +121,27 @@ const SignUpPage = () => {
 
         {step === "details" && (
           <>
-            {/* Email / password block — visually present, functionally disabled */}
+            {/* Email / password block — gated by isEmailAuthEnabled */}
             <div className="relative">
-              <div
-                className="absolute inset-0 z-10 cursor-not-allowed"
-                onClick={() => setShowDisabledNotice(true)}
-              />
+              {!isEmailAuthEnabled && (
+                <div
+                  className="absolute inset-0 z-10 cursor-not-allowed"
+                  onClick={() => setShowDisabledNotice(true)}
+                />
+              )}
 
-              <div className="flex text-sm opacity-50">
+              <div className={`flex text-sm ${!isEmailAuthEnabled ? "opacity-50" : ""}`}>
                 {(["email", "phone"] as const).map((m) => (
                   <button
                     key={m}
                     type="button"
-                    tabIndex={-1}
+                    tabIndex={isEmailAuthEnabled ? 0 : -1}
+                    onClick={() => {
+                      if (!isEmailAuthEnabled) return
+                      setMode(m)
+                      detailsForm.setValue("identifier", "")
+                      detailsForm.clearErrors("identifier")
+                    }}
                     className={`flex-1 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors
                       ${mode === m
                         ? "border-brand-teal text-brand-teal font-medium"
@@ -147,14 +155,22 @@ const SignUpPage = () => {
               </div>
 
               <Form {...detailsForm}>
-                <form className="space-y-3 mt-3 opacity-50">
+                <form
+                  onSubmit={isEmailAuthEnabled ? detailsForm.handleSubmit(handleDetailsSubmit) : undefined}
+                  className={`space-y-3 mt-3 ${!isEmailAuthEnabled ? "opacity-50" : ""}`}
+                >
                   <FormField
                     control={detailsForm.control}
                     name="full_name"
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                          <Input placeholder="Full name" disabled {...field} />
+                          <Input
+                            placeholder="Full name"
+                            autoComplete="name"
+                            disabled={!isEmailAuthEnabled}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -169,7 +185,8 @@ const SignUpPage = () => {
                           <Input
                             type={mode === "email" ? "email" : "tel"}
                             placeholder={mode === "email" ? "you@example.com" : "+234 800 000 0000"}
-                            disabled
+                            autoComplete={mode === "email" ? "email" : "tel"}
+                            disabled={!isEmailAuthEnabled}
                             {...field}
                           />
                         </FormControl>
@@ -183,21 +200,37 @@ const SignUpPage = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                          <Input type="password" placeholder="Password" disabled {...field} />
+                          <Input
+                            type="password"
+                            placeholder="Password"
+                            autoComplete="new-password"
+                            disabled={!isEmailAuthEnabled}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <Button type="button" disabled className="w-full h-11 rounded-xl bg-brand-ink">
-                    Send code
+                  {rootError && <p className="text-sm text-red-500">{rootError}</p>}
+
+                  <Button
+                    type={isEmailAuthEnabled ? "submit" : "button"}
+                    disabled={!isEmailAuthEnabled || detailsForm.formState.isSubmitting}
+                    className="w-full h-11 rounded-xl bg-brand-ink hover:bg-brand-ink/90"
+                  >
+                    {detailsForm.formState.isSubmitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Send code"
+                    )}
                   </Button>
                 </form>
               </Form>
             </div>
 
-            {showDisabledNotice && (
+            {!isEmailAuthEnabled && showDisabledNotice && (
               <p className="text-xs text-center text-brand-secondary bg-brand-gold/10 rounded-lg py-2 px-3">
                 Email &amp; password sign-up is currently disabled. Please continue with Google below.
               </p>
@@ -235,8 +268,6 @@ const SignUpPage = () => {
           </>
         )}
 
-        {/* OTP step left untouched — unreachable now that email signup is disabled,
-            but kept in case you want to re-enable email flow later */}
         {step === "otp" && (
           <Form {...otpForm}>
             <form onSubmit={otpForm.handleSubmit(handleOtpSubmit)} className="space-y-4">
