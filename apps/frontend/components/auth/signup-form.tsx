@@ -3,6 +3,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -36,6 +37,8 @@ const SignUpPage = () => {
   const [step, setStep] = useState<Step>("details")
   const [rootError, setRootError] = useState<string | null>(null)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [showDisabledNotice, setShowDisabledNotice] = useState(false)
+
 
   const detailsForm = useForm<signUpDetailsFormValues>({
     resolver: zodResolver(signUpDetailsSchema),
@@ -92,11 +95,17 @@ const SignUpPage = () => {
   }
 
   return (
-    <div className="auth_bg relative min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-sm bg-brand-paper rounded-2xl border border-brand-gold/20 shadow-xl p-8 space-y-6">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-brand-gold/10 border border-brand-gold flex items-center justify-center">
-            <Lock className="w-5 h-5 text-brand-gold" />
+    <div className="auth_bg relative min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-brand-paper rounded-2xl border border-brand-gold/20 shadow-xl p-6 space-y-4">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-full bg-brand-gold/10 border border-brand-gold flex items-center justify-center overflow-hidden">
+            <Image
+              src="/images/coopwise-logo.svg"
+              alt="CoopWise"
+              width={28}
+              height={28}
+              className="object-contain"
+            />
           </div>
           <div className="text-center space-y-1">
             <h1 className="font-display text-xl text-brand-ink">
@@ -112,87 +121,87 @@ const SignUpPage = () => {
 
         {step === "details" && (
           <>
-            <div className="flex text-sm">
-              {(["email", "phone"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => {
-                    setMode(m)
-                    detailsForm.setValue("identifier", "")
-                    detailsForm.clearErrors("identifier")
-                  }}
-                  className={`flex-1 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors touch-manipulation
-                    ${mode === m
-                      ? "border-brand-teal text-brand-teal font-medium"
-                      : "border-brand-gold/20 text-brand-secondary"
-                    }`}
-                >
-                  {m === "email" ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
-                  {m === "email" ? "Email" : "Phone"}
-                </button>
-              ))}
+            {/* Email / password block — visually present, functionally disabled */}
+            <div className="relative">
+              <div
+                className="absolute inset-0 z-10 cursor-not-allowed"
+                onClick={() => setShowDisabledNotice(true)}
+              />
+
+              <div className="flex text-sm opacity-50">
+                {(["email", "phone"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    tabIndex={-1}
+                    className={`flex-1 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors
+                      ${mode === m
+                        ? "border-brand-teal text-brand-teal font-medium"
+                        : "border-brand-gold/20 text-brand-secondary"
+                      }`}
+                  >
+                    {m === "email" ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
+                    {m === "email" ? "Email" : "Phone"}
+                  </button>
+                ))}
+              </div>
+
+              <Form {...detailsForm}>
+                <form className="space-y-3 mt-3 opacity-50">
+                  <FormField
+                    control={detailsForm.control}
+                    name="full_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input placeholder="Full name" disabled {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={detailsForm.control}
+                    name="identifier"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input
+                            type={mode === "email" ? "email" : "tel"}
+                            placeholder={mode === "email" ? "you@example.com" : "+234 800 000 0000"}
+                            disabled
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={detailsForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input type="password" placeholder="Password" disabled {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="button" disabled className="w-full h-11 rounded-xl bg-brand-ink">
+                    Send code
+                  </Button>
+                </form>
+              </Form>
             </div>
 
-            <Form {...detailsForm}>
-              <form onSubmit={detailsForm.handleSubmit(handleDetailsSubmit)} className="space-y-4">
-                <FormField
-                  control={detailsForm.control}
-                  name="full_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input placeholder="Full name" autoComplete="name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={detailsForm.control}
-                  name="identifier"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input
-                          type={mode === "email" ? "email" : "tel"}
-                          placeholder={mode === "email" ? "you@example.com" : "+234 800 000 0000"}
-                          autoComplete={mode === "email" ? "email" : "tel"}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={detailsForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input type="password" placeholder="Password" autoComplete="new-password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {rootError && <p className="text-sm text-red-500">{rootError}</p>}
-
-                <Button
-                  type="submit"
-                  className="w-full h-11 rounded-xl bg-brand-ink hover:bg-brand-ink/90"
-                  disabled={detailsForm.formState.isSubmitting}
-                >
-                  {detailsForm.formState.isSubmitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Send code"
-                  )}
-                </Button>
-              </form>
-            </Form>
+            {showDisabledNotice && (
+              <p className="text-xs text-center text-brand-secondary bg-brand-gold/10 rounded-lg py-2 px-3">
+                Email &amp; password sign-up is currently disabled. Please continue with Google below.
+              </p>
+            )}
 
             <div className="flex items-center gap-3 text-xs text-brand-secondary">
               <div className="h-px flex-1 tally-divider" />
@@ -226,6 +235,8 @@ const SignUpPage = () => {
           </>
         )}
 
+        {/* OTP step left untouched — unreachable now that email signup is disabled,
+            but kept in case you want to re-enable email flow later */}
         {step === "otp" && (
           <Form {...otpForm}>
             <form onSubmit={otpForm.handleSubmit(handleOtpSubmit)} className="space-y-4">

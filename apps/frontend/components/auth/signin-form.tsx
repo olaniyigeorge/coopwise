@@ -2,11 +2,13 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { Loader2, Lock, Mail, Phone } from "lucide-react"
+
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -29,6 +31,8 @@ const SignInPage = () => {
   const [mode, setMode] = useState<IdentifierMode>("email")
   const [rootError, setRootError] = useState<string | null>(null)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [showDisabledNotice, setShowDisabledNotice] = useState(false)
+
 
   const form = useForm<passwordSignInFormValues>({
     resolver: zodResolver(passwordSignInSchema),
@@ -61,13 +65,18 @@ const SignInPage = () => {
       setIsGoogleLoading(false)
     }
   }
-
   return (
-    <div className="auth_bg relative min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-sm bg-brand-paper rounded-2xl border border-brand-gold/20 shadow-xl p-8 space-y-6">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-brand-gold/10 border border-brand-gold flex items-center justify-center">
-            <Lock className="w-5 h-5 text-brand-gold" />
+    <div className="auth_bg relative min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-brand-paper rounded-2xl border border-brand-gold/20 shadow-xl p-6 space-y-4">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-full bg-brand-gold/10 border border-brand-gold flex items-center justify-center overflow-hidden">
+            <Image
+              src="/images/coopwise-logo.svg"
+              alt="CoopWise"
+              width={28}
+              height={28}
+              className="object-contain"
+            />
           </div>
           <div className="text-center space-y-1">
             <h1 className="font-display text-xl text-brand-ink">Welcome back</h1>
@@ -75,73 +84,77 @@ const SignInPage = () => {
           </div>
         </div>
 
-        <div className="flex text-sm">
-          {(["email", "phone"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => {
-                setMode(m)
-                form.setValue("identifier", "")
-                form.clearErrors("identifier")
-              }}
-              className={`flex-1 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors touch-manipulation
-                ${mode === m
-                  ? "border-brand-teal text-brand-teal font-medium"
-                  : "border-brand-gold/20 text-brand-secondary"
-                }`}
-            >
-              {m === "email" ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
-              {m === "email" ? "Email" : "Phone"}
-            </button>
-          ))}
+        {/* Email / password block — visually present, functionally disabled */}
+        <div className="relative">
+          <div
+            className="absolute inset-0 z-10 cursor-not-allowed"
+            onClick={() => setShowDisabledNotice(true)}
+          />
+
+          <div className="flex text-sm opacity-50">
+            {(["email", "phone"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                tabIndex={-1}
+                className={`flex-1 py-1 flex items-center justify-center gap-1.5 border-b-2 transition-colors
+                  ${mode === m
+                    ? "border-brand-teal text-brand-teal font-medium"
+                    : "border-brand-gold/20 text-brand-secondary"
+                  }`}
+              >
+                {m === "email" ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
+                {m === "email" ? "Email" : "Phone"}
+              </button>
+            ))}
+          </div>
+
+          <Form {...form}>
+            <form className="space-y-3 mt-2 opacity-50">
+              <FormField
+                control={form.control}
+                name="identifier"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        type={mode === "email" ? "email" : "tel"}
+                        placeholder={mode === "email" ? "you@example.com" : "+234 800 000 0000"}
+                        disabled
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input type="password" placeholder="Password" disabled {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button type="button" disabled className="w-full h-11 rounded-xl bg-brand-ink">
+                Sign in
+              </Button>
+            </form>
+          </Form>
         </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="identifier"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input
-                      type={mode === "email" ? "email" : "tel"}
-                      placeholder={mode === "email" ? "you@example.com" : "+234 800 000 0000"}
-                      autoComplete={mode === "email" ? "email" : "tel"}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input type="password" placeholder="Password" autoComplete="current-password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        {showDisabledNotice && (
+          <p className="text-xs text-center text-brand-secondary bg-brand-gold/10 rounded-lg py-1 px-3">
+            Email &amp; password sign-in is currently disabled. Please continue with Google below.
+          </p>
+        )}
 
-            {rootError && <p className="text-sm text-red-500">{rootError}</p>}
-
-            <Button
-              type="submit"
-              className="w-full h-11 rounded-xl bg-brand-ink hover:bg-brand-ink/90"
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign in"}
-            </Button>
-          </form>
-        </Form>
-
-        <div className="flex items-center gap-3 text-xs text-brand-secondary">
+        <div className="flex items-center gap-1 text-xs text-brand-secondary">
           <div className="h-px flex-1 tally-divider" />
           or
           <div className="h-px flex-1 tally-divider" />
