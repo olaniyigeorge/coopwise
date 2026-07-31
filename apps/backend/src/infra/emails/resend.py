@@ -22,15 +22,8 @@ from typing import Optional, Protocol
 import resend
 
 from src.shared.utils.logger import logger
-
-
-class EmailSendError(Exception):
-    """Raised when the configured email provider fails to send."""
-
-
-class EmailSenderPort(Protocol):
-    async def send(self, *, to: str, subject: str, html: str) -> None: ...
-
+from src.infra.emails.ports import EmailSenderPort
+from src.infra.emails.exceptions import EmailSendError
 
 def _validate_from_address(email: str) -> None:
     domain = email.split("@")[-1].lower() if "@" in email else ""
@@ -88,7 +81,7 @@ def get_email_sender(
     and staging use Resend; anything else (development, test, local) logs
     instead of sending.
     """
-    if environment in ("production",): # "staging"
+    if environment in ("production", "development"): # "staging"
         if not resend_api_key or not from_email:
             raise EmailSendError(
                 "RESEND_API_KEY and EMAIL_FROM are required in production/staging"
