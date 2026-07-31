@@ -26,6 +26,10 @@ import { requestOtp, signInWithFirebase, verifyOtpAndRegister } from "@/services
 type IdentifierMode = "email" | "phone"
 type Step = "details" | "otp"
 
+// Phone auth (SMS OTP) isn't wired up yet — no SMS provider configured.
+// Email is fully live now that Resend is set up. Flip this when SMS lands.
+const isPhoneAuthEnabled = false
+
 const SignUpPage = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -36,9 +40,7 @@ const SignUpPage = () => {
   const [step, setStep] = useState<Step>("details")
   const [rootError, setRootError] = useState<string | null>(null)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const isEmailAuthEnabled = process.env.NODE_ENV === "development"
-  const [showDisabledNotice, setShowDisabledNotice] = useState(false)
-
+  const [showPhoneDisabledNotice, setShowPhoneDisabledNotice] = useState(false)
 
   const detailsForm = useForm<signUpDetailsFormValues>({
     resolver: zodResolver(signUpDetailsSchema),
@@ -123,43 +125,44 @@ const SignUpPage = () => {
 
         {step === "details" && (
           <>
-            {/* Email / password block — gated by isEmailAuthEnabled */}
-            <div className="relative">
-              {!isEmailAuthEnabled && (
-                <div
-                  className="absolute inset-0 z-10 cursor-not-allowed"
-                  onClick={() => setShowDisabledNotice(true)}
-                />
-              )}
-
-              <div className={`flex text-sm ${!isEmailAuthEnabled ? "opacity-50" : ""}`}>
-                {(["email", "phone"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    tabIndex={isEmailAuthEnabled ? 0 : -1}
-                    onClick={() => {
-                      if (!isEmailAuthEnabled) return
-                      setMode(m)
-                      detailsForm.setValue("identifier", "")
-                      detailsForm.clearErrors("identifier")
-                    }}
-                    className={`flex-1 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors
-                      ${mode === m
-                        ? "border-brand-teal text-brand-teal font-medium"
-                        : "border-brand-gold/20 text-brand-secondary"
-                      }`}
-                  >
-                    {m === "email" ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
-                    {m === "email" ? "Email" : "Phone"}
-                  </button>
-                ))}
+            {/* Email / password block */}
+            <div>
+              <div className="flex text-sm">
+                {(["email", "phone"] as const).map((m) => {
+                  const disabled = m === "phone" && !isPhoneAuthEnabled
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      tabIndex={disabled ? -1 : 0}
+                      onClick={() => {
+                        if (disabled) {
+                          setShowPhoneDisabledNotice(true)
+                          return
+                        }
+                        setMode(m)
+                        setShowPhoneDisabledNotice(false)
+                        detailsForm.setValue("identifier", "")
+                        detailsForm.clearErrors("identifier")
+                      }}
+                      className={`flex-1 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors
+                        ${mode === m
+                          ? "border-brand-teal text-brand-teal font-medium"
+                          : "border-brand-gold/20 text-brand-secondary"
+                        }
+                        ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      {m === "email" ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
+                      {m === "email" ? "Email" : "Phone"}
+                    </button>
+                  )
+                })}
               </div>
 
               <Form {...detailsForm}>
                 <form
-                  onSubmit={isEmailAuthEnabled ? detailsForm.handleSubmit(handleDetailsSubmit) : undefined}
-                  className={`space-y-3 mt-3 ${!isEmailAuthEnabled ? "opacity-50" : ""}`}
+                  onSubmit={detailsForm.handleSubmit(handleDetailsSubmit)}
+                  className="space-y-3 mt-3"
                 >
                   <FormField
                     control={detailsForm.control}
@@ -170,7 +173,6 @@ const SignUpPage = () => {
                           <Input
                             placeholder="Full name"
                             autoComplete="name"
-                            disabled={!isEmailAuthEnabled}
                             {...field}
                           />
                         </FormControl>
@@ -188,7 +190,6 @@ const SignUpPage = () => {
                             type={mode === "email" ? "email" : "tel"}
                             placeholder={mode === "email" ? "you@example.com" : "+234 800 000 0000"}
                             autoComplete={mode === "email" ? "email" : "tel"}
-                            disabled={!isEmailAuthEnabled}
                             {...field}
                           />
                         </FormControl>
@@ -206,7 +207,6 @@ const SignUpPage = () => {
                             type="password"
                             placeholder="Password"
                             autoComplete="new-password"
-                            disabled={!isEmailAuthEnabled}
                             {...field}
                           />
                         </FormControl>
@@ -218,8 +218,8 @@ const SignUpPage = () => {
                   {rootError && <p className="text-sm text-red-500">{rootError}</p>}
 
                   <Button
-                    type={isEmailAuthEnabled ? "submit" : "button"}
-                    disabled={!isEmailAuthEnabled || detailsForm.formState.isSubmitting}
+                    type="submit"
+                    disabled={detailsForm.formState.isSubmitting}
                     className="w-full h-11 rounded-xl bg-brand-ink hover:bg-brand-ink/90"
                   >
                     {detailsForm.formState.isSubmitting ? (
@@ -232,9 +232,9 @@ const SignUpPage = () => {
               </Form>
             </div>
 
-            {!isEmailAuthEnabled && showDisabledNotice && (
+            {showPhoneDisabledNotice && (
               <p className="text-xs text-center text-brand-secondary bg-brand-gold/10 rounded-lg py-2 px-3">
-                Email &amp; password sign-up is currently disabled. Please continue with Google below.
+                Phone sign-up isn&apos;t available yet. Please continue with email or Google below.
               </p>
             )}
 

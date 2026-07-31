@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
-import { Loader2, Lock, Mail, Phone } from "lucide-react"
+import { Loader2, Mail, Phone } from "lucide-react"
 
 
 import { Input } from "@/components/ui/input"
@@ -19,8 +19,11 @@ import useAuthStore from "@/stores/auth-store"
 import { requestOtp, signInWithFirebase, signInWithPassword, verifyOtpAndRegister } from "@/services/auth-service"
 
 
-
 type IdentifierMode = "email" | "phone"
+
+// Phone auth (SMS OTP) isn't wired up yet — no SMS provider configured.
+// Email is fully live now that Resend is set up. Flip this when SMS lands.
+const isPhoneAuthEnabled = false
 
 const SignInPage = () => {
   const router = useRouter()
@@ -31,10 +34,8 @@ const SignInPage = () => {
   const [mode, setMode] = useState<IdentifierMode>("email")
   const [rootError, setRootError] = useState<string | null>(null)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const isEmailAuthEnabled = process.env.NODE_ENV === "development"
-  const [showDisabledNotice, setShowDisabledNotice] = useState(false)
+  const [showPhoneDisabledNotice, setShowPhoneDisabledNotice] = useState(false)
 
-  console.log(isEmailAuthEnabled)
   const form = useForm<passwordSignInFormValues>({
     resolver: zodResolver(passwordSignInSchema),
     defaultValues: { identifier: "", password: "" },
@@ -66,6 +67,7 @@ const SignInPage = () => {
       setIsGoogleLoading(false)
     }
   }
+
   return (
     <div className="auth_bg relative min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-brand-paper rounded-2xl border border-brand-gold/20 shadow-xl p-6 space-y-4">
@@ -88,43 +90,41 @@ const SignInPage = () => {
         </div>
 
         {/* Email / password block */}
-        <div className="relative">
-          {!isEmailAuthEnabled && (
-            <div
-              className="absolute inset-0 z-10 cursor-not-allowed"
-              onClick={() => setShowDisabledNotice(true)}
-            />
-          )}
-
-          <div className={`flex text-sm ${!isEmailAuthEnabled ? "opacity-50" : ""}`}>
-            {(["email", "phone"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                tabIndex={isEmailAuthEnabled ? 0 : -1}
-                onClick={() => {
-                  if (!isEmailAuthEnabled) return
-                  setMode(m)
-                  form.setValue("identifier", "")
-                  form.clearErrors("identifier")
-                }}
-                className={`flex-1 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors
-                  ${mode === m
-                    ? "border-brand-teal text-brand-teal font-medium"
-                    : "border-brand-gold/20 text-brand-secondary"
-                  }`}
-              >
-                {m === "email" ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
-                {m === "email" ? "Email" : "Phone"}
-              </button>
-            ))}
+        <div>
+          <div className="flex text-sm">
+            {(["email", "phone"] as const).map((m) => {
+              const disabled = m === "phone" && !isPhoneAuthEnabled
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  tabIndex={disabled ? -1 : 0}
+                  onClick={() => {
+                    if (disabled) {
+                      setShowPhoneDisabledNotice(true)
+                      return
+                    }
+                    setMode(m)
+                    setShowPhoneDisabledNotice(false)
+                    form.setValue("identifier", "")
+                    form.clearErrors("identifier")
+                  }}
+                  className={`flex-1 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors
+                    ${mode === m
+                      ? "border-brand-teal text-brand-teal font-medium"
+                      : "border-brand-gold/20 text-brand-secondary"
+                    }
+                    ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {m === "email" ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
+                  {m === "email" ? "Email" : "Phone"}
+                </button>
+              )
+            })}
           </div>
 
           <Form {...form}>
-            <form
-              onSubmit={isEmailAuthEnabled ? form.handleSubmit(onSubmit) : undefined}
-              className={`space-y-4 mt-4 ${!isEmailAuthEnabled ? "opacity-50" : ""}`}
-            >
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
               <FormField
                 control={form.control}
                 name="identifier"
@@ -135,7 +135,6 @@ const SignInPage = () => {
                         type={mode === "email" ? "email" : "tel"}
                         placeholder={mode === "email" ? "you@example.com" : "+234 800 000 0000"}
                         autoComplete={mode === "email" ? "email" : "tel"}
-                        disabled={!isEmailAuthEnabled}
                         {...field}
                       />
                     </FormControl>
@@ -153,7 +152,6 @@ const SignInPage = () => {
                         type="password"
                         placeholder="Password"
                         autoComplete="current-password"
-                        disabled={!isEmailAuthEnabled}
                         {...field}
                       />
                     </FormControl>
@@ -165,8 +163,8 @@ const SignInPage = () => {
               {rootError && <p className="text-sm text-red-500">{rootError}</p>}
 
               <Button
-                type={isEmailAuthEnabled ? "submit" : "button"}
-                disabled={!isEmailAuthEnabled || form.formState.isSubmitting}
+                type="submit"
+                disabled={form.formState.isSubmitting}
                 className="w-full h-11 rounded-xl bg-brand-ink hover:bg-brand-ink/90"
               >
                 {form.formState.isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign in"}
@@ -175,9 +173,9 @@ const SignInPage = () => {
           </Form>
         </div>
 
-        {!isEmailAuthEnabled && showDisabledNotice && (
+        {showPhoneDisabledNotice && (
           <p className="text-xs text-center text-brand-secondary bg-brand-gold/10 rounded-lg py-2 px-3">
-            Email &amp; password sign-in is currently disabled. Please continue with Google below.
+            Phone sign-in isn&apos;t available yet. Please continue with email or Google below.
           </p>
         )}
 
