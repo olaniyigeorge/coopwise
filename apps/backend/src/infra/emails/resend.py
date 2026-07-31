@@ -81,7 +81,7 @@ def get_email_sender(
     and staging use Resend; anything else (development, test, local) logs
     instead of sending.
     """
-    if environment in ("production", "development"): # "staging"
+    if environment in ("production", "development",  "staging"): # TODO:  COnsider removing this gate
         if not resend_api_key or not from_email:
             raise EmailSendError(
                 "RESEND_API_KEY and EMAIL_FROM are required in production/staging"
