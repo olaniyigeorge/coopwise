@@ -27,9 +27,6 @@ from src.infra.emails.resend import get_email_sender
 
 from src.infra.celery.app import celery_app
 
-# No service account / private key needed — manual JWKS verification only
-# needs the public Firebase project id. See infra/firebase_verifier.py.
-
 
 def _build_otp_senders() -> dict[OtpChannel, object]:
     senders: dict[OtpChannel, object] = {}
@@ -45,16 +42,8 @@ def _build_otp_senders() -> dict[OtpChannel, object]:
         # logging the code so the OTP flow is fully testable locally.
         senders[OtpChannel.phone] = NullOtpSender(OtpChannel.phone)
 
-    # get_email_sender already branches dev (logs only) vs prod/staging
-    # (real Resend send) internally, so EmailOtpSender is always wired the
-    # same way here — no separate Null fallback needed at this layer.
-    senders[OtpChannel.email] = EmailOtpSender(
-        get_email_sender(
-            environment=config.ENV,
-            resend_api_key=getattr(config, "RESEND_API_KEY", None),
-            from_email=getattr(config, "EMAIL_FROM_ADDRESS", None),
-        )
-    )
+
+    senders[OtpChannel.email] = EmailOtpSender()
 
     return senders
 

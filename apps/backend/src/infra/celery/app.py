@@ -31,6 +31,7 @@ celery_app = Celery(
         "src.domains.auth.infra.tasks",
         "src.domains.kyc.tasks",
         "src.domains.users.tasks",
+        "src.infra.celery.tasks.otp_tasks"
     ],
 )
 
@@ -57,7 +58,7 @@ celery_app.conf.task_routes = {
     "src.domains.notifications.tasks.deliver_email":       {"queue": "email"},
     "src.domains.notifications.tasks.review_manual_queue": {"queue": "celery"},
     "src.domains.users.tasks.object_storage_tasks.upload_avatar_task": {"queue": "media"},
-    # "celery" queue, which the worker always consumes.
+    "auth.send_otp_email": {"queue": "email"},
 }
 
 

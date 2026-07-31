@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import httpx
 
+from src.infra.celery.tasks.otp_tasks import send_otp_email_task
+from src.infra.emails.ports import EmailSenderPort
 from src.domains.auth.exceptions import OtpDeliveryError
 from src.domains.auth.ports import OtpChannel
 from src.shared.utils.logger import logger
@@ -57,22 +59,12 @@ class EmailOtpSender:
 
     channel = OtpChannel.email
 
-    def __init__(self, email_sender) -> None:
-        self._email_sender = email_sender
-
     async def send_otp(self, identifier: str, code: str) -> None:
-        subject = "Your CoopWise verification code"
-        html = (
-            f"<p>Your verification code is <strong>{code}</strong>. "
-            "It expires in 10 minutes.</p>"
-        )
         try:
-            print(html)
-            await self._email_sender.send(to=identifier, subject=subject, html=html)
+            send_otp_email_task.delay(identifier=identifier, code=code)
         except Exception as e:
-            logger.error(f"[EmailOtpSender] delivery failed for {identifier}: {e}")
-            raise OtpDeliveryError(f"Could not send email to {identifier}")
-
+            logger.error(f"[EmailOtpSender] failed to enqueue for {identifier}: {e}")
+            raise OtpDeliveryError(f"Could not queue email to {identifier}")
 
 class NullOtpSender:
     """Local/dev/test stand-in for either channel: logs the code instead of
