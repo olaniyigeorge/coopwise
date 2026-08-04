@@ -364,7 +364,7 @@ from sqlalchemy import select, and_, or_
 from src.shared.utils.logger import logger
 from fastapi import HTTPException, status
 
-from src.domains.circles.models import CooperativeGroup, CooperativeStatus
+from apps.backend.src.domains.cooperatives.models.legacy_models import CooperativeGroup, CooperativeStatus
 from src.domains.contributions.models import Contribution, ContributionStatus
 from src.domains.memberships.models import GroupMembership
 from src.infra.blockchain.contract_service import contract_service
