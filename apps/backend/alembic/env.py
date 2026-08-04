@@ -7,7 +7,7 @@ from alembic import context
 from config import AppConfig
 
 from src.infra.db.database import Base
-from src.domains.circles.models import *
+from apps.backend.src.domains.cooperatives.models.legacy_models import *
 from src.domains.users.models import *
 from src.domains.analytics.models import *
 from src.domains.ai_chat.models import *
