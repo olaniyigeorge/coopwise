@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
-    from apps.backend.src.domains.cooperatives.models.cooperative import CoopCooperative
+    from src.domains.cooperatives.models.cooperative import CoopCooperative
 
 from src.domains.cooperatives.models.enums import (
     ContributionFrequency,
@@ -16,7 +16,9 @@ from src.domains.cooperatives.models.enums import (
     DecisionType,
     EscrowMode,
     JoinType,
+    PayoutStrategy,
     PenaltyType,
+    RotationOrder,
     RemovalPolicy,
     RuleAmendmentApprovalType,
 )
@@ -98,6 +100,7 @@ class CoopFinancialRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Bas
     )
 
     contribution_frequency: Mapped[ContributionFrequency] = mapped_column(String(32), nullable=False)
+    contribution_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(8), nullable=False, default="NGN")
     grace_period_days: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     penalty_type: Mapped[PenaltyType] = mapped_column(String(16), default=PenaltyType.NONE, nullable=False)
@@ -106,6 +109,17 @@ class CoopFinancialRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Bas
     escrow_mode: Mapped[EscrowMode] = mapped_column(
         String(32), default=EscrowMode.SIMULATED_OFFCHAIN, nullable=False
     )
+    payout_strategy: Mapped[PayoutStrategy] = mapped_column(
+        String(16), default=PayoutStrategy.ROTATING, nullable=False
+    )
+    rotation_order: Mapped[RotationOrder | None] = mapped_column(String(16), nullable=True)
+    # ^ only meaningful when payout_strategy == rotating; leave NULL for
+    # equal/priority. From legacy CooperativeGroup.payout_strategy /
+    # rotation_order. Kept as dedicated columns rather than folded into
+    # CoopDecisionRule(decision_type=payout_order) — that table models
+    # *who decides* payout order changes (admin/vote/ai_suggested), which
+    # is a different question from *what the current strategy is*.
+ 
 
     extra_rules: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 

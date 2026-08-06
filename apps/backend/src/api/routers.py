@@ -8,7 +8,6 @@ from src.domains.auth.router import router as auth_router
 from src.domains.auth.router_pub import router as pub_auth_router
 from src.domains.users.router import router as users_router
 from src.domains.kyc.router import router as kyc_router
-from src.domains.circles.router import router as circles_router
 from src.domains.memberships.router import router as memberships_router
 from src.domains.contributions.router import router as contributions_router
 from src.domains.dashboard.router import router as dashboard_router
@@ -25,7 +24,6 @@ router_list = [
     pub_auth_router,
     users_router,
     kyc_router,
-    circles_router,
     memberships_router,
     contributions_router,
     dashboard_router,

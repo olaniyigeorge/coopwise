@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     )
     from src.domains.cooperatives.models.goals import CoopGoal
 
-from src.domains.cooperatives.models.enums import CooperativeStatus
+from src.domains.cooperatives.models.enums import CooperativeStatus, CooperativeModel
 from src.domains.cooperatives.models.mixins import (
     Base,
     TimestampMixin,
@@ -39,6 +39,10 @@ class CoopCooperative(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     status: Mapped[CooperativeStatus] = mapped_column(
         String(32), default=CooperativeStatus.ACTIVE, nullable=False
+    )
+
+    coop_model: Mapped[CooperativeModel] = mapped_column(
+        String(32), default=CooperativeModel.COOP, nullable=False
     )
 
     created_by: Mapped[uuid.UUID] = mapped_column(

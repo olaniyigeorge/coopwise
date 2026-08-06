@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domains.contributions.models import ContributionStatus
 from config import AppConfig as config;
 from src.shared.utils.logger import logger
-from src.domains.circles.service import CooperativeGroupService
+from src.domains.cooperatives.service import CooperativeGroupService
 from src.infra.cache.redis_client import get_redis
 from src.domains.wallets.schemas import WalletDeposit
 from src.domains.wallets.service import WalletService
@@ -164,7 +164,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domains.contributions.models import ContributionStatus
 from config import AppConfig as config;
 from src.shared.utils.logger import logger
-from src.domains.circles.service import CooperativeGroupService
+from src.domains.cooperatives.service import CooperativeGroupService
 from src.infra.cache.redis_client import get_redis
 from src.domains.wallets.schemas import WalletDeposit
 from src.domains.wallets.service import WalletService

@@ -3,7 +3,7 @@ from typing import List, Optional
 from src.domains.wallets.schemas import WalletDetail
 from src.domains.analytics.schemas import ActivityDetail
 from src.domains.insights.schemas import AIInsightDetail
-from src.domains.circles.schemas import CoopGroupDetails, CoopGroupTargetSummary
+from src.domains.cooperatives.schemas import CoopGroupDetails, CoopGroupTargetSummary
 from src.domains.memberships.schemas import MembershipDetails
 from src.domains.notifications.schemas import NotificationDetail
 from src.domains.users.schemas import UserDetail

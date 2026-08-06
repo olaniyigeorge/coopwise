@@ -10,19 +10,19 @@ from fastapi import HTTPException, status
 
 from src.domains.contributions.schemas import CircleHistoryEntry, ContributionDetail
 from src.domains.memberships.schemas import CircleMemberDetail, MembershipExtDetails
-from src.domains.circles.schemas import (
+from src.domains.cooperatives.schemas import (
     CoopGroupCreate,
     CoopGroupDetails,
     CoopGroupUpdate,
 )
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.dashboard.schemas import ExploreGroups
-from apps.backend.src.domains.cooperatives.models.legacy_models import CooperativeGroup, ContributionFrequency, CooperativeStatus
+from src.domains.cooperatives.models.legacy_models import CooperativeGroup, ContributionFrequency, CooperativeStatus
 
 from src.domains.users.models import User
 from src.domains.contributions.models import Contribution, ContributionStatus
 from src.domains.memberships.models import GroupMembership, MembershipStatus
-from src.domains.circles.schemas import (
+from src.domains.cooperatives.schemas import (
     ContributionFrequency,
     CooperativeStatus,
 )
