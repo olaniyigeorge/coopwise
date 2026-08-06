@@ -57,6 +57,19 @@ class PenaltyType(str, Enum):
     NONE = "none"
 
 
+class PayoutStrategy(str, Enum):
+    ROTATING = "rotating"
+    EQUAL = "equal"
+    PRIORITY = "priority"
+
+
+class RotationOrder(str, Enum):
+    """Only meaningful when `payout_strategy == rotating`."""
+ 
+    SEQUENTIAL = "sequential"
+    RANDOM = "random"
+    
+
 class EscrowMode(str, Enum):
     SIMULATED_OFFCHAIN = "simulated_offchain"  # Phase 1
     ONCHAIN = "onchain"  # Phase 3
@@ -120,3 +133,21 @@ class ValuationMethod(str, Enum):
 class OwnershipBasis(str, Enum):
     CONTRIBUTION_BASED = "contribution_based"
     NEGOTIATED = "negotiated"
+
+
+class CooperativeModel(str, Enum):
+    """
+    Cultural/product flavor of the cooperative itself — kept as a distinct
+    axis from `beneficiary_pattern` (structural) and `goal_category`
+    (per-goal, descriptive). This tags the whole cooperative so the
+    frontend can drive a model-specific creation flow (e.g. an "esusu"
+    flow can pre-select sane beneficiary_pattern/goal_category defaults
+    and copy), while the actual contract mechanics still come from
+    beneficiary_pattern, not from this field.
+    """
+ 
+    AJO = "ajo"
+    ESUSU = "esusu"
+    ADASHE = "adashe"
+    CHAMA = "chama"
+    COOP = "coop"
