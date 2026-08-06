@@ -2,20 +2,18 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from src.domains.circles.schemas import CoopGroupDetails
-from src.domains.circles.schemas import CoopGroupDetails
-from src.domains.circles.schemas import CoopGroupDetails
+from src.domains.cooperatives.schemas import CoopGroupDetails
 
 from src.shared.utils.logger import logger
 from src.domains.analytics.models import ActivityType
 from src.domains.analytics.schemas import ActivityCreate
 from src.domains.notifications.schemas import NotificationCreate
 from src.domains.analytics.service import ActivityService
-from src.domains.circles.service import CooperativeGroupService
+from src.domains.cooperatives.service import CooperativeGroupService
 from src.domains.notifications.service import NotificationService
 from src.domains.users.service import UserService
 from src.domains.auth.schemas import AuthenticatedUser
-from src.domains.memberships.schemas import MembershipDetails
+from src.domains.memberships.schemas import MembershipCreate, MembershipDetails
 from src.infra.db.dependencies import get_async_db_session
 from src.domains.memberships.service import CooperativeMembershipService
 from src.api.middlewares.dependencies import get_current_user

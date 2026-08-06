@@ -9,7 +9,7 @@ from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.dashboard.schemas import DashboardData
 from src.shared.utils.logger import logger
 
-from src.domains.circles.service import CooperativeGroupService
+from src.domains.cooperatives.service import CooperativeGroupService
 from src.domains.analytics.service import ActivityService, SummaryService
 from src.domains.insights.service import InsightEngine
 from src.domains.notifications.service import NotificationService

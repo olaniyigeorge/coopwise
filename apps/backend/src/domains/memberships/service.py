@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from src.domains.users.schemas import UserDetail
 from src.infra.cache.redis_client import get_cache, update_cache
-from apps.backend.src.domains.cooperatives.models.legacy_models import CooperativeGroup
+from src.domains.cooperatives.models.legacy_models import CooperativeGroup
 from src.domains.users.models import User
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.memberships.schemas import (
