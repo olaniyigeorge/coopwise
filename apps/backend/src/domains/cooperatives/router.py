@@ -13,7 +13,7 @@ from src.shared.utils.logger import logger
 from config import AppConfig
 from src.domains.analytics.schemas import ActivityCreate
 from src.domains.auth.schemas import AuthenticatedUser
-from src.domains.circles.schemas import (
+from src.domains.cooperatives.schemas import (
     CoopGroupCreate,
     CoopGroupDetails,
     CoopGroupUpdate,
@@ -26,7 +26,7 @@ from src.domains.notifications.schemas import NotificationCreate
 from src.domains.analytics.service import ActivityService
 from src.domains.notifications.service import NotificationService
 from src.infra.db.dependencies import get_async_db_session
-from src.domains.circles.service import CooperativeGroupService
+from src.domains.cooperatives.service import CooperativeGroupService
 from src.domains.memberships.service import CooperativeMembershipService
 
 # from app.services.chain import w3, poolfactory, from_account, PRIVATE_KEY
