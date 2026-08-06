@@ -35,6 +35,10 @@ async def _poll_payout_events():
                     round_num=int(round_num)
                 )
 
+
+async def _trigger_fiat_payout(circle_id: int, winner_flow_address: str, round_num: int):
+    pass
+
 # async def _trigger_fiat_payout(circle_id: int, winner_flow_address: str, round_num: int):
 #     from backend.services.flutterwave_service import FlutterwaveService
 #     from backend.db import get_user_by_flow_address, get_circle_usdc_amount

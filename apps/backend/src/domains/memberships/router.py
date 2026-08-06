@@ -2,7 +2,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from src.domains.cooperatives.schemas import CoopGroupDetails
+from src.infra.payments import flow_service
+from src.domains.cooperatives.schemas import CoopGroupDetails, CooperativeStatus
 
 from src.shared.utils.logger import logger
 from src.domains.analytics.models import ActivityType
