@@ -2,7 +2,7 @@ import httpx
 import os
 
 from config import AppConfig as config
-
+from src.shared.utils.logger import logger
 
 CASHRAMP_SECKEY = config.GEMINI_API_KEY or None
 
