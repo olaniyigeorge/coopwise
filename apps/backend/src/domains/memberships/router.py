@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from src.infra.payments import flow_service
-from src.domains.cooperatives.schemas import CoopGroupDetails, CooperativeStatus
+from src.domains.cooperatives.schemas import CooperativeStatus
 
 from src.shared.utils.logger import logger
 from src.domains.analytics.models import ActivityType
@@ -237,87 +237,87 @@ async def list_members_by_group(
 
 
 
-@router.post("/{circle_id}/join", response_model=CoopGroupDetails)
-async def join_circle(
-    circle_id: str,
-    user: AuthenticatedUser = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db_session),
-):
-    # 1. Fetch the circle
-    circle = await CooperativeGroupService.get_coop_group_by_id(db, circle_id)
-    if not circle:
-        raise HTTPException(status_code=404, detail="Circle not found")
+# @router.post("/{circle_id}/join", response_model=CoopGroupDetails)
+# async def join_circle(
+#     circle_id: str,
+#     user: AuthenticatedUser = Depends(get_current_user),
+#     db: AsyncSession = Depends(get_async_db_session),
+# ):
+#     # 1. Fetch the circle
+#     circle = await CooperativeGroupService.get_coop_group_by_id(db, circle_id)
+#     if not circle:
+#         raise HTTPException(status_code=404, detail="Circle not found")
 
-    if circle.is_complete:
-        raise HTTPException(status_code=400, detail="This circle has already completed")
+#     if circle.is_complete:
+#         raise HTTPException(status_code=400, detail="This circle has already completed")
 
-    if circle.status == CooperativeStatus.inactive:
-        raise HTTPException(status_code=400, detail="This circle is no longer active")
+#     if circle.status == CooperativeStatus.inactive:
+#         raise HTTPException(status_code=400, detail="This circle is no longer active")
 
-    # 2. Check if already a member
-    existing = await CooperativeMembershipService.get_membership_by_user_and_group(
-        user_id=user.id, group_id=UUID(circle_id), db=db
-    )
-    if existing and existing.status == "accepted":
-        raise HTTPException(status_code=400, detail="You are already a member of this circle")
+#     # 2. Check if already a member
+#     existing = await CooperativeMembershipService.get_membership_by_user_and_group(
+#         user_id=user.id, group_id=UUID(circle_id), db=db
+#     )
+#     if existing and existing.status == "accepted":
+#         raise HTTPException(status_code=400, detail="You are already a member of this circle")
 
-    # 3. Check capacity
-    if circle.member_count >= circle.max_members:
-        raise HTTPException(status_code=400, detail="This circle is full")
+#     # 3. Check capacity
+#     if circle.member_count >= circle.max_members:
+#         raise HTTPException(status_code=400, detail="This circle is full")
 
-    # 4. Submit to Flow
-    tx_id = None
-    try:
-        tx_id = await flow_service.join_circle(
-            circle_id=circle.chain_circle_id,
-            member_address=user.flow_address or "",
-        )
-    except Exception as e:
-        logger.warning(f"Flow join tx failed (non-fatal for now): {e}")
+#     # 4. Submit to Flow
+#     tx_id = None
+#     try:
+#         tx_id = await flow_service.join_circle(
+#             circle_id=circle.chain_circle_id,
+#             member_address=user.flow_address or "",
+#         )
+#     except Exception as e:
+#         logger.warning(f"Flow join tx failed (non-fatal for now): {e}")
 
-    # 5. Create or update membership
-    membership_data = MembershipCreate(
-        user_id=user.id,
-        group_id=UUID(circle_id),
-        invited_by=circle.creator_id,
-        role="member",
-        status="accepted",
-        queue_position=circle.member_count + 1,  # next in queue
-    )
-    await CooperativeMembershipService.create_membership(db, membership_data, user)
+#     # 5. Create or update membership
+#     membership_data = MembershipCreate(
+#         user_id=user.id,
+#         group_id=UUID(circle_id),
+#         invited_by=circle.creator_id,
+#         role="member",
+#         status="accepted",
+#         queue_position=circle.member_count + 1,  # next in queue
+#     )
+#     await CooperativeMembershipService.create_membership(db, membership_data, user)
 
-    # 6. Activity log
-    try:
-        await ActivityService.log(db, ActivityCreate(
-            user_id=user.id,
-            type=ActivityType.joined_group.value,
-            description=f"You joined circle: {circle.name}",
-            group_id=UUID(circle_id),
-            entity_id=circle_id,
-            amount=None,
-        ))
-    except Exception as e:
-        logger.warning(f"Activity log failed (non-fatal): {e}")
+#     # 6. Activity log
+#     try:
+#         await ActivityService.log(db, ActivityCreate(
+#             user_id=user.id,
+#             type=ActivityType.joined_group.value,
+#             description=f"You joined circle: {circle.name}",
+#             group_id=UUID(circle_id),
+#             entity_id=circle_id,
+#             amount=None,
+#         ))
+#     except Exception as e:
+#         logger.warning(f"Activity log failed (non-fatal): {e}")
 
-    # 7. Notify circle creator
-    try:
-        notification_data = NotificationCreate(
-                user_id=circle.creator_id,
-                title="New Member Joined",
-                message=f"{user.email} joined your circle '{circle.name}'.",
-                event_type="group",
-                type="info",
-                entity_url=f"/circle/{circle_id}",
-            )
-        await NotificationService.create_and_push_notification_to_user(
-            notification_data,
-            db,
-        )
-    except Exception as e:
-        logger.warning(f"Notification failed (non-fatal): {e}")
+#     # 7. Notify circle creator
+#     try:
+#         notification_data = NotificationCreate(
+#                 user_id=circle.creator_id,
+#                 title="New Member Joined",
+#                 message=f"{user.email} joined your circle '{circle.name}'.",
+#                 event_type="group",
+#                 type="info",
+#                 entity_url=f"/circle/{circle_id}",
+#             )
+#         await NotificationService.create_and_push_notification_to_user(
+#             notification_data,
+#             db,
+#         )
+#     except Exception as e:
+#         logger.warning(f"Notification failed (non-fatal): {e}")
 
-    # Return updated circle with new member count
-    updated = await CooperativeGroupService.get_coop_group_by_id(
-        db, circle_id, requesting_user_id=str(user.id)
-    )
-    return updated
+#     # Return updated circle with new member count
+#     updated = await CooperativeGroupService.get_coop_group_by_id(
+#         db, circle_id, requesting_user_id=str(user.id)
+#     )
+#     return updated
