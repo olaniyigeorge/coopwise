@@ -40,7 +40,7 @@ class CoopGovernanceRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Ba
             "uq_coop_governance_rules_active",
             "cooperative_id",
             unique=True,
-            postgresql_where=text("effective_to IS NULL")
+            postgresql_where=text("effective_to IS NULL"),
         ),
     )
 
@@ -119,7 +119,6 @@ class CoopFinancialRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Bas
     # CoopDecisionRule(decision_type=payout_order) — that table models
     # *who decides* payout order changes (admin/vote/ai_suggested), which
     # is a different question from *what the current strategy is*.
- 
 
     extra_rules: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
