@@ -14,9 +14,11 @@ from enum import Enum
 
 
 class CooperativeStatus(str, Enum):
+    DRAFT = "draft"
     ACTIVE = "active"
-    DISSOLVED = "dissolved"
-
+    PAUSED = "paused"
+    ARCHIVED = "archived"
+    DELETED = "deleted"
 
 class DecisionModel(str, Enum):
     ADMIN_LED = "admin_led"
