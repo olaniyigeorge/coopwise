@@ -137,8 +137,6 @@ class CoopGoal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         return f"<CoopGoal id={self.id} name={self.name!r} status={self.status}>"
 
 
-
-
 class CoopGoalParticipant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "coop_goal_participants"
 
