@@ -1,80 +1,3 @@
-from __future__ import annotations
-
-from dataclasses import dataclass
-from typing import Protocol
-from uuid import UUID
-
-
-@dataclass(slots=True)
-class CooperativeActivated:
-    cooperative_id: UUID
-    actor_id: UUID | None = None
-
-
-@dataclass(slots=True)
-class RuleVersionCreated:
-    cooperative_id: UUID
-    rule_type: str
-    version: int
-
-
-@dataclass(slots=True)
-class GoalContractCreated:
-    goal_id: UUID
-    cooperative_id: UUID
-
-
-@dataclass(slots=True)
-class OwnershipShareUpdated:
-    goal_id: UUID
-    user_id: UUID
-
-
-class EventDispatcher(Protocol):
-    async def dispatch(self, event: object) -> None:
-        ...
-
-
-class NoOpEventDispatcher:
-    async def dispatch(self, event: object) -> None:
-        return None
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 """
 Domain events for `domains/cooperatives`.
 
@@ -93,11 +16,22 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from typing import Protocol
 from uuid import UUID
 
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+class EventDispatcher(Protocol):
+    async def dispatch(self, event: object) -> None:
+        ...
+
+
+class NoOpEventDispatcher:
+    async def dispatch(self, event: object) -> None:
+        return None
 
 
 @dataclass(frozen=True)
