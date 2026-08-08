@@ -102,12 +102,11 @@ from datetime import datetime
 
 from src.domains.wallets.service import WalletService
 from src.domains.auth.schemas import AuthenticatedUser
-from src.domains.cooperatives.schemas import CoopGroupTargetSummary
 from src.domains.dashboard.schemas import Summary, Targets
 from src.infra.cache.redis_client import get_cache, update_cache
 from src.domains.contributions.models import Contribution, ContributionStatus
-from src.domains.memberships.models import GroupMembership
-from src.domains.cooperatives.models.cooperative import CooperativeGroup
+from src.domains.memberships.models.group_membership import GroupMembership
+from src.domains.cooperatives.models.cooperative import CoopCooperative
 from src.domains.memberships.service import CooperativeMembershipService
 from src.shared.utils.logger import logger
 from src.domains.users.models import User
@@ -170,13 +169,13 @@ class SummaryService:
 
             # 4. Next payout date from all user groups
             next_payout_query = await db.execute(
-                select(CooperativeGroup.next_payout_date, CooperativeGroup.id)
+                select(CoopCooperative.next_payout_date, CoopCooperative.id)
                 .where(
-                    CooperativeGroup.id.in_(group_ids),
-                    CooperativeGroup.next_payout_date != None,
-                    CooperativeGroup.next_payout_date > datetime.now(),
+                    CoopCooperative.id.in_(group_ids),
+                    CoopCooperative.next_payout_date != None,
+                    CoopCooperative.next_payout_date > datetime.now(),
                 )
-                .order_by(CooperativeGroup.next_payout_date.asc())
+                .order_by(CoopCooperative.next_payout_date.asc())
                 .limit(1)
             )
             next_payout_result = next_payout_query.first()
@@ -214,49 +213,49 @@ class SummaryService:
         logger.info(f"📦 Cached summary for user {user.id}")
         return fresh_summary
 
-    @staticmethod
-    async def get_user_targets(
-        user: AuthenticatedUser, db: AsyncSession, redis: Redis
-    ) -> Targets:
-        cache_key = f"targets:{user.id}"
-        cached = await get_cache(cache_key)
-        if cached:
-            logger.info(f"🔄 Using cached targets for user {user.id}")
-            return Targets.model_validate_json(cached)
-        logger.info(f"Fetching targets for user {user.id} from database")
+    # @staticmethod
+    # async def get_user_targets(
+    #     user: AuthenticatedUser, db: AsyncSession, redis: Redis
+    # ) -> Targets:
+    #     cache_key = f"targets:{user.id}"
+    #     cached = await get_cache(cache_key)
+    #     if cached:
+    #         logger.info(f"🔄 Using cached targets for user {user.id}")
+    #         return Targets.model_validate_json(cached)
+    #     logger.info(f"Fetching targets for user {user.id} from database")
 
-        # Fetch user's target_savings_amount
-        result = await db.execute(
-            select(User.target_savings_amount).where(User.id == user.id)
-        )
-        savings_target_row = result.scalar()
-        savings_target = savings_target_row or 0.0
+    #     # Fetch user's target_savings_amount
+    #     result = await db.execute(
+    #         select(User.target_savings_amount).where(User.id == user.id)
+    #     )
+    #     savings_target_row = result.scalar()
+    #     savings_target = savings_target_row or 0.0
 
-        # Fetch groups the user is in and their target_amounts
-        stmt = (
-            select(
-                CooperativeGroup.id,
-                CooperativeGroup.name,
-                CooperativeGroup.contribution_amount,
-                CooperativeGroup.target_amount,
-            )
-            .join(GroupMembership, CooperativeGroup.id == GroupMembership.group_id)
-            .where(GroupMembership.user_id == user.id)
-        )
-        result = await db.execute(stmt)
-        groups = result.all()
+    #     # Fetch groups the user is in and their target_amounts
+    #     stmt = (
+    #         select(
+    #             CooperativeGroup.id,
+    #             CooperativeGroup.name,
+    #             CooperativeGroup.contribution_amount,
+    #             CooperativeGroup.target_amount,
+    #         )
+    #         .join(GroupMembership, CooperativeGroup.id == GroupMembership.group_id)
+    #         .where(GroupMembership.user_id == user.id)
+    #     )
+    #     result = await db.execute(stmt)
+    #     groups = result.all()
 
-        group_goals = [
-            CoopGroupTargetSummary(
-                id=group.id,
-                name=group.name,
-                contribution_amount=group.contribution_amount,
-                target_amount=group.target_amount,
-            )
-            for group in groups
-        ]
+    #     group_goals = [
+    #         CoopGroupTargetSummary(
+    #             id=group.id,
+    #             name=group.name,
+    #             contribution_amount=group.contribution_amount,
+    #             target_amount=group.target_amount,
+    #         )
+    #         for group in groups
+    #     ]
 
-        targets = Targets(savings_target=float(savings_target), group_goals=group_goals)
+    #     targets = Targets(savings_target=float(savings_target), group_goals=group_goals)
 
-        await update_cache(cache_key, targets.model_dump_json(), ttl=300)
-        return targets
+    #     await update_cache(cache_key, targets.model_dump_json(), ttl=300)
+    #     return targets
