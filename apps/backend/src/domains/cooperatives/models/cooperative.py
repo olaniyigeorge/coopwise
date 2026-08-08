@@ -14,11 +14,12 @@ if TYPE_CHECKING:
         CoopDecisionRule,
     )
     from src.domains.cooperatives.models.goals import CoopGoal
-    from src.domains.memberships.models import GroupMembership
+    from src.domains.memberships.models.invitation import CoopInvitation
+    from src.domains.memberships.models.group_membership import GroupMembership
     from src.domains.users.models import User
 
 from src.domains.cooperatives.models.enums import CooperativeStatus, CooperativeModel
-from src.domains.cooperatives.models.mixins import (
+from apps.backend.src.domains.memberships.models.mixins import (
     Base,
     TimestampMixin,
     UUIDPrimaryKeyMixin,
@@ -70,11 +71,18 @@ class CoopCooperative(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     memberships: Mapped[list["GroupMembership"]] = relationship(
         back_populates="group",
         cascade="all, delete-orphan",
+        overlaps="users,memberships",
     )
     users: Mapped[list["User"]] = relationship(
         secondary="group_memberships",
         back_populates="cooperatives",
         viewonly=False,
+        overlaps="group,memberships,user",
+    )
+    invitations: Mapped[list["CoopInvitation"]] = relationship(
+        back_populates="cooperative",
+        cascade="all, delete-orphan",
+        overlaps="memberships,users",
     )
 
     activities: Mapped[list["CoopActivity"]] = relationship(
