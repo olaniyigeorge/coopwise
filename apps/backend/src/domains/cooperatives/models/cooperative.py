@@ -28,9 +28,9 @@ from src.domains.cooperatives.models.mixins import (
 
 class CoopCooperative(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
-    A Cooperative is a container that composes the four versioned rule 
-    modules and owns zero or more Goals — it does NOT itself hold 
-    financial/governance logic inline (that's the point of the engine 
+    A Cooperative is a container that composes the four versioned rule
+    modules and owns zero or more Goals — it does NOT itself hold
+    financial/governance logic inline (that's the point of the engine
     split).
     """
 
