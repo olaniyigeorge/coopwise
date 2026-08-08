@@ -8,6 +8,7 @@ from sqlalchemy import func, select, desc
 from sqlalchemy.orm import joinedload
 from fastapi import HTTPException, status
 
+from src.domains.cooperatives.models.enums import ContributionFrequency
 from src.domains.contributions.schemas import CircleHistoryEntry, ContributionDetail
 from src.domains.memberships.schemas import CircleMemberDetail, MembershipExtDetails
 from src.domains.cooperatives.schemas import (
@@ -17,13 +18,12 @@ from src.domains.cooperatives.schemas import (
 )
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.dashboard.schemas import ExploreGroups
-from src.domains.cooperatives.models.legacy_models import CooperativeGroup, ContributionFrequency, CooperativeStatus
+from src.domains.cooperatives.models.cooperative import CooperativeStatus, CoopCooperative
 
 from src.domains.users.models import User
 from src.domains.contributions.models import Contribution, ContributionStatus
 from src.domains.memberships.models import GroupMembership, MembershipStatus
 from src.domains.cooperatives.schemas import (
-    ContributionFrequency,
     CooperativeStatus,
 )
 
@@ -36,9 +36,9 @@ class CooperativeGroupService:
     # Create and manage cooperative groups.
 
     @staticmethod
-    async def create_coop(coop_data: CoopGroupCreate, db: AsyncSession) -> CooperativeGroup:
+    async def create_coop(coop_data: CoopGroupCreate, db: AsyncSession) -> CoopCooperative:
         try:
-            new_coop_group = CooperativeGroup(
+            new_coop_group = CoopCooperative(
                 name=coop_data.name,
                 description=coop_data.description,
                 image_url=coop_data.image_url,
@@ -77,8 +77,8 @@ class CooperativeGroupService:
     async def get_coop_groups(db: AsyncSession, skip: int = 0, limit: int = 10):
         try:
             stmt = (
-                select(CooperativeGroup)
-                .order_by(desc(CooperativeGroup.created_at))
+                select(CoopCooperative)
+                .order_by(desc(CoopCooperative.created_at))
                 .offset(skip)
                 .limit(limit)
             )
@@ -101,8 +101,8 @@ class CooperativeGroupService:
         db: AsyncSession, coop_group_id: str, requesting_user_id: Optional[str] = None
     ) -> Optional[CoopGroupDetails]:
         try:
-            stmt = select(CooperativeGroup).where(
-                CooperativeGroup.id == coop_group_id
+            stmt = select(CoopCooperative).where(
+                CoopCooperative.id == coop_group_id
             )
             result = await db.execute(stmt)
             coop = result.scalars().first()
@@ -138,13 +138,13 @@ class CooperativeGroupService:
         db: AsyncSession, user_id: str
     ) -> list[CoopGroupDetails]:
         stmt = (
-            select(CooperativeGroup)
-            .join(GroupMembership, GroupMembership.group_id == CooperativeGroup.id)
+            select(CoopCooperative)
+            .join(GroupMembership, GroupMembership.group_id == CoopCooperative.id)
             .where(
                 GroupMembership.user_id == user_id,
                 GroupMembership.status == "accepted",
             )
-            .order_by(CooperativeGroup.created_at.desc())
+            .order_by(CoopCooperative.created_at.desc())
         )
         result = await db.execute(stmt)
         groups = result.scalars().all()
@@ -247,9 +247,9 @@ class CooperativeGroupService:
     @staticmethod
     async def get_ext_coop_group_by_id(db: AsyncSession, coop_group_id: str):
         # 1. Fetch group
-        stmt = select(CooperativeGroup).where(CooperativeGroup.id == coop_group_id)
+        stmt = select(CoopCooperative).where(CoopCooperative.id == coop_group_id)
         result = await db.execute(stmt)
-        group: CooperativeGroup = result.scalars().first()
+        group: CoopCooperative = result.scalars().first()
 
         if not group:
             return None
@@ -331,9 +331,9 @@ class CooperativeGroupService:
     @staticmethod
     async def update_coop(
         db: AsyncSession, coop_group_id: str, coop_group_update_data: CoopGroupUpdate
-    ) -> Optional[CooperativeGroup]:
+    ) -> Optional[CoopCooperative]:
         try:
-            stmt = select(CooperativeGroup).where(CooperativeGroup.id == coop_group_id)
+            stmt = select(CoopCooperative).where(CoopCooperative.id == coop_group_id)
             result = await db.execute(stmt)
             coop_group = result.scalars().first()
 
@@ -355,9 +355,9 @@ class CooperativeGroupService:
     @staticmethod
     async def delete_coop(
         db: AsyncSession, coop_group_id: str
-    ) -> Optional[CooperativeGroup]:
+    ) -> Optional[CoopCooperative]:
         try:
-            stmt = select(CooperativeGroup).where(CooperativeGroup.id == coop_group_id)
+            stmt = select(CoopCooperative).where(CoopCooperative.id == coop_group_id)
             result = await db.execute(stmt)
             coop_group = result.scalars().first()
 
@@ -379,7 +379,7 @@ class CooperativeGroupService:
     ):
         try:
             stmt = (
-                select(CooperativeGroup)
+                select(CoopCooperative)
                 .join(GroupMembership)
                 .where(GroupMembership.user_id == user_id)
                 .offset(skip)
@@ -414,13 +414,13 @@ class CooperativeGroupService:
 
         # 1. Fetch user's group memberships
         user_group_stmt = (
-            select(CooperativeGroup)
-            .join(GroupMembership, CooperativeGroup.id == GroupMembership.group_id)
+            select(CoopCooperative)
+            .join(GroupMembership, CoopCooperative.id == GroupMembership.group_id)
             .where(GroupMembership.user_id == user.id)
-            .options(joinedload(CooperativeGroup.memberships))
+            .options(joinedload(CoopCooperative.memberships))
         )
         user_groups_result = await db.execute(user_group_stmt)
-        user_groups: List[CooperativeGroup] = (
+        user_groups: List[CoopCooperative] = (
             user_groups_result.unique().scalars().all()
         )
         user_group_ids = [group.id for group in user_groups]
@@ -428,16 +428,16 @@ class CooperativeGroupService:
         # 2. Fetch suggested groups (not already joined)
         offset = (page - 1) * page_size
         suggested_group_stmt = (
-            select(CooperativeGroup)
+            select(CoopCooperative)
             .where(
-                CooperativeGroup.status == CooperativeStatus.active,
-                CooperativeGroup.id.notin_(user_group_ids),
+                CoopCooperative.status == CooperativeStatus.active,
+                CoopCooperative.id.notin_(user_group_ids),
             )
             .limit(page_size)
             .offset(offset)
         )
         suggested_groups_result = await db.execute(suggested_group_stmt)
-        suggested_groups: List[CooperativeGroup] = (
+        suggested_groups: List[CoopCooperative] = (
             suggested_groups_result.scalars().all()
         )
 

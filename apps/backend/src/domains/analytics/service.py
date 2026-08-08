@@ -107,7 +107,7 @@ from src.domains.dashboard.schemas import Summary, Targets
 from src.infra.cache.redis_client import get_cache, update_cache
 from src.domains.contributions.models import Contribution, ContributionStatus
 from src.domains.memberships.models import GroupMembership
-from src.domains.cooperatives.models.legacy_models import CooperativeGroup
+from src.domains.cooperatives.models.cooperative import CooperativeGroup
 from src.domains.memberships.service import CooperativeMembershipService
 from src.shared.utils.logger import logger
 from src.domains.users.models import User

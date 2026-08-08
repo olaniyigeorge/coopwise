@@ -3,6 +3,7 @@ from uuid import UUID
 from typing import Optional, Dict, Any, List
 from decimal import Decimal
 from enum import Enum
+from src.domains.cooperatives.models.enums import ContributionFrequency
 from config import AppConfig as config
 from fastapi import HTTPException, status
 
@@ -12,7 +13,7 @@ from src.domains.contributions.schemas import ContributionCreate, ContributionDe
 from src.domains.memberships.service import CooperativeMembershipService
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.contributions.models import Contribution, ContributionStatus
-from src.domains.cooperatives.models.legacy_models import CooperativeGroup, ContributionFrequency
+
 from src.shared.utils.logger import logger
 from src.infra.blockchain.contract_service import contract_service
 from src.domains.wallets.service import WalletService

@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from src.domains.users.schemas import UserDetail
 from src.infra.cache.redis_client import get_cache, update_cache
-from src.domains.cooperatives.models.legacy_models import CooperativeGroup
+from src.domains.cooperatives.models.cooperative import CoopCooperative
 from src.domains.users.models import User
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.memberships.schemas import (
@@ -36,7 +36,7 @@ class CooperativeMembershipService:
         #     )
 
         try:
-            stmt = select(CooperativeGroup).where(CooperativeGroup.id == group_id)
+            stmt = select(CoopCooperative).where(CoopCooperative.id == group_id)
             result = await db.execute(stmt)
             coop_group = result.scalars().first()
 
@@ -142,8 +142,8 @@ class CooperativeMembershipService:
             membership = result.scalars().first()
 
             # if membership:
-            stmt = select(CooperativeGroup).where(
-                CooperativeGroup.id == membership.group_id
+            stmt = select(CoopCooperative).where(
+                CoopCooperative.id == membership.group_id
             )
             group_result = await db.execute(stmt)
             coop_group = group_result.scalars().first()

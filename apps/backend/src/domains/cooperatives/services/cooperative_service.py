@@ -7,11 +7,11 @@ from src.domains.cooperatives.events import CooperativeActivated, EventDispatche
 from src.domains.cooperatives.exceptions import CooperativeNotFoundError, IllegalStatusTransitionError, NotAuthorizedError
 from src.domains.cooperatives.models.cooperative import CoopCooperative
 from src.domains.cooperatives.models.enums import CooperativeStatus
-from src.domains.cooperatives.uow import CooperativeUnitOfWork
+from src.domains.cooperatives.uow import UnitOfWork
 
 
 class CooperativeService:
-    def __init__(self, uow: CooperativeUnitOfWork, events: EventDispatcher | None = None, logger: Any | None = None) -> None:
+    def __init__(self, uow: UnitOfWork, events: EventDispatcher | None = None, logger: Any | None = None) -> None:
         self._uow = uow
         self._events = events or NoOpEventDispatcher()
         self._logger = logger
