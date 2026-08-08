@@ -1,101 +1,201 @@
-from datetime import datetime
-import json
-from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from datetime import date, datetime
+from typing import Any
 from uuid import UUID
-import enum
 
-from src.domains.cooperatives.models.cooperative import ContributionFrequency, CooperativeModel, PayoutStrategy
+from pydantic import BaseModel, ConfigDict, Field
+
+from src.domains.cooperatives.models.enums import (
+    ContributionFrequency,
+    CooperativeModel,
+    CooperativeStatus,
+    DecisionMechanism,
+    DecisionModel,
+    DecisionType,
+    EscrowMode,
+    ExitRuleType,
+    GoalStatus,
+    JoinType,
+    OwnershipBasis,
+    PayoutStrategy,
+    PenaltyType,
+    RemovalPolicy,
+    RotationOrder,
+    RuleAmendmentApprovalType,
+    ValuationMethod,
+)
 
 
-class CooperativeStatus(str, enum.Enum):
-    pending = "pending"   
-    active = "active"
-    inactive = "inactive"
-    completed = "completed"
+# --- Cooperative ---
 
-
-
-# class CoopGroupBase(BaseModel):
-#     name: str
-
-
-
-
-class CoopGroupCreate(BaseModel):
+class CooperativeCreate(BaseModel):
     name: str
-    creator_id: Optional[UUID] = None
-    chain_circle_id: Optional[int] = None
-    weekly_amount_usdc: Optional[float] = None
-    current_round: int = 0
-    is_complete: bool = False
-    description: Optional[str] = None
-    image_url: Optional[str] = None
-    member_phones: List[str] = Field(default_factory=list, description="List of invited phone numbers")
-    contribution_amount: float = Field(..., description="Amount in local currency (e.g., NGN)")
-    currency: str = Field(default="NGN")
-    contribution_frequency: ContributionFrequency
-    payout_strategy: PayoutStrategy  # : str = Field(default="rotating")
-    coop_model: CooperativeModel   # : str = Field(default="rosca")
-    max_members: int
-    target_amount: float
-    rotation_order: str = Field(default="sequential", description="sequential or random")
-    status: CooperativeStatus
-    rules: Optional[List[dict]]
+    description: str | None = None
+    cover_image: str | None = None
+    coop_model: CooperativeModel = CooperativeModel.COOP
 
-class CoopGroupDetails(BaseModel):
+
+class CooperativeUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    cover_image: str | None = None
+
+
+class CooperativeRead(BaseModel):
     id: UUID
-    chain_circle_id: Optional[int] = None
     name: str
-    creator_id: UUID
-    description: Optional[str] = None
-    image_url: str | None = None
-    currency: Optional[str]
-    contribution_amount: float
-    contribution_frequency: ContributionFrequency
-    payout_strategy: PayoutStrategy
-    coop_model: CooperativeModel
-    max_members: int
-    target_amount: float
+    description: str | None = None
+    cover_image: str | None = None
     status: CooperativeStatus
-    
-    rotation_order: str
-    current_round: int
-    is_complete: bool
-    member_count: int = 0
-
-    your_position_in_queue: Optional[int] = 1
- 
-    rules: List[dict] | None
+    coop_model: CooperativeModel
+    created_by: UUID
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
 
+# --- Rules ---
 
-class JoinCircleResponse(BaseModel):
-    tx_id: str
-    status: str
-    message: str
+class GovernanceRuleCreate(BaseModel):
+    decision_model: DecisionModel
+    quorum_pct: float | None = None
+    voting_threshold_pct: float | None = None
+    members_can_propose_changes: bool = True
+    rule_amendment_approval_type: RuleAmendmentApprovalType | None = None
+    extra_rules: dict[str, Any] | None = None
 
 
-class CoopGroupTargetSummary(BaseModel):
+class MembershipRuleCreate(BaseModel):
+    join_type: JoinType
+    min_members: int | None = None
+    max_members: int | None = None
+    public_discovery: bool = False
+    kyc_level_required: str | None = None
+    exit_notice_days: int | None = None
+    removal_policy: RemovalPolicy
+    extra_rules: dict[str, Any] | None = None
+
+
+class FinancialRuleCreate(BaseModel):
+    contribution_frequency: ContributionFrequency
+    contribution_amount: float
+    currency: str = "NGN"
+    grace_period_days: int = 0
+    penalty_type: PenaltyType = PenaltyType.NONE
+    penalty_value: float | None = None
+    payment_rail_default: str = "paystack"
+    escrow_mode: EscrowMode = EscrowMode.SIMULATED_OFFCHAIN
+    payout_strategy: PayoutStrategy = PayoutStrategy.ROTATING
+    rotation_order: RotationOrder | None = None
+    extra_rules: dict[str, Any] | None = None
+
+
+class DecisionRuleCreate(BaseModel):
+    decision_type: DecisionType
+    mechanism: DecisionMechanism
+    escalation_path: dict[str, Any] | None = None
+    extra_rules: dict[str, Any] | None = None
+
+
+class RuleRead(BaseModel):
     id: UUID
-    name: str
-    contribution_amount: int
-    target_amount: int
+    cooperative_id: UUID
+    version: int
+    effective_from: date
+    effective_to: date | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class CoopGroupUpdate(BaseModel):
+# --- Goals ---
+
+class GoalCreate(BaseModel):
+    beneficiary_pattern_id: UUID
+    goal_category_id: UUID
     name: str
-    contribution_amount: int
     description: str | None = None
-    contribution_frequency: ContributionFrequency
-    payout_strategy: PayoutStrategy
-    coop_model: CooperativeModel
-    max_members: int
-    target_amount: int
-    status: CooperativeStatus
+    target_amount: float | None = None
+    currency: str = "NGN"
+    target_date: date | None = None
+
+
+class GoalUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    target_amount: float | None = None
+    currency: str | None = None
+    target_date: date | None = None
+
+
+class GoalRead(BaseModel):
+    id: UUID
+    cooperative_id: UUID
+    beneficiary_pattern_id: UUID
+    goal_category_id: UUID
+    name: str
+    description: str | None = None
+    target_amount: float | None = None
+    currency: str
+    target_date: date | None = None
+    status: GoalStatus
+    created_by: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GoalContractCreate(BaseModel):
+    visibility: str | None = None
+    withdrawal_restriction: str | None = None
+    beneficiary_user_id: UUID | None = None
+    exit_rule_type: ExitRuleType | None = None
+    valuation_method: ValuationMethod | None = None
+    claim_eligibility_criteria: dict[str, Any] | None = None
+    deadline: date | None = None
+    extra_terms: dict[str, Any] | None = None
+
+
+class OwnershipShareCreate(BaseModel):
+    user_id: UUID
+    share_pct: float = Field(gt=0, le=100)
+    basis: OwnershipBasis
+    vested_at: date | None = None
+
+
+class OwnershipShareRead(BaseModel):
+    id: UUID
+    goal_id: UUID
+    user_id: UUID
+    share_pct: float
+    basis: OwnershipBasis
+    vested_at: date | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# --- Catalog (beneficiary patterns / goal categories) ---
+
+class BeneficiaryPatternRead(BaseModel):
+    id: UUID
+    code: str
+    name: str
+    description: str | None = None
+    requires_beneficiary: bool
+    requires_ownership_shares: bool
+    requires_claim_process: bool
+    contract_schema: dict[str, Any] | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GoalCategoryRead(BaseModel):
+    id: UUID
+    code: str
+    name: str
+    description: str | None = None
+    icon: str | None = None
+    parent_category_id: UUID | None = None
+    is_system_defined: bool
+
+    model_config = ConfigDict(from_attributes=True)
