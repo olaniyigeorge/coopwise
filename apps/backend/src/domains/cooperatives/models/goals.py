@@ -1,21 +1,22 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text
+from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
-    from apps.backend.src.domains.cooperatives.models.cooperative import CoopCooperative
+    from src.domains.cooperatives.models.cooperative import CoopCooperative
 
 from src.domains.cooperatives.models.enums import (
     ExitRuleType,
+    GoalParticipantStatus,
     GoalStatus,
     OwnershipBasis,
     ValuationMethod,
 )
-from src.domains.cooperatives.models.mixins import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from apps.backend.src.domains.memberships.models.mixins import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class CoopBeneficiaryPattern(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -128,9 +129,40 @@ class CoopGoal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     ownership_shares: Mapped[list["CoopOwnershipShare"]] = relationship(
         back_populates="goal", cascade="all, delete-orphan"
     )
+    participants: Mapped[list["CoopGoalParticipant"]] = relationship(
+        back_populates="goal", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<CoopGoal id={self.id} name={self.name!r} status={self.status}>"
+
+
+
+
+class CoopGoalParticipant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "coop_goal_participants"
+
+    goal_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_goals.id"), nullable=False, index=True
+    )
+    membership_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("group_memberships.id"), nullable=False, index=True
+    )
+    payout_position: Mapped[int] = mapped_column(nullable=False)
+    round_number: Mapped[int] = mapped_column(nullable=False)
+    status: Mapped[GoalParticipantStatus] = mapped_column(
+        String(32), default=GoalParticipantStatus.WAITING, nullable=False
+    )
+    paid_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("goal_id", "membership_id", name="uq_goal_participant_membership"),
+    )
+
+    goal: Mapped["CoopGoal"] = relationship(back_populates="participants")
+
+    def __repr__(self) -> str:
+        return f"<CoopGoalParticipant goal={self.goal_id} membership={self.membership_id} pos={self.payout_position}>"
 
 
 class CoopGoalContract(UUIDPrimaryKeyMixin, TimestampMixin, Base):
