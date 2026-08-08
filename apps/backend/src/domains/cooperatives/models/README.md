@@ -73,3 +73,34 @@ during the cutover.
 cooperative with `effective_to IS NULL`" — see the docstring in
 `mixins.py` for why, and the partial-unique-index alternative if you'd
 rather enforce it at the DB layer instead of the service layer.
+
+## Gen 2 fixes applied (this pass)
+
+- `uow.py`: added `CooperativeUnitOfWork = UnitOfWork` alias — three service
+  files were written against a name that never existed.
+- `events.py`: deduped — file previously defined the event set twice; kept
+  the richer `DomainEvent`-based set, dropped the thinner early one, kept
+  `EventDispatcher`/`NoOpEventDispatcher`.
+- `rule_services.py` / `goal_service.py`: `create()` (and
+  `create_goal_contract()`) now take `acting_user_id` and thread it into the
+  `actor_id` field the corresponding events require.
+- `dependencies.py`: rewritten — previously referenced undefined
+  `MembershipsClient`/`Logger`/etc. and passed a raw session where services
+  expected a `UnitOfWork`.
+- `service.py` (flat `CooperativeGroupService`, the on-chain/Flow-coupled
+  Gen 1 implementation) deleted; `router.py` and `schemas.py` rewritten
+  against the Gen 2 model/service layer, dropping the Flow/USDC/invite-code
+  fields that don't exist on `CoopCooperative` anymore.
+
+**Known gaps, not fixed in this pass — see `router.py` and
+`services/goal_service.py` docstrings/comments:**
+- `create_goal_contract` doesn't persist a `CoopGoalContract` row yet.
+- `CooperativeService.update()`/`activate()` don't check the caller's role
+  — any authenticated user can currently activate/edit any cooperative.
+- No exception handler maps `CooperativeDomainError` subclasses to their
+  documented HTTP status codes — they'll surface as raw 500s right now.
+- `RulesRepository.get_active_for_cooperative` uses `scalar_one_or_none()`
+  after ordering by `version desc` — with more than one historical row for
+  a cooperative this raises (`MultipleResultsFound`) instead of returning
+  the top one. Needs `.limit(1)` before `scalar_one_or_none()`, or switch to
+  `.scalars().first()`.
