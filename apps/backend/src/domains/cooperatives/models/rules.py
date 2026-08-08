@@ -22,7 +22,7 @@ from src.domains.cooperatives.models.enums import (
     RemovalPolicy,
     RuleAmendmentApprovalType,
 )
-from apps.backend.src.domains.memberships.models.mixins import (
+from src.domains.cooperatives.models.mixins import (
     Base,
     TimestampMixin,
     UUIDPrimaryKeyMixin,
