@@ -10,7 +10,7 @@ from src.domains.analytics.models import ActivityType
 from src.domains.analytics.schemas import ActivityCreate
 from src.domains.notifications.schemas import NotificationCreate
 from src.domains.analytics.service import ActivityService
-from src.domains.cooperatives.service import CooperativeGroupService
+from src.domains.cooperatives.services.cooperative_service import CooperativeService
 from src.domains.notifications.service import NotificationService
 from src.domains.users.service import UserService
 from src.domains.auth.schemas import AuthenticatedUser
@@ -86,7 +86,7 @@ async def accept_invite(
     if not auth_user:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    group_data = await CooperativeGroupService.get_coop_group_by_id(
+    group_data = await CooperativeService.get_coop_group_by_id(
         db, membership.group_id
     )
 
