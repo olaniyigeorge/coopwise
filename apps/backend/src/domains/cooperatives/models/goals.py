@@ -16,7 +16,7 @@ from src.domains.cooperatives.models.enums import (
     OwnershipBasis,
     ValuationMethod,
 )
-from apps.backend.src.domains.memberships.models.mixins import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from src.domains.cooperatives.models.mixins import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class CoopBeneficiaryPattern(UUIDPrimaryKeyMixin, TimestampMixin, Base):
