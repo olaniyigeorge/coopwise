@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from src.domains.cooperatives.models.cooperative import CoopCooperative
-from src.domains.cooperatives.models.mixins import (
+from apps.backend.src.domains.memberships.models.mixins import (
     Base,
     TimestampMixin,
     UUIDPrimaryKeyMixin,
