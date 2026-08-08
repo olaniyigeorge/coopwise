@@ -34,7 +34,7 @@ class Contribution(Base):
 
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     group_id = Column(
-        PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=False
+        PGUUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False
     )
     # wallet_ledger_id = Column(PGUUID(as_uuid=True), ForeignKey("wallet_ledgers.id"), nullable=True)
 
