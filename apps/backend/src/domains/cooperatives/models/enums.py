@@ -116,7 +116,12 @@ class GoalStatus(str, Enum):
     COMPLETED = "completed"
     ABANDONED = "abandoned"
 
+class GoalParticipantStatus(str, Enum):
+    WAITING = "waiting"
+    PAID = "paid"
+    SKIPPED = "skipped"
 
+    
 class ExitRuleType(str, Enum):
     """`pooled_for_shared` only."""
 
