@@ -1,9 +1,8 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Any
 from src.domains.wallets.schemas import WalletDetail
 from src.domains.analytics.schemas import ActivityDetail
 from src.domains.insights.schemas import AIInsightDetail
-from src.domains.cooperatives.schemas import CoopGroupDetails, CoopGroupTargetSummary
 from src.domains.memberships.schemas import MembershipDetails
 from src.domains.notifications.schemas import NotificationDetail
 from src.domains.users.schemas import UserDetail
@@ -29,12 +28,12 @@ class GroupGoal(BaseModel):
 
 class Targets(BaseModel):
     savings_target: float  # User's personal savings goal
-    group_goals: List[CoopGroupTargetSummary]  # Goals for each group user is part of
+    group_goals: List[Any]   # CoopGroupTargetSummary   Goals for each group user is part of
 
 
 class ExploreGroups(BaseModel):
-    user_groups: List[CoopGroupDetails]
-    suggested_groups: List[CoopGroupDetails]
+    user_groups: List[Any]
+    suggested_groups: List[Any] # CoopGroupTargetSummary
 
 
 class DashboardData(BaseModel):
