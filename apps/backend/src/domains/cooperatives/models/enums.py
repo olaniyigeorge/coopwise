@@ -14,6 +14,7 @@ from enum import Enum
 
 
 class CooperativeStatus(str, Enum):
+    PENDING = "pending"
     DRAFT = "draft"
     ACTIVE = "active"
     PAUSED = "paused"

@@ -23,7 +23,7 @@ class Wallet(Base):
 
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     user_id = Column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True, unique=True
     )
 
     # Balance denominated in stable coin (e.g. USDC). All internal debits/credits happen here.

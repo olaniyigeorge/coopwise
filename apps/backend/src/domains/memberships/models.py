@@ -59,5 +59,7 @@ class GroupMembership(Base):
     )
 
     group = relationship(
-        "CooperativeGroup", back_populates="memberships", overlaps="users,cooperatives"
+        "CoopCooperative",
+        back_populates="memberships",
+        overlaps="users,cooperatives",
     )

@@ -96,5 +96,7 @@ class AIInsight(Base):
 
     user = relationship("User", back_populates="ai_insights", lazy="joined")
     group = relationship(
-        "CooperativeGroup", back_populates="ai_insights", lazy="joined"
+        "CoopCooperative",
+        back_populates=None,
+        lazy="joined",
     )

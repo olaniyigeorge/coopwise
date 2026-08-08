@@ -8,12 +8,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 if TYPE_CHECKING:
     from src.domains.cooperatives.models.activity_log import CoopActivity
     from src.domains.cooperatives.models.rules import (
-        CoopGovernanceRule, 
+        CoopGovernanceRule,
         CoopMembershipRule,
         CoopFinancialRule,
         CoopDecisionRule,
     )
     from src.domains.cooperatives.models.goals import CoopGoal
+    from src.domains.memberships.models import GroupMembership
+    from src.domains.users.models import User
 
 from src.domains.cooperatives.models.enums import CooperativeStatus, CooperativeModel
 from src.domains.cooperatives.models.mixins import (
@@ -38,7 +40,7 @@ class CoopCooperative(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     cover_image: Mapped[str | None] = mapped_column(String(1024), nullable=True)
 
     status: Mapped[CooperativeStatus] = mapped_column(
-        String(32), default=CooperativeStatus.ACTIVE, nullable=False
+        String(32), default=CooperativeStatus.PENDING, nullable=False
     )
 
     coop_model: Mapped[CooperativeModel] = mapped_column(
@@ -64,6 +66,15 @@ class CoopCooperative(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     goals: Mapped[list["CoopGoal"]] = relationship(
         back_populates="cooperative", cascade="all, delete-orphan"
+    )
+    memberships: Mapped[list["GroupMembership"]] = relationship(
+        back_populates="group",
+        cascade="all, delete-orphan",
+    )
+    users: Mapped[list["User"]] = relationship(
+        secondary="group_memberships",
+        back_populates="cooperatives",
+        viewonly=False,
     )
 
     activities: Mapped[list["CoopActivity"]] = relationship(

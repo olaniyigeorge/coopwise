@@ -84,11 +84,11 @@ class User(Base):
         overlaps="cooperatives,users",
     )
     cooperatives = relationship(
-        "CooperativeGroup",
+        "CoopCooperative",
         secondary="group_memberships",
         back_populates="users",
         primaryjoin="User.id == GroupMembership.user_id",
-        secondaryjoin="GroupMembership.group_id == CooperativeGroup.id",
+        secondaryjoin="GroupMembership.group_id == CoopCooperative.id",
         foreign_keys=[GroupMembership.user_id, GroupMembership.group_id],
         overlaps="memberships,group,user",
     )
@@ -122,7 +122,12 @@ class User(Base):
     onchain_wallets = relationship(
         "OnChainWallet", back_populates="user", cascade="all, delete-orphan"
     )
-    wallet = relationship("Wallet", back_populates="user", cascade="all, delete-orphan")
+    wallet = relationship(
+        "Wallet",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
 
 # Deferred relationship to avoid circular import with ChatWithAI

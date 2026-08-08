@@ -38,4 +38,4 @@ class ActivityLog(Base):
     created_at = Column(DateTime, default=datetime.now)
 
     user = relationship("User", back_populates="activities")
-    group = relationship("CooperativeGroup", back_populates="activities")
+    group = relationship("CoopCooperative", back_populates=None)

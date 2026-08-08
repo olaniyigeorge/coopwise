@@ -61,7 +61,7 @@ class Contribution(Base):
     )
 
     user = relationship("User", back_populates="contributions")
-    group = relationship("CooperativeGroup", back_populates="contributions")
+    group = relationship("CoopCooperative", back_populates=None)
     wallet_ledger = relationship(
         "WalletLedger", back_populates="contribution", uselist=False
     )

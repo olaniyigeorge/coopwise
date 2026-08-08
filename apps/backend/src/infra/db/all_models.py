@@ -7,7 +7,6 @@ complete before the first query.
 
 Add a line here every time a new domain adds models.
 """
-from src.domains.cooperatives.models import legacy_models as _circles_models        # noqa: F401
 from src.domains.cooperatives.models import cooperative as _cooperatives_models  # noqa: F401
 from src.domains.memberships import models as _memberships_models  # noqa: F401
 from src.domains.contributions import models as _contributions_models  # noqa: F401
