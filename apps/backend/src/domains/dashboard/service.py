@@ -9,7 +9,7 @@ from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.dashboard.schemas import DashboardData
 from src.shared.utils.logger import logger
 
-from src.domains.cooperatives.service import CooperativeGroupService
+from src.domains.cooperatives.services.cooperative_service import CooperativeService
 from src.domains.analytics.service import ActivityService, SummaryService
 from src.domains.insights.service import InsightEngine
 from src.domains.notifications.service import NotificationService
@@ -63,7 +63,7 @@ class DashboardService:
         return await SummaryService.get_user_targets(user, self._db, self._redis)
 
     async def _get_groups(self, user: AuthenticatedUser):
-        return await CooperativeGroupService.get_user_and_suggested_groups(
+        return await CooperativeService.get_user_and_suggested_groups(
             user, self._db, self._redis
         )
 
