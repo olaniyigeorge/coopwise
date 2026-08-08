@@ -30,7 +30,7 @@ from sqlalchemy.orm import sessionmaker
 from src.domains.contributions.service import ContributionService, ContributionActionType
 from src.domains.cooperatives.service import CooperativeGroupService
 from src.domains.memberships.service import CooperativeMembershipService
-from apps.backend.src.domains.cooperatives.models.cooperative import CooperativeGroup, CooperativeStatus, ContributionFrequency
+from src.domains.cooperatives.models.cooperative import CooperativeGroup, CooperativeStatus, ContributionFrequency
 from src.domains.contributions.models import Contribution, ContributionStatus
 from src.domains.memberships.models import GroupMembership
 from src.shared.utils.logger import logger
