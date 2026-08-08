@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import uuid4
-from src.domains.memberships.models import GroupMembership
+from src.domains.memberships.models.group_membership import GroupMembership
 from src.infra.db.database import Base
 from sqlalchemy import Boolean, CheckConstraint, Column, String, Enum, DateTime, Float
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -92,10 +92,10 @@ class User(Base):
         foreign_keys=[GroupMembership.user_id, GroupMembership.group_id],
         overlaps="memberships,group,user",
     )
-    invited_memberships = relationship(
-        "GroupMembership",
+    invited_invitations = relationship(
+        "CoopInvitation",
         back_populates="inviter",
-        foreign_keys="GroupMembership.invited_by",
+        foreign_keys="CoopInvitation.invited_by",
     )
     notifications = relationship(
         "Notification",
