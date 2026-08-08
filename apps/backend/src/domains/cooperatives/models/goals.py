@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -143,8 +143,8 @@ class CoopGoalParticipant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     goal_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("coop_goals.id"), nullable=False, index=True
     )
-    membership_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("group_memberships.id"), nullable=False, index=True
+    membership_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("group_memberships.id"), nullable=False, index=True
     )
     payout_position: Mapped[int] = mapped_column(nullable=False)
     round_number: Mapped[int] = mapped_column(nullable=False)

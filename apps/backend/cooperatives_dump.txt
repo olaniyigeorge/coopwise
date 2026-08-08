@@ -1,0 +1,2931 @@
+
+================================================================================
+FILE: src/domains/cooperatives/dependencies.py
+================================================================================
+from __future__ import annotations
+
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domains.cooperatives.services.beneficiary_pattern_service import BeneficiaryPatternService
+from src.domains.cooperatives.services.cooperative_service import CooperativeService
+from src.domains.cooperatives.services.goal_category_service import GoalCategoryService
+from src.domains.cooperatives.services.goal_service import GoalService
+from src.domains.cooperatives.services.ownership_share_service import OwnershipShareService
+from src.domains.cooperatives.services.rule_services import (
+    DecisionRuleService,
+    FinancialRuleService,
+    GovernanceRuleService,
+    MembershipRuleService,
+)
+from src.domains.cooperatives.uow import UnitOfWork
+from src.infra.db.dependencies import get_async_db_session
+
+
+async def get_uow(session: AsyncSession = Depends(get_async_db_session)) -> UnitOfWork:
+    return UnitOfWork(session)
+
+
+async def get_cooperative_service(
+    uow: UnitOfWork = Depends(get_uow),
+    memberships: MembershipsClient = Depends(get_memberships_client),
+    events: EventDispatcher = Depends(get_event_dispatcher),
+    logger: Logger = Depends(get_logger),
+) -> CooperativeService:
+    return CooperativeService(uow, memberships, events, logger)
+
+
+
+def get_governance_rule_service(db: AsyncSession = Depends(get_async_db_session)) -> GovernanceRuleService:
+    return GovernanceRuleService(db)
+
+
+def get_membership_rule_service(db: AsyncSession = Depends(get_async_db_session)) -> MembershipRuleService:
+    return MembershipRuleService(db)
+
+
+def get_financial_rule_service(db: AsyncSession = Depends(get_async_db_session)) -> FinancialRuleService:
+    return FinancialRuleService(db)
+
+
+def get_decision_rule_service(db: AsyncSession = Depends(get_async_db_session)) -> DecisionRuleService:
+    return DecisionRuleService(db)
+
+
+def get_goal_service(db: AsyncSession = Depends(get_async_db_session)) -> GoalService:
+    return GoalService(db)
+
+
+def get_ownership_share_service(db: AsyncSession = Depends(get_async_db_session)) -> OwnershipShareService:
+    return OwnershipShareService(db)
+
+
+def get_beneficiary_pattern_service(db: AsyncSession = Depends(get_async_db_session)) -> BeneficiaryPatternService:
+    return BeneficiaryPatternService(db)
+
+
+def get_goal_category_service(db: AsyncSession = Depends(get_async_db_session)) -> GoalCategoryService:
+    return GoalCategoryService(db)
+
+================================================================================
+FILE: src/domains/cooperatives/events.py
+================================================================================
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Protocol
+from uuid import UUID
+
+
+@dataclass(slots=True)
+class CooperativeActivated:
+    cooperative_id: UUID
+    actor_id: UUID | None = None
+
+
+@dataclass(slots=True)
+class RuleVersionCreated:
+    cooperative_id: UUID
+    rule_type: str
+    version: int
+
+
+@dataclass(slots=True)
+class GoalContractCreated:
+    goal_id: UUID
+    cooperative_id: UUID
+
+
+@dataclass(slots=True)
+class OwnershipShareUpdated:
+    goal_id: UUID
+    user_id: UUID
+
+
+class EventDispatcher(Protocol):
+    async def dispatch(self, event: object) -> None:
+        ...
+
+
+class NoOpEventDispatcher:
+    async def dispatch(self, event: object) -> None:
+        return None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+Domain events for `domains/cooperatives`.
+
+These are plain dataclasses only — no dispatch mechanism lives here. The Celery-enqueue /
+event-to-task plumbing is shared infra (other domains will emit events too), imported from
+there. A service emits one of these via `self.events.dispatch(...)` only AFTER its
+UnitOfWork.commit() has succeeded — never before, and never if the commit failed.
+
+Every event carries the ids needed to look the thing back up (never the full ORM object — by
+the time notifications processes it async, that instance may be stale/detached) plus
+`actor_id` where there's a clear acting user, so notifications can render "X changed by Y" and
+can exclude the actor from the notified-members list if desired.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from uuid import UUID
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+@dataclass(frozen=True)
+class DomainEvent:
+    """Base class. `occurred_at` is stamped at construction time (event-creation time), not
+    commit time — the two are close enough in practice and this keeps the dataclass simple.
+    """
+
+    occurred_at: datetime = field(default_factory=_utcnow, kw_only=True)
+
+
+@dataclass(frozen=True)
+class CooperativeActivated(DomainEvent):
+    cooperative_id: UUID
+    actor_id: UUID
+
+
+@dataclass(frozen=True)
+class CooperativeDeactivated(DomainEvent):
+    cooperative_id: UUID
+    actor_id: UUID
+
+
+@dataclass(frozen=True)
+class CooperativeReactivated(DomainEvent):
+    cooperative_id: UUID
+    actor_id: UUID
+
+
+@dataclass(frozen=True)
+class CooperativeCompleted(DomainEvent):
+    cooperative_id: UUID
+    actor_id: UUID
+
+
+@dataclass(frozen=True)
+class CooperativeDissolved(DomainEvent):
+    cooperative_id: UUID
+    actor_id: UUID
+    reason: str | None = None
+
+
+@dataclass(frozen=True)
+class RuleVersionCreated(DomainEvent):
+    cooperative_id: UUID
+    actor_id: UUID
+    rule_type: str  # "governance" | "membership" | "financial" | "decision"
+    version: int
+    decision_type: str | None = None  # only set when rule_type == "decision"
+
+
+@dataclass(frozen=True)
+class GoalCreated(DomainEvent):
+    goal_id: UUID
+    cooperative_id: UUID
+    actor_id: UUID
+
+
+@dataclass(frozen=True)
+class GoalContractCreated(DomainEvent):
+    goal_id: UUID
+    cooperative_id: UUID
+    actor_id: UUID
+
+
+@dataclass(frozen=True)
+class GoalStatusChanged(DomainEvent):
+    goal_id: UUID
+    cooperative_id: UUID
+    actor_id: UUID
+    from_status: str
+    to_status: str
+
+
+@dataclass(frozen=True)
+class OwnershipShareAdded(DomainEvent):
+    goal_id: UUID
+    cooperative_id: UUID
+    actor_id: UUID
+    user_id: UUID
+    share_pct: float
+================================================================================
+FILE: src/domains/cooperatives/exceptions.py
+================================================================================
+from __future__ import annotations
+from uuid import UUID
+
+
+class CooperativeDomainError(Exception):
+    """Base class for every exception raised out of this domain's service layer.
+ 
+    Lets the API layer add a single blanket `except CooperativeDomainError` fallback (mapped to
+    a generic 400/500) without having to enumerate every subclass, while still being able to
+    special-case the ones below to their specific status codes.
+    """
+
+
+
+class CooperativeNotFoundError(CooperativeDomainError):
+    """Raised by get_cooperative() / any lookup when the id doesn't exist. -> 404"""
+ 
+    def __init__(self, cooperative_id: UUID) -> None:
+        self.cooperative_id = cooperative_id
+        super().__init__(f"Cooperative {cooperative_id} not found")
+ 
+
+class GoalNotFoundError(CooperativeDomainError):
+    """Raised by get_goal() / any lookup when the id doesn't exist. -> 404"""
+ 
+    def __init__(self, goal_id: UUID) -> None:
+        self.goal_id = goal_id
+        super().__init__(f"Goal {goal_id} not found")
+ 
+ 
+class CooperativeNotConfiguredError(CooperativeDomainError):
+    """Raised by activate() when governance/membership/financial rules aren't all set. -> 409
+ 
+    `missing` lists exactly which of ["governance_rules", "membership_rules",
+    "financial_rules"] are absent — this is what the frontend "Setup incomplete: X, Y" banner
+    reads, so keep it precise rather than collapsing to a generic message.
+    """
+ 
+    def __init__(self, missing: list[str]) -> None:
+        self.missing = missing
+        super().__init__(f"Cooperative not configured, missing: {', '.join(missing)}")
+ 
+ 
+class IllegalStatusTransitionError(CooperativeDomainError):
+    """Raised whenever a status-machine guard fails (wrong current state for the transition
+    attempted, e.g. activate() called on a COMPLETED cooperative, or a membership/quorum guard
+    inside activate() fails). -> 409
+    """
+ 
+    def __init__(self, from_status: str, to_status: str) -> None:
+        self.from_status = from_status
+        self.to_status = to_status
+        super().__init__(f"Cannot transition from {from_status} to {to_status}")
+ 
+ 
+class NotAuthorizedError(CooperativeDomainError):
+    """Raised when acting_user_id lacks the admin/owner role required for the action. -> 403
+ 
+    Deliberately carries no cooperative_id / role detail in the message — that's for the log
+    line (which has full context via `extra={}`), not for what gets surfaced to the caller.
+    """
+ 
+ 
+class IncompleteGoalContractError(CooperativeDomainError):
+    """Raised by create_goal_contract() when a beneficiary_pattern-required field is missing.
+    -> 422
+ 
+    `missing` lists exactly which required_fields from the pattern's contract_schema weren't
+    supplied — same "precise list, not a generic 400" pattern as CooperativeNotConfiguredError.
+    """
+ 
+    def __init__(self, missing: list[str]) -> None:
+        self.missing = missing
+        super().__init__(f"Goal contract incomplete, missing: {', '.join(missing)}")
+ 
+ 
+class InvalidGoalContractError(CooperativeDomainError):
+    """Raised by create_goal_contract() for pattern-specific cross-field invariant violations
+    (e.g. pooled_for_shared missing exit_rule_type when valuation_method is set; pooled_for_one
+    beneficiary_user_id not an actual cooperative member). -> 422
+    """
+ 
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+        super().__init__(reason)
+ 
+ 
+class OwnershipShareOverallocatedError(CooperativeDomainError):
+    """Raised when a new/updated share_pct would push a goal's total shares over 100%, or when
+    GoalService.activate() finds a pooled_for_shared goal whose shares don't sum to exactly
+    100%. -> 422
+    """
+ 
+    def __init__(self, current_total_pct: float) -> None:
+        self.current_total_pct = current_total_pct
+        super().__init__(f"Ownership shares would total {current_total_pct}%, exceeding 100%")
+
+
+
+
+
+
+
+
+
+
+
+================================================================================
+FILE: src/domains/cooperatives/models/__init__.py
+================================================================================
+from src.domains.cooperatives.models.cooperative import CoopCooperative
+from src.domains.cooperatives.models.rules import (
+    CoopDecisionRule,
+    CoopFinancialRule,
+    CoopGovernanceRule,
+    CoopMembershipRule,
+)
+from src.domains.cooperatives.models.goals import (
+    CoopBeneficiaryPattern,
+    CoopGoal,
+    CoopGoalCategory,
+    CoopGoalContract,
+    CoopOwnershipShare,
+)
+
+__all__ = [
+    "CoopCooperative",
+    "CoopGovernanceRule",
+    "CoopMembershipRule",
+    "CoopFinancialRule",
+    "CoopDecisionRule",
+    "CoopBeneficiaryPattern",
+    "CoopGoalCategory",
+    "CoopGoal",
+    "CoopGoalContract",
+    "CoopOwnershipShare",
+]
+================================================================================
+FILE: src/domains/cooperatives/models/README.md
+================================================================================
+# `domains/cooperatives`
+
+Replaces `domains/circles`. Implements the Cooperative Engine from the
+"Database Design: Goals + Governance Core" doc — governance/membership/
+financial/decision rule modules, plus the beneficiary-pattern /
+goal-category split.
+
+## Where this goes in your tree
+
+Drop this whole folder in as:
+
+```
+apps/backend/src/domains/cooperatives/
+├── __init__.py
+├── README.md
+└── models/
+    ├── __init__.py
+    ├── enums.py
+    ├── mixins.py        # Base, UUIDPrimaryKeyMixin, TimestampMixin, VersionedMixin
+    ├── cooperative.py    # CoopCooperative
+    ├── rules.py           # CoopGovernanceRule, CoopMembershipRule, CoopFinancialRule, CoopDecisionRule
+    ├── goals.py            # CoopBeneficiaryPattern, CoopGoalCategory, CoopGoal, CoopGoalContract, CoopOwnershipShare
+    └── seed.py              # seed rows for coop_beneficiary_patterns
+```
+
+## Naming convention
+
+- **Class names:** `Coop` prefix — `CoopCooperative`, `CoopGoal`, `CoopGoalContract`, etc.
+- **Table names:** `coop_` prefix — `coop_cooperatives`, `coop_goals`, `coop_goal_contracts`, etc.
+
+This makes it unambiguous at a glance which tables belong to the new
+engine vs. any legacy `circles`-domain tables still around mid-migration,
+and avoids collisions if you keep both domains mounted side by side
+during the cutover.
+
+## Things you MUST adjust before this runs
+
+1. **`mixins.py` → `from src.infra.db.base import Base`** — point this at
+   your actual declarative Base / async session setup in
+   `apps/backend/src/infra/db`.
+2. **`users.id` foreign keys** (`created_by`, `beneficiary_user_id`,
+   `CoopOwnershipShare.user_id`) — confirm the real table name for your
+   existing `domains/users` model; adjusted here as a plain guess.
+3. **Alembic migration** — nothing here is a migration yet, it's the
+   model layer only. Once you're happy with the shape, run
+   `alembic revision --autogenerate -m "add cooperative engine"` against
+   this domain and review the generated DDL by hand (JSONB defaults and
+   the `VersionedMixin` server_default on `effective_from` are the two
+   things autogenerate tends to get slightly wrong).
+4. **Cutover from `circles`** — this doesn't touch `domains/circles` or
+   its existing data. You'll want a one-time data migration
+   (`circles` → `coop_cooperatives`, existing group settings →
+   `coop_governance_rules` / `coop_membership_rules` / `coop_financial_rules`
+   rows at `version=1`) before deleting the old domain. Every place in
+   `apps/backend/src/domains/{contributions,memberships,payments,...}`
+   and `apps/frontend` that currently references `circle_id` will need to
+   be repointed at `cooperative_id`.
+
+## Deliberately NOT included here (see doc §7 "Next")
+
+- Money layer: `contributions`, `wallets`, `payments`, `payouts` — these
+  keep their existing domains, just repoint their FK from `circle_id` to
+  `cooperative_id`.
+- Trust/reputation layer: `trust_ledger_events`, `endorsements`,
+  `leadership_roles`, `disputes` — not designed yet.
+- Intelligence layer: `ai_insights`, `risk_flags` — not designed yet.
+- Support infra: `notifications`, `analytics_snapshots` — existing
+  domains, same repoint-the-FK treatment as money layer.
+
+## Enforcing "one current-effective rule version"
+
+`VersionedMixin` does NOT add a DB constraint for "only one row per
+cooperative with `effective_to IS NULL`" — see the docstring in
+`mixins.py` for why, and the partial-unique-index alternative if you'd
+rather enforce it at the DB layer instead of the service layer.
+================================================================================
+FILE: src/domains/cooperatives/models/activity_log.py
+================================================================================
+import uuid
+from typing import TYPE_CHECKING
+
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from src.domains.cooperatives.models.cooperative import CoopCooperative
+from src.infra.db.database import Base
+from src.domains.cooperatives.models.mixins import (
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
+
+
+
+
+class CoopActivity(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "coop_activities"
+
+    cooperative_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("coop_cooperatives.id"),
+        nullable=False,
+        index=True,
+    )
+
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    activity_type: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    entity_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        nullable=True,
+    )
+
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    
+    cooperative: Mapped["CoopCooperative"] = relationship(
+        back_populates="activities"
+    )
+================================================================================
+FILE: src/domains/cooperatives/models/cooperative.py
+================================================================================
+import uuid
+from typing import TYPE_CHECKING
+
+from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from src.domains.cooperatives.models.activity_log import CoopActivity
+    from src.domains.cooperatives.models.rules import (
+        CoopGovernanceRule,
+        CoopMembershipRule,
+        CoopFinancialRule,
+        CoopDecisionRule,
+    )
+    from src.domains.cooperatives.models.goals import CoopGoal
+    from src.domains.memberships.models.invitation import CoopInvitation
+    from src.domains.memberships.models.group_membership import GroupMembership
+    from src.domains.users.models import User
+
+from src.domains.cooperatives.models.enums import CooperativeStatus, CooperativeModel
+from src.domains.cooperatives.models.mixins import (
+    Base,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
+
+
+class CoopCooperative(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    A Cooperative is a container that composes the four versioned rule 
+    modules and owns zero or more Goals — it does NOT itself hold 
+    financial/governance logic inline (that's the point of the engine 
+    split).
+    """
+
+    __tablename__ = "coop_cooperatives"
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cover_image: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+
+    status: Mapped[CooperativeStatus] = mapped_column(
+        String(32), default=CooperativeStatus.PENDING, nullable=False
+    )
+
+    coop_model: Mapped[CooperativeModel] = mapped_column(
+        String(32), default=CooperativeModel.COOP, nullable=False
+    )
+
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    # --- relationships ---
+    governance_rules: Mapped[list["CoopGovernanceRule"]] = relationship(
+        back_populates="cooperative", cascade="all, delete-orphan"
+    )
+    membership_rules: Mapped[list["CoopMembershipRule"]] = relationship(
+        back_populates="cooperative", cascade="all, delete-orphan"
+    )
+    financial_rules: Mapped[list["CoopFinancialRule"]] = relationship(
+        back_populates="cooperative", cascade="all, delete-orphan"
+    )
+    decision_rules: Mapped[list["CoopDecisionRule"]] = relationship(
+        back_populates="cooperative", cascade="all, delete-orphan"
+    )
+    goals: Mapped[list["CoopGoal"]] = relationship(
+        back_populates="cooperative", cascade="all, delete-orphan"
+    )
+    memberships: Mapped[list["GroupMembership"]] = relationship(
+        back_populates="group",
+        cascade="all, delete-orphan",
+        overlaps="users,memberships",
+    )
+    users: Mapped[list["User"]] = relationship(
+        secondary="group_memberships",
+        back_populates="cooperatives",
+        viewonly=False,
+        overlaps="group,memberships,user",
+    )
+    invitations: Mapped[list["CoopInvitation"]] = relationship(
+        back_populates="cooperative",
+        cascade="all, delete-orphan",
+        overlaps="memberships,users",
+    )
+
+    activities: Mapped[list["CoopActivity"]] = relationship(
+        back_populates="cooperative",
+        cascade="all, delete-orphan",
+    )
+
+    def __repr__(self) -> str:
+        return f"<CoopCooperative id={self.id} name={self.name!r} status={self.status}>"
+================================================================================
+FILE: src/domains/cooperatives/models/enums.py
+================================================================================
+"""
+Enums for the cooperatives domain.
+
+Kept as plain Python `str` Enums mapped via SQLAlchemy's `Enum(..., native_enum=False)`
+so they store as VARCHAR + CHECK constraint rather than a Postgres native enum type.
+Native Postgres enums are a pain to alter (ADD VALUE can't run in a transaction with
+other DDL pre-PG12, and dropping/renaming a value requires a full type rebuild), and
+this schema is expected to evolve — e.g. new `beneficiary_patterns.code` values,
+new `decision_rules.mechanism` values. If you'd rather have native enums, flip
+`native_enum=True` per-column later; the Python side doesn't change.
+"""
+
+from enum import Enum
+
+
+class CooperativeStatus(str, Enum):
+    PENDING = "pending"
+    DRAFT = "draft"
+    ACTIVE = "active"
+    PAUSED = "paused"
+    ARCHIVED = "archived"
+    DELETED = "deleted"
+
+class DecisionModel(str, Enum):
+    ADMIN_LED = "admin_led"
+    MAJORITY_VOTE = "majority_vote"
+    CONSENSUS = "consensus"
+    WEIGHTED_VOTE = "weighted_vote"
+
+
+class RuleAmendmentApprovalType(str, Enum):
+    ADMIN_ONLY = "admin_only"
+    MAJORITY_VOTE = "majority_vote"
+    UNANIMOUS = "unanimous"
+
+
+class JoinType(str, Enum):
+    INVITE_ONLY = "invite_only"
+    OPEN = "open"
+    APPLICATION_REQUIRED = "application_required"
+
+
+class RemovalPolicy(str, Enum):
+    VOTE = "vote"
+    ADMIN = "admin"
+    AUTO_ON_DEFAULT = "auto_on_default"
+
+
+class ContributionFrequency(str, Enum):
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    BIWEEKLY = "biweekly"
+    MONTHLY = "monthly"
+    CUSTOM = "custom"
+
+
+class PenaltyType(str, Enum):
+    FLAT = "flat"
+    PCT = "pct"
+    NONE = "none"
+
+
+class PayoutStrategy(str, Enum):
+    ROTATING = "rotating"
+    EQUAL = "equal"
+    PRIORITY = "priority"
+
+
+class RotationOrder(str, Enum):
+    """Only meaningful when `payout_strategy == rotating`."""
+ 
+    SEQUENTIAL = "sequential"
+    RANDOM = "random"
+    
+
+class EscrowMode(str, Enum):
+    SIMULATED_OFFCHAIN = "simulated_offchain"  # Phase 1
+    ONCHAIN = "onchain"  # Phase 3
+
+
+class DecisionType(str, Enum):
+    PAYOUT_ORDER = "payout_order"
+    DISPUTE_RESOLUTION = "dispute_resolution"
+    EXIT_VALUATION = "exit_valuation"
+    RULE_AMENDMENT = "rule_amendment"
+    NEW_MEMBER_APPROVAL = "new_member_approval"
+
+
+class DecisionMechanism(str, Enum):
+    ADMIN = "admin"
+    VOTE = "vote"
+    AI_SUGGESTED = "ai_suggested"
+    ROTATION = "rotation"
+    LOTTERY = "lottery"
+
+
+class BeneficiaryPatternCode(str, Enum):
+    """
+    This is intentionally an Enum (not free-text) even though 
+    `beneficiary_patterns` is a DB-driven catalog table — new 
+    patterns are "closer to a schema migration than a data insert" 
+    per the doc, so a code change is expected to accompany a new row 
+    anyway. Keeps `goal_contracts` branching logic (which fields
+    are required per pattern) exhaustively checkable in code.
+    """
+
+    ROTATING_TRACKED = "rotating_tracked"
+    POOLED_FOR_ONE = "pooled_for_one"
+    POOLED_FOR_SHARED = "pooled_for_shared"
+    POOLED_CONTINGENT = "pooled_contingent"
+
+
+class GoalStatus(str, Enum):
+    PROPOSED = "proposed"
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    ABANDONED = "abandoned"
+
+class GoalParticipantStatus(str, Enum):
+    WAITING = "waiting"
+    PAID = "paid"
+    SKIPPED = "skipped"
+
+    
+class ExitRuleType(str, Enum):
+    """`pooled_for_shared` only."""
+
+    BUYOUT = "buyout"
+    DISSOLVE_AND_SPLIT = "dissolve_and_split"
+    VOTE_TO_SELL = "vote_to_sell"
+
+
+class ValuationMethod(str, Enum):
+    """`pooled_for_shared` only."""
+
+    CONTRIBUTION_BASED = "contribution_based"
+    MARKET_APPRAISAL = "market_appraisal"
+    NEGOTIATED = "negotiated"
+
+
+class OwnershipBasis(str, Enum):
+    CONTRIBUTION_BASED = "contribution_based"
+    NEGOTIATED = "negotiated"
+
+
+class CooperativeModel(str, Enum):
+    """
+    Cultural/product flavor of the cooperative itself — kept as a distinct
+    axis from `beneficiary_pattern` (structural) and `goal_category`
+    (per-goal, descriptive). This tags the whole cooperative so the
+    frontend can drive a model-specific creation flow (e.g. an "esusu"
+    flow can pre-select sane beneficiary_pattern/goal_category defaults
+    and copy), while the actual contract mechanics still come from
+    beneficiary_pattern, not from this field.
+    """
+ 
+    AJO = "ajo"
+    ESUSU = "esusu"
+    ADASHE = "adashe"
+    CHAMA = "chama"
+    COOP = "coop"
+================================================================================
+FILE: src/domains/cooperatives/models/goals.py
+================================================================================
+import uuid
+from datetime import date, datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from src.domains.cooperatives.models.cooperative import CoopCooperative
+
+from src.domains.cooperatives.models.enums import (
+    ExitRuleType,
+    GoalParticipantStatus,
+    GoalStatus,
+    OwnershipBasis,
+    ValuationMethod,
+)
+from src.domains.cooperatives.models.mixins import Base, TimestampMixin, UUIDPrimaryKeyMixin
+
+
+class CoopBeneficiaryPattern(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    The structural/mechanical axis. Small, deliberately-controlled system
+    catalog — NOT self-serve. Adding a row here is expected to come with a
+    code change (new `contract_schema` fields + exit/dispute logic), so
+    we'll treat inserts as part of a migration/release, not admin tooling.
+
+    Pilot patterns are seeded; rotating_tracked, pooled_for_one, pooled_for_shared,
+    pooled_contingent — see `seed.py` in this package.
+    """
+
+    __tablename__ = "coop_beneficiary_patterns"
+
+    code: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    requires_beneficiary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    requires_ownership_shares: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    requires_claim_process: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    default_visibility: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    default_withdrawal_restriction: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    contract_schema: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    goals: Mapped[list["CoopGoal"]] = relationship(back_populates="beneficiary_pattern")
+
+    def __repr__(self) -> str:
+        return f"<CoopBeneficiaryPattern code={self.code}>"
+
+
+class CoopGoalCategory(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    The descriptive/extensible axis. Fully open, self-serve taxonomy —
+    drives discovery, AI templates, and defaults. NEVER overrides contract
+    mechanics (that's `beneficiary_pattern`'s job).
+    """
+
+    __tablename__ = "coop_goal_categories"
+
+    code: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    icon: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    parent_category_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_goal_categories.id"), nullable=True
+    )
+
+    # This is just a hint/default only field. Can't be used to gate contract logic.
+    suggested_beneficiary_pattern_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_beneficiary_patterns.id"), nullable=True
+    )
+
+    is_system_defined: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # null = system-defined; set = a cooperative's own custom category.
+    created_by_cooperative_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=True
+    )
+
+    parent: Mapped["CoopGoalCategory | None"] = relationship(remote_side="CoopGoalCategory.id")
+    goals: Mapped[list["CoopGoal"]] = relationship(back_populates="goal_category")
+
+    def __repr__(self) -> str:
+        return f"<CoopGoalCategory code={self.code}>"
+
+
+class CoopGoal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    A goal always belongs to exactly one cooperative — created after the
+    cooperative exists, never standalone. Two cooperatives can each have
+    a goal named "Business A"; these remain distinct rows, not shared.
+    """
+
+    __tablename__ = "coop_goals"
+
+    cooperative_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False, index=True
+    )
+    beneficiary_pattern_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_beneficiary_patterns.id"), nullable=False
+    )
+    goal_category_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_goal_categories.id"), nullable=False
+    )
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    target_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    currency: Mapped[str] = mapped_column(String(8), nullable=False, default="NGN")
+    target_date: Mapped[date | None] = mapped_column(nullable=True)
+
+    status: Mapped[GoalStatus] = mapped_column(String(32), default=GoalStatus.PROPOSED, nullable=False)
+
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+
+    cooperative: Mapped["CoopCooperative"] = relationship(back_populates="goals")
+    beneficiary_pattern: Mapped["CoopBeneficiaryPattern"] = relationship(back_populates="goals")
+    goal_category: Mapped["CoopGoalCategory"] = relationship(back_populates="goals")
+
+    contract: Mapped["CoopGoalContract"] = relationship(
+        back_populates="goal", uselist=False, cascade="all, delete-orphan"
+    )
+    ownership_shares: Mapped[list["CoopOwnershipShare"]] = relationship(
+        back_populates="goal", cascade="all, delete-orphan"
+    )
+    participants: Mapped[list["CoopGoalParticipant"]] = relationship(
+        back_populates="goal", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        return f"<CoopGoal id={self.id} name={self.name!r} status={self.status}>"
+
+
+
+
+class CoopGoalParticipant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "coop_goal_participants"
+
+    goal_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_goals.id"), nullable=False, index=True
+    )
+    membership_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("group_memberships.id"), nullable=False, index=True
+    )
+    payout_position: Mapped[int] = mapped_column(nullable=False)
+    round_number: Mapped[int] = mapped_column(nullable=False)
+    status: Mapped[GoalParticipantStatus] = mapped_column(
+        String(32), default=GoalParticipantStatus.WAITING, nullable=False
+    )
+    paid_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("goal_id", "membership_id", name="uq_goal_participant_membership"),
+    )
+
+    goal: Mapped["CoopGoal"] = relationship(back_populates="participants")
+
+    def __repr__(self) -> str:
+        return f"<CoopGoalParticipant goal={self.goal_id} membership={self.membership_id} pos={self.payout_position}>"
+
+
+class CoopGoalContract(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    Instantiated, per-goal rule package. Defaults are inherited from
+    `beneficiary_pattern.contract_schema` at creation time; overridable
+    only within the bounds that pattern allows — enforced at the
+    service layer, not here.
+
+    `beneficiary_user_id` required if pattern == pooled_for_one.
+    `exit_rule_type` / `valuation_method` only apply to pooled_for_shared.
+    `claim_eligibility_criteria` only applies to pooled_contingent.
+    """
+
+    __tablename__ = "coop_goal_contracts"
+
+    goal_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_goals.id"), unique=True, nullable=False
+    )
+
+    visibility: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    withdrawal_restriction: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    beneficiary_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    exit_rule_type: Mapped[ExitRuleType | None] = mapped_column(String(32), nullable=True)
+    valuation_method: Mapped[ValuationMethod | None] = mapped_column(String(32), nullable=True)
+    claim_eligibility_criteria: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    deadline: Mapped[date | None] = mapped_column(nullable=True)
+    extra_terms: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    goal: Mapped["CoopGoal"] = relationship(back_populates="contract")
+
+    def __repr__(self) -> str:
+        return f"<CoopGoalContract goal={self.goal_id}>"
+
+
+class CoopOwnershipShare(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Only populated for `pooled_for_shared` goals."""
+
+    __tablename__ = "coop_ownership_shares"
+
+    goal_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_goals.id"), nullable=False, index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
+
+    share_pct: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    basis: Mapped[OwnershipBasis] = mapped_column(String(32), nullable=False)
+    vested_at: Mapped[date | None] = mapped_column(nullable=True)
+
+    goal: Mapped["CoopGoal"] = relationship(back_populates="ownership_shares")
+
+    def __repr__(self) -> str:
+        return f"<CoopOwnershipShare goal={self.goal_id} user={self.user_id} {self.share_pct}%>"
+================================================================================
+FILE: src/domains/cooperatives/models/mixins.py
+================================================================================
+import uuid
+from datetime import datetime, date
+
+from sqlalchemy import DateTime, Date, Integer, func
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from src.infra.db.database import Base 
+
+__all__ = ["Base", "UUIDPrimaryKeyMixin", "TimestampMixin", "VersionedMixin"]
+
+
+class UUIDPrimaryKeyMixin:
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+
+
+class TimestampMixin:
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class VersionedMixin:
+    """
+    Applied to the four rule-module tables (governance / membership /
+    financial / decision). A cooperative's rules change over time, and
+    disputes / AI governance reasoning / audit history must resolve
+    against the rules as they stood *at the time*, not today's — so every
+    edit is a new row, never an UPDATE of an existing one.
+
+    `effective_to IS NULL` means "currently in effect".
+    "at most one currently-effective row per (cooperative_id[, decision_type])"
+    enforced at the application/service layer (e.g. in the same transaction that
+    inserts a new version, the previous row's `effective_to` is closed out)
+    rather than as a DB constraint, since Postgres partial unique indexes
+    on NULL don't compose cleanly with the extra `decision_type` grouping
+    key on `decision_rules`.
+    """
+
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    effective_from: Mapped[date] = mapped_column(
+        Date, nullable=False, server_default=func.current_date()
+    )
+    effective_to: Mapped[date | None] = mapped_column(Date, nullable=True)
+================================================================================
+FILE: src/domains/cooperatives/models/rules.py
+================================================================================
+import uuid
+from typing import TYPE_CHECKING
+
+
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Index, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from src.domains.cooperatives.models.cooperative import CoopCooperative
+
+from src.domains.cooperatives.models.enums import (
+    ContributionFrequency,
+    DecisionMechanism,
+    DecisionModel,
+    DecisionType,
+    EscrowMode,
+    JoinType,
+    PayoutStrategy,
+    PenaltyType,
+    RotationOrder,
+    RemovalPolicy,
+    RuleAmendmentApprovalType,
+)
+from src.domains.cooperatives.models.mixins import (
+    Base,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+    VersionedMixin,
+)
+
+
+class CoopGovernanceRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Base):
+    """Structural decision-making rules for the cooperative itself."""
+
+    __tablename__ = "coop_governance_rules"
+
+    __table_args__ = (
+        Index(
+            "uq_coop_governance_rules_active",
+            "cooperative_id",
+            unique=True,
+            postgresql_where=text("effective_to IS NULL")
+        ),
+    )
+
+    cooperative_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False, index=True
+    )
+
+    decision_model: Mapped[DecisionModel] = mapped_column(String(32), nullable=False)
+    quorum_pct: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    voting_threshold_pct: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    members_can_propose_changes: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    rule_amendment_approval_type: Mapped[RuleAmendmentApprovalType | None] = mapped_column(
+        String(32), nullable=True
+    )
+
+    extra_rules: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    cooperative: Mapped["CoopCooperative"] = relationship(back_populates="governance_rules")
+
+    def __repr__(self) -> str:
+        return f"<CoopGovernanceRule coop={self.cooperative_id} v{self.version}>"
+
+
+class CoopMembershipRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Base):
+    __tablename__ = "coop_membership_rules"
+
+    cooperative_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False, index=True
+    )
+
+    join_type: Mapped[JoinType] = mapped_column(String(32), nullable=False)
+    min_members: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_members: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    public_discovery: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    kyc_level_required: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    exit_notice_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    removal_policy: Mapped[RemovalPolicy] = mapped_column(String(32), nullable=False)
+
+    extra_rules: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    cooperative: Mapped["CoopCooperative"] = relationship(back_populates="membership_rules")
+
+    def __repr__(self) -> str:
+        return f"<CoopMembershipRule coop={self.cooperative_id} v{self.version}>"
+
+
+class CoopFinancialRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Base):
+    """
+    Cooperative-level defaults; individual goals may override specific
+    terms via `CoopGoalContract.extra_terms`.
+    """
+
+    __tablename__ = "coop_financial_rules"
+
+    cooperative_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False, index=True
+    )
+
+    contribution_frequency: Mapped[ContributionFrequency] = mapped_column(String(32), nullable=False)
+    contribution_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), nullable=False, default="NGN")
+    grace_period_days: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    penalty_type: Mapped[PenaltyType] = mapped_column(String(16), default=PenaltyType.NONE, nullable=False)
+    penalty_value: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    payment_rail_default: Mapped[str] = mapped_column(String(64), default="paystack", nullable=False)
+    escrow_mode: Mapped[EscrowMode] = mapped_column(
+        String(32), default=EscrowMode.SIMULATED_OFFCHAIN, nullable=False
+    )
+    payout_strategy: Mapped[PayoutStrategy] = mapped_column(
+        String(16), default=PayoutStrategy.ROTATING, nullable=False
+    )
+    rotation_order: Mapped[RotationOrder | None] = mapped_column(String(16), nullable=True)
+    # ^ only meaningful when payout_strategy == rotating; leave NULL for
+    # equal/priority. From legacy CooperativeGroup.payout_strategy /
+    # rotation_order. Kept as dedicated columns rather than folded into
+    # CoopDecisionRule(decision_type=payout_order) — that table models
+    # *who decides* payout order changes (admin/vote/ai_suggested), which
+    # is a different question from *what the current strategy is*.
+ 
+
+    extra_rules: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    cooperative: Mapped["CoopCooperative"] = relationship(back_populates="financial_rules")
+
+    def __repr__(self) -> str:
+        return f"<CoopFinancialRule coop={self.cooperative_id} v{self.version}>"
+
+
+class CoopDecisionRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Base):
+    """
+    Operational decision workflows — distinct from `CoopGovernanceRule`,
+    which is structural. One current-effective row per
+    (cooperative_id, decision_type).
+    """
+
+    __tablename__ = "coop_decision_rules"
+
+    cooperative_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False, index=True
+    )
+
+    decision_type: Mapped[DecisionType] = mapped_column(String(32), nullable=False, index=True)
+    mechanism: Mapped[DecisionMechanism] = mapped_column(String(32), nullable=False)
+    escalation_path: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    extra_rules: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    cooperative: Mapped["CoopCooperative"] = relationship(back_populates="decision_rules")
+
+    def __repr__(self) -> str:
+        return f"<CoopDecisionRule coop={self.cooperative_id} type={self.decision_type} v{self.version}>"
+================================================================================
+FILE: src/domains/cooperatives/models/seed.py
+================================================================================
+"""
+Seed data for `coop_beneficiary_patterns`.
+
+Run once via a data migration (Alembic) or `scripts/seed.sh` — these four
+rows are the deliberately-controlled catalog described in the design doc.
+Do NOT expose an admin UI that inserts into this table freely; new
+patterns require code changes (contract_schema + exit/dispute logic).
+"""
+
+from src.domains.cooperatives.models.enums import BeneficiaryPatternCode
+
+BENEFICIARY_PATTERN_SEED = [
+    {
+        "code": BeneficiaryPatternCode.ROTATING_TRACKED.value,
+        "name": "Rotating, but tracked",
+        "description": (
+            "Individual payouts on a rotation; outcomes roll up into "
+            "cumulative group impact. Traditional ajo/esusu rotation."
+        ),
+        "requires_beneficiary": False,
+        "requires_ownership_shares": False,
+        "requires_claim_process": False,
+        "default_visibility": "group",
+        "default_withdrawal_restriction": "on_payout_turn",
+        "contract_schema": {
+            "required_fields": ["visibility", "withdrawal_restriction", "deadline"]
+        },
+    },
+    {
+        "code": BeneficiaryPatternCode.POOLED_FOR_ONE.value,
+        "name": "Pooled for one",
+        "description": (
+            "Group funds one member's goal (rent, travel, equipment)."
+        ),
+        "requires_beneficiary": True,
+        "requires_ownership_shares": False,
+        "requires_claim_process": False,
+        "default_visibility": "group",
+        "default_withdrawal_restriction": "beneficiary_only",
+        "contract_schema": {
+            "required_fields": [
+                "beneficiary_user_id",
+                "deadline",
+                "withdrawal_restriction",
+            ]
+        },
+    },
+    {
+        "code": BeneficiaryPatternCode.POOLED_FOR_SHARED.value,
+        "name": "Pooled for shared",
+        "description": (
+            "Goal is a jointly-owned asset (equipment, business) that "
+            "stays with the group."
+        ),
+        "requires_beneficiary": False,
+        "requires_ownership_shares": True,
+        "requires_claim_process": False,
+        "default_visibility": "group",
+        "default_withdrawal_restriction": "locked_until_exit",
+        "contract_schema": {
+            "required_fields": ["exit_rule_type", "valuation_method"]
+        },
+    },
+    {
+        "code": BeneficiaryPatternCode.POOLED_CONTINGENT.value,
+        "name": "Pooled, contingent",
+        "description": (
+            "Reserve pool; payout is triggered by a qualifying event, not "
+            "rotation or a fixed beneficiary. Insurance, healthcare fund, "
+            "security/emergency fund."
+        ),
+        "requires_beneficiary": False,
+        "requires_ownership_shares": False,
+        "requires_claim_process": True,
+        "default_visibility": "group",
+        "default_withdrawal_restriction": "claim_approval_required",
+        "contract_schema": {
+            "required_fields": ["claim_eligibility_criteria"]
+        },
+    },
+]
+================================================================================
+FILE: src/domains/cooperatives/repositories/__init__.py
+================================================================================
+
+================================================================================
+FILE: src/domains/cooperatives/repositories/beneficiary_pattern_repository.py
+================================================================================
+from __future__ import annotations
+
+from typing import Sequence
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domains.cooperatives.models.goals import CoopBeneficiaryPattern
+
+
+class BeneficiaryPatternRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def list(self) -> Sequence[CoopBeneficiaryPattern]:
+        result = await self._session.execute(select(CoopBeneficiaryPattern).order_by(CoopBeneficiaryPattern.name))
+        return result.scalars().all()
+
+    async def get_by_id(self, pattern_id: UUID | str) -> CoopBeneficiaryPattern | None:
+        pattern_id = str(pattern_id)
+        result = await self._session.execute(
+            select(CoopBeneficiaryPattern).where(CoopBeneficiaryPattern.id == pattern_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_code(self, code: str) -> CoopBeneficiaryPattern | None:
+        result = await self._session.execute(
+            select(CoopBeneficiaryPattern).where(CoopBeneficiaryPattern.code == code)
+        )
+        return result.scalar_one_or_none()
+
+================================================================================
+FILE: src/domains/cooperatives/repositories/cooperative_repository.py
+================================================================================
+from __future__ import annotations
+
+from typing import Sequence
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domains.cooperatives.models.cooperative import CoopCooperative
+
+
+class CooperativeRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, cooperative: CoopCooperative) -> CoopCooperative:
+        self._session.add(cooperative)
+        await self._session.flush()
+        return cooperative
+
+    async def get_by_id(self, cooperative_id: UUID | str) -> CoopCooperative | None:
+        coop_id = str(cooperative_id)
+        result = await self._session.execute(
+            select(CoopCooperative).where(CoopCooperative.id == coop_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def list(self, *, limit: int = 50) -> Sequence[CoopCooperative]:
+        result = await self._session.execute(
+            select(CoopCooperative).order_by(CoopCooperative.created_at.desc()).limit(limit)
+        )
+        return result.scalars().all()
+
+================================================================================
+FILE: src/domains/cooperatives/repositories/goal_category_repository.py
+================================================================================
+from __future__ import annotations
+
+from typing import Sequence
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domains.cooperatives.models.goals import CoopGoalCategory
+
+
+class GoalCategoryRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, category: CoopGoalCategory) -> CoopGoalCategory:
+        self._session.add(category)
+        await self._session.flush()
+        return category
+
+    async def list(self) -> Sequence[CoopGoalCategory]:
+        result = await self._session.execute(select(CoopGoalCategory).order_by(CoopGoalCategory.name))
+        return result.scalars().all()
+
+    async def get_by_id(self, category_id: UUID | str) -> CoopGoalCategory | None:
+        category_id = str(category_id)
+        result = await self._session.execute(
+            select(CoopGoalCategory).where(CoopGoalCategory.id == category_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_code(self, code: str) -> CoopGoalCategory | None:
+        result = await self._session.execute(
+            select(CoopGoalCategory).where(CoopGoalCategory.code == code)
+        )
+        return result.scalar_one_or_none()
+
+================================================================================
+FILE: src/domains/cooperatives/repositories/goal_repository.py
+================================================================================
+from __future__ import annotations
+
+from typing import Sequence
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domains.cooperatives.models.goals import CoopGoal
+
+
+class GoalRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, goal: CoopGoal) -> CoopGoal:
+        self._session.add(goal)
+        await self._session.flush()
+        return goal
+
+    async def get_by_id(self, goal_id: UUID | str) -> CoopGoal | None:
+        goal_id = str(goal_id)
+        result = await self._session.execute(select(CoopGoal).where(CoopGoal.id == goal_id))
+        return result.scalar_one_or_none()
+
+    async def list_for_cooperative(self, cooperative_id: UUID | str) -> Sequence[CoopGoal]:
+        cooperative_id = str(cooperative_id)
+        result = await self._session.execute(
+            select(CoopGoal)
+            .where(CoopGoal.cooperative_id == cooperative_id)
+            .order_by(CoopGoal.created_at.desc())
+        )
+        return result.scalars().all()
+
+================================================================================
+FILE: src/domains/cooperatives/repositories/ownership_share_repository.py
+================================================================================
+from __future__ import annotations
+
+from typing import Sequence
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domains.cooperatives.models.goals import CoopOwnershipShare
+
+
+class OwnershipShareRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, share: CoopOwnershipShare) -> CoopOwnershipShare:
+        self._session.add(share)
+        await self._session.flush()
+        return share
+
+    async def list_for_goal(self, goal_id: UUID | str) -> Sequence[CoopOwnershipShare]:
+        goal_id = str(goal_id)
+        result = await self._session.execute(
+            select(CoopOwnershipShare).where(CoopOwnershipShare.goal_id == goal_id)
+        )
+        return result.scalars().all()
+
+================================================================================
+FILE: src/domains/cooperatives/repositories/rules_repository.py
+================================================================================
+from __future__ import annotations
+
+from typing import Generic, Sequence, TypeVar
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+T = TypeVar("T")
+
+
+class RulesRepository(Generic[T]):
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, instance: T) -> T:
+        self._session.add(instance)
+        await self._session.flush()
+        return instance
+
+    async def get_by_id(self, model_cls: type[T], rule_id: UUID | str) -> T | None:
+        rule_id = str(rule_id)
+        result = await self._session.execute(select(model_cls).where(model_cls.id == rule_id))
+        return result.scalar_one_or_none()
+
+    async def get_active_for_cooperative(self, model_cls: type[T], cooperative_id: UUID | str) -> T | None:
+        cooperative_id = str(cooperative_id)
+        result = await self._session.execute(
+            select(model_cls).where(model_cls.cooperative_id == cooperative_id).order_by(model_cls.version.desc())
+        )
+        return result.scalar_one_or_none()
+
+    async def list_versions(self, model_cls: type[T], cooperative_id: UUID | str) -> Sequence[T]:
+        cooperative_id = str(cooperative_id)
+        result = await self._session.execute(
+            select(model_cls)
+            .where(model_cls.cooperative_id == cooperative_id)
+            .order_by(model_cls.version.desc())
+        )
+        return result.scalars().all()
+
+================================================================================
+FILE: src/domains/cooperatives/router.py
+================================================================================
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List
+
+
+from src.domains.contributions.schemas import CircleHistoryEntry
+from src.domains.analytics.models import ActivityType
+from src.api.middlewares.dependencies import get_current_user
+from src.shared.utils.logger import logger
+from config import AppConfig
+from src.domains.analytics.schemas import ActivityCreate
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.cooperatives.schemas import (
+    CoopGroupCreate,
+    CoopGroupDetails,
+    CoopGroupUpdate,
+    JoinCircleResponse,
+    CooperativeStatus
+)
+
+from src.domains.memberships.schemas import CircleMemberDetail, MembershipCreate
+from src.domains.notifications.schemas import NotificationCreate
+from src.domains.analytics.service import ActivityService
+from src.domains.notifications.service import NotificationService
+from src.infra.db.dependencies import get_async_db_session
+from src.domains.cooperatives.service import CooperativeGroupService
+from src.domains.memberships.service import CooperativeMembershipService
+
+from src.infra.payments.flow_service import flow_service
+from src.infra.exchange.fx_service import fx_service
+from src.domains.memberships.models import GroupMembership
+
+
+router = APIRouter(prefix="/api/v1/cooperatives", tags=["Cooperative Groups"])
+
+@router.post("/create", response_model=CoopGroupDetails, status_code=status.HTTP_201_CREATED)
+async def create_cooperative_group(
+    coop_data: CoopGroupCreate,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    # 1. Resolve phone numbers → Flow addresses
+    # TODO: real lookup once user phone is indexed
+    # member_addresses = await resolve_member_addresses(db, coop_data.member_phones)
+    member_addresses = [user.flow_address] if user.flow_address else []
+
+    # 2. Convert local currency → USDC
+    usdc_amount = await fx_service.to_usdc(
+        coop_data.contribution_amount, coop_data.currency
+    )
+
+    print(f"\nAmount in USDC: {usdc_amount} \n")
+
+    # 3. Write to Postgres first with status=pending, chain_circle_id=None
+    #    So a Flow failure doesn't lose the user's data
+    pending_data = coop_data.model_copy(update={
+        "creator_id": user.id,
+        "chain_circle_id": None,        # filled in after Flow confirms
+        "weekly_amount_usdc": usdc_amount,
+        "status": CooperativeStatus.pending.value,
+        "current_round": 0,
+        "is_complete": False,
+    })
+    coop = await CooperativeGroupService.create_coop(pending_data, db)
+
+    # 4. Submit to Flow blockchain
+    try:
+        tx_id = await flow_service.create_circle(
+            member_addresses=member_addresses,
+            weekly_amount_usdc=usdc_amount,
+            rotation_order=coop_data.rotation_order,
+        )
+        chain_circle_id = await flow_service.await_cicle_created_event(tx_id)
+
+        print(f"\n tx_id: {tx_id} \n chain_circle_id: {chain_circle_id} \n")
+
+        # Update record with chain data
+        coop.chain_circle_id = chain_circle_id
+        coop.status = CooperativeStatus.active.value
+        await db.commit()
+        await db.refresh(coop)
+    except Exception as e:
+        logger.error(f"Flow tx failed for circle {coop.id}: {e}")
+        # Circle stays in DB with status=pending — can be retried
+        # Don't raise — return the pending circle to the user
+
+    # 5. Add creator membership
+    membership_data = MembershipCreate(
+        user_id=user.id,
+        group_id=coop.id,
+        invited_by=user.id,
+        role="admin",
+        status="accepted",
+        payout_position=1 if coop_data.rotation_order == "sequential" else None,
+    )
+    await CooperativeMembershipService.create_membership(db, membership_data, user)
+
+    # 6. Activity log
+    activity_data = ActivityCreate(
+        user_id=coop.creator_id,
+        type=ActivityType.created_group.value,
+        description=f"You created a group: {coop.name}",
+        group_id=coop.id,
+        entity_id=str(coop.id),
+        amount=None,
+    )
+    await ActivityService.log(db, activity_data)
+
+    # 7. Notification
+    try:
+        noti_data = NotificationCreate(
+            user_id=user.id,
+            title="New Circle Created",
+            message=f"Your circle '{coop.name}' was successfully created on Flow.",
+            event_type="group",
+            type="success",
+            entity_url=f"/circle/{coop.id}",
+        )
+        await NotificationService.create_and_push_notification_to_user(noti_data, db)
+    except Exception as e:
+        logger.warning(f"Notification failed (non-fatal): {e}")
+
+    # TODO: Send invite notifications to coop_data.member_phones
+
+    return CoopGroupDetails.model_validate(coop)
+
+
+
+@router.post("/{coop_id}/join", response_model=JoinCircleResponse, status_code=status.HTTP_200_OK)
+async def join_circle(
+    coop_id: UUID,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session)
+):
+    # Fetch group to get chain_circle_id
+    coop_group = await CooperativeGroupService.get_coop_group_by_id(db, str(coop_id))
+    if not coop_group:
+        raise HTTPException(status_code=404, detail="Circle not found")
+
+    # 1. Submit JoinCircle.cdc transaction to Flow (Stubbed)
+    # tx_id = await flow_service.join_circle(
+    #     circle_id=coop_group.chain_circle_id,
+    #     member_address=user.flow_address
+    # )
+    tx_id = "0xMockFlowTransactionId12345"
+
+    # 2. Update Postgres membership record
+    membership_data = MembershipCreate(
+        user_id=user.id,
+        group_id=coop_group.id,
+        invited_by=coop_group.creator_id,
+        role="member",
+        status="accepted"
+    )
+    await CooperativeMembershipService.create_membership(db, membership_data, user)
+
+    return {"tx_id": tx_id, "status": "joined", "message": "Successfully joined the circle on-chain."}
+
+
+
+
+
+
+
+
+@router.post("/{circle_id}/invite")
+async def generate_circle_invite(
+    circle_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    # 1. Confirm circle exists
+    circle = await CooperativeGroupService.get_coop_group_by_id(db, circle_id)
+    if not circle:
+        raise HTTPException(status_code=404, detail="Circle not found")
+
+    # 2. Confirm caller is an accepted member
+    membership = await CooperativeMembershipService.get_membership_by_user_and_group(
+        user_id=user.id, group_id=UUID(circle_id), db=db
+    )
+
+    if not membership or membership.status.value != "accepted":
+        raise HTTPException(
+            status_code=403,
+            detail="Only accepted members can generate invite links",
+        )
+
+    # 3. Generate the code
+    invite_code = await CooperativeMembershipService.generate_invite_code(
+        db=db,
+        group_id=UUID(circle_id),
+        inviter_id=user.id,
+    )
+
+    base_url = AppConfig.CLIENT_DOMAIN  # e.g. "https://coopwise.app" or "http://localhost:3000"
+    invite_link = f"{base_url}/invite/{invite_code}"
+
+    return {
+        "invite_code": invite_code,
+        "invite_link": invite_link,
+    }
+
+
+@router.get("/{invite_code}/invite", response_model=CoopGroupDetails)
+async def get_circle_by_invite_code(
+    invite_code: str,
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    """
+    Public endpoint — no auth required.
+    Decodes the invite code to extract group_id, returns public circle preview.
+    Code format: CPW-INV-{inviter_id}:{group_id}
+    """
+    try:
+        # Strip the prefix (INVITE_CODE_PREFIX = "CPW-INV-")
+        print(f"\n\n {invite_code} \n\n")
+        stripped = invite_code.replace(AppConfig.INVITE_CODE_PREFIX, "", 1)
+        inviter, group_id_str = stripped.split(":")
+        print(f"\n\n {inviter} \n {group_id_str} \n\n")
+        group_id = UUID(group_id_str)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid invite code format")
+
+    circle = await CooperativeGroupService.get_coop_group_by_id(db, str(group_id))
+    if not circle:
+        raise HTTPException(status_code=404, detail="Circle not found")
+
+    return circle
+
+
+
+
+
+
+
+
+@router.get("/", response_model=List[CoopGroupDetails])
+async def list_cooperative_groups(
+    db: AsyncSession = Depends(get_async_db_session), skip: int = 0, limit: int = 10
+):
+    """
+    Fetch a list of cooperative groups with optional pagination.
+    """
+
+    return await CooperativeGroupService.get_coop_groups(db, skip=skip, limit=limit)
+
+
+
+@router.get("/me", response_model=list[CoopGroupDetails])
+async def get_my_circles(
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    return await CooperativeGroupService.get_user_circles(db, str(user.id))
+
+
+@router.get("/{coop_id}", response_model=CoopGroupDetails)
+async def get_coop(
+    coop_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    coop = await CooperativeGroupService.get_coop_group_by_id(
+        db, coop_id, requesting_user_id=str(user.id)
+    )
+    if not coop:
+        raise HTTPException(status_code=404, detail="Circle not found")
+    return coop
+
+@router.get("/public/{coop_id}", response_model=CoopGroupDetails)
+async def get_circle_public(
+    coop_id: str,
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    """Public endpoint — no auth. Used by invite preview pages."""
+    circle = await CooperativeGroupService.get_coop_group_by_id(db, coop_id)
+    if not circle:
+        raise HTTPException(status_code=404, detail="Circle not found")
+    return circle
+
+
+@router.get("/{coop_id}/members", response_model=list[CircleMemberDetail])
+async def get_circle_members(
+    coop_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    coop = await CooperativeGroupService.get_coop_group_by_id(db, coop_id)
+    if not coop:
+        raise HTTPException(status_code=404, detail="Circle not found")
+    return await CooperativeGroupService.get_circle_members(
+        db, coop_id, coop.current_round
+    )
+
+
+@router.get("/{coop_id}/history", response_model=list[CircleHistoryEntry])
+async def get_circle_history(
+    coop_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    return await CooperativeGroupService.get_circle_history(db, coop_id)
+
+
+
+
+
+
+@router.post("/{coop_id}/join", response_model=CoopGroupDetails)
+async def join_circle(
+    coop_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    """
+    Authenticated. Adds user as a member, calls Flow stub, returns updated circle.
+    """
+    coop = await CooperativeGroupService.get_coop_group_by_id(db, coop_id)
+    if not coop:
+        raise HTTPException(status_code=404, detail="Circle not found")
+
+    if coop.status == CooperativeStatus.inactive:
+        raise HTTPException(status_code=400, detail="This circle is no longer active")
+
+    # Check if already a member
+    existing = await CooperativeMembershipService.get_membership_by_user_and_group(
+        user.id, UUID(coop_id), db
+    )
+    if existing and existing.status == "accepted":
+        raise HTTPException(status_code=400, detail="Already a member of this circle")
+
+    # 3. Check capacity
+    if coop.member_count >= coop.max_members:
+        raise HTTPException(status_code=400, detail="This circle is full")
+
+    # Get next queue position
+    count_stmt = select(func.count()).where(
+        GroupMembership.group_id == UUID(coop_id),
+        GroupMembership.status == "accepted",
+    )
+    
+    member_count = (await db.execute(count_stmt)).scalar() or 0
+    next_position = member_count + 1
+
+    
+    # Submit to Flow stub — replace with real JoinCircle.cdc call later
+    try:
+        tx_id = await flow_service.join_circle(
+            circle_id=coop.chain_circle_id or 0,
+            member_address=user.flow_address or "",
+        )
+    except Exception as e:
+        logger.warning(f"Flow join_circle stub failed (non-fatal): {e}")
+        tx_id = None
+    
+    print("\n COnfirmed Memberships - next count", member_count, next_position, "\n")
+    # Create membership
+    membership_data = MembershipCreate(
+        user_id=user.id,
+        group_id=UUID(coop_id),
+        invited_by=coop.creator_id,
+        role="member",
+        status="accepted",
+        queue_position=next_position,
+    )
+    await CooperativeMembershipService.create_membership(db, membership_data, user)
+
+    print("\n Created membership\n")
+
+
+    # Activity log
+    try:
+        await ActivityService.log(db, ActivityCreate(
+            user_id=user.id,
+            type=ActivityType.joined_group.value,
+            description=f"You joined circle: {coop.name}",
+            group_id=UUID(coop_id),
+            entity_id=coop_id,
+            amount=None,
+        ))
+    except Exception as e:
+        logger.warning(f"Activity log failed (non-fatal): {e}")
+
+    # Notification
+    try:
+        await NotificationService.create_and_push_notification_to_user(
+            NotificationCreate(
+                user_id=user.id,
+                title="Circle joined",
+                message=f"You are now a member of '{coop.name}'.",
+                event_type="group",
+                type="success",
+                entity_url=f"/dashboard/circle/{coop_id}",
+            ),
+            db,
+        )
+    except Exception as e:
+        logger.warning(f"Notification failed (non-fatal): {e}")
+
+    updated = await CooperativeGroupService.get_coop_group_by_id(
+        db, coop_id, requesting_user_id=str(user.id)
+    )
+    return updated
+
+
+
+
+
+
+
+
+
+@router.get("/ext/{coop_id}")
+async def get_extended_coop(
+    coop_id: str, db: AsyncSession = Depends(get_async_db_session)
+):
+    """
+    Get extended data about a cooperative group by ID.
+    """
+    coop_group = await CooperativeGroupService.get_ext_coop_group_by_id(db, coop_id)
+    if not coop_group:
+        raise HTTPException(status_code=404, detail="Cooperative group not found")
+    return coop_group
+
+
+@router.patch("/{coop_id}", response_model=CoopGroupDetails)
+async def update_coop(
+    coop_id: str,
+    coop_update_data: CoopGroupUpdate,
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    """
+    Update a cooperative group's details by its ID.
+    """
+    updated_coop = await CooperativeGroupService.update_coop(
+        db, coop_id, coop_update_data
+    )
+    if not updated_coop:
+        raise HTTPException(status_code=404, detail="Cooperative group not found")
+    return updated_coop
+
+
+@router.delete("/{coop_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_coop(coop_id: str, db: AsyncSession = Depends(get_async_db_session)):
+    """
+    Delete a cooperative group by its ID.
+    Returns 204 No Content if successful.
+    """
+    deleted_coop = await CooperativeGroupService.delete_coop(db, coop_id)
+    if not deleted_coop:
+        raise HTTPException(status_code=404, detail="Cooperative group not found")
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+================================================================================
+FILE: src/domains/cooperatives/schemas.py
+================================================================================
+from datetime import datetime
+import json
+from typing import List, Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from uuid import UUID
+import enum
+
+from src.domains.cooperatives.models.cooperative import ContributionFrequency, CooperativeModel, PayoutStrategy
+
+
+class CooperativeStatus(str, enum.Enum):
+    pending = "pending"   
+    active = "active"
+    inactive = "inactive"
+    completed = "completed"
+
+
+
+# class CoopGroupBase(BaseModel):
+#     name: str
+
+
+
+
+class CoopGroupCreate(BaseModel):
+    name: str
+    creator_id: Optional[UUID] = None
+    chain_circle_id: Optional[int] = None
+    weekly_amount_usdc: Optional[float] = None
+    current_round: int = 0
+    is_complete: bool = False
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    member_phones: List[str] = Field(default_factory=list, description="List of invited phone numbers")
+    contribution_amount: float = Field(..., description="Amount in local currency (e.g., NGN)")
+    currency: str = Field(default="NGN")
+    contribution_frequency: ContributionFrequency
+    payout_strategy: PayoutStrategy  # : str = Field(default="rotating")
+    coop_model: CooperativeModel   # : str = Field(default="rosca")
+    max_members: int
+    target_amount: float
+    rotation_order: str = Field(default="sequential", description="sequential or random")
+    status: CooperativeStatus
+    rules: Optional[List[dict]]
+
+class CoopGroupDetails(BaseModel):
+    id: UUID
+    chain_circle_id: Optional[int] = None
+    name: str
+    creator_id: UUID
+    description: Optional[str] = None
+    image_url: str | None = None
+    currency: Optional[str]
+    contribution_amount: float
+    contribution_frequency: ContributionFrequency
+    payout_strategy: PayoutStrategy
+    coop_model: CooperativeModel
+    max_members: int
+    target_amount: float
+    status: CooperativeStatus
+    
+    rotation_order: str
+    current_round: int
+    is_complete: bool
+    member_count: int = 0
+
+    your_position_in_queue: Optional[int] = 1
+ 
+    rules: List[dict] | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+
+class JoinCircleResponse(BaseModel):
+    tx_id: str
+    status: str
+    message: str
+
+
+class CoopGroupTargetSummary(BaseModel):
+    id: UUID
+    name: str
+    contribution_amount: int
+    target_amount: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CoopGroupUpdate(BaseModel):
+    name: str
+    contribution_amount: int
+    description: str | None = None
+    contribution_frequency: ContributionFrequency
+    payout_strategy: PayoutStrategy
+    coop_model: CooperativeModel
+    max_members: int
+    target_amount: int
+    status: CooperativeStatus
+
+================================================================================
+FILE: src/domains/cooperatives/service.py
+================================================================================
+import datetime
+from typing import List, Optional
+from uuid import UUID
+from fastapi.encoders import jsonable_encoder
+from redis import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select, desc
+from sqlalchemy.orm import joinedload
+from fastapi import HTTPException, status
+
+from src.domains.cooperatives.models.enums import ContributionFrequency
+from src.domains.contributions.schemas import CircleHistoryEntry, ContributionDetail
+from src.domains.memberships.schemas import CircleMemberDetail, MembershipExtDetails
+from src.domains.cooperatives.schemas import (
+    CoopGroupCreate,
+    CoopGroupDetails,
+    CoopGroupUpdate,
+)
+from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.dashboard.schemas import ExploreGroups
+from src.domains.cooperatives.models.cooperative import CooperativeStatus, CoopCooperative
+
+from src.domains.users.models import User
+from src.domains.contributions.models import Contribution, ContributionStatus
+from src.domains.memberships.models import GroupMembership, MembershipStatus
+from src.domains.cooperatives.schemas import (
+    CooperativeStatus,
+)
+
+from src.shared.utils.logger import logger
+from src.infra.cache.redis_client import get_cache, update_cache
+from config import AppConfig as config
+
+
+class CooperativeGroupService:
+    # Create and manage cooperative groups.
+
+    @staticmethod
+    async def create_coop(coop_data: CoopGroupCreate, db: AsyncSession) -> CoopCooperative:
+        try:
+            new_coop_group = CoopCooperative(
+                name=coop_data.name,
+                description=coop_data.description,
+                image_url=coop_data.image_url,
+                creator_id=coop_data.creator_id,
+                max_members=coop_data.max_members,
+                contribution_amount=coop_data.contribution_amount,
+                contribution_frequency=coop_data.contribution_frequency,
+                payout_strategy=coop_data.payout_strategy,
+                coop_model=coop_data.coop_model,
+                target_amount=coop_data.target_amount,
+                status=coop_data.status,
+                rules=coop_data.rules or None,
+                # Chain fields
+                chain_circle_id=coop_data.chain_circle_id,
+                weekly_amount_usdc=coop_data.weekly_amount_usdc,
+                currency=coop_data.currency,
+                rotation_order=coop_data.rotation_order,
+                current_round=coop_data.current_round,
+                is_complete=coop_data.is_complete,
+            )
+            db.add(new_coop_group)
+            await db.commit()
+            await db.refresh(new_coop_group)
+            logger.info(f"\n\nCoop created: {new_coop_group.id}\n")
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"create_coop failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Could not create cooperative group — {str(e)}",
+            )
+        return new_coop_group
+
+
+    @staticmethod
+    async def get_coop_groups(db: AsyncSession, skip: int = 0, limit: int = 10):
+        try:
+            stmt = (
+                select(CoopCooperative)
+                .order_by(desc(CoopCooperative.created_at))
+                .offset(skip)
+                .limit(limit)
+            )
+            result = await db.execute(stmt)
+            coop_groups = result.scalars().all()
+        except Exception as e:
+            logger.error(e)
+            raise e
+        return coop_groups
+
+
+
+
+
+
+
+
+    @staticmethod
+    async def get_coop_group_by_id(
+        db: AsyncSession, coop_group_id: str, requesting_user_id: Optional[str] = None
+    ) -> Optional[CoopGroupDetails]:
+        try:
+            stmt = select(CoopCooperative).where(
+                CoopCooperative.id == coop_group_id
+            )
+            result = await db.execute(stmt)
+            coop = result.scalars().first()
+            if not coop:
+                return None
+
+            # Member count
+            count_stmt = select(func.count()).where(
+                GroupMembership.group_id == coop.id,
+                GroupMembership.status == "accepted",
+            )
+            member_count = (await db.execute(count_stmt)).scalar() or 0
+
+            details = CoopGroupDetails.model_validate(coop)
+            details.member_count = member_count
+
+            # Caller's queue position
+            if requesting_user_id:
+                pos_stmt = select(GroupMembership.payout_position).where(
+                    GroupMembership.group_id == coop.id,
+                    GroupMembership.user_id == requesting_user_id,
+                )
+                pos = (await db.execute(pos_stmt)).scalar()
+                details.your_position_in_queue = pos
+
+            return details
+        except Exception as e:
+            logger.error(f"get_coop_group_by_id: {e}")
+            raise
+
+    @staticmethod
+    async def get_user_circles(
+        db: AsyncSession, user_id: str
+    ) -> list[CoopGroupDetails]:
+        stmt = (
+            select(CoopCooperative)
+            .join(GroupMembership, GroupMembership.group_id == CoopCooperative.id)
+            .where(
+                GroupMembership.user_id == user_id,
+                GroupMembership.status == "accepted",
+            )
+            .order_by(CoopCooperative.created_at.desc())
+        )
+        result = await db.execute(stmt)
+        groups = result.scalars().all()
+
+        out = []
+        for g in groups:
+            count_stmt = select(func.count()).where(
+                GroupMembership.group_id == g.id,
+                GroupMembership.status == "accepted",
+            )
+            member_count = (await db.execute(count_stmt)).scalar() or 0
+            details = CoopGroupDetails.model_validate(g)
+            details.member_count = member_count
+            out.append(details)
+        return out
+
+    @staticmethod
+    async def get_circle_members(
+        db: AsyncSession, circle_id: str, current_round: int
+    ) -> list[CircleMemberDetail]:
+        stmt = (
+            select(GroupMembership, User)
+            .join(User, User.id == GroupMembership.user_id)
+            .where(
+                GroupMembership.group_id == circle_id,
+                GroupMembership.status == "accepted",
+            )
+            .order_by(GroupMembership.payout_position)
+        )
+        rows = (await db.execute(stmt)).all()
+
+        # Check who contributed this round
+        contrib_stmt = select(Contribution.user_id).where(
+            Contribution.group_id == circle_id,
+            Contribution.round_number == current_round,
+        )
+        contributed_ids = set(
+            (await db.execute(contrib_stmt)).scalars().all()
+        )
+
+        return [
+            CircleMemberDetail(
+                user_id=membership.user_id,
+                group_id=membership.group_id,
+                role=membership.role.value,
+                status=membership.status.value,
+                payout_position=membership.payout_position,   # was queue_position
+                has_received_payout_this_cycle=membership.has_received_payout_this_cycle,
+                joined_at=membership.joined_at,
+                full_name=user.full_name,
+                username=user.username,
+                profile_picture_url=user.profile_picture_url,
+                flow_address=user.flow_address,
+                is_email_verified=user.is_email_verified,
+                has_contributed_this_round=membership.user_id in contributed_ids,
+            )
+            for membership, user in rows
+        ]
+
+    @staticmethod
+    async def get_circle_history(
+        db: AsyncSession, circle_id: str
+    ) -> list[CircleHistoryEntry]:
+        stmt = (
+            select(Contribution, User)
+            .join(User, User.id == Contribution.user_id)
+            .where(Contribution.group_id == circle_id)
+            .order_by(Contribution.created_at.desc())
+            .limit(50)
+        )
+        rows = (await db.execute(stmt)).all()
+
+        return [
+            CircleHistoryEntry(
+                contribution_id=contrib.id,
+                amount=float(contrib.amount),
+                currency=contrib.currency,
+                status=contrib.status.value,
+                note=contrib.note,
+                due_date=contrib.due_date,
+                fulfilled_at=contrib.fulfilled_at,
+                created_at=contrib.created_at,
+                member_name=user.full_name or user.username or "Member",
+                member_address=user.flow_address,
+                explorer_url=None,   # populate once tx_id column is added
+            )
+            for contrib, user in rows
+        ]
+
+
+
+
+
+
+
+
+
+
+
+    @staticmethod
+    async def get_ext_coop_group_by_id(db: AsyncSession, coop_group_id: str):
+        # 1. Fetch group
+        stmt = select(CoopCooperative).where(CoopCooperative.id == coop_group_id)
+        result = await db.execute(stmt)
+        group: CoopCooperative = result.scalars().first()
+
+        if not group:
+            return None
+
+        # 2. Get active memberships (ACCEPTED)
+        membership_stmt = (
+            select(GroupMembership)
+            .where(
+                GroupMembership.group_id == coop_group_id,
+                GroupMembership.status == MembershipStatus.accepted,
+            )
+            .options(joinedload(GroupMembership.user))
+        )
+        members_result = await db.execute(membership_stmt)
+        members = members_result.scalars().all()
+        member_ids = [m.user_id for m in members]
+
+        # 3. Get contributions by accepted members (completed)
+        contrib_stmt = select(Contribution).where(
+            Contribution.group_id == coop_group_id,
+            Contribution.user_id.in_(member_ids),
+            Contribution.status == ContributionStatus.completed,
+        )
+        contrib_result = await db.execute(contrib_stmt)
+        contributions = contrib_result.scalars().all()
+
+        # Calculate total_saved from the contributions you just fetched
+        total_saved = sum(c.amount or 0 for c in contributions)
+
+        # 4. Compute progress
+        progress = (
+            float(total_saved) / float(group.target_amount) * 100
+            if group.target_amount
+            else 0
+        )
+
+        # 5. Determine next contribution date
+        today = datetime.datetime.now()
+        freq = group.contribution_frequency
+        next_contrib_date = None
+        if freq == ContributionFrequency.weekly:
+            next_contrib_date = today + datetime.timedelta(weeks=1)
+        elif freq == ContributionFrequency.monthly:
+            next_contrib_date = today + datetime.timedelta(days=30)
+        elif freq == ContributionFrequency.daily:
+            next_contrib_date = today + datetime.timedelta(days=1)
+
+        next_contribution = {
+            "amount": float(group.contribution_amount),
+            "due_date": next_contrib_date.isoformat(),
+            "days_left": (
+                (next_contrib_date - today).days if next_contrib_date else None
+            ),
+        }
+
+        # 6. Determine next payout
+        next_payout = {
+            "amount": float(group.contribution_amount) * len(member_ids),
+            "recipient": "TBD",
+            "date": (
+                group.next_payout_date.isoformat() if group.next_payout_date else None
+            ),
+        }
+
+        # 7. Build final response
+        return {
+            **group.__dict__,
+            "total_saved": float(total_saved),
+            "progress": round(progress, 2),
+            "members": [MembershipExtDetails.model_validate(m) for m in members],
+            "members_count": len(member_ids),
+            "contributions": [
+                ContributionDetail.model_validate(c) for c in contributions
+            ],
+            "next_contribution": next_contribution,
+            "next_payout": next_payout,
+        }
+
+    @staticmethod
+    async def update_coop(
+        db: AsyncSession, coop_group_id: str, coop_group_update_data: CoopGroupUpdate
+    ) -> Optional[CoopCooperative]:
+        try:
+            stmt = select(CoopCooperative).where(CoopCooperative.id == coop_group_id)
+            result = await db.execute(stmt)
+            coop_group = result.scalars().first()
+
+            if not coop_group:
+                return None
+
+            for var, value in vars(coop_group_update_data).items():
+                setattr(coop_group, var, value) if value is not None else None
+
+            await db.commit()
+            await db.refresh(coop_group)
+        except Exception as e:
+            await db.rollback()
+            logger.error(e)
+            raise e
+
+        return coop_group
+
+    @staticmethod
+    async def delete_coop(
+        db: AsyncSession, coop_group_id: str
+    ) -> Optional[CoopCooperative]:
+        try:
+            stmt = select(CoopCooperative).where(CoopCooperative.id == coop_group_id)
+            result = await db.execute(stmt)
+            coop_group = result.scalars().first()
+
+            if not coop_group:
+                return None
+
+            await db.delete(coop_group)
+            await db.commit()
+        except Exception as e:
+            await db.rollback()
+            logger.error(e)
+            raise e
+
+        return coop_group
+
+    @staticmethod
+    async def get_my_coop_groups(
+        db: AsyncSession, user_id: UUID, skip: int = 0, limit: int = 10
+    ):
+        try:
+            stmt = (
+                select(CoopCooperative)
+                .join(GroupMembership)
+                .where(GroupMembership.user_id == user_id)
+                .offset(skip)
+                .limit(limit)
+            )
+            result = await db.execute(stmt)
+            groups = result.scalars().all()
+            return groups
+        except Exception as e:
+            logger.error(e)
+            raise
+
+    @staticmethod
+    async def get_user_and_suggested_groups(
+        user: AuthenticatedUser,
+        db: AsyncSession,
+        redis: Redis,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> ExploreGroups:
+        cache_key = f"groups:{user.id}:page:{page}"
+        cached = await get_cache(cache_key)
+        if cached:
+            logger.info(
+                f"🔄 Using cached user & suggested groups for user {user.id} (page {page})"
+            )
+            return cached
+
+        logger.info(
+            f"Fetching user & suggested groups for user {user.id} (page {page})"
+        )
+
+        # 1. Fetch user's group memberships
+        user_group_stmt = (
+            select(CoopCooperative)
+            .join(GroupMembership, CoopCooperative.id == GroupMembership.group_id)
+            .where(GroupMembership.user_id == user.id)
+            .options(joinedload(CoopCooperative.memberships))
+        )
+        user_groups_result = await db.execute(user_group_stmt)
+        user_groups: List[CoopCooperative] = (
+            user_groups_result.unique().scalars().all()
+        )
+        user_group_ids = [group.id for group in user_groups]
+
+        # 2. Fetch suggested groups (not already joined)
+        offset = (page - 1) * page_size
+        suggested_group_stmt = (
+            select(CoopCooperative)
+            .where(
+                CoopCooperative.status == CooperativeStatus.active,
+                CoopCooperative.id.notin_(user_group_ids),
+            )
+            .limit(page_size)
+            .offset(offset)
+        )
+        suggested_groups_result = await db.execute(suggested_group_stmt)
+        suggested_groups: List[CoopCooperative] = (
+            suggested_groups_result.scalars().all()
+        )
+
+        result = ExploreGroups(
+            user_groups=[CoopGroupDetails.model_validate(g) for g in user_groups],
+            suggested_groups=[
+                CoopGroupDetails.model_validate(g) for g in suggested_groups
+            ],
+        )
+        result_serializable = jsonable_encoder(result)
+
+        await update_cache(cache_key, result_serializable, ttl=300)
+        logger.info(
+            f"📦 Cached user & suggested groups for user {user.id} (page {page})"
+        )
+
+        return result_serializable
+
+================================================================================
+FILE: src/domains/cooperatives/services/__init__.py
+================================================================================
+from .cooperative_service import CooperativeService
+from .rule_services import (
+    DecisionRuleService,
+    FinancialRuleService,
+    GovernanceRuleService,
+    MembershipRuleService,
+)
+from .goal_service import GoalService
+from .ownership_share_service import OwnershipShareService
+from .beneficiary_pattern_service import BeneficiaryPatternService
+from .goal_category_service import GoalCategoryService
+
+__all__ = [
+    "CooperativeService",
+    "GovernanceRuleService",
+    "MembershipRuleService",
+    "FinancialRuleService",
+    "DecisionRuleService",
+    "GoalService",
+    "OwnershipShareService",
+    "BeneficiaryPatternService",
+    "GoalCategoryService",
+]
+
+================================================================================
+FILE: src/domains/cooperatives/services/beneficiary_pattern_service.py
+================================================================================
+from __future__ import annotations
+
+from uuid import UUID
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domains.cooperatives.models.goals import CoopBeneficiaryPattern
+from src.domains.cooperatives.repositories.beneficiary_pattern_repository import BeneficiaryPatternRepository
+
+
+class BeneficiaryPatternService:
+    def __init__(self, session: AsyncSession) -> None:
+        self._repo = BeneficiaryPatternRepository(session)
+
+    async def list(self):
+        return await self._repo.list()
+
+    async def get_by_id(self, pattern_id: UUID | str) -> CoopBeneficiaryPattern | None:
+        return await self._repo.get_by_id(pattern_id)
+
+    async def get_by_code(self, code: str) -> CoopBeneficiaryPattern | None:
+        return await self._repo.get_by_code(code)
+
+================================================================================
+FILE: src/domains/cooperatives/services/cooperative_service.py
+================================================================================
+from __future__ import annotations
+
+from typing import Any
+from uuid import UUID
+
+from src.domains.cooperatives.events import CooperativeActivated, EventDispatcher, NoOpEventDispatcher
+from src.domains.cooperatives.exceptions import CooperativeNotFoundError, IllegalStatusTransitionError, NotAuthorizedError
+from src.domains.cooperatives.models.cooperative import CoopCooperative
+from src.domains.cooperatives.models.enums import CooperativeStatus
+from src.domains.cooperatives.uow import UnitOfWork
+
+
+class CooperativeService:
+    def __init__(self, uow: UnitOfWork, events: EventDispatcher | None = None, logger: Any | None = None) -> None:
+        self._uow = uow
+        self._events = events or NoOpEventDispatcher()
+        self._logger = logger
+
+    async def create(self, *, name: str, description: str | None = None, created_by: UUID | str) -> CoopCooperative:
+        created_by_uuid = created_by if isinstance(created_by, UUID) else UUID(str(created_by))
+        cooperative = CoopCooperative(
+            name=name,
+            description=description,
+            created_by=created_by_uuid,
+        )
+        await self._uow.cooperatives.add(cooperative)
+        await self._uow.commit()
+        return cooperative
+
+    async def get_by_id(self, cooperative_id: UUID | str) -> CoopCooperative | None:
+        return await self._uow.cooperatives.get_by_id(cooperative_id)
+
+    async def list(self, *, limit: int = 50):
+        return await self._uow.cooperatives.list(limit=limit)
+
+    async def list_cooperatives(self, filters: dict[str, Any] | None = None, page: int = 1, page_size: int = 20):
+        return await self._uow.cooperatives.list(limit=page_size)
+
+    async def get_cooperative(self, cooperative_id: UUID | str) -> CoopCooperative:
+        cooperative = await self._uow.cooperatives.get_by_id(cooperative_id)
+        if cooperative is None:
+            raise CooperativeNotFoundError(str(cooperative_id))
+        return cooperative
+
+    async def get_cooperative_detail(self, cooperative_id: UUID | str) -> dict[str, Any]:
+        cooperative = await self.get_cooperative(cooperative_id)
+        return {
+            "cooperative": cooperative,
+            "rules": {},
+            "member_count": 0,
+            "goal_count": 0,
+        }
+
+    async def update(self, cooperative_id: UUID | str, acting_user_id: UUID | str, **fields: Any) -> CoopCooperative:
+        cooperative = await self.get_cooperative(cooperative_id)
+        if acting_user_id is not None:
+            # auth is intentionally lightweight at this scaffold stage
+            pass
+        for key, value in fields.items():
+            if key in {"name", "description", "cover_image"}:
+                setattr(cooperative, key, value)
+        await self._uow.commit()
+        return cooperative
+
+    async def activate(self, cooperative_id: UUID | str, acting_user_id: UUID | str) -> CoopCooperative:
+        cooperative = await self.get_cooperative(cooperative_id)
+        if cooperative.status != CooperativeStatus.PENDING:
+            raise IllegalStatusTransitionError(f"{cooperative.status} -> {CooperativeStatus.ACTIVE}")
+        if acting_user_id is None:
+            raise NotAuthorizedError()
+
+        cooperative.status = CooperativeStatus.ACTIVE
+        await self._uow.commit()
+        if self._logger is not None:
+            self._logger.info(
+                "cooperative.activated",
+                extra={"cooperative_id": str(cooperative.id), "actor_id": str(acting_user_id)},
+            )
+        await self._events.dispatch(CooperativeActivated(cooperative_id=cooperative.id, actor_id=UUID(str(acting_user_id))))
+        return cooperative
+
+================================================================================
+FILE: src/domains/cooperatives/services/goal_category_service.py
+================================================================================
+from __future__ import annotations
+
+from uuid import UUID
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domains.cooperatives.models.goals import CoopGoalCategory
+from src.domains.cooperatives.repositories.goal_category_repository import GoalCategoryRepository
+
+
+class GoalCategoryService:
+    def __init__(self, session: AsyncSession) -> None:
+        self._repo = GoalCategoryRepository(session)
+
+    async def add(self, category: CoopGoalCategory) -> CoopGoalCategory:
+        return await self._repo.add(category)
+
+    async def list(self):
+        return await self._repo.list()
+
+    async def get_by_id(self, category_id: UUID | str) -> CoopGoalCategory | None:
+        return await self._repo.get_by_id(category_id)
+
+    async def get_by_code(self, code: str) -> CoopGoalCategory | None:
+        return await self._repo.get_by_code(code)
+
+================================================================================
+FILE: src/domains/cooperatives/services/goal_service.py
+================================================================================
+from __future__ import annotations
+
+from typing import Any
+from uuid import UUID
+
+from src.domains.cooperatives.events import EventDispatcher, GoalContractCreated, NoOpEventDispatcher
+from src.domains.cooperatives.exceptions import GoalNotFoundError
+from src.domains.cooperatives.models.goals import CoopGoal
+from src.domains.cooperatives.uow import CooperativeUnitOfWork
+
+
+class GoalService:
+    def __init__(self, uow: CooperativeUnitOfWork, events: EventDispatcher | None = None, logger: Any | None = None) -> None:
+        self._uow = uow
+        self._events = events or NoOpEventDispatcher()
+        self._logger = logger
+
+    async def create(self, goal: CoopGoal) -> CoopGoal:
+        await self._uow.goals.add(goal)
+        await self._uow.commit()
+        return goal
+
+    async def get_by_id(self, goal_id: UUID | str) -> CoopGoal | None:
+        return await self._uow.goals.get_by_id(goal_id)
+
+    async def list_for_cooperative(self, cooperative_id: UUID | str):
+        return await self._uow.goals.list_for_cooperative(cooperative_id)
+
+    async def list_goals(self, cooperative_id: UUID | str, filters: dict[str, Any] | None = None, page: int = 1, page_size: int = 20):
+        return await self._uow.goals.list_for_cooperative(cooperative_id)
+
+    async def get_goal(self, goal_id: UUID | str) -> CoopGoal:
+        goal = await self._uow.goals.get_by_id(goal_id)
+        if goal is None:
+            raise GoalNotFoundError(str(goal_id))
+        return goal
+
+    async def get_goal_detail(self, goal_id: UUID | str) -> dict[str, Any]:
+        goal = await self.get_goal(goal_id)
+        return {"goal": goal, "contract": None, "ownership_shares": []}
+
+    async def update(self, goal_id: UUID | str, acting_user_id: UUID | str, **fields: Any) -> CoopGoal:
+        goal = await self.get_goal(goal_id)
+        for key, value in fields.items():
+            if key in {"name", "description", "target_amount", "currency", "target_date"}:
+                setattr(goal, key, value)
+        await self._uow.commit()
+        return goal
+
+    async def create_goal_contract(self, goal_id: UUID | str) -> dict[str, Any]:
+        goal = await self.get_goal(goal_id)
+        await self._uow.commit()
+        await self._events.dispatch(GoalContractCreated(goal_id=goal.id, cooperative_id=goal.cooperative_id))
+        return {"goal": goal, "contract": None}
+
+================================================================================
+FILE: src/domains/cooperatives/services/ownership_share_service.py
+================================================================================
+from __future__ import annotations
+
+from typing import Any
+from uuid import UUID
+
+from src.domains.cooperatives.events import NoOpEventDispatcher
+from src.domains.cooperatives.models.goals import CoopOwnershipShare
+from src.domains.cooperatives.uow import CooperativeUnitOfWork
+
+
+class OwnershipShareService:
+    def __init__(self, uow: CooperativeUnitOfWork, events: Any | None = None, logger: Any | None = None) -> None:
+        self._uow = uow
+        self._events = events or NoOpEventDispatcher()
+        self._logger = logger
+
+    async def add(self, share: CoopOwnershipShare) -> CoopOwnershipShare:
+        await self._uow.ownership_shares.add(share)
+        await self._uow.commit()
+        return share
+
+    async def list_for_goal(self, goal_id: UUID | str):
+        return await self._uow.ownership_shares.list_for_goal(goal_id)
+
+    async def list_shares(self, goal_id: UUID | str):
+        return await self.list_for_goal(goal_id)
+
+================================================================================
+FILE: src/domains/cooperatives/services/rule_services.py
+================================================================================
+from __future__ import annotations
+
+from typing import Any
+from uuid import UUID
+
+from src.domains.cooperatives.events import EventDispatcher, NoOpEventDispatcher, RuleVersionCreated
+from src.domains.cooperatives.models.rules import (
+    CoopDecisionRule,
+    CoopFinancialRule,
+    CoopGovernanceRule,
+    CoopMembershipRule,
+)
+from src.domains.cooperatives.uow import CooperativeUnitOfWork
+
+
+class GovernanceRuleService:
+    def __init__(self, uow: CooperativeUnitOfWork, events: EventDispatcher | None = None, logger: Any | None = None) -> None:
+        self._uow = uow
+        self._events = events or NoOpEventDispatcher()
+        self._logger = logger
+
+    async def create(self, rule: CoopGovernanceRule) -> CoopGovernanceRule:
+        await self._uow.rules.add(rule)
+        await self._uow.commit()
+        await self._events.dispatch(RuleVersionCreated(cooperative_id=rule.cooperative_id, rule_type="governance", version=rule.version))
+        return rule
+
+    async def get_active(self, cooperative_id: UUID | str) -> CoopGovernanceRule | None:
+        return await self._uow.rules.get_active_for_cooperative(CoopGovernanceRule, cooperative_id)
+
+
+class MembershipRuleService:
+    def __init__(self, uow: CooperativeUnitOfWork, events: EventDispatcher | None = None, logger: Any | None = None) -> None:
+        self._uow = uow
+        self._events = events or NoOpEventDispatcher()
+        self._logger = logger
+
+    async def create(self, rule: CoopMembershipRule) -> CoopMembershipRule:
+        await self._uow.rules.add(rule)
+        await self._uow.commit()
+        await self._events.dispatch(RuleVersionCreated(cooperative_id=rule.cooperative_id, rule_type="membership", version=rule.version))
+        return rule
+
+    async def get_active(self, cooperative_id: UUID | str) -> CoopMembershipRule | None:
+        return await self._uow.rules.get_active_for_cooperative(CoopMembershipRule, cooperative_id)
+
+
+class FinancialRuleService:
+    def __init__(self, uow: CooperativeUnitOfWork, events: EventDispatcher | None = None, logger: Any | None = None) -> None:
+        self._uow = uow
+        self._events = events or NoOpEventDispatcher()
+        self._logger = logger
+
+    async def create(self, rule: CoopFinancialRule) -> CoopFinancialRule:
+        await self._uow.rules.add(rule)
+        await self._uow.commit()
+        await self._events.dispatch(RuleVersionCreated(cooperative_id=rule.cooperative_id, rule_type="financial", version=rule.version))
+        return rule
+
+    async def get_active(self, cooperative_id: UUID | str) -> CoopFinancialRule | None:
+        return await self._uow.rules.get_active_for_cooperative(CoopFinancialRule, cooperative_id)
+
+
+class DecisionRuleService:
+    def __init__(self, uow: CooperativeUnitOfWork, events: EventDispatcher | None = None, logger: Any | None = None) -> None:
+        self._uow = uow
+        self._events = events or NoOpEventDispatcher()
+        self._logger = logger
+
+    async def create(self, rule: CoopDecisionRule) -> CoopDecisionRule:
+        await self._uow.rules.add(rule)
+        await self._uow.commit()
+        await self._events.dispatch(RuleVersionCreated(cooperative_id=rule.cooperative_id, rule_type="decision", version=rule.version))
+        return rule
+
+    async def get_active(self, cooperative_id: UUID | str) -> CoopDecisionRule | None:
+        return await self._uow.rules.get_active_for_cooperative(CoopDecisionRule, cooperative_id)
+
+================================================================================
+FILE: src/domains/cooperatives/uow.py
+================================================================================
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domains.cooperatives.repositories.beneficiary_pattern_repository import BeneficiaryPatternRepository
+from src.domains.cooperatives.repositories.cooperative_repository import CooperativeRepository
+from src.domains.cooperatives.repositories.goal_category_repository import GoalCategoryRepository
+from src.domains.cooperatives.repositories.goal_repository import GoalRepository
+from src.domains.cooperatives.repositories.ownership_share_repository import OwnershipShareRepository
+from src.domains.cooperatives.repositories.rules_repository import RulesRepository
+
+
+class UnitOfWork:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.cooperatives = CooperativeRepository(session)
+        self.rules = RulesRepository(session)          # generic, shared across the 4 rule types
+        self.goals = GoalRepository(session)
+        self.ownership_shares = OwnershipShareRepository(session)
+
+    async def __aenter__(self) -> "UnitOfWork":
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        if exc_type is not None:
+            await self.session.rollback()
+        # no implicit commit on clean exit — commit is explicit, see below
+
+    async def commit(self) -> None:
+        await self.session.commit()
+
+    async def rollback(self) -> None:
+        await self.session.rollback()
