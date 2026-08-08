@@ -65,7 +65,7 @@ class AIInsight(Base):
 
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     group_id = Column(
-        PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=True
+        PGUUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=True
     )
 
     category = Column(
