@@ -5,7 +5,7 @@ from sqlalchemy import DateTime, Date, Integer, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.infra.db.database import Base 
+from src.infra.db.database import Base
 
 __all__ = ["Base", "UUIDPrimaryKeyMixin", "TimestampMixin", "VersionedMixin"]
 
