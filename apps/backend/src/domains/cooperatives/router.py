@@ -29,8 +29,6 @@ from src.infra.db.dependencies import get_async_db_session
 from src.domains.cooperatives.service import CooperativeGroupService
 from src.domains.memberships.service import CooperativeMembershipService
 
-# from app.services.chain import w3, poolfactory, from_account, PRIVATE_KEY
-
 from src.infra.payments.flow_service import flow_service
 from src.infra.exchange.fx_service import fx_service
 from src.domains.memberships.models import GroupMembership
