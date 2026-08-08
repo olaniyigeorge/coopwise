@@ -21,6 +21,7 @@ class CooperativeStatus(str, Enum):
     ARCHIVED = "archived"
     DELETED = "deleted"
 
+
 class DecisionModel(str, Enum):
     ADMIN_LED = "admin_led"
     MAJORITY_VOTE = "majority_vote"
@@ -68,10 +69,10 @@ class PayoutStrategy(str, Enum):
 
 class RotationOrder(str, Enum):
     """Only meaningful when `payout_strategy == rotating`."""
- 
+
     SEQUENTIAL = "sequential"
     RANDOM = "random"
-    
+
 
 class EscrowMode(str, Enum):
     SIMULATED_OFFCHAIN = "simulated_offchain"  # Phase 1
@@ -96,10 +97,10 @@ class DecisionMechanism(str, Enum):
 
 class BeneficiaryPatternCode(str, Enum):
     """
-    This is intentionally an Enum (not free-text) even though 
-    `beneficiary_patterns` is a DB-driven catalog table — new 
-    patterns are "closer to a schema migration than a data insert" 
-    per the doc, so a code change is expected to accompany a new row 
+    This is intentionally an Enum (not free-text) even though
+    `beneficiary_patterns` is a DB-driven catalog table — new
+    patterns are "closer to a schema migration than a data insert"
+    per the doc, so a code change is expected to accompany a new row
     anyway. Keeps `goal_contracts` branching logic (which fields
     are required per pattern) exhaustively checkable in code.
     """
@@ -116,12 +117,13 @@ class GoalStatus(str, Enum):
     COMPLETED = "completed"
     ABANDONED = "abandoned"
 
+
 class GoalParticipantStatus(str, Enum):
     WAITING = "waiting"
     PAID = "paid"
     SKIPPED = "skipped"
 
-    
+
 class ExitRuleType(str, Enum):
     """`pooled_for_shared` only."""
 
@@ -153,7 +155,7 @@ class CooperativeModel(str, Enum):
     and copy), while the actual contract mechanics still come from
     beneficiary_pattern, not from this field.
     """
- 
+
     AJO = "ajo"
     ESUSU = "esusu"
     ADASHE = "adashe"
