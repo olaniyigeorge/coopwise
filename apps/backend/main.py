@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import sqlalchemy
 
+from src.infra.db import all_models 
 from src.api.middlewares.middlewares import app_middleware, DistributedTokenBucketMiddleware
 from src.infra.cache.redis_client import redis_manager
 from src.infra.db.database import db_manager
@@ -29,7 +30,8 @@ async def lifespan(app: FastAPI):
             })
 
         db_manager.initialize(config.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1), **engine_kwargs)
-        await db_manager.create_tables()
+        if "sqlite" in config.DATABASE_URL:
+           await db_manager.create_tables()
 
         app.state.redis = await redis_manager.initialize(
             url=config.REDIS_URL,
