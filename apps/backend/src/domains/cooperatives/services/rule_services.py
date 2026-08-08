@@ -19,10 +19,17 @@ class GovernanceRuleService:
         self._events = events or NoOpEventDispatcher()
         self._logger = logger
 
-    async def create(self, rule: CoopGovernanceRule) -> CoopGovernanceRule:
+    async def create(self, rule: CoopGovernanceRule, *, acting_user_id: UUID | str) -> CoopGovernanceRule:
         await self._uow.rules.add(rule)
         await self._uow.commit()
-        await self._events.dispatch(RuleVersionCreated(cooperative_id=rule.cooperative_id, rule_type="governance", version=rule.version))
+        await self._events.dispatch(
+            RuleVersionCreated(
+                cooperative_id=rule.cooperative_id,
+                actor_id=UUID(str(acting_user_id)),
+                rule_type="governance",
+                version=rule.version,
+            )
+        )
         return rule
 
     async def get_active(self, cooperative_id: UUID | str) -> CoopGovernanceRule | None:
@@ -35,10 +42,17 @@ class MembershipRuleService:
         self._events = events or NoOpEventDispatcher()
         self._logger = logger
 
-    async def create(self, rule: CoopMembershipRule) -> CoopMembershipRule:
+    async def create(self, rule: CoopMembershipRule, *, acting_user_id: UUID | str) -> CoopMembershipRule:
         await self._uow.rules.add(rule)
         await self._uow.commit()
-        await self._events.dispatch(RuleVersionCreated(cooperative_id=rule.cooperative_id, rule_type="membership", version=rule.version))
+        await self._events.dispatch(
+            RuleVersionCreated(
+                cooperative_id=rule.cooperative_id,
+                actor_id=UUID(str(acting_user_id)),
+                rule_type="membership",
+                version=rule.version,
+            )
+        )
         return rule
 
     async def get_active(self, cooperative_id: UUID | str) -> CoopMembershipRule | None:
@@ -51,10 +65,17 @@ class FinancialRuleService:
         self._events = events or NoOpEventDispatcher()
         self._logger = logger
 
-    async def create(self, rule: CoopFinancialRule) -> CoopFinancialRule:
+    async def create(self, rule: CoopFinancialRule, *, acting_user_id: UUID | str) -> CoopFinancialRule:
         await self._uow.rules.add(rule)
         await self._uow.commit()
-        await self._events.dispatch(RuleVersionCreated(cooperative_id=rule.cooperative_id, rule_type="financial", version=rule.version))
+        await self._events.dispatch(
+            RuleVersionCreated(
+                cooperative_id=rule.cooperative_id,
+                actor_id=UUID(str(acting_user_id)),
+                rule_type="financial",
+                version=rule.version,
+            )
+        )
         return rule
 
     async def get_active(self, cooperative_id: UUID | str) -> CoopFinancialRule | None:
@@ -67,10 +88,18 @@ class DecisionRuleService:
         self._events = events or NoOpEventDispatcher()
         self._logger = logger
 
-    async def create(self, rule: CoopDecisionRule) -> CoopDecisionRule:
+    async def create(self, rule: CoopDecisionRule, *, acting_user_id: UUID | str) -> CoopDecisionRule:
         await self._uow.rules.add(rule)
         await self._uow.commit()
-        await self._events.dispatch(RuleVersionCreated(cooperative_id=rule.cooperative_id, rule_type="decision", version=rule.version))
+        await self._events.dispatch(
+            RuleVersionCreated(
+                cooperative_id=rule.cooperative_id,
+                actor_id=UUID(str(acting_user_id)),
+                rule_type="decision",
+                version=rule.version,
+                decision_type=rule.decision_type.value if hasattr(rule.decision_type, "value") else rule.decision_type,
+            )
+        )
         return rule
 
     async def get_active(self, cooperative_id: UUID | str) -> CoopDecisionRule | None:
