@@ -7,8 +7,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
     from src.domains.cooperatives.models.cooperative import CoopCooperative
-from apps.backend.src.domains.memberships.models.mixins import (
-    Base,
+from src.infra.db.database import Base
+from src.domains.cooperatives.models.mixins import (
     TimestampMixin,
     UUIDPrimaryKeyMixin,
 )
@@ -41,8 +41,8 @@ class CoopActivity(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         nullable=True,
     )
 
-    metadata: Mapped[dict | None] = mapped_column(JSONB)
-
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    
     cooperative: Mapped["CoopCooperative"] = relationship(
         back_populates="activities"
     )
