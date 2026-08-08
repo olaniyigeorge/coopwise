@@ -14,7 +14,7 @@ from src.domains.memberships.schemas import (
     MembershipCreate,
     MembershipDetails,
 )
-from src.domains.memberships.models import GroupMembership
+from src.domains.memberships.models.group_membership import GroupMembership
 from src.shared.utils.logger import logger
 from config import AppConfig as config
 from fastapi import HTTPException, status
