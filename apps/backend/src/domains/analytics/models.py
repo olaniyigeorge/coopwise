@@ -24,7 +24,7 @@ class ActivityLog(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     group_id = Column(
-        UUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=True
+        UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=True
     )
 
     type = Column(Enum(ActivityType), nullable=False)
