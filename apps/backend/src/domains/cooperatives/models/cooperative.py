@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from src.domains.users.models import User
 
 from src.domains.cooperatives.models.enums import CooperativeStatus, CooperativeModel
-from apps.backend.src.domains.memberships.models.mixins import (
+from src.domains.cooperatives.models.mixins import (
     Base,
     TimestampMixin,
     UUIDPrimaryKeyMixin,
