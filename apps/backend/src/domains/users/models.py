@@ -1,5 +1,12 @@
 from datetime import datetime
 from uuid import uuid4
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.domains.cooperatives.models.cooperative import CoopInvitation
+
+
+
 from src.domains.memberships.models.group_membership import GroupMembership
 from src.infra.db.database import Base
 from sqlalchemy import Boolean, CheckConstraint, Column, String, Enum, DateTime, Float
