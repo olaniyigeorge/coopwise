@@ -27,7 +27,7 @@ class GroupMembership(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     group_id = Column(
-        PGUUID(as_uuid=True), ForeignKey("cooperative_groups.id"), nullable=False
+        PGUUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False
     )
     role = Column(Enum(MembershipRole), default=MembershipRole.member, nullable=False)
     invite_code = Column(String, nullable=True)
