@@ -5,19 +5,11 @@ from sqlalchemy import pool
 from alembic import context
 
 from config import AppConfig
-
 from src.infra.db.database import Base
-from src.domains.cooperatives.models import *
-from src.domains.users.models import *
-from src.domains.analytics.models import *
-from src.domains.ai_chat.models import *
-from src.domains.contributions.models import *
-from src.domains.memberships.models import *
-from src.domains.notifications.models import *
-from src.domains.support.models import *
-from src.domains.wallets.models import *
-from src.domains.insights.models import *
-from src.domains.kyc.models import *
+
+from src.infra.db import all_models
+
+
 
 print("Registered tables:", Base.metadata.tables.keys())
 
@@ -37,8 +29,8 @@ raw_db_url  = AppConfig.DATABASE_URL
 sync_db_url = raw_db_url.replace("postgresql+asyncpg", "postgresql")
 
 
-print(f"\nraw_db_url: {raw_db_url}\n")
-print(f"\nsync_db_url: {sync_db_url}\n")
+# print(f"\nraw_db_url: {raw_db_url}\n")
+# print(f"\nsync_db_url: {sync_db_url}\n")
 
 
 # Disable configparser interpolation
