@@ -366,7 +366,7 @@ from fastapi import HTTPException, status
 
 from src.domains.cooperatives.models.cooperative import CoopCooperative, CooperativeStatus
 from src.domains.contributions.models import Contribution, ContributionStatus
-from src.domains.memberships.models import GroupMembership
+from src.domains.memberships.models.group_membership import GroupMembership
 from src.infra.blockchain.contract_service import contract_service
 
 
