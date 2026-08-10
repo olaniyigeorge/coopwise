@@ -1,6 +1,10 @@
 from __future__ import annotations
 from uuid import UUID
 
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from src.shared.utils.logger import logger
+
 
 class CooperativeDomainError(Exception):
     """Base class for every exception raised out of this domain's service layer.
@@ -93,3 +97,24 @@ class OwnershipShareOverallocatedError(CooperativeDomainError):
     def __init__(self, current_total_pct: float) -> None:
         self.current_total_pct = current_total_pct
         super().__init__(f"Ownership shares would total {current_total_pct}%, exceeding 100%")
+
+
+
+
+_STATUS_MAP: dict[type[CooperativeDomainError], int] = {
+    IllegalStatusTransitionError: 409,
+    NotAuthorizedError: 401,
+    CooperativeNotFoundError: 404,
+}
+
+
+def register_cooperative_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(CooperativeDomainError)
+    async def _cooperative_domain_error_handler(request: Request, exc: CooperativeDomainError):
+        status_code = _STATUS_MAP.get(type(exc), 400)
+        logger.warning(
+            "Cooperative domain error: %s",
+            str(exc),
+            extra={"error_type": type(exc).__name__, "path": request.url.path},
+        )
+        return JSONResponse(status_code=status_code, content={"detail": str(exc)})

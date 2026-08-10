@@ -1,9 +1,10 @@
 from contextlib import asynccontextmanager
+from fastapi.exceptions import ResponseValidationError
 import uvicorn
 from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import sqlalchemy
@@ -14,6 +15,8 @@ from src.infra.cache.redis_client import redis_manager
 from src.infra.db.database import db_manager
 from src.shared.utils.logger import logger
 from src.api.routers import router_list
+from src.domains.cooperatives.exceptions import register_cooperative_exception_handlers
+
 from config import AppConfig as config, rate_limit_rules
 
 @asynccontextmanager
@@ -56,6 +59,9 @@ app = FastAPI(
     docs_url="/api/docs",
     lifespan=lifespan,
 )
+
+# --- Exceptions ---
+register_cooperative_exception_handlers(app)
 
 # --- Routers ---
 for router in router_list:
