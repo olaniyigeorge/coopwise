@@ -110,6 +110,22 @@ class RuleNotFoundError(CooperativeDomainError):
         self.rule_type = rule_type
         super().__init__(f"No active {rule_type} rule found for cooperative {cooperative_id}")
 
+class GoalCategoryConflictError(CooperativeDomainError):
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(f"A goal category with code '{code}' already exists")
+
+class GoalContractAlreadyExistsError(CooperativeDomainError):
+    def __init__(self, goal_id: str) -> None:
+        super().__init__(f"Goal {goal_id} already has a contract")
+
+class InvalidContractFieldsError(CooperativeDomainError):
+    def __init__(self, pattern_code: str, invalid_fields: list[str]) -> None:
+        self.pattern_code = pattern_code
+        self.invalid_fields = invalid_fields
+        super().__init__(
+            f"Fields {invalid_fields} are not valid for beneficiary pattern '{pattern_code}'"
+        )
 
 
 
@@ -119,8 +135,10 @@ _STATUS_MAP: dict[type[CooperativeDomainError], int] = {
     CooperativeNotFoundError: 404,
     RuleVersionConflictError: 409,
     RuleNotFoundError: 404,
+    GoalCategoryConflictError: 409,
+    GoalContractAlreadyExistsError: 409,
+    InvalidContractFieldsError: 422,
 }
-
 
 
 

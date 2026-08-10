@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
+from src.domains.cooperatives.schemas import GoalContractCreate
 from src.domains.cooperatives.events import EventDispatcher, GoalContractCreated, GoalCreated, NoOpEventDispatcher
-from src.domains.cooperatives.exceptions import GoalNotFoundError
-from src.domains.cooperatives.models.goals import CoopGoal
+from src.domains.cooperatives.exceptions import GoalContractAlreadyExistsError, GoalNotFoundError, InvalidContractFieldsError
+from src.domains.cooperatives.models.goals import CoopGoal, CoopGoalContract
 from src.domains.cooperatives.uow import CooperativeUnitOfWork
 
 
@@ -50,12 +51,34 @@ class GoalService:
         await self._uow.commit()
         return goal
 
-    async def create_goal_contract(self, goal_id: UUID | str, *, acting_user_id: UUID | str) -> dict[str, Any]:
-        # NOTE: stub — doesn't persist a CoopGoalContract row yet, just commits whatever's
-        # already pending on the goal and emits the event. See router.py docstring for the
-        # follow-up needed before this is wired to real contract data.
+    _PATTERN_ALLOWED_FIELDS: dict[str, set[str]] = {
+        "rotating_tracked": {"visibility", "withdrawal_restriction", "deadline", "extra_terms"},
+        "pooled_for_one": {"beneficiary_user_id", "deadline", "withdrawal_restriction", "visibility", "extra_terms"},
+        "pooled_for_shared": {"exit_rule_type", "valuation_method", "visibility", "withdrawal_restriction", "extra_terms"},
+        "pooled_contingent": {"claim_eligibility_criteria", "visibility", "withdrawal_restriction", "extra_terms"},
+    }
+
+    async def create_goal_contract(
+        self, goal_id: UUID | str, data: GoalContractCreate, *, acting_user_id: UUID | str
+    ) -> CoopGoalContract:
         goal = await self.get_goal(goal_id)
+
+        existing = await self._uow.goal_contracts.get_by_goal_id(goal_id)
+        if existing is not None:
+            raise GoalContractAlreadyExistsError(str(goal_id))
+
+        pattern = await self._uow.beneficiary_patterns.get_by_id(goal.beneficiary_pattern_id)
+        allowed = self._PATTERN_ALLOWED_FIELDS.get(pattern.code, set())
+
+        submitted = data.model_dump(exclude_unset=True)
+        invalid = [f for f in submitted if submitted[f] is not None and f not in allowed]
+        if invalid:
+            raise InvalidContractFieldsError(pattern.code, invalid)
+
+        contract = CoopGoalContract(goal_id=goal.id, **data.model_dump())
+        await self._uow.goal_contracts.add(contract)
         await self._uow.commit()
+
         await self._events.dispatch(
             GoalContractCreated(
                 goal_id=goal.id,
@@ -63,4 +86,4 @@ class GoalService:
                 actor_id=UUID(str(acting_user_id)),
             )
         )
-        return {"goal": goal, "contract": None}
+        return contract
