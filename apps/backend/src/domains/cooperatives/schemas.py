@@ -165,6 +165,21 @@ class GoalContractCreate(BaseModel):
     deadline: date | None = None
     extra_terms: dict[str, Any] | None = None
 
+class GoalContractRead(BaseModel):
+    id: UUID
+    goal_id: UUID
+    visibility: str | None = None
+    withdrawal_restriction: str | None = None
+    beneficiary_user_id: UUID | None = None
+    exit_rule_type: str | None = None
+    valuation_method: str | None = None
+    claim_eligibility_criteria: dict | None = None
+    deadline: date | None = None
+    extra_terms: dict | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 class OwnershipShareCreate(BaseModel):
     user_id: UUID
@@ -199,6 +214,17 @@ class BeneficiaryPatternRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+
+class GoalCategoryCreate(BaseModel):
+    code: str
+    name: str
+    description: str | None = None
+    icon: str | None = None
+    parent_category_id: UUID | None = None
+    suggested_beneficiary_pattern_id: UUID | None = None
+
+
+
 class GoalCategoryRead(BaseModel):
     id: UUID
     code: str
@@ -206,6 +232,10 @@ class GoalCategoryRead(BaseModel):
     description: str | None = None
     icon: str | None = None
     parent_category_id: UUID | None = None
+    suggested_beneficiary_pattern_id: UUID | None = None
     is_system_defined: bool
+    created_by_cooperative_id: UUID | None = None
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

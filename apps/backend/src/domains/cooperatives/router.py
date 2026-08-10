@@ -15,7 +15,7 @@ from src.domains.cooperatives.dependencies import (
     get_membership_rule_service,
     get_ownership_share_service,
 )
-from src.domains.cooperatives.models.goals import CoopGoal, CoopOwnershipShare
+from src.domains.cooperatives.models.goals import CoopGoal, CoopGoalCategory, CoopOwnershipShare
 from src.domains.cooperatives.models.rules import (
     CoopDecisionRule,
     CoopFinancialRule,
@@ -29,8 +29,10 @@ from src.domains.cooperatives.schemas import (
     CooperativeUpdate,
     DecisionRuleCreate,
     FinancialRuleCreate,
+    GoalCategoryCreate,
     GoalCategoryRead,
     GoalContractCreate,
+    GoalContractRead,
     GoalCreate,
     GoalRead,
     GoalUpdate,
@@ -228,19 +230,18 @@ async def update_goal(
     return await service.update(goal_id, user.id, **fields)
 
 
-@router.post("/goals/{goal_id}/contract", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/goals/{goal_id}/contract",
+    response_model=GoalContractRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_goal_contract(
     goal_id: UUID,
     data: GoalContractCreate,
     user: AuthenticatedUser = Depends(get_current_user),
     service: GoalService = Depends(get_goal_service),
 ):
-    # NOTE: `data` isn't persisted yet — GoalService.create_goal_contract() is a stub
-    # (returns contract=None). Wire actual CoopGoalContract creation into that method
-    # before this endpoint does anything beyond emitting the event. Flagging rather than
-    # silently accepting the payload and dropping it.
-    return await service.create_goal_contract(goal_id, acting_user_id=user.id)
-
+    return await service.create_goal_contract(goal_id, data, acting_user_id=user.id)
 
 # --- Ownership shares (pooled_for_shared goals only) ---
 
@@ -271,6 +272,19 @@ async def list_beneficiary_patterns(
 ):
     return await service.list()
 
+
+@router.post(
+    "/{cooperative_id}/goal-categories",
+    response_model=GoalCategoryRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_goal_category(
+    cooperative_id: UUID,
+    data: GoalCategoryCreate,
+    user: AuthenticatedUser = Depends(get_current_user),
+    service: GoalCategoryService = Depends(get_goal_category_service),
+):
+    return await service.create(data, cooperative_id=cooperative_id)
 
 @router.get("/catalog/goal-categories", response_model=list[GoalCategoryRead])
 async def list_goal_categories(
