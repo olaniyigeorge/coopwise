@@ -98,6 +98,18 @@ class OwnershipShareOverallocatedError(CooperativeDomainError):
         self.current_total_pct = current_total_pct
         super().__init__(f"Ownership shares would total {current_total_pct}%, exceeding 100%")
 
+class RuleVersionConflictError(CooperativeDomainError):
+    def __init__(self, cooperative_id: str, rule_type: str) -> None:
+        self.cooperative_id = cooperative_id
+        self.rule_type = rule_type
+        super().__init__(f"A current {rule_type} rule already exists for cooperative {cooperative_id}")
+
+class RuleNotFoundError(CooperativeDomainError):
+    def __init__(self, cooperative_id: str, rule_type: str) -> None:
+        self.cooperative_id = cooperative_id
+        self.rule_type = rule_type
+        super().__init__(f"No active {rule_type} rule found for cooperative {cooperative_id}")
+
 
 
 
@@ -105,7 +117,12 @@ _STATUS_MAP: dict[type[CooperativeDomainError], int] = {
     IllegalStatusTransitionError: 409,
     NotAuthorizedError: 401,
     CooperativeNotFoundError: 404,
+    RuleVersionConflictError: 409,
+    RuleNotFoundError: 404,
 }
+
+
+
 
 
 def register_cooperative_exception_handlers(app: FastAPI) -> None:
