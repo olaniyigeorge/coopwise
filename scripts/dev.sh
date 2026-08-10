@@ -129,7 +129,7 @@ echo -e "${GREEN}
   CoopWise is running!
   Backend:  http://localhost:8000
   Frontend: http://localhost:3000
-  API Docs: http://localhost:8000/docs
+  API Docs: http://localhost:8000/api/docs
   Celery log: $CELERY_LOG
 ====================================
 ${NC}"
