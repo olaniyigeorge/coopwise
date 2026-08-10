@@ -96,35 +96,37 @@ class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
         rule = self._resolve_rule(request.url.path)
         capacity = float(rule["capacity"])
         refill_rate = float(rule["refill_rate"])
-
         client_id = self._get_client_id(request)
-        # keyed by rule's path_prefix, not just client — so a user's KYC
-        # bucket and their general API bucket are independent
         key = f"rate-limit:{rule.get('path_prefix', 'default')}:{client_id}"
-
         now_ms = int(time.time() * 1000)
+
         try:
             await self._ensure_script(r)
             result = await self._eval(r, key, capacity, refill_rate, now_ms)
             allowed, tokens_left = bool(result[0]), float(result[1])
+        except Exception as e:
+            # only Redis/script failures land here now — not downstream app errors
+            logger.error("Rate limiter error: %s. Allowing request.", type(e).__name__)
+            return await call_next(request)
 
-            if allowed:
-                response = await call_next(request)
-                response.headers["X-RateLimit-Limit"] = str(int(capacity))
-                response.headers["X-RateLimit-Remaining"] = str(max(0, int(tokens_left)))
-                return response
-
+        if not allowed:
             retry_after = self._retry_after_seconds(tokens_left, refill_rate)
-            logger.warning("Rate limit exceeded for '%s' on rule '%s' (tokens_left=%.3f)",
-                            client_id, rule.get("path_prefix"), tokens_left)
+            logger.warning(
+                "Rate limit exceeded for '%s' on rule '%s' (tokens_left=%.3f)",
+                client_id, rule.get("path_prefix"), tokens_left,
+            )
             return Response(
                 content="Too Many Requests", status_code=429,
                 headers={"Retry-After": str(retry_after), "X-RateLimit-Limit": str(int(capacity)),
-                         "X-RateLimit-Remaining": "0"},
+                        "X-RateLimit-Remaining": "0"},
             )
-        except Exception as e:
-            logger.error("Rate limiter error: %s. Allowing request.", e)
-            return await call_next(request)
+
+        # not wrapped in try/except — a downstream ResponseValidationError,
+        # or anything else raised by the app, propagates normally
+        response = await call_next(request)
+        response.headers["X-RateLimit-Limit"] = str(int(capacity))
+        response.headers["X-RateLimit-Remaining"] = str(max(0, int(tokens_left)))
+        return response
 
     async def _eval(self, r, key, capacity, refill_rate, now_ms):
         try:
