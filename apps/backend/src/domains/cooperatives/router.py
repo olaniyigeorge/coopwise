@@ -63,7 +63,7 @@ async def create_cooperative(
     user: AuthenticatedUser = Depends(get_current_user),
     service: CooperativeService = Depends(get_cooperative_service),
 ):
-    return await service.create(name=data.name, description=data.description, created_by=user.id)
+    return await service.create(**data.model_dump(), created_by=user.id)
 
 
 @router.get("", response_model=list[CooperativeRead])

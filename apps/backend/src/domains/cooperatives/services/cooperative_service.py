@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
+from src.shared.utils.logger import logger
 from src.domains.cooperatives.events import CooperativeActivated, EventDispatcher, NoOpEventDispatcher
 from src.domains.cooperatives.exceptions import CooperativeNotFoundError, IllegalStatusTransitionError, NotAuthorizedError
 from src.domains.cooperatives.models.cooperative import CoopCooperative
-from src.domains.cooperatives.models.enums import CooperativeStatus
+from src.domains.cooperatives.models.enums import CooperativeModel, CooperativeStatus
 from src.domains.cooperatives.uow import UnitOfWork
 
 
@@ -14,15 +15,29 @@ class CooperativeService:
     def __init__(self, uow: UnitOfWork, events: EventDispatcher | None = None, logger: Any | None = None) -> None:
         self._uow = uow
         self._events = events or NoOpEventDispatcher()
-        self._logger = logger
 
-    async def create(self, *, name: str, description: str | None = None, created_by: UUID | str) -> CoopCooperative:
-        created_by_uuid = created_by if isinstance(created_by, UUID) else UUID(str(created_by))
+    async def create(
+        self,
+        *,
+        name: str,
+        description: str | None = None,
+        cover_image: str | None = None,
+        coop_model: CooperativeModel = CooperativeModel.COOP,
+        created_by: UUID | str,
+    ) -> CoopCooperative:
+        created_by_uuid = (
+            created_by if isinstance(created_by, UUID) else UUID(str(created_by))
+        )
+
         cooperative = CoopCooperative(
             name=name,
             description=description,
+            cover_image=cover_image,
+            status=CooperativeStatus.PENDING,
+            coop_model=coop_model,
             created_by=created_by_uuid,
         )
+
         await self._uow.cooperatives.add(cooperative)
         await self._uow.commit()
         return cooperative
@@ -71,10 +86,6 @@ class CooperativeService:
 
         cooperative.status = CooperativeStatus.ACTIVE
         await self._uow.commit()
-        if self._logger is not None:
-            self._logger.info(
-                "cooperative.activated",
-                extra={"cooperative_id": str(cooperative.id), "actor_id": str(acting_user_id)},
-            )
-        await self._events.dispatch(CooperativeActivated(cooperative_id=cooperative.id, actor_id=UUID(str(acting_user_id))))
+        logger.info(f"cooperative.activated: cooperative_id={str(cooperative.id)}, actor_id={str(acting_user_id)}")
+        await self._events.dispatch(CooperativeActivated(cooperative_id=cooperative.id, actor_id=UUID(str(acting_user_id))))        
         return cooperative

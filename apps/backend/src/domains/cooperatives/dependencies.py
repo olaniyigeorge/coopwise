@@ -15,12 +15,12 @@ from src.domains.cooperatives.services.rule_services import (
     GovernanceRuleService,
     MembershipRuleService,
 )
-from src.domains.cooperatives.uow import UnitOfWork
+from src.domains.cooperatives.uow import CooperativeUnitOfWork
 from src.infra.db.dependencies import get_async_db_session
 
 
-async def get_uow(session: AsyncSession = Depends(get_async_db_session)) -> UnitOfWork:
-    return UnitOfWork(session)
+async def get_uow(session: AsyncSession = Depends(get_async_db_session)) -> CooperativeUnitOfWork:
+    return CooperativeUnitOfWork(session)
 
 
 def get_event_dispatcher() -> EventDispatcher:
@@ -30,49 +30,49 @@ def get_event_dispatcher() -> EventDispatcher:
 
 
 async def get_cooperative_service(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: CooperativeUnitOfWork = Depends(get_uow),
     events: EventDispatcher = Depends(get_event_dispatcher),
 ) -> CooperativeService:
     return CooperativeService(uow, events)
 
 
 def get_governance_rule_service(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: CooperativeUnitOfWork = Depends(get_uow),
     events: EventDispatcher = Depends(get_event_dispatcher),
 ) -> GovernanceRuleService:
     return GovernanceRuleService(uow, events)
 
 
 def get_membership_rule_service(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: CooperativeUnitOfWork = Depends(get_uow),
     events: EventDispatcher = Depends(get_event_dispatcher),
 ) -> MembershipRuleService:
     return MembershipRuleService(uow, events)
 
 
 def get_financial_rule_service(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: CooperativeUnitOfWork = Depends(get_uow),
     events: EventDispatcher = Depends(get_event_dispatcher),
 ) -> FinancialRuleService:
     return FinancialRuleService(uow, events)
 
 
 def get_decision_rule_service(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: CooperativeUnitOfWork = Depends(get_uow),
     events: EventDispatcher = Depends(get_event_dispatcher),
 ) -> DecisionRuleService:
     return DecisionRuleService(uow, events)
 
 
 def get_goal_service(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: CooperativeUnitOfWork = Depends(get_uow),
     events: EventDispatcher = Depends(get_event_dispatcher),
 ) -> GoalService:
     return GoalService(uow, events)
 
 
 def get_ownership_share_service(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: CooperativeUnitOfWork = Depends(get_uow),
     events: EventDispatcher = Depends(get_event_dispatcher),
 ) -> OwnershipShareService:
     return OwnershipShareService(uow, events)

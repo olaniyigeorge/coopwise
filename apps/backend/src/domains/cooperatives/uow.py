@@ -12,7 +12,7 @@ class UnitOfWork:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.cooperatives = CooperativeRepository(session)
-        self.rules = RulesRepository(session)  # generic, shared across the 4 rule types
+        self.rules = RulesRepository(session) 
         self.goals = GoalRepository(session)
         self.ownership_shares = OwnershipShareRepository(session)
 
