@@ -106,6 +106,16 @@ class RuleRead(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class CooperativeFullRead(BaseModel):
+    cooperative: CooperativeRead
+    governance_rule: RuleRead | None
+    membership_rule: RuleRead | None
+    financial_rule: RuleRead | None
+    decision_rule: RuleRead | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 
 # --- Goals ---
 

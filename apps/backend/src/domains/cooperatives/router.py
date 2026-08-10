@@ -82,6 +82,14 @@ async def get_cooperative(
     return await service.get_cooperative(cooperative_id)
 
 
+# @router.get("/{cooperative_id}/full", response_model=CooperativeFullRead)
+# async def get_cooperative_full(
+#     cooperative_id: UUID,
+#     service: CooperativeService = Depends(get_cooperative_service),
+# ):
+#     return await service.get_full(cooperative_id)
+
+
 @router.patch("/{cooperative_id}", response_model=CooperativeRead)
 async def update_cooperative(
     cooperative_id: UUID,
