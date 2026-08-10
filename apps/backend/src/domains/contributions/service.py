@@ -81,8 +81,8 @@ class ContributionService:
             )
 
         # Get group for validation
-        from src.domains.cooperatives.service import CooperativeGroupService
-        group = await CooperativeGroupService.get_coop_group_by_id(
+        from src.domains.cooperatives.services.cooperative_service import CooperativeService
+        group = await CooperativeService.get_coop_group_by_id(
             db, contribution_data.group_id
         )
         if not group:
@@ -245,8 +245,8 @@ class ContributionService:
                 return None
 
             # Get group details
-            from src.domains.cooperatives.service import CooperativeGroupService
-            group = await CooperativeGroupService.get_coop_group_by_id(db, group_id)
+            from src.domains.cooperatives.services.cooperative_service import CooperativeService
+            group = await CooperativeService.get_coop_group_by_id(db, group_id)
             if not group or group.status.value != "active":
                 logger.warning(f"Auto-contribution skipped: group not active group={group_id}")
                 return None
@@ -369,8 +369,8 @@ class ContributionService:
             )
 
         # Get group
-        from src.domains.cooperatives.service import CooperativeGroupService
-        group = await CooperativeGroupService.get_coop_group_by_id(db, group_id)
+        from src.domains.cooperatives.services.cooperative_service import CooperativeService
+        group = await CooperativeService.get_coop_group_by_id(db, group_id)
         if not group:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -447,8 +447,8 @@ class ContributionService:
             )
 
         # Get group
-        from src.domains.cooperatives.service import CooperativeGroupService
-        group = await CooperativeGroupService.get_coop_group_by_id(db, group_id)
+        from src.domains.cooperatives.services.cooperative_service import CooperativeService
+        group = await CooperativeService.get_coop_group_by_id(db, group_id)
         if not group:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -486,8 +486,8 @@ class ContributionService:
         Check if a users's contribution is due based on frequency and last contribution.
         """
         # Get group
-        from src.domains.cooperatives.service import CooperativeGroupService
-        group = await CooperativeGroupService.get_coop_group_by_id(db, group_id)
+        from src.domains.cooperatives.services.cooperative_service import CooperativeService
+        group = await CooperativeService.get_coop_group_by_id(db, group_id)
         if not group:
             return False
 

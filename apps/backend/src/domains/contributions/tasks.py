@@ -28,11 +28,11 @@ from sqlalchemy import select, and_
 from sqlalchemy.orm import sessionmaker
 
 from src.domains.contributions.service import ContributionService, ContributionActionType
-from src.domains.cooperatives.service import CooperativeGroupService
+from src.domains.cooperatives.services.cooperative_service import CooperativeService
 from src.domains.memberships.service import CooperativeMembershipService
 from src.domains.cooperatives.models.cooperative import CooperativeGroup, CooperativeStatus, ContributionFrequency
 from src.domains.contributions.models import Contribution, ContributionStatus
-from src.domains.memberships.models import GroupMembership
+from src.domains.memberships.models.group_membership import GroupMembership
 from src.shared.utils.logger import logger
 from src.domains.auth.schemas import AuthenticatedUser
 
