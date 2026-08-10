@@ -67,6 +67,16 @@ class CoopGovernanceRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Ba
 class CoopMembershipRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Base):
     __tablename__ = "coop_membership_rules"
 
+    __table_args__ = (
+        Index(
+            "uq_coop_membership_rules_active",
+            "cooperative_id",
+            unique=True,
+            postgresql_where=text("effective_to IS NULL"),
+        ),
+    )
+
+
     cooperative_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False, index=True
     )
@@ -94,6 +104,16 @@ class CoopFinancialRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Bas
     """
 
     __tablename__ = "coop_financial_rules"
+
+
+    __table_args__ = (
+        Index(
+            "uq_coop_financial_rules_active",
+            "cooperative_id",
+            unique=True,
+            postgresql_where=text("effective_to IS NULL"),
+        ),
+    )
 
     cooperative_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False, index=True
@@ -136,6 +156,16 @@ class CoopDecisionRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Base
     """
 
     __tablename__ = "coop_decision_rules"
+
+
+    __table_args__ = (
+        Index(
+            "uq_coop_decision_rules_active",
+            "cooperative_id",
+            unique=True,
+            postgresql_where=text("effective_to IS NULL"),
+        ),
+    )
 
     cooperative_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False, index=True
