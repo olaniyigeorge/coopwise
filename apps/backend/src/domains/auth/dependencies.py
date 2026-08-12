@@ -63,8 +63,8 @@ def _dispatch_wallet_provisioning(user, access_token: str) -> None:
     # to change without touching every call site.
     logger.info(f"[_dispatch_wallet_provisioning] broker={celery_app.conf.broker_url!r} backend={celery_app.conf.result_backend!r}")
     try:
-        logger.info(f"\n[_dispatch_wallet_provisioning] dispatching wallet provisioning for user {user.id}\n")
-        provision_wallet_task.delay(str(user.id), user.email)
+        logger.info(f"\n[_dispatch_wallet_provisioning] ignoring wallet provisioning for user {user.id}\n")
+        # provision_wallet_task.delay(str(user.id), user.email)
     except Exception as e:
         logger.error(f"[_dispatch_wallet_provisioning] failed to enqueue for {user.id}: {e}")
         # Don't let broker issues block sign-in — wallet provisioning
