@@ -239,3 +239,13 @@ class GoalCategoryRead(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class GroupMemberRead(BaseModel):
+    id: UUID
+    user_id: UUID
+    cooperative_id: UUID
+    role: str | None = None
+    status: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
