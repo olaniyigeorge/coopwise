@@ -30,19 +30,20 @@ export default function Hero() {
             </div> */}
 
             <h1 className="font-display text-4xl sm:text-5xl md:text-[3.4rem] font-bold text-brand-ink leading-[1.08] text-balance">
-              Every Contribution Is Proof You Can Be Trusted
+              Your Community Is an Economic Organism. We Build the Infrastructure to Help It Scale.
             </h1>
 
-            <p className="text-base md:text-lg text-brand-ink/70 max-w-lg mx-auto md:mx-0">
-              CoopWise turns your cooperative savings into a verified track record — 
-              one that can work for you beyond the group, the same way a credit score 
-              does for people who already have one.
-            </p>
+      
+          <p className="text-base md:text-lg text-brand-ink/70 max-w-lg mx-auto md:mx-0">
+            Ajo, esusu, chamas — cooperative savings has moved money across Africa for
+            generations. CoopWise gives communities the infrastructure to pool capital,
+            govern ownership, and build businesses and assets together.
+          </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 md:pt-4 justify-center md:justify-start">
               <Link href={isAuthenticated ? "/dashboard" : "/signup"} className="w-full sm:w-auto">
                 <Button className="w-full sm:w-auto bg-primary hover:bg-brand-ink text-white px-6 group">
-                  Start Your Circle
+                  Start Your Cooperative
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Button>
               </Link>
@@ -59,7 +60,7 @@ export default function Hero() {
             <div className="flex items-center gap-2 justify-center md:justify-start pt-1">
               <div className="tally-divider w-6 text-brand-ink" />
               <p className="text-xs text-brand-ink/50">
-                No collateral. No jargon. Fund your wallet the same way you already pay for anything else.
+                Built for groups who already trust each other. Governance, goals, and ownership — not just a shared wallet.
               </p>
             </div>
           </div>

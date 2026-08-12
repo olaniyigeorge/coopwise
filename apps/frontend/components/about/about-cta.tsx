@@ -13,11 +13,12 @@ export default function AboutCta() {
     <section className="py-16 md:py-20 bg-brand-paper">
       <div className="max-w-3xl mx-auto px-4 text-center">
         <h2 className="font-display text-2xl md:text-3xl font-bold text-brand-ink mb-4 text-balance">
-          Start Building a Record That Works for You — Not Just Your Group
+          Start Building a Record Your Whole Circle Owns.
         </h2>
         <p className="text-brand-ink/65 mb-8 max-w-xl mx-auto">
-          Start a group in minutes, or join one with an invite code. No wallet, no jargon —
-          just the savings habit you already have, with a record everyone can see.
+          Start a group in minutes, or join one with an invite code. No wallet, 
+          no jargon — just the savings habit you already have, with a record 
+          everyone can see.
         </p>
         <Link href={isAuthenticated ? "/dashboard" : "/auth/signup"}>
           <Button className="bg-primary hover:bg-brand-ink duration-800 transition-all text-white px-6 group">

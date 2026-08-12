@@ -12,7 +12,7 @@ const values = [
   {
     icon: Users,
     title: "The Group Comes First",
-    description: "We design for the circle, not the individual saver. Features that don't serve the group's trust get cut.",
+    description: "We design for the circle's shared standing, not the individual saver. Features that don't serve the group's trust — or that quietly re-center one person's benefit over the group's — get cut.",
   },
   {
     icon: HandCoins,

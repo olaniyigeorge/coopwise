@@ -1,39 +1,38 @@
 "use client"
 
 import React from 'react'
-import { NotebookPen, ShieldCheck, Gavel, Fingerprint } from 'lucide-react'
+import { Network, Scale, BadgeCheck, Building2 } from 'lucide-react'
 
 const features = [
   {
-    icon: NotebookPen,
-    eyebrow: "Transparency",
-    title: "Every Contribution, On the Record",
+    icon: Network,
+    eyebrow: "Collective Coordination",
+    title: "Turn Community Capital Into Collective Power",
     description:
-      "No more mental math or WhatsApp screenshots. Every naira in and every payout out is logged and visible to your whole group, in real time.",
+      "Bring the money, relationships, and intent already inside your community into one coordinated structure — from pooled capital and bulk purchasing to businesses, assets, and shared goals.",
   },
   {
-    icon: Fingerprint,
+    icon: Scale,
+    eyebrow: "Governance",
+    title: "Make the Rules Clear. Make Ownership Explicit.",
+    description:
+      "Define who contributes, who decides, who owns what, and what happens when someone joins, leaves, or disagrees. CoopWise gives every cooperative a structure its members can understand and trust.",
+  },
+  {
+    icon: BadgeCheck,
     eyebrow: "Portable Trust",
-    title: "Your Record Travels With You",
+    title: "Turn Participation Into Reputation",
     description:
-      "Once your group verifies your contribution history, it doesn't stay locked in the group. It becomes something you can show a lender, a landlord, a BNPL provider — proof of discipline, not just a savings log.",
+      "Your history in a cooperative shouldn't disappear when the group ends. Build a verifiable record of contribution, reliability, and participation that can become a foundation for access to more capital and opportunity.",
   },
   {
-    icon: ShieldCheck,
-    eyebrow: "Discipline, Automated",
-    title: "Reminders Before It's a Problem",
+    icon: Building2,
+    eyebrow: "Built to Outlive You",
+    title: "Build Economic Structures, Not Just Savings Pots",
     description:
-      "CoopWise's AI tracks your group's schedule and nudges members ahead of a due date — not after a contribution's already been missed.",
+      "Move beyond emergency funds. Pool capital to build businesses, acquire assets, finance members, and create institutions that can survive individual members and compound across generations.",
   },
-  {
-    icon: Gavel,
-    eyebrow: "Fair by Default",
-    title: "Disputes Settled by the Record",
-    description:
-      "When a payout is contested, CoopWise reviews the group's full contribution history and proposes a resolution backed by evidence, not opinion.",
-  },
-
-]
+];
 
 export default function Features() {
   return (
@@ -42,7 +41,7 @@ export default function Features() {
         <div className="text-center mb-14 md:mb-16 max-w-2xl mx-auto">
           <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">Why Choose CoopWise</p>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-brand-ink text-balance">
-            The Trust of Your Circle. The Discipline of a Ledger.
+            The Trust of Your Cooperative. The Discipline of an Infrastructure.
           </h2>
         </div>
 

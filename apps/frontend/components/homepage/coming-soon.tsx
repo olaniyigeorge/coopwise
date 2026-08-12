@@ -3,25 +3,26 @@
 import React from 'react'
 import { Link2, Coins, FileCode2, Vault, ArrowRight } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import { useRouter } from 'next/navigation'
 
 const chainFeatures = [
   {
     icon: Coins,
-    title: "Liquidity Pools up to $30M",
+    title: "Liquidity, Accessed as a Group",
     description:
-      "Once your group's contribution history lives on-chain, it becomes provable collateral. We're building access to liquidity pools across select blockchains — capital your circle can tap without ever leaving the group.",
+      "Once your group's contribution history lives on-chain, it becomes provable collective standing. We're building access to liquidity pools across select blockchains — capital your group can tap together, without anyone leaving the circle.",
   },
   {
     icon: Vault,
     title: "Collateral-less Financing",
     description:
-      "Your standing in the group — every contribution made on time — becomes your credit history. No property, no paperwork, just a track record the chain can verify.",
+      "Your group's standing — every contribution made on time, by everyone — becomes its credit history. No property, no paperwork, just a track record the chain can verify.",
   },
   {
     icon: FileCode2,
     title: "Smart Contract Group Rules",
     description:
-      "Contribution schedules, payout order, and penalties, encoded directly into your group's smart contract — so the rules enforce themselves and no admin can bend them.",
+      "Rotation, deadlines, ownership shares, exit terms — encoded into rules your group defines, enforced by the contract itself. No admin can bend them after the fact.",
   },
   {
     icon: Link2,
@@ -32,6 +33,7 @@ const chainFeatures = [
 ]
 
 export default function ComingSoon() {
+  const router = useRouter()
   return (
     <section className="relative overflow-hidden bg-brand-ink py-16 md:py-24">
       {/* faint tally texture on the dark ledger page */}
@@ -53,8 +55,8 @@ export default function ComingSoon() {
           </h2>
           <p className="text-white/60 mt-4 text-base md:text-lg">
             Today, CoopWise runs on rails you already trust — bank transfer, card, familiar apps.
-            Underneath, we're quietly building a decentralized core, so your group's discipline
-            becomes something the wider financial system can recognize.
+            Underneath, we're quietly building a decentralized core, so your group's collective
+            standing becomes something the wider financial system can recognize.
           </p>
         </div>
 
@@ -80,7 +82,7 @@ export default function ComingSoon() {
             Web3 is the engine underneath, not the entry point. You'll never need a crypto wallet
             to benefit from it.
           </p>
-          <Button className="bg-brand-gold hover:bg-brand-gold/90 text-brand-ink font-semibold px-6 group">
+          <Button onClick={() => router.push("/signup")} className="bg-brand-gold hover:bg-brand-gold/90 text-brand-ink font-semibold px-6 group">
             Join the Early Access List
             <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Button>
