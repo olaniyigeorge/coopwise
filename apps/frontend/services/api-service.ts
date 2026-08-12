@@ -1,3 +1,4 @@
+import { ApiError } from "@/lib/api-error"
 import { emitAuthInvalidated } from "@/lib/auth/events"
 
 
@@ -59,15 +60,31 @@ async function request<T>(
   }
 
 
+  // if (!response.ok) {
+
+  //   const body = await response
+  //     .text()
+  //     .catch(() => "")
+
+
+  //   throw new Error(
+  //     `API request failed (${response.status}): ${body}`
+  //   )
+  // }
+
   if (!response.ok) {
+    const raw = await response.text().catch(() => "")
+    let parsed: unknown = raw
+    try {
+      parsed = raw ? JSON.parse(raw) : null
+    } catch {
+      // not JSON — leave as raw text
+    }
 
-    const body = await response
-      .text()
-      .catch(() => "")
-
-
-    throw new Error(
-      `API request failed (${response.status}): ${body}`
+    throw new ApiError(
+      response.status,
+      parsed,
+      `API request failed (${response.status}): ${raw}`
     )
   }
 
