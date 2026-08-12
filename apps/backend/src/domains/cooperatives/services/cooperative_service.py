@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
+from apps.backend.src.domains.memberships.models.group_membership import GroupMembership
 from src.shared.utils.logger import logger
 from src.domains.cooperatives.events import CooperativeActivated, EventDispatcher, NoOpEventDispatcher
 from src.domains.cooperatives.exceptions import CooperativeNotFoundError, IllegalStatusTransitionError, NotAuthorizedError
@@ -41,6 +42,25 @@ class CooperativeService:
         await self._uow.cooperatives.add(cooperative)
         await self._uow.commit()
         return cooperative
+
+
+    async def get_for_user(
+        self,
+        user_id: UUID | str,
+    ) -> list[CoopCooperative]:
+        user_uuid = user_id if isinstance(user_id, UUID) else UUID(str(user_id))
+        return await self._uow.cooperatives.get_for_user(user_uuid)
+
+    async def get_members(
+        self,
+        cooperative_id: UUID | str,
+    ) -> list[GroupMembership]:
+        cooperative_uuid = (
+            cooperative_id
+            if isinstance(cooperative_id, UUID)
+            else UUID(str(cooperative_id))
+        )
+        return await self._uow.cooperatives.get_members(cooperative_uuid)
 
     async def get_by_id(self, cooperative_id: UUID | str) -> CoopCooperative | None:
         return await self._uow.cooperatives.get_by_id(cooperative_id)
