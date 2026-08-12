@@ -33,8 +33,7 @@ async def lifespan(app: FastAPI):
             })
 
         db_manager.initialize(config.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1), **engine_kwargs)
-        if "sqlite" in config.DATABASE_URL:
-           await db_manager.create_tables()
+        await db_manager.create_tables()
 
         app.state.redis = await redis_manager.initialize(
             url=config.REDIS_URL,
