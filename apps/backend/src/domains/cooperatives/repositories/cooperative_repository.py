@@ -3,10 +3,12 @@ from __future__ import annotations
 from typing import Sequence
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domains.cooperatives.models.cooperative import CoopCooperative
+from src.domains.memberships.models.group_membership import GroupMembership
 
 
 class CooperativeRepository:
@@ -30,3 +32,32 @@ class CooperativeRepository:
             select(CoopCooperative).order_by(CoopCooperative.created_at.desc()).limit(limit)
         )
         return result.scalars().all()
+
+    async def get_for_user(self, user_id: UUID) -> list[CoopCooperative]:
+        query = (
+            select(CoopCooperative)
+            .outerjoin(
+                GroupMembership,
+                GroupMembership.group_id == CoopCooperative.id,
+            )
+            .where(
+                or_(
+                    CoopCooperative.created_by == user_id,
+                    GroupMembership.user_id == user_id,
+                )
+            )
+            .distinct()
+        )
+
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
+
+    async def get_members(self, cooperative_id: UUID) -> list[GroupMembership]:
+        query = (
+            select(GroupMembership)
+            .options(selectinload(GroupMembership.user))
+            .where(GroupMembership.group_id == cooperative_id)
+        )
+
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
