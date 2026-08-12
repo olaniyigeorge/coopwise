@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from apps.backend.src.domains.memberships.models.group_membership import GroupMembership
+from src.domains.memberships.models.group_membership import GroupMembership
 from src.shared.utils.logger import logger
 from src.domains.cooperatives.events import CooperativeActivated, EventDispatcher, NoOpEventDispatcher
 from src.domains.cooperatives.exceptions import CooperativeNotFoundError, IllegalStatusTransitionError, NotAuthorizedError
