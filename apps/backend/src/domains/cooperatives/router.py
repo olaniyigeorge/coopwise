@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
+from src.domains.cooperatives.exceptions import CooperativeNotFoundError
 from src.api.middlewares.dependencies import get_current_user
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.cooperatives.dependencies import (
@@ -37,6 +38,7 @@ from src.domains.cooperatives.schemas import (
     GoalRead,
     GoalUpdate,
     GovernanceRuleCreate,
+    GroupMemberRead,
     MembershipRuleCreate,
     OwnershipShareCreate,
     OwnershipShareRead,
@@ -74,6 +76,34 @@ async def list_cooperatives(
     service: CooperativeService = Depends(get_cooperative_service),
 ):
     return await service.list(limit=limit)
+
+
+
+@router.get("/me", response_model=list[CooperativeRead])
+async def get_my_cooperatives(
+    user: AuthenticatedUser = Depends(get_current_user),
+    service: CooperativeService = Depends(get_cooperative_service),
+):
+    return await service.get_for_user(user.id)
+
+
+@router.get(
+    "/{cooperative_id}/members",
+    response_model=list[GroupMemberRead],
+)
+async def get_cooperative_members(
+    cooperative_id: UUID,
+    user: AuthenticatedUser = Depends(get_current_user),
+    service: CooperativeService = Depends(get_cooperative_service),
+):
+    cooperative = await service.get_by_id(cooperative_id)
+
+    if cooperative is None:
+        raise CooperativeNotFoundError(
+            cooperative_id=cooperative_id
+        )
+
+    return await service.get_members(cooperative_id)
 
 
 @router.get("/{cooperative_id}", response_model=CooperativeRead)
