@@ -154,10 +154,17 @@ export type DecisionType =
   | "rule_amendment"
   | "new_member_approval";
 
+export type DecisionMechanism =
+  | "admin"
+  | "vote"
+  | "ai_suggested"
+  | "rotation"
+  | "lottery";
+
 export interface DecisionRule extends VersionedRule {
   decision_type: DecisionType;
-  mechanism: string; // UNCONFIRMED shape — may be enum or free text
-  escalation_path: string | null; // UNCONFIRMED shape
+  mechanism: DecisionMechanism;
+  escalation_path: Record<string, unknown> | null;
 }
 
 export type CreateDecisionRulePayload = Omit<

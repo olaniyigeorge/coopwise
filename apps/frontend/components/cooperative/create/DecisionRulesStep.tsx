@@ -16,7 +16,7 @@ import {
 import { X, Plus } from "lucide-react";
 import { useCooperativeCreationStore } from "@/stores/cooperative-creation-store";
 import RulesService from "@/services/rules-service";
-import type { DecisionType } from "@/types/cooperative";
+import type { DecisionType, DecisionMechanism } from "@/types/cooperative";
 
 const DECISION_TYPE_LABELS: Record<DecisionType, string> = {
   payout_order: "Payout order",
@@ -28,14 +28,13 @@ const DECISION_TYPE_LABELS: Record<DecisionType, string> = {
 
 const DECISION_TYPES = Object.keys(DECISION_TYPE_LABELS) as DecisionType[];
 
-// Confirmed against the 422 body — backend enum, not free text.
-const MECHANISM_OPTIONS = [
+const MECHANISM_OPTIONS: { value: DecisionMechanism; label: string }[] = [
   { value: "admin", label: "Admin decides" },
   { value: "vote", label: "Member vote" },
   { value: "ai_suggested", label: "AI suggested" },
   { value: "rotation", label: "Rotation" },
   { value: "lottery", label: "Lottery" },
-] as const;
+];
 
 type KVPair = { key: string; value: string };
 
@@ -56,13 +55,14 @@ export function DecisionRulesStep({ onContinue, onBack }: DecisionRulesStepProps
 
   // Local, per-type key/value builder for escalation_path — dict[str, Any]
   // on the backend with no fixed schema, so this isn't sourced from the
-  // shared store (see note above the code block).
+  // shared store.
   const [escalationPairs, setEscalationPairs] = useState<Record<DecisionType, KVPair[]>>(() =>
     DECISION_TYPES.reduce((acc, t) => {
       acc[t] = [];
       return acc;
     }, {} as Record<DecisionType, KVPair[]>)
   );
+
   function addPair(type: DecisionType) {
     setEscalationPairs((prev) => ({
       ...prev,
@@ -102,8 +102,11 @@ export function DecisionRulesStep({ onContinue, onBack }: DecisionRulesStepProps
     try {
       await RulesService.createDecisionRule(cooperativeId, {
         decision_type: type,
-        mechanism: values.mechanism.trim(),
-        escalation_path: Record<string, unknown> | null
+        // Cast is a stopgap — decisionDrafts[type].values.mechanism is still
+        // typed as plain `string` in the store. Send the store's type over
+        // to DecisionMechanism to remove this cast.
+        mechanism: values.mechanism.trim() as DecisionMechanism,
+        escalation_path: pairsToDict(escalationPairs[type]),
       });
       setSavedTypes((prev) => new Set(prev).add(type));
     } catch (err) {
@@ -162,7 +165,7 @@ export function DecisionRulesStep({ onContinue, onBack }: DecisionRulesStepProps
                     <Select
                       value={draft.values.mechanism ?? ""}
                       onValueChange={(value) =>
-                        updateDecisionDraft(type, { mechanism: value })
+                        updateDecisionDraft(type, { mechanism: value as DecisionMechanism })
                       }
                     >
                       <SelectTrigger id={`${type}-mechanism`}>
