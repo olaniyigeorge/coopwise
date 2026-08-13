@@ -115,10 +115,13 @@ def make_user_create(**overrides) -> UserCreate:
 
 # ------------------------------------------------------------- authenticate
 
+
 class TestAuthenticateUser:
     async def test_correct_credentials_returns_user(self, auth_service):
         registered = await auth_service.register_user(make_user_create())
-        user = await auth_service.authenticate_user("ada@coopwise.example", "supersecret")
+        user = await auth_service.authenticate_user(
+            "ada@coopwise.example", "supersecret"
+        )
         assert user.id == registered.id
 
     async def test_wrong_password_returns_none(self, auth_service):
@@ -127,15 +130,20 @@ class TestAuthenticateUser:
         assert user is None
 
     async def test_unknown_email_returns_none(self, auth_service):
-        user = await auth_service.authenticate_user("nobody@coopwise.example", "whatever")
+        user = await auth_service.authenticate_user(
+            "nobody@coopwise.example", "whatever"
+        )
         assert user is None
 
 
 # -------------------------------------------------------------------- tokens
 
+
 class TestAccessTokens:
     async def test_encodes_given_claims(self, auth_service):
-        token = await auth_service.create_access_token({"sub": "ada@coopwise.example", "id": "1"})
+        token = await auth_service.create_access_token(
+            {"sub": "ada@coopwise.example", "id": "1"}
+        )
         payload = await auth_service.decode_token(token)
         assert payload["sub"] == "ada@coopwise.example"
         assert payload["id"] == "1"
@@ -155,6 +163,7 @@ class TestAccessTokens:
 
 
 # ------------------------------------------------------------- password reset
+
 
 class TestPasswordReset:
     async def test_send_reset_link_for_unknown_email_raises(self, auth_service):
@@ -188,15 +197,22 @@ class TestPasswordReset:
         with pytest.raises(TokenExpiredError):
             await auth_service.confirm_reset_token(token)
 
-    async def test_change_password_updates_hash_and_allows_new_login(self, auth_service):
+    async def test_change_password_updates_hash_and_allows_new_login(
+        self, auth_service
+    ):
         user = await auth_service.register_user(make_user_create())
         token = await auth_service.create_password_reset_token(user)
 
         result = await auth_service.change_password(token, "newpassword123")
         assert result["status"] == "success"
 
-        assert await auth_service.authenticate_user("ada@coopwise.example", "supersecret") is None
-        relogged = await auth_service.authenticate_user("ada@coopwise.example", "newpassword123")
+        assert (
+            await auth_service.authenticate_user("ada@coopwise.example", "supersecret")
+            is None
+        )
+        relogged = await auth_service.authenticate_user(
+            "ada@coopwise.example", "newpassword123"
+        )
         assert relogged is not None
 
     async def test_change_password_with_expired_token_raises(self, auth_service, clock):
@@ -210,6 +226,7 @@ class TestPasswordReset:
 
 
 # -------------------------------------------------------------------- wallet
+
 
 class TestFlowSync:
     async def test_creates_new_user_when_no_match_found(self, auth_service, user_repo):

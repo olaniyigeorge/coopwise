@@ -401,7 +401,7 @@ class InsightEngine:
                 headers={"Content-Type": "application/json"},
                 json=payload,
                 timeout=10,
-            ) 
+            )
             response.raise_for_status()
 
             data = response.json()

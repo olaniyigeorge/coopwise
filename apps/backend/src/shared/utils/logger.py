@@ -27,4 +27,6 @@ file_handler = logging.FileHandler(log_file_path)
 file_handler.setFormatter(formatter)
 
 # # Add handlers to logger
-logger.handlers = [stream_handler,] # file_handler
+logger.handlers = [
+    stream_handler,
+]  # file_handler

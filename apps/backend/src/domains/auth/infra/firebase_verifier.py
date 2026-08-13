@@ -8,6 +8,7 @@ signature/issuer/audience/expiry ourselves. No service account private
 key required for this (that's only needed for broader Firebase Admin
 access — push notifications, managing users, etc. — which we don't use).
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict

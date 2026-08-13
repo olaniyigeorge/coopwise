@@ -9,7 +9,12 @@ from src.domains.cooperatives.uow import CooperativeUnitOfWork
 
 
 class OwnershipShareService:
-    def __init__(self, uow: CooperativeUnitOfWork, events: Any | None = None, logger: Any | None = None) -> None:
+    def __init__(
+        self,
+        uow: CooperativeUnitOfWork,
+        events: Any | None = None,
+        logger: Any | None = None,
+    ) -> None:
         self._uow = uow
         self._events = events or NoOpEventDispatcher()
         self._logger = logger

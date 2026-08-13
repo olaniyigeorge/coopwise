@@ -19,7 +19,9 @@ class WalletCreate(BaseModel):
 
 
 class WalletDeposit(BaseModel):
-    payment_gateway: Literal["mock_success", "bank_transfer", "card", "crypto_wallet", "paystack", "ussd"]
+    payment_gateway: Literal[
+        "mock_success", "bank_transfer", "card", "crypto_wallet", "paystack", "ussd"
+    ]
     local_amount: Decimal
     currency: Literal["NGN", "GHS", "KES"]
 

@@ -45,9 +45,7 @@ class RedisManager:
 
     def get(self) -> Redis:
         if self.client is None:
-            raise RuntimeError(
-                "RedisManager not initialized. Call initialize() first."
-            )
+            raise RuntimeError("RedisManager not initialized. Call initialize() first.")
 
         return self.client
 

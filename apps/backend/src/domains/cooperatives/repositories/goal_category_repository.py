@@ -19,7 +19,9 @@ class GoalCategoryRepository:
         return category
 
     async def list(self) -> Sequence[CoopGoalCategory]:
-        result = await self._session.execute(select(CoopGoalCategory).order_by(CoopGoalCategory.name))
+        result = await self._session.execute(
+            select(CoopGoalCategory).order_by(CoopGoalCategory.name)
+        )
         return result.scalars().all()
 
     async def get_by_id(self, category_id: UUID | str) -> CoopGoalCategory | None:

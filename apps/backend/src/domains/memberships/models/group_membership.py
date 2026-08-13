@@ -14,6 +14,7 @@ from src.domains.memberships.models.enums import MembershipRole, MembershipStatu
 from src.domains.memberships.models.mixins import UUIDPrimaryKeyMixin, TimestampMixin
 from src.infra.db.database import Base
 
+
 class GroupMembership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "group_memberships"
 
@@ -29,11 +30,17 @@ class GroupMembership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     status: Mapped[MembershipStatus] = mapped_column(
         String(32), default=MembershipStatus.ACTIVE, nullable=False
     )
-    joined_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    left_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    joined_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    left_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     user: Mapped["User"] = relationship(
-        back_populates="memberships", foreign_keys=[user_id], overlaps="cooperatives,group"
+        back_populates="memberships",
+        foreign_keys=[user_id],
+        overlaps="cooperatives,group",
     )
     group: Mapped["CoopCooperative"] = relationship(
         back_populates="memberships", overlaps="users,cooperatives"

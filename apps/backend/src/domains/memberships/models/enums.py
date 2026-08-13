@@ -1,8 +1,6 @@
 from enum import Enum
 
 
-
-
 # Enum for Membership role
 class MembershipRole(str, Enum):
     admin = "admin"

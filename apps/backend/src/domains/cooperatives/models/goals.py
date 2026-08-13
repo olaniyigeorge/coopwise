@@ -16,7 +16,11 @@ from src.domains.cooperatives.models.enums import (
     OwnershipBasis,
     ValuationMethod,
 )
-from src.domains.cooperatives.models.mixins import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from src.domains.cooperatives.models.mixins import (
+    Base,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 
 
 class CoopBeneficiaryPattern(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -32,16 +36,26 @@ class CoopBeneficiaryPattern(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     __tablename__ = "coop_beneficiary_patterns"
 
-    code: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    code: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    requires_beneficiary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    requires_ownership_shares: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    requires_claim_process: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    requires_beneficiary: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    requires_ownership_shares: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    requires_claim_process: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
 
     default_visibility: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    default_withdrawal_restriction: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    default_withdrawal_restriction: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
 
     contract_schema: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
@@ -60,7 +74,9 @@ class CoopGoalCategory(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     __tablename__ = "coop_goal_categories"
 
-    code: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    code: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     icon: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -74,14 +90,18 @@ class CoopGoalCategory(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("coop_beneficiary_patterns.id"), nullable=True
     )
 
-    is_system_defined: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_system_defined: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
 
     # null = system-defined; set = a cooperative's own custom category.
     created_by_cooperative_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=True
     )
 
-    parent: Mapped["CoopGoalCategory | None"] = relationship(remote_side="CoopGoalCategory.id")
+    parent: Mapped["CoopGoalCategory | None"] = relationship(
+        remote_side="CoopGoalCategory.id"
+    )
     goals: Mapped[list["CoopGoal"]] = relationship(back_populates="goal_category")
 
     def __repr__(self) -> str:
@@ -98,7 +118,10 @@ class CoopGoal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "coop_goals"
 
     cooperative_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("coop_cooperatives.id"),
+        nullable=False,
+        index=True,
     )
     beneficiary_pattern_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("coop_beneficiary_patterns.id"), nullable=False
@@ -113,14 +136,18 @@ class CoopGoal(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     currency: Mapped[str] = mapped_column(String(8), nullable=False, default="NGN")
     target_date: Mapped[date | None] = mapped_column(nullable=True)
 
-    status: Mapped[GoalStatus] = mapped_column(String(32), default=GoalStatus.PROPOSED, nullable=False)
+    status: Mapped[GoalStatus] = mapped_column(
+        String(32), default=GoalStatus.PROPOSED, nullable=False
+    )
 
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
 
     cooperative: Mapped["CoopCooperative"] = relationship(back_populates="goals")
-    beneficiary_pattern: Mapped["CoopBeneficiaryPattern"] = relationship(back_populates="goals")
+    beneficiary_pattern: Mapped["CoopBeneficiaryPattern"] = relationship(
+        back_populates="goals"
+    )
     goal_category: Mapped["CoopGoalCategory"] = relationship(back_populates="goals")
 
     contract: Mapped["CoopGoalContract"] = relationship(
@@ -154,7 +181,9 @@ class CoopGoalParticipant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     paid_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     __table_args__ = (
-        UniqueConstraint("goal_id", "membership_id", name="uq_goal_participant_membership"),
+        UniqueConstraint(
+            "goal_id", "membership_id", name="uq_goal_participant_membership"
+        ),
     )
 
     goal: Mapped["CoopGoal"] = relationship(back_populates="participants")
@@ -182,14 +211,22 @@ class CoopGoalContract(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     visibility: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    withdrawal_restriction: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    withdrawal_restriction: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
 
     beneficiary_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
-    exit_rule_type: Mapped[ExitRuleType | None] = mapped_column(String(32), nullable=True)
-    valuation_method: Mapped[ValuationMethod | None] = mapped_column(String(32), nullable=True)
-    claim_eligibility_criteria: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    exit_rule_type: Mapped[ExitRuleType | None] = mapped_column(
+        String(32), nullable=True
+    )
+    valuation_method: Mapped[ValuationMethod | None] = mapped_column(
+        String(32), nullable=True
+    )
+    claim_eligibility_criteria: Mapped[dict | None] = mapped_column(
+        JSONB, nullable=True
+    )
 
     deadline: Mapped[date | None] = mapped_column(nullable=True)
     extra_terms: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

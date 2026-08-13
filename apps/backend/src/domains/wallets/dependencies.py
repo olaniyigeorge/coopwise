@@ -1,6 +1,3 @@
-
-
-
 from src.infra.wallet_client import get_crossmint_wallet_client
 from src.domains.wallets.service import WalletService
 

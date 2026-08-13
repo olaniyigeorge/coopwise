@@ -30,14 +30,19 @@ class JoseTokenService:
             raise TokenExpiredError("Token has expired")
         except JWTError:
             raise InvalidTokenError("Invalid credentials")
-        
-        
+
 
 class AsymmetricTokenService:
     """Mints/verifies platform access tokens with ES256, so the public key
     can be published via JWKS for Crossmint (and other verifiers) to use."""
 
-    def __init__(self, private_key_pem: str, public_key_pem: str, kid: str, algorithm: str = "ES256") -> None:
+    def __init__(
+        self,
+        private_key_pem: str,
+        public_key_pem: str,
+        kid: str,
+        algorithm: str = "ES256",
+    ) -> None:
         self._private_key = private_key_pem
         self._public_key = public_key_pem
         self._kid = kid

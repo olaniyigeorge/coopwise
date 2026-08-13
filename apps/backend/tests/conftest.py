@@ -12,11 +12,13 @@ from src.infra.db.dependencies import get_async_db_session
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
+
 @pytest.fixture(scope="session", autouse=True)
 def _init_db_manager():
     if not db_manager._is_initialized:
         db_manager.initialize(DATABASE_URL, poolclass=NullPool)
     yield
+
 
 @pytest_asyncio.fixture
 async def db_session():

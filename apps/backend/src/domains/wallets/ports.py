@@ -4,7 +4,6 @@ from typing import Any, Optional, Protocol, runtime_checkable
 from uuid import UUID
 
 
-
 @runtime_checkable
 class WalletProviderPort(Protocol):
     """

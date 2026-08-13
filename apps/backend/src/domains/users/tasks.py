@@ -11,15 +11,21 @@ from src.infra.db.all_models import _users_models
 from src.infra.celery.app import celery_app
 
 
-@celery_app.task(name="users.upload_avatar", bind=True, max_retries=3, default_retry_delay=10)
-def upload_avatar_task(self, user_id: str, file_data: str, filename: str, content_type: str):
+@celery_app.task(
+    name="users.upload_avatar", bind=True, max_retries=3, default_retry_delay=10
+)
+def upload_avatar_task(
+    self, user_id: str, file_data: str, filename: str, content_type: str
+):
     decoded = base64.b64decode(file_data)
     print("\n\n\n\n", os.environ.get("CLOUDINARY_URL"), "\n\n\n\n")
     storage = CloudinaryStorage()
 
     try:
         url = asyncio.run(
-            storage.upload(key=f"avatars/{user_id}", content=decoded, content_type=content_type)
+            storage.upload(
+                key=f"avatars/{user_id}", content=decoded, content_type=content_type
+            )
         )
     except Exception as exc:
         raise self.retry(exc=exc)

@@ -44,11 +44,15 @@ from src.domains.cooperatives.schemas import (
     OwnershipShareRead,
     RuleRead,
 )
-from src.domains.cooperatives.services.beneficiary_pattern_service import BeneficiaryPatternService
+from src.domains.cooperatives.services.beneficiary_pattern_service import (
+    BeneficiaryPatternService,
+)
 from src.domains.cooperatives.services.cooperative_service import CooperativeService
 from src.domains.cooperatives.services.goal_category_service import GoalCategoryService
 from src.domains.cooperatives.services.goal_service import GoalService
-from src.domains.cooperatives.services.ownership_share_service import OwnershipShareService
+from src.domains.cooperatives.services.ownership_share_service import (
+    OwnershipShareService,
+)
 from src.domains.cooperatives.services.rule_services import (
     DecisionRuleService,
     FinancialRuleService,
@@ -60,6 +64,7 @@ router = APIRouter(prefix="/api/v1/cooperatives", tags=["Cooperatives"])
 
 
 # --- Cooperative ---
+
 
 @router.post("", response_model=CooperativeRead, status_code=status.HTTP_201_CREATED)
 async def create_cooperative(
@@ -76,7 +81,6 @@ async def list_cooperatives(
     service: CooperativeService = Depends(get_cooperative_service),
 ):
     return await service.list(limit=limit)
-
 
 
 @router.get("/me", response_model=list[CooperativeRead])
@@ -99,9 +103,7 @@ async def get_cooperative_members(
     cooperative = await service.get_by_id(cooperative_id)
 
     if cooperative is None:
-        raise CooperativeNotFoundError(
-            cooperative_id=cooperative_id
-        )
+        raise CooperativeNotFoundError(cooperative_id=cooperative_id)
 
     return await service.get_members(cooperative_id)
 
@@ -144,7 +146,12 @@ async def activate_cooperative(
 
 # --- Rules ---
 
-@router.post("/{cooperative_id}/rules/governance", response_model=RuleRead, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/{cooperative_id}/rules/governance",
+    response_model=RuleRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_governance_rule(
     cooperative_id: UUID,
     data: GovernanceRuleCreate,
@@ -163,7 +170,11 @@ async def get_active_governance_rule(
     return await service.get_active(cooperative_id)
 
 
-@router.post("/{cooperative_id}/rules/membership", response_model=RuleRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{cooperative_id}/rules/membership",
+    response_model=RuleRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_membership_rule(
     cooperative_id: UUID,
     data: MembershipRuleCreate,
@@ -182,7 +193,11 @@ async def get_active_membership_rule(
     return await service.get_active(cooperative_id)
 
 
-@router.post("/{cooperative_id}/rules/financial", response_model=RuleRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{cooperative_id}/rules/financial",
+    response_model=RuleRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_financial_rule(
     cooperative_id: UUID,
     data: FinancialRuleCreate,
@@ -201,7 +216,11 @@ async def get_active_financial_rule(
     return await service.get_active(cooperative_id)
 
 
-@router.post("/{cooperative_id}/rules/decision", response_model=RuleRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{cooperative_id}/rules/decision",
+    response_model=RuleRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_decision_rule(
     cooperative_id: UUID,
     data: DecisionRuleCreate,
@@ -222,14 +241,21 @@ async def get_active_decision_rule(
 
 # --- Goals ---
 
-@router.post("/{cooperative_id}/goals", response_model=GoalRead, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/{cooperative_id}/goals",
+    response_model=GoalRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_goal(
     cooperative_id: UUID,
     data: GoalCreate,
     user: AuthenticatedUser = Depends(get_current_user),
     service: GoalService = Depends(get_goal_service),
 ):
-    goal = CoopGoal(cooperative_id=cooperative_id, created_by=user.id, **data.model_dump())
+    goal = CoopGoal(
+        cooperative_id=cooperative_id, created_by=user.id, **data.model_dump()
+    )
     return await service.create(goal, acting_user_id=user.id)
 
 
@@ -273,9 +299,15 @@ async def create_goal_contract(
 ):
     return await service.create_goal_contract(goal_id, data, acting_user_id=user.id)
 
+
 # --- Ownership shares (pooled_for_shared goals only) ---
 
-@router.post("/goals/{goal_id}/ownership-shares", response_model=OwnershipShareRead, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/goals/{goal_id}/ownership-shares",
+    response_model=OwnershipShareRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_ownership_share(
     goal_id: UUID,
     data: OwnershipShareCreate,
@@ -286,7 +318,9 @@ async def add_ownership_share(
     return await service.add(share)
 
 
-@router.get("/goals/{goal_id}/ownership-shares", response_model=list[OwnershipShareRead])
+@router.get(
+    "/goals/{goal_id}/ownership-shares", response_model=list[OwnershipShareRead]
+)
 async def list_ownership_shares(
     goal_id: UUID,
     service: OwnershipShareService = Depends(get_ownership_share_service),
@@ -296,7 +330,10 @@ async def list_ownership_shares(
 
 # --- Catalog ---
 
-@router.get("/catalog/beneficiary-patterns", response_model=list[BeneficiaryPatternRead])
+
+@router.get(
+    "/catalog/beneficiary-patterns", response_model=list[BeneficiaryPatternRead]
+)
 async def list_beneficiary_patterns(
     service: BeneficiaryPatternService = Depends(get_beneficiary_pattern_service),
 ):
@@ -315,6 +352,7 @@ async def create_goal_category(
     service: GoalCategoryService = Depends(get_goal_category_service),
 ):
     return await service.create(data, cooperative_id=cooperative_id)
+
 
 @router.get("/catalog/goal-categories", response_model=list[GoalCategoryRead])
 async def list_goal_categories(

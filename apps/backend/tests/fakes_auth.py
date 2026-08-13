@@ -6,6 +6,7 @@ in-memory implementations of the same Protocol, so tests exercise actual
 behavior (e.g. "registering twice with the same email really does raise")
 rather than just verifying call shapes.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -29,14 +30,20 @@ class FakeUserRepository:
     async def get_by_phone_number(self, phone_number: Optional[str]) -> Optional[User]:
         if phone_number is None:
             return None
-        return next((u for u in self.users.values() if u.phone_number == phone_number), None)
+        return next(
+            (u for u in self.users.values() if u.phone_number == phone_number), None
+        )
 
     async def get_by_id(self, user_id: UUID) -> Optional[User]:
         return self.users.get(user_id)
 
     async def get_by_crossmint_user_id(self, crossmint_user_id: str) -> Optional[User]:
         return next(
-            (u for u in self.users.values() if u.crossmint_user_id == crossmint_user_id),
+            (
+                u
+                for u in self.users.values()
+                if u.crossmint_user_id == crossmint_user_id
+            ),
             None,
         )
 

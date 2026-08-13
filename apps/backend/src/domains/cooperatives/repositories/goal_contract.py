@@ -8,8 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domains.cooperatives.models.goals import CoopGoalContract
 
 
-
-
 class GoalContractRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session

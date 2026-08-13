@@ -71,6 +71,7 @@ class GlobalConfig(BaseSettings):
 class DevConfig(GlobalConfig):
     pass
 
+
 class StagingConfig(GlobalConfig):
     pass
 
@@ -92,7 +93,9 @@ def get_config() -> GlobalConfig:
         "test": TestConfig,
     }
     if env_state not in configs:
-        raise ValueError(f"Invalid ENV: {env_state}. Must be development, production, or test.")
+        raise ValueError(
+            f"Invalid ENV: {env_state}. Must be development, production, or test."
+        )
     logger.info(f"\nUsing {env_state.capitalize()} config...\n")
     return configs[env_state]()
 
@@ -103,21 +106,30 @@ def load_rate_limit_rules(path: str) -> Dict[str, Any]:
         with open(path, "r") as f:
             rules = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.warning(f"Could not load rate limit rules from {path}: {e}. Using defaults.")
+        logger.warning(
+            f"Could not load rate limit rules from {path}: {e}. Using defaults."
+        )
         return default
 
     try:
-        assert "capacity" in rules.get("default", {}) and "refill_rate" in rules.get("default", {})
+        assert "capacity" in rules.get("default", {}) and "refill_rate" in rules.get(
+            "default", {}
+        )
         for rule in rules.get("rules", []):
-            assert "path_prefix" in rule and "capacity" in rule and "refill_rate" in rule
+            assert (
+                "path_prefix" in rule and "capacity" in rule and "refill_rate" in rule
+            )
             _ = float(rule["capacity"])
             _ = float(rule["refill_rate"])
     except (AssertionError, TypeError, ValueError) as e:
-        logger.error(f"Invalid rate_limit_rules.json shape: {e}. Falling back to safe default.")
+        logger.error(
+            f"Invalid rate_limit_rules.json shape: {e}. Falling back to safe default."
+        )
         return default
 
     logger.info(f"Loaded rate limiting rules from {path}")
     return rules
+
 
 AppConfig: GlobalConfig = get_config()
 

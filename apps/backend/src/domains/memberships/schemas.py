@@ -14,7 +14,6 @@ class MembershipCreate(BaseModel):
     role: MembershipRole
     status: MembershipStatus
     payout_position: int = 1
-    
 
 
 class AcceptMembership(BaseModel):
@@ -44,14 +43,13 @@ class MembershipExtDetails(MembershipDetails):
     model_config = ConfigDict(from_attributes=True)
 
 
-
 class CircleMemberDetail(BaseModel):
     # From GroupMembership
     user_id: UUID
     group_id: UUID
-    role: str                              # MembershipRole enum value
-    status: str                            # MembershipStatus enum value
-    payout_position: int                   # position in the payout queue
+    role: str  # MembershipRole enum value
+    status: str  # MembershipStatus enum value
+    payout_position: int  # position in the payout queue
     has_received_payout_this_cycle: bool
     joined_at: Optional[datetime] = None
 

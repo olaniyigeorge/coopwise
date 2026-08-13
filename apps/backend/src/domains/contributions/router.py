@@ -45,7 +45,7 @@ async def contribute(
         "message": "Contribution processed successfully",
         "contribution": contribution,
         "mode": mode,
-        "network": network
+        "network": network,
     }
 
 
@@ -68,7 +68,7 @@ async def auto_debit(
     return {
         "message": "Automated contribution processed successfully",
         "contribution": contribution,
-        "network": network
+        "network": network,
     }
 
     # noti_data = NotificationCreate(
@@ -125,14 +125,3 @@ async def get_contributions_by_admin(
     if not user:
         raise HTTPException(status_code=401, detail="Invalid login credentials")
     return await ContributionService.get_contributions(db, skip=skip, limit=limit)
-
-
-
-
-
-
-
-
-
-
-

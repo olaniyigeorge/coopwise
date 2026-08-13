@@ -3,6 +3,7 @@
 This file defines the notification-specific API surface and delegates
 business logic to the notifications domain service.
 """
+
 import uuid
 from fastapi import Query, WebSocket, WebSocketDisconnect, Depends
 from fastapi.routing import APIRouter

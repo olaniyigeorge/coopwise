@@ -240,7 +240,7 @@ async def finalise_deposit(
             reference, db
         )
 
-    if ledger_record.status not in [ LedgerStatus.initiated, LedgerStatus.pending ]:
+    if ledger_record.status not in [LedgerStatus.initiated, LedgerStatus.pending]:
         raise HTTPException(
             status_code=400, detail="Transaction already processed or invalid."
         )
@@ -254,7 +254,9 @@ async def finalise_deposit(
         ledger_record.id, db, redis
     )
 
-    logger.info(f"[Deposit finalised] payment ledge settled into wallet {updated_wallet}")
+    logger.info(
+        f"[Deposit finalised] payment ledge settled into wallet {updated_wallet}"
+    )
 
     return {
         "message": "Deposit finalised successfully.",

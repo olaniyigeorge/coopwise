@@ -8,7 +8,7 @@ from src.domains.kyc.exceptions import TransientProviderError
 
 
 # KYC verifiers like crossmint, Smile ID, Dojah, Youverify
-class MockIdentityVerificationProvider():
+class MockIdentityVerificationProvider:
     async def verify_identity(
         self,
         document_type: str,
@@ -36,7 +36,6 @@ class MockIdentityVerificationProvider():
         return IdentityVerificationResult(**res)
 
 
-
 class HttpIdentityVerificationProvider:
     async def verify_identity(self, **kwargs):
         try:
@@ -46,6 +45,8 @@ class HttpIdentityVerificationProvider:
             raise TransientProviderError("Provider timeout") from exc
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code >= 500 or exc.response.status_code == 429:
-                raise TransientProviderError(f"Provider {exc.response.status_code}") from exc
+                raise TransientProviderError(
+                    f"Provider {exc.response.status_code}"
+                ) from exc
             raise  # 4xx other than 429 is a real rejection, let it surface as-is
         return IdentityVerificationResult(**response.json())

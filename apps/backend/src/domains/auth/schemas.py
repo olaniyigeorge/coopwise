@@ -14,6 +14,7 @@ CHANGED vs the Crossmint-Auth version:
     equally-primary identifier alongside email (see product decision:
     both are equal options at signup).
 """
+
 from typing import Annotated, Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, constr
@@ -30,14 +31,17 @@ class RequestOtp(BaseModel):
 
     model_config = ConfigDict(use_enum_values=True)
 
+
 class RefreshSessionRequest(BaseModel):
     refresh_token: str
-  
+
+
 class FirebaseSignIn(BaseModel):
     firebase_id_token: str
     # Same reasoning as VerifyOtp.full_name — required only on first sight
     # of a given firebase_uid with no email Firebase already gave us.
     full_name: Optional[str] = None
+
 
 class VerifyOtp(BaseModel):
     channel: str
@@ -76,7 +80,9 @@ class SessionUser(BaseModel):
     phone_number: Optional[str] = None
     full_name: str
     role: UserRoles
-    flow_address: Optional[str] = None  # populated once background provisioning completes
+    flow_address: Optional[str] = (
+        None  # populated once background provisioning completes
+    )
     profile_picture_url: Optional[str] = None
     onboarding_status: str  # "incomplete" | "complete" — informational, not a gate
     is_kyc_verified: Optional[bool] = False

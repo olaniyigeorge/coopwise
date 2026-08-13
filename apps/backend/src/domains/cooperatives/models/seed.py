@@ -29,9 +29,7 @@ BENEFICIARY_PATTERN_SEED = [
     {
         "code": BeneficiaryPatternCode.POOLED_FOR_ONE.value,
         "name": "Pooled for one",
-        "description": (
-            "Group funds one member's goal (rent, travel, equipment)."
-        ),
+        "description": ("Group funds one member's goal (rent, travel, equipment)."),
         "requires_beneficiary": True,
         "requires_ownership_shares": False,
         "requires_claim_process": False,
@@ -57,9 +55,7 @@ BENEFICIARY_PATTERN_SEED = [
         "requires_claim_process": False,
         "default_visibility": "group",
         "default_withdrawal_restriction": "locked_until_exit",
-        "contract_schema": {
-            "required_fields": ["exit_rule_type", "valuation_method"]
-        },
+        "contract_schema": {"required_fields": ["exit_rule_type", "valuation_method"]},
     },
     {
         "code": BeneficiaryPatternCode.POOLED_CONTINGENT.value,
@@ -74,8 +70,6 @@ BENEFICIARY_PATTERN_SEED = [
         "requires_claim_process": True,
         "default_visibility": "group",
         "default_withdrawal_restriction": "claim_approval_required",
-        "contract_schema": {
-            "required_fields": ["claim_eligibility_criteria"]
-        },
+        "contract_schema": {"required_fields": ["claim_eligibility_criteria"]},
     },
 ]

@@ -1,11 +1,18 @@
 from typing import Optional, Protocol
 from uuid import UUID
 
-from src.domains.kyc.schemas import BankAccountVerificationResult, IdentityVerificationResult
+from src.domains.kyc.schemas import (
+    BankAccountVerificationResult,
+    IdentityVerificationResult,
+)
 from src.domains.kyc.models import (
-    KYCStatus, KYCVerification, KYCStepType, KYCStepStatus
+    KYCStatus,
+    KYCVerification,
+    KYCStepType,
+    KYCStepStatus,
 )
 from src.domains.kyc.audit_models import KYCAuditLog
+
 
 class KYCRepositoryPort(Protocol):
     async def get_by_user_id(self, user_id: UUID) -> Optional[KYCVerification]: ...
@@ -35,41 +42,58 @@ class KYCRepositoryPort(Protocol):
     async def ensure_identity_exists(self, kyc_id: UUID) -> None: ...
 
     async def set_step_status(
-        self, kyc_id: UUID, step: KYCStepType, status: KYCStepStatus,
-        rejection_reason: Optional[str] = None
+        self,
+        kyc_id: UUID,
+        step: KYCStepType,
+        status: KYCStepStatus,
+        rejection_reason: Optional[str] = None,
     ) -> None: ...
 
     async def set_overall_status(self, kyc_id: UUID, **fields) -> KYCVerification: ...
 
-    async def find_by_provider_reference(self, reference_id: str) -> Optional[KYCVerification]: ...
+    async def find_by_provider_reference(
+        self, reference_id: str
+    ) -> Optional[KYCVerification]: ...
 
 
 class KYCAuditRepositoryPort(Protocol):
-    
-    async def create(self, kyc_id: UUID, admin_id   , action, step, reason, metadata, ip_address, user_agent) -> KYCAuditLog: ...
-    
+
+    async def create(
+        self,
+        kyc_id: UUID,
+        admin_id,
+        action,
+        step,
+        reason,
+        metadata,
+        ip_address,
+        user_agent,
+    ) -> KYCAuditLog: ...
+
     async def list_for_kyc(self, kyc_id: UUID) -> list[KYCAuditLog]: ...
 
-    
+
 class FieldEncryptorPort(Protocol):
     def encrypt(self, value: str) -> str: ...
 
     def decrypt(self, token: str) -> str: ...
 
 
-
 class IdentityVerificationProviderPort(Protocol):
     async def verify_identity(
-        self, document_type: str, document_number: str,
-        document_image_key: str, selfie_image_key: str,
+        self,
+        document_type: str,
+        document_number: str,
+        document_image_key: str,
+        selfie_image_key: str,
         video_key: Optional[str] = None,
     ) -> IdentityVerificationResult: ...
 
 
-
-
 class BankVerificationProviderPort(Protocol):
-    async def resolve_account_name(self, bank_code: str, account_number: str) -> BankAccountVerificationResult: ...
+    async def resolve_account_name(
+        self, bank_code: str, account_number: str
+    ) -> BankAccountVerificationResult: ...
 
 
 class ObjectStoragePort(Protocol):
@@ -81,10 +105,13 @@ class UserKYCFlagPort(Protocol):
 
     async def set_kyc_verified(self, user_id: UUID, verified: bool) -> None: ...
 
+
 class KYCNotifierPort(Protocol):
     """
     Narrow notification boundary for the kyc domain. KYC never imports
     notifications.service or builds NotificationCreate payloads directly.
     """
 
-    async def notify_kyc_user_step_rejected(self, verification: KYCVerification, status=KYCStepType) -> None: ...
+    async def notify_kyc_user_step_rejected(
+        self, verification: KYCVerification, status=KYCStepType
+    ) -> None: ...

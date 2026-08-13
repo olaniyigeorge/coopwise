@@ -16,8 +16,6 @@ from config import AppConfig as config
 from src.domains.payments.service import PaymentService
 
 
-
-
 from src.infra.db.dependencies import get_async_db_session
 
 router = APIRouter(prefix="/api/v1/payments", tags=["Payments & Integrations"])
@@ -127,8 +125,6 @@ async def paystack_callback(
     # return RedirectResponse(url=f"{config.CLIENT_DOMAIN}?status=success&ref={reference}")
 
     return f"{config.CLIENT_DOMAIN}?status=success&ref={reference}"
-
-
 
 
 # @router.get("/cashramp/account-info", summary="Get merchant account information")

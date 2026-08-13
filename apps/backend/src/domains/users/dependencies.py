@@ -11,6 +11,4 @@ from src.infra.db.dependencies import get_async_db_session
 def get_user_service(
     db: AsyncSession = Depends(get_async_db_session),
 ) -> UserService:
-    return UserService(
-        user_repo=SqlAlchemyUserRepository(db)
-    )
+    return UserService(user_repo=SqlAlchemyUserRepository(db))

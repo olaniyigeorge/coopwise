@@ -1,6 +1,15 @@
 from datetime import datetime
 from uuid import uuid4
-from sqlalchemy import Boolean, Column, Numeric, String, DateTime, ForeignKey, Enum, JSON
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Numeric,
+    String,
+    DateTime,
+    ForeignKey,
+    Enum,
+    JSON,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from src.infra.db.database import Base
@@ -23,7 +32,11 @@ class Wallet(Base):
 
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     user_id = Column(
-        PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True, unique=True
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+        unique=True,
     )
 
     # Balance denominated in stable coin (e.g. USDC). All internal debits/credits happen here.
@@ -124,6 +137,7 @@ class WalletLedger(Base):  # TNX RECORD
         "Contribution", back_populates="wallet_ledger", lazy="joined", uselist=False
     )
 
+
 # # Your existing reference = your internal reference (keep it)
 # reference = Column(String(128), unique=True, index=True, nullable=False)
 
@@ -136,6 +150,7 @@ class WalletLedger(Base):  # TNX RECORD
 
 # chain_id = Column(String(64), nullable=True)
 # # ^ "solana", "base", "celo" etc — only for web3, nullable for web2
+
 
 # ----------------- FIAT BANK ACCOUNTS -----------
 class BankAccount(Base):
@@ -157,7 +172,6 @@ class BankAccount(Base):
     user = relationship("User", back_populates="bank_accounts")
 
 
-
 class OnChainWallet(Base):
     __tablename__ = "onchain_wallets"
 
@@ -170,8 +184,10 @@ class OnChainWallet(Base):
 
     # ---- Blockchain Info ----
     chain_id = Column(String(50), default="484")  # Camp Network Mainnet
-    network = Column(String(100), default="camp_network")  
-    wallet_type = Column(String(50), default="evm")  #TODO Future support of other wallet "evm", "solana", etc.
+    network = Column(String(100), default="camp_network")
+    wallet_type = Column(
+        String(50), default="evm"
+    )  # TODO Future support of other wallet "evm", "solana", etc.
 
     # ---- Status + Metadata ----
     is_default = Column(Boolean, default=False)  # user's primary wallet

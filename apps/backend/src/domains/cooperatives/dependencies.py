@@ -4,11 +4,15 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domains.cooperatives.events import EventDispatcher, NoOpEventDispatcher
-from src.domains.cooperatives.services.beneficiary_pattern_service import BeneficiaryPatternService
+from src.domains.cooperatives.services.beneficiary_pattern_service import (
+    BeneficiaryPatternService,
+)
 from src.domains.cooperatives.services.cooperative_service import CooperativeService
 from src.domains.cooperatives.services.goal_category_service import GoalCategoryService
 from src.domains.cooperatives.services.goal_service import GoalService
-from src.domains.cooperatives.services.ownership_share_service import OwnershipShareService
+from src.domains.cooperatives.services.ownership_share_service import (
+    OwnershipShareService,
+)
 from src.domains.cooperatives.services.rule_services import (
     DecisionRuleService,
     FinancialRuleService,
@@ -19,7 +23,9 @@ from src.domains.cooperatives.uow import CooperativeUnitOfWork
 from src.infra.db.dependencies import get_async_db_session
 
 
-async def get_uow(session: AsyncSession = Depends(get_async_db_session)) -> CooperativeUnitOfWork:
+async def get_uow(
+    session: AsyncSession = Depends(get_async_db_session),
+) -> CooperativeUnitOfWork:
     return CooperativeUnitOfWork(session)
 
 
@@ -78,9 +84,13 @@ def get_ownership_share_service(
     return OwnershipShareService(uow, events)
 
 
-def get_beneficiary_pattern_service(db: AsyncSession = Depends(get_async_db_session)) -> BeneficiaryPatternService:
+def get_beneficiary_pattern_service(
+    db: AsyncSession = Depends(get_async_db_session),
+) -> BeneficiaryPatternService:
     return BeneficiaryPatternService(db)
 
 
-def get_goal_category_service(db: AsyncSession = Depends(get_async_db_session)) -> GoalCategoryService:
+def get_goal_category_service(
+    db: AsyncSession = Depends(get_async_db_session),
+) -> GoalCategoryService:
     return GoalCategoryService(db)

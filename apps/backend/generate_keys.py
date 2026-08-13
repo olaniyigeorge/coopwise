@@ -1,9 +1,22 @@
 import base64
 import subprocess
 
-subprocess.run(["openssl", "ecparam", "-genkey", "-name", "prime256v1", "-noout", "-out", "private.pem"], check=True)
-subprocess.run(["openssl", "ec", "-in", "private.pem", "-pubout", "-out", "public.pem"], check=True)
-
+subprocess.run(
+    [
+        "openssl",
+        "ecparam",
+        "-genkey",
+        "-name",
+        "prime256v1",
+        "-noout",
+        "-out",
+        "private.pem",
+    ],
+    check=True,
+)
+subprocess.run(
+    ["openssl", "ec", "-in", "private.pem", "-pubout", "-out", "public.pem"], check=True
+)
 
 
 with open("private.pem", "rb") as f:

@@ -114,7 +114,7 @@ class CooperativeMembershipService:
                 role=membership_data.role,
                 invited_by=membership_data.invited_by,
                 status=membership_data.status,
-                payout_position=membership_data.payout_position or 0
+                payout_position=membership_data.payout_position or 0,
             )
             db.add(new_membership)
             await db.commit()
@@ -184,7 +184,9 @@ class CooperativeMembershipService:
         Authorization (accepted member check) is enforced by the caller.
         """
         invite_code = config.INVITE_CODE_PREFIX + str(inviter_id) + ":" + str(group_id)
-        logger.info(f"[InviteService] Generated invite code for group={group_id} by={inviter_id}")
+        logger.info(
+            f"[InviteService] Generated invite code for group={group_id} by={inviter_id}"
+        )
         return invite_code
 
     # Checkout group with invite code

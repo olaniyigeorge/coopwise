@@ -9,7 +9,10 @@ from src.shared.utils.logger import logger
 from config import AppConfig as config
 from src.infra.cache.redis_client import get_redis
 from src.domains.auth.infra.firebase_verifier import FirebaseVerifier
-from src.domains.auth.infra.jose_token_service import AsymmetricTokenService, JoseTokenService
+from src.domains.auth.infra.jose_token_service import (
+    AsymmetricTokenService,
+    JoseTokenService,
+)
 from src.domains.auth.infra.notifier_adapter import NotificationServiceAuthNotifier
 from src.domains.auth.infra.otp_senders import (
     EmailOtpSender,
@@ -40,7 +43,6 @@ def _build_otp_senders() -> dict[OtpChannel, object]:
         # logging the code so the OTP flow is fully testable locally.
         senders[OtpChannel.phone] = NullOtpSender(OtpChannel.phone)
 
-
     senders[OtpChannel.email] = EmailOtpSender()
 
     return senders
@@ -59,14 +61,21 @@ def _dispatch_wallet_provisioning(user, access_token: str) -> None:
     # JWT now that ownership is set via explicit owner locator, not BYOA
     # JWT inference. TODO: drop the param once callback signature is free
     # to change without touching every call site.
-    logger.info(f"[_dispatch_wallet_provisioning] broker={celery_app.conf.broker_url!r} backend={celery_app.conf.result_backend!r}")
+    logger.info(
+        f"[_dispatch_wallet_provisioning] broker={celery_app.conf.broker_url!r} backend={celery_app.conf.result_backend!r}"
+    )
     try:
-        logger.info(f"\n[_dispatch_wallet_provisioning] ignoring wallet provisioning for user {user.id}\n")
+        logger.info(
+            f"\n[_dispatch_wallet_provisioning] ignoring wallet provisioning for user {user.id}\n"
+        )
         # provision_wallet_task.delay(str(user.id), user.email)
     except Exception as e:
-        logger.error(f"[_dispatch_wallet_provisioning] failed to enqueue for {user.id}: {e}")
+        logger.error(
+            f"[_dispatch_wallet_provisioning] failed to enqueue for {user.id}: {e}"
+        )
         # Don't let broker issues block sign-in — wallet provisioning
         # can be retried/reconciled later; auth should still succeed.
+
 
 def get_auth_service(
     db: AsyncSession = Depends(get_async_db_session),
@@ -88,7 +97,7 @@ def get_auth_service(
 
 def get_access_token_service() -> AsymmetricTokenService:
     return AsymmetricTokenService(
-        private_key_pem=config.JWT_PRIVATE_KEY,   # from env/secrets
+        private_key_pem=config.JWT_PRIVATE_KEY,  # from env/secrets
         public_key_pem=config.JWT_PUBLIC_KEY,
-        kid=config.JWT_KID,                       # e.g. "coopwise-2026-07"
+        kid=config.JWT_KID,  # e.g. "coopwise-2026-07"
     )

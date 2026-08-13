@@ -77,7 +77,6 @@ async def to_pydantic(insight: AIInsight) -> AIInsightDetail:
     )
 
 
-
 AI_INSIGHT_TEMPLATES = [
     # Engagement / Participation
     {

@@ -84,9 +84,7 @@ async def accept_invite(
     if not auth_user:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    group_data = await CooperativeService.get_coop_group_by_id(
-        db, membership.group_id
-    )
+    group_data = await CooperativeService.get_coop_group_by_id(db, membership.group_id)
 
     if not group_data:
         raise HTTPException(status_code=404, detail="Group not found.")
@@ -219,20 +217,6 @@ async def list_members_by_group(
     return await CooperativeMembershipService.get_memberships_by_group(
         coop_id, filter, db
     )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # @router.post("/{circle_id}/join", response_model=CoopGroupDetails)

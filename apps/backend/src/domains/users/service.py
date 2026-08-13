@@ -16,6 +16,7 @@ Changes from the original (per agreed PR2 scope):
     previously referenced but didn't exist on the model -> AttributeError
     on first real call.
 """
+
 from __future__ import annotations
 
 import base64
@@ -47,12 +48,11 @@ class UserService:
             logger.error(f"Failed to fetch users: {e}")
             raise UserFetchError(str(e))
 
-    async def  get_user_by_id(self, user_id: UUID) -> User:
+    async def get_user_by_id(self, user_id: UUID) -> User:
         user = await self._users.get_by_id(user_id)
         if not user:
             raise UserNotFoundError("User not found")
         return user
-    
 
     async def queue_avatar_upload(
         self, user_id: UUID, file_bytes: bytes, filename: str, content_type: str

@@ -6,6 +6,7 @@ Keeping all `select(User).where(...)` calls here means:
   - AuthService tests never touch a real engine/session.
   - If we ever swap ORMs, this is the one file that changes.
 """
+
 from __future__ import annotations
 
 from typing import Optional

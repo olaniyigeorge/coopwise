@@ -29,7 +29,9 @@ class CooperativeRepository:
 
     async def list(self, *, limit: int = 50) -> Sequence[CoopCooperative]:
         result = await self._session.execute(
-            select(CoopCooperative).order_by(CoopCooperative.created_at.desc()).limit(limit)
+            select(CoopCooperative)
+            .order_by(CoopCooperative.created_at.desc())
+            .limit(limit)
         )
         return result.scalars().all()
 

@@ -21,6 +21,7 @@ don't need to inherit from anything, and test fakes are plain classes
 with no base-class boilerplate. AuthService depends ONLY on these
 interfaces, never on redis, httpx, firebase_admin, etc. directly.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -158,6 +159,7 @@ class TokenServicePort(Protocol):
 class PasswordHasherPort(Protocol):
     def hash(self, password: str) -> str: ...
     def verify(self, password: str, hashed: str) -> bool: ...
+
 
 class ClockPort(Protocol):
     def now(self) -> datetime: ...

@@ -10,10 +10,10 @@ from src.shared.utils.logger import logger
 
 class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
     """
-        Distributed token bucket rate limiter using Redis + Lua (atomic).
-        - Uses millisecond timestamps for smooth refill.
-        - Uses fractional tokens (floats) so refill works even during fast loops.
-        - Handles Redis NOSCRIPT by reloading script automatically.
+    Distributed token bucket rate limiter using Redis + Lua (atomic).
+    - Uses millisecond timestamps for smooth refill.
+    - Uses fractional tokens (floats) so refill works even during fast loops.
+    - Handles Redis NOSCRIPT by reloading script automatically.
     """
 
     LUA_SCRIPT = r"""
@@ -78,17 +78,23 @@ class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
                 self._script_sha = await r.script_load(self.LUA_SCRIPT)
 
     def _get_client_id(self, request: Request) -> str:
-        #TODO: Render's XFF handling isn't documented as strictly append-only for
+        # TODO: Render's XFF handling isn't documented as strictly append-only for
         # all plan tiers — don't trust client-supplied values for a security
         # control. Revisit if/when Render ships a dedicated client-IP header
         xff = request.headers.get("x-forwarded-for")
-        client_ip = xff.split(",")[0].strip() if xff else (request.client.host if request.client else "unknown")
+        client_ip = (
+            xff.split(",")[0].strip()
+            if xff
+            else (request.client.host if request.client else "unknown")
+        )
         return client_ip
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         r = getattr(request.app.state, "redis", None)
         if r is None:
-            logger.error("Redis client not found in app.state.redis. Rate limiting disabled.")
+            logger.error(
+                "Redis client not found in app.state.redis. Rate limiting disabled."
+            )
             return await call_next(request)
 
         rule = self._resolve_rule(request.url.path)
@@ -111,12 +117,18 @@ class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
             retry_after = self._retry_after_seconds(tokens_left, refill_rate)
             logger.warning(
                 "Rate limit exceeded for '%s' on rule '%s' (tokens_left=%.3f)",
-                client_id, rule.get("path_prefix"), tokens_left,
+                client_id,
+                rule.get("path_prefix"),
+                tokens_left,
             )
             return Response(
-                content="Too Many Requests", status_code=429,
-                headers={"Retry-After": str(retry_after), "X-RateLimit-Limit": str(int(capacity)),
-                        "X-RateLimit-Remaining": "0"},
+                content="Too Many Requests",
+                status_code=429,
+                headers={
+                    "Retry-After": str(retry_after),
+                    "X-RateLimit-Limit": str(int(capacity)),
+                    "X-RateLimit-Remaining": "0",
+                },
             )
 
         # not wrapped in try/except — a downstream ResponseValidationError,
@@ -128,12 +140,28 @@ class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
 
     async def _eval(self, r, key, capacity, refill_rate, now_ms):
         try:
-            return await r.evalsha(self._script_sha, 1, key, str(capacity), str(refill_rate), str(now_ms), "1")
+            return await r.evalsha(
+                self._script_sha,
+                1,
+                key,
+                str(capacity),
+                str(refill_rate),
+                str(now_ms),
+                "1",
+            )
         except Exception as e:
             if "NOSCRIPT" in str(e).upper():
                 self._script_sha = None
                 await self._ensure_script(r)
-                return await r.evalsha(self._script_sha, 1, key, str(capacity), str(refill_rate), str(now_ms), "1")
+                return await r.evalsha(
+                    self._script_sha,
+                    1,
+                    key,
+                    str(capacity),
+                    str(refill_rate),
+                    str(now_ms),
+                    "1",
+                )
             raise
 
     def _retry_after_seconds(self, tokens_left: float, refill_rate: float) -> int:
@@ -143,11 +171,10 @@ class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
         return max(1, int(missing / refill_rate + 0.999))
 
 
-
 async def app_middleware(request: Request, call_next):
     request_id = str(uuid.uuid4())
     logger.info(f"\nStart Request {request_id}: {request.method} {request.url.path}\n")
-    
+
     start_time = time.time()
     response = await call_next(request)
     req_process_time = round((time.time() - start_time) * 1000, 3)  # in ms
@@ -162,9 +189,3 @@ async def app_middleware(request: Request, call_next):
     logger.info(log_dict, extra=log_dict)
     logger.info(f"\nEnd Request {request_id}: {response.status_code}\n")
     return response
-
-
-
-
-
-

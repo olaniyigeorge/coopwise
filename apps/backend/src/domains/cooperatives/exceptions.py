@@ -96,28 +96,39 @@ class OwnershipShareOverallocatedError(CooperativeDomainError):
 
     def __init__(self, current_total_pct: float) -> None:
         self.current_total_pct = current_total_pct
-        super().__init__(f"Ownership shares would total {current_total_pct}%, exceeding 100%")
+        super().__init__(
+            f"Ownership shares would total {current_total_pct}%, exceeding 100%"
+        )
+
 
 class RuleVersionConflictError(CooperativeDomainError):
     def __init__(self, cooperative_id: str, rule_type: str) -> None:
         self.cooperative_id = cooperative_id
         self.rule_type = rule_type
-        super().__init__(f"A current {rule_type} rule already exists for cooperative {cooperative_id}")
+        super().__init__(
+            f"A current {rule_type} rule already exists for cooperative {cooperative_id}"
+        )
+
 
 class RuleNotFoundError(CooperativeDomainError):
     def __init__(self, cooperative_id: str, rule_type: str) -> None:
         self.cooperative_id = cooperative_id
         self.rule_type = rule_type
-        super().__init__(f"No active {rule_type} rule found for cooperative {cooperative_id}")
+        super().__init__(
+            f"No active {rule_type} rule found for cooperative {cooperative_id}"
+        )
+
 
 class GoalCategoryConflictError(CooperativeDomainError):
     def __init__(self, code: str) -> None:
         self.code = code
         super().__init__(f"A goal category with code '{code}' already exists")
 
+
 class GoalContractAlreadyExistsError(CooperativeDomainError):
     def __init__(self, goal_id: str) -> None:
         super().__init__(f"Goal {goal_id} already has a contract")
+
 
 class InvalidContractFieldsError(CooperativeDomainError):
     def __init__(self, pattern_code: str, invalid_fields: list[str]) -> None:
@@ -126,7 +137,6 @@ class InvalidContractFieldsError(CooperativeDomainError):
         super().__init__(
             f"Fields {invalid_fields} are not valid for beneficiary pattern '{pattern_code}'"
         )
-
 
 
 _STATUS_MAP: dict[type[CooperativeDomainError], int] = {
@@ -141,11 +151,11 @@ _STATUS_MAP: dict[type[CooperativeDomainError], int] = {
 }
 
 
-
-
 def register_cooperative_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(CooperativeDomainError)
-    async def _cooperative_domain_error_handler(request: Request, exc: CooperativeDomainError):
+    async def _cooperative_domain_error_handler(
+        request: Request, exc: CooperativeDomainError
+    ):
         status_code = _STATUS_MAP.get(type(exc), 400)
         logger.warning(
             "Cooperative domain error: %s",

@@ -1,7 +1,6 @@
 import httpx
 
 
-
 async def get_location_from_ip(ip: str) -> str:
     if ip in ("127.0.0.1", "::1"):
         return "Localhost"

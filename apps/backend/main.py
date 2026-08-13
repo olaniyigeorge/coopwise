@@ -8,7 +8,10 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import sqlalchemy
 
-from src.api.middlewares.middlewares import app_middleware, DistributedTokenBucketMiddleware
+from src.api.middlewares.middlewares import (
+    app_middleware,
+    DistributedTokenBucketMiddleware,
+)
 from src.infra.cache.redis_client import redis_manager
 from src.infra.db.database import db_manager
 from src.shared.utils.logger import logger
@@ -16,6 +19,7 @@ from src.api.routers import router_list
 from src.domains.cooperatives.exceptions import register_cooperative_exception_handlers
 
 from config import AppConfig as config, rate_limit_rules
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,12 +29,17 @@ async def lifespan(app: FastAPI):
     try:
         engine_kwargs = {}
         if "sqlite" in config.DATABASE_URL:
-            engine_kwargs.update({
-                "connect_args": {"check_same_thread": False},
-                "poolclass": sqlalchemy.StaticPool,
-            })
+            engine_kwargs.update(
+                {
+                    "connect_args": {"check_same_thread": False},
+                    "poolclass": sqlalchemy.StaticPool,
+                }
+            )
 
-        db_manager.initialize(config.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1), **engine_kwargs)
+        db_manager.initialize(
+            config.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1),
+            **engine_kwargs,
+        )
         await db_manager.create_tables()
 
         app.state.redis = await redis_manager.initialize(

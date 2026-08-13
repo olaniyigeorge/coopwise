@@ -19,7 +19,6 @@ from src.domains.cooperatives.models.cooperative import CoopCooperative
 from src.domains.memberships.service import CooperativeMembershipService
 
 
-
 class ActivityService:
     @staticmethod
     async def log(db: AsyncSession, activity_data: ActivityCreate):
@@ -97,8 +96,6 @@ class ActivityService:
             .limit(limit)
         )
         return result.scalars().all()
-
-
 
 
 class SummaryService:

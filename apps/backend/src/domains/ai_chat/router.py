@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,19 +8,20 @@ from src.api.middlewares.dependencies import get_current_user
 from src.infra.cache.redis_client import get_redis
 from src.infra.db.dependencies import get_async_db_session
 from src.domains.ai_chat.schemas import AiChatHistoryResponse, AiChatBody
-from src.domains.ai_chat.service import load_messages, save_messages, clear_messages, openai_chat_with_messages, AI_CHAT_SYSTEM, MAX_HISTORY_MESSAGES
-
-
-
-
-
+from src.domains.ai_chat.service import (
+    load_messages,
+    save_messages,
+    clear_messages,
+    openai_chat_with_messages,
+    AI_CHAT_SYSTEM,
+    MAX_HISTORY_MESSAGES,
+)
 
 
 from src.domains.auth.schemas import AuthenticatedUser
 
 
 router = APIRouter(prefix="/api/v1/cooperatives", tags=["Cooperative Groups"])
-
 
 
 @router.get("/ai-chat/history", response_model=AiChatHistoryResponse)
@@ -54,7 +54,11 @@ async def get_immediate_ai_response(
     history = load_messages(redis_client, uid)
 
     api_messages: list[dict[str, str]] = [{"role": "system", "content": AI_CHAT_SYSTEM}]
-    recent = history[-MAX_HISTORY_MESSAGES:] if len(history) > MAX_HISTORY_MESSAGES else history
+    recent = (
+        history[-MAX_HISTORY_MESSAGES:]
+        if len(history) > MAX_HISTORY_MESSAGES
+        else history
+    )
     for m in recent:
         role = m.get("role")
         content = (m.get("content") or "").strip()

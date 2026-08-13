@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from src.infra.db.database import db_manager
 from src.domains.cooperatives.models.seed import BENEFICIARY_PATTERN_SEED
-from src.domains.cooperatives.models.goals import CoopBeneficiaryPattern 
+from src.domains.cooperatives.models.goals import CoopBeneficiaryPattern
 
 
 async def main():
@@ -17,6 +17,7 @@ async def main():
             if row["code"] not in existing_codes:
                 session.add(CoopBeneficiaryPattern(**row))
     await db_manager.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

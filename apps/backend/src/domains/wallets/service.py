@@ -168,9 +168,7 @@ class WalletService:
 
     @staticmethod
     async def lock_for_contribution(
-        user_id: UUID,
-        amount: Decimal,
-        db: AsyncSession
+        user_id: UUID, amount: Decimal, db: AsyncSession
     ) -> Dict[str, Any]:
         """
         Lock funds in user's wallet for a contribution.
@@ -189,7 +187,9 @@ class WalletService:
 
             # Lock the funds
             wallet.stable_coin_balance -= amount
-            wallet.stable_coin_locked = (wallet.stable_coin_locked or Decimal(0)) + amount
+            wallet.stable_coin_locked = (
+                wallet.stable_coin_locked or Decimal(0)
+            ) + amount
 
             await db.commit()
             await db.refresh(wallet)
@@ -202,7 +202,7 @@ class WalletService:
                 local_amount=Decimal(0),  # Not applicable for internal transfer
                 local_currency=wallet.local_currency,
                 exchange_rate=Decimal(1),
-                note="Funds locked for contribution"
+                note="Funds locked for contribution",
             )
             db.add(ledger)
             await db.commit()
@@ -217,9 +217,7 @@ class WalletService:
 
     @staticmethod
     async def finalize_contribution_debit(
-        user_id: UUID,
-        amount: Decimal,
-        db: AsyncSession
+        user_id: UUID, amount: Decimal, db: AsyncSession
     ) -> Dict[str, Any]:
         """
         Finalize a contribution by removing locked funds permanently.
@@ -250,7 +248,7 @@ class WalletService:
                 local_amount=Decimal(0),
                 local_currency=wallet.local_currency,
                 exchange_rate=Decimal(1),
-                note="Contribution finalized - funds moved to group pool"
+                note="Contribution finalized - funds moved to group pool",
             )
             db.add(ledger)
             await db.commit()
@@ -265,9 +263,7 @@ class WalletService:
 
     @staticmethod
     async def release_locked_funds(
-        user_id: UUID,
-        amount: Decimal,
-        db: AsyncSession
+        user_id: UUID, amount: Decimal, db: AsyncSession
     ) -> Dict[str, Any]:
         """
         Release locked funds back to available balance.
@@ -282,7 +278,10 @@ class WalletService:
                 return {"success": False, "error": "Wallet not found"}
 
             if (wallet.stable_coin_locked or Decimal(0)) < amount:
-                return {"success": False, "error": "Insufficient locked funds to release"}
+                return {
+                    "success": False,
+                    "error": "Insufficient locked funds to release",
+                }
 
             # Move back to available balance
             wallet.stable_coin_locked -= amount
@@ -299,7 +298,7 @@ class WalletService:
                 local_amount=Decimal(0),
                 local_currency=wallet.local_currency,
                 exchange_rate=Decimal(1),
-                note="Locked funds released due to failed contribution"
+                note="Locked funds released due to failed contribution",
             )
             db.add(ledger)
             await db.commit()

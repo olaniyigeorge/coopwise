@@ -20,6 +20,7 @@ from src.domains.wallets.service import WalletService
 
 class ContributionActionType(Enum):
     """Tracking different types of contribution actions for audit"""
+
     MANUAL_SUBMIT = "manual_submit"
     AUTO_DEBIT = "auto_debit"
     EMERGENCY_WITHDRAW = "emergency_withdraw"
@@ -30,7 +31,7 @@ class ContributionActionType(Enum):
 class ContributionService:
     """
     Service for managing all contribution lifecycle operations.
-    
+
     Handles:
     - Manual contributions (user-initiated)
     - Automated contributions based on schedule
@@ -46,11 +47,11 @@ class ContributionService:
         user: AuthenticatedUser,
         db: AsyncSession,
         group_address: str = None,
-        network: str = "flow"
+        network: str = "flow",
     ) -> ContributionDetail:
         """
         Process a manual contribution initiated by the user.
-        
+
         Flow:
         1. Validate membership in group
         2. Check sufficient wallet balance
@@ -59,7 +60,7 @@ class ContributionService:
         5. Submit to smart contract
         6. Mark as completed or failed based on contract response
         7. Handle rollback on failure
-        
+
         Security checks:
         - User must be active group member
         - Amount must be >= 0
@@ -67,8 +68,10 @@ class ContributionService:
         - Idempotent: duplicate submissions use same contribution ID
         """
         # Validate membership
-        membership = await CooperativeMembershipService.get_membership_by_user_and_group(
-            user_id=user.id, group_id=contribution_data.group_id, db=db
+        membership = (
+            await CooperativeMembershipService.get_membership_by_user_and_group(
+                user_id=user.id, group_id=contribution_data.group_id, db=db
+            )
         )
         if not membership or not membership.is_active:
             logger.warning(
@@ -80,7 +83,10 @@ class ContributionService:
             )
 
         # Get group for validation
-        from src.domains.cooperatives.services.cooperative_service import CooperativeService
+        from src.domains.cooperatives.services.cooperative_service import (
+            CooperativeService,
+        )
+
         group = await CooperativeService.get_coop_group_by_id(
             db, contribution_data.group_id
         )
@@ -118,9 +124,7 @@ class ContributionService:
 
         # Lock funds in wallet (prevents double-spend)
         lock_result = await WalletService.lock_for_contribution(
-            user_id=user.id,
-            amount=amount,
-            db=db
+            user_id=user.id, amount=amount, db=db
         )
         if not lock_result.get("success"):
             logger.error(f"Failed to lock funds: user={user.id}, amount={amount}")
@@ -144,14 +148,16 @@ class ContributionService:
             db.add(contribution)
             await db.commit()
             await db.refresh(contribution)
-            logger.info(f"Contribution created: id={contribution.id}, user={user.id}, amount={amount}")
+            logger.info(
+                f"Contribution created: id={contribution.id}, user={user.id}, amount={amount}"
+            )
 
             # Submit to smart contract
             contract_result = await contract_service.submit_contribution(
                 group_address=group_address or str(group.id),
                 user_address=user.wallet_address or str(user.id),
                 amount=amount,
-                network=network
+                network=network,
             )
 
             if contract_result.get("success"):
@@ -160,7 +166,7 @@ class ContributionService:
                     db=db,
                     contribution_id=contribution.id,
                     tx_hash=contract_result.get("tx_hash"),
-                    action_type=ContributionActionType.MANUAL_SUBMIT
+                    action_type=ContributionActionType.MANUAL_SUBMIT,
                 )
                 logger.info(
                     f"Contribution completed: id={contribution.id}, tx={contract_result.get('tx_hash')}"
@@ -168,15 +174,13 @@ class ContributionService:
             else:
                 # Revert wallet lock and mark as failed
                 await WalletService.release_locked_funds(
-                    user_id=user.id,
-                    amount=amount,
-                    db=db
+                    user_id=user.id, amount=amount, db=db
                 )
                 await ContributionService.mark_contribution_failed(
                     db=db,
                     contribution_id=contribution.id,
                     reason=contract_result.get("error", "Contract submission failed"),
-                    action_type=ContributionActionType.MANUAL_SUBMIT
+                    action_type=ContributionActionType.MANUAL_SUBMIT,
                 )
                 logger.error(
                     f"Contribution failed: id={contribution.id}, reason={contract_result.get('error')}"
@@ -194,15 +198,15 @@ class ContributionService:
             # Re-raise HTTP exceptions
             raise
         except Exception as e:
-            logger.error(f"Unexpected error in process_manual_contribution: {e}", exc_info=True)
+            logger.error(
+                f"Unexpected error in process_manual_contribution: {e}", exc_info=True
+            )
             # Attempt cleanup
             try:
                 await WalletService.release_locked_funds(
-                    user_id=user.id,
-                    amount=amount,
-                    db=db
+                    user_id=user.id, amount=amount, db=db
                 )
-            except  Exception as e:
+            except Exception as e:
                 logger.error(f"Failed to cleanup locked funds for user {user.id}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -211,17 +215,14 @@ class ContributionService:
 
     @staticmethod
     async def process_auto_contribution(
-        group_id: UUID,
-        user: AuthenticatedUser,
-        db: AsyncSession,
-        network: str = "flow"
+        group_id: UUID, user: AuthenticatedUser, db: AsyncSession, network: str = "flow"
     ) -> Optional[ContributionDetail]:
         """
         Process an automated contribution based on group policy.
-        
+
         Called by scheduled worker (e.g., Celery) for recurring contributions.
         This is the primary time-based contribution mechanism.
-        
+
         Flow:
         1. Validate user is active member
         2. Check if contribution is due (based on frequency)
@@ -229,13 +230,15 @@ class ContributionService:
         4. Lock funds
         5. Submit to contract
         6. Record in database
-        
+
         Returns None if contribution is not yet due or fails gracefully.
         """
         try:
             # Validate membership
-            membership = await CooperativeMembershipService.get_membership_by_user_and_group(
-                user_id=user.id, group_id=group_id, db=db
+            membership = (
+                await CooperativeMembershipService.get_membership_by_user_and_group(
+                    user_id=user.id, group_id=group_id, db=db
+                )
             )
             if not membership or not membership.is_active:
                 logger.warning(
@@ -244,15 +247,24 @@ class ContributionService:
                 return None
 
             # Get group details
-            from src.domains.cooperatives.services.cooperative_service import CooperativeService
+            from src.domains.cooperatives.services.cooperative_service import (
+                CooperativeService,
+            )
+
             group = await CooperativeService.get_coop_group_by_id(db, group_id)
             if not group or group.status.value != "active":
-                logger.warning(f"Auto-contribution skipped: group not active group={group_id}")
+                logger.warning(
+                    f"Auto-contribution skipped: group not active group={group_id}"
+                )
                 return None
 
             # Check if contribution is due based on frequency
-            if not await ContributionService._is_contribution_due(db, group_id, user.id):
-                logger.debug(f"Contribution not yet due: user={user.id}, group={group_id}")
+            if not await ContributionService._is_contribution_due(
+                db, group_id, user.id
+            ):
+                logger.debug(
+                    f"Contribution not yet due: user={user.id}, group={group_id}"
+                )
                 return None
 
             # Check wallet balance
@@ -266,13 +278,13 @@ class ContributionService:
                 return None
 
             # Get group's contract address (would be stored in cooperative_group table)
-            group_address = group.id  # TODO: Add blockchain_address field to cooperative_group
+            group_address = (
+                group.id
+            )  # TODO: Add blockchain_address field to cooperative_group
 
             # Lock funds
             lock_result = await WalletService.lock_for_contribution(
-                user_id=user.id,
-                amount=group.contribution_amount,
-                db=db
+                user_id=user.id, amount=group.contribution_amount, db=db
             )
             if not lock_result.get("success"):
                 logger.error(
@@ -299,7 +311,7 @@ class ContributionService:
                 group_address=str(group_address),
                 user_address=user.wallet_address or str(user.id),
                 amount=group.contribution_amount,
-                network=network
+                network=network,
             )
 
             if contract_result.get("success"):
@@ -307,7 +319,7 @@ class ContributionService:
                     db=db,
                     contribution_id=contribution.id,
                     tx_hash=contract_result.get("tx_hash"),
-                    action_type=ContributionActionType.AUTO_DEBIT
+                    action_type=ContributionActionType.AUTO_DEBIT,
                 )
                 logger.info(
                     f"Auto-contribution processed: user={user.id}, group={group_id}, "
@@ -318,15 +330,13 @@ class ContributionService:
             else:
                 # Release locked funds and mark as failed
                 await WalletService.release_locked_funds(
-                    user_id=user.id,
-                    amount=group.contribution_amount,
-                    db=db
+                    user_id=user.id, amount=group.contribution_amount, db=db
                 )
                 await ContributionService.mark_contribution_failed(
                     db=db,
                     contribution_id=contribution.id,
                     reason=f"Auto-debit contract error: {contract_result.get('error')}",
-                    action_type=ContributionActionType.AUTO_DEBIT
+                    action_type=ContributionActionType.AUTO_DEBIT,
                 )
                 logger.error(
                     f"Auto-contribution failed: user={user.id}, group={group_id}, "
@@ -344,22 +354,24 @@ class ContributionService:
         user: AuthenticatedUser,
         amount: Decimal,
         db: AsyncSession,
-        network: str = "flow"
+        network: str = "flow",
     ) -> Dict[str, Any]:
         """
         Request a withdrawal of funds from the group vault.
-        
+
         This could be before payout is scheduled or for emergency situations.
-        
-        Security: 
+
+        Security:
         - User must be member
         - Amount must not exceed user's balance in group
         - Creates withdrawal record for manager approval
         - Requires blockchain confirmation
         """
         # Validate membership
-        membership = await CooperativeMembershipService.get_membership_by_user_and_group(
-            user_id=user.id, group_id=group_id, db=db
+        membership = (
+            await CooperativeMembershipService.get_membership_by_user_and_group(
+                user_id=user.id, group_id=group_id, db=db
+            )
         )
         if not membership or not membership.is_active:
             raise HTTPException(
@@ -368,7 +380,10 @@ class ContributionService:
             )
 
         # Get group
-        from src.domains.cooperatives.services.cooperative_service import CooperativeService
+        from src.domains.cooperatives.services.cooperative_service import (
+            CooperativeService,
+        )
+
         group = await CooperativeService.get_coop_group_by_id(db, group_id)
         if not group:
             raise HTTPException(
@@ -390,14 +405,12 @@ class ContributionService:
                 and_(
                     Contribution.user_id == user.id,
                     Contribution.group_id == group_id,
-                    Contribution.status == ContributionStatus.completed
+                    Contribution.status == ContributionStatus.completed,
                 )
             )
         )
-        total_amount = sum(
-            c.amount for c in total_contributed.scalars().all()
-        )
-        
+        total_amount = sum(c.amount for c in total_contributed.scalars().all())
+
         if total_amount < amount:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -410,7 +423,7 @@ class ContributionService:
             group_address=group_address,
             user_address=user.wallet_address or str(user.id),
             amount=-amount,  # Negative = withdrawal
-            network=network
+            network=network,
         )
 
         return {
@@ -419,25 +432,28 @@ class ContributionService:
             "amount": str(amount),
             "group_id": str(group_id),
             "status": "pending" if contract_result.get("success") else "failed",
-            "message": contract_result.get("error") if not contract_result.get("success") else "Withdrawal request submitted"
+            "message": (
+                contract_result.get("error")
+                if not contract_result.get("success")
+                else "Withdrawal request submitted"
+            ),
         }
 
     @staticmethod
     async def emergency_refund(
-        group_id: UUID,
-        user: AuthenticatedUser,
-        db: AsyncSession,
-        network: str = "flow"
+        group_id: UUID, user: AuthenticatedUser, db: AsyncSession, network: str = "flow"
     ) -> Dict[str, Any]:
         """
         Request emergency refund from group vault.
-        
+
         This is for special circumstances (group dissolution, user hardship, etc.)
         Requires additional authorization/approval.
         """
         # Validate membership
-        membership = await CooperativeMembershipService.get_membership_by_user_and_group(
-            user_id=user.id, group_id=group_id, db=db
+        membership = (
+            await CooperativeMembershipService.get_membership_by_user_and_group(
+                user_id=user.id, group_id=group_id, db=db
+            )
         )
         if not membership:
             raise HTTPException(
@@ -446,7 +462,10 @@ class ContributionService:
             )
 
         # Get group
-        from src.domains.cooperatives.services.cooperative_service import CooperativeService
+        from src.domains.cooperatives.services.cooperative_service import (
+            CooperativeService,
+        )
+
         group = await CooperativeService.get_coop_group_by_id(db, group_id)
         if not group:
             raise HTTPException(
@@ -459,7 +478,7 @@ class ContributionService:
         contract_result = await contract_service.emergency_refund(
             group_address=group_address,
             user_address=user.wallet_address or str(user.id),
-            network=network
+            network=network,
         )
 
         logger.warning(
@@ -472,20 +491,25 @@ class ContributionService:
             "tx_hash": contract_result.get("tx_hash"),
             "refund_amount": str(contract_result.get("refund_amount", 0)),
             "group_id": str(group_id),
-            "message": "Emergency refund initiated" if contract_result.get("success") else contract_result.get("error")
+            "message": (
+                "Emergency refund initiated"
+                if contract_result.get("success")
+                else contract_result.get("error")
+            ),
         }
 
     @staticmethod
     async def _is_contribution_due(
-        db: AsyncSession,
-        group_id: UUID,
-        user_id: UUID
+        db: AsyncSession, group_id: UUID, user_id: UUID
     ) -> bool:
         """
         Check if a users's contribution is due based on frequency and last contribution.
         """
         # Get group
-        from src.domains.cooperatives.services.cooperative_service import CooperativeService
+        from src.domains.cooperatives.services.cooperative_service import (
+            CooperativeService,
+        )
+
         group = await CooperativeService.get_coop_group_by_id(db, group_id)
         if not group:
             return False
@@ -497,7 +521,7 @@ class ContributionService:
                 and_(
                     Contribution.user_id == user_id,
                     Contribution.group_id == group_id,
-                    Contribution.status == ContributionStatus.completed
+                    Contribution.status == ContributionStatus.completed,
                 )
             )
             .order_by(Contribution.created_at.desc())
@@ -511,7 +535,7 @@ class ContributionService:
         # Check based on frequency
         now = datetime.now()
         frequency = group.contribution_frequency
-        
+
         if frequency == ContributionFrequency.daily:
             due_date = last.created_at + timedelta(days=1)
         elif frequency == ContributionFrequency.weekly:
@@ -528,7 +552,7 @@ class ContributionService:
         db: AsyncSession,
         contribution_id: UUID,
         tx_hash: str = None,
-        action_type: ContributionActionType = ContributionActionType.MANUAL_SUBMIT
+        action_type: ContributionActionType = ContributionActionType.MANUAL_SUBMIT,
     ) -> Dict[str, Any]:
         """
         Mark a contribution as successfully completed.
@@ -550,7 +574,7 @@ class ContributionService:
             await WalletService.finalize_contribution_debit(
                 user_id=contribution.user_id,
                 amount=Decimal(str(contribution.amount)),
-                db=db
+                db=db,
             )
 
             logger.info(
@@ -561,7 +585,7 @@ class ContributionService:
             return {
                 "message": "Contribution marked as completed successfully.",
                 "contribution_id": str(contribution_id),
-                "status": "completed"
+                "status": "completed",
             }
 
         except HTTPException:
@@ -578,7 +602,7 @@ class ContributionService:
         db: AsyncSession,
         contribution_id: UUID,
         reason: str,
-        action_type: ContributionActionType = ContributionActionType.MANUAL_SUBMIT
+        action_type: ContributionActionType = ContributionActionType.MANUAL_SUBMIT,
     ) -> Dict[str, Any]:
         """
         Mark a contribution as failed and record failure reason.
@@ -602,7 +626,7 @@ class ContributionService:
             return {
                 "message": "Contribution marked as failed.",
                 "contribution_id": str(contribution_id),
-                "reason": reason
+                "reason": reason,
             }
 
         except Exception as e:
@@ -633,7 +657,7 @@ class ContributionService:
             except KeyError:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid status: {contribution_status}"
+                    detail=f"Invalid status: {contribution_status}",
                 )
 
             contribution.status = new_status
@@ -651,7 +675,7 @@ class ContributionService:
             return {
                 "message": f"Contribution marked {new_status.value} successfully.",
                 "contribution_id": str(contribution_id),
-                "status": new_status.value
+                "status": new_status.value,
             }
 
         except HTTPException:
@@ -693,21 +717,23 @@ class ContributionService:
         group_id: Optional[UUID] = None,
         user_id: Optional[UUID] = None,
         skip: int = 0,
-        limit: int = 10
+        limit: int = 10,
     ) -> List[Contribution]:
         """
         Fetch contributions with optional filtering.
         """
         try:
             query = select(Contribution)
-            
+
             if group_id:
                 query = query.where(Contribution.group_id == group_id)
             if user_id:
                 query = query.where(Contribution.user_id == user_id)
-            
-            query = query.offset(skip).limit(limit).order_by(Contribution.created_at.desc())
-            
+
+            query = (
+                query.offset(skip).limit(limit).order_by(Contribution.created_at.desc())
+            )
+
             result = await db.execute(query)
             contributions = result.scalars().all()
             return contributions
@@ -720,9 +746,7 @@ class ContributionService:
 
     @staticmethod
     async def get_user_group_contributions(
-        db: AsyncSession,
-        user_id: UUID,
-        group_id: UUID
+        db: AsyncSession, user_id: UUID, group_id: UUID
     ) -> Dict[str, Any]:
         """
         Get comprehensive contribution summary for a user in a specific group.
@@ -731,14 +755,21 @@ class ContributionService:
             contributions = await ContributionService.get_contributions(
                 db, group_id=group_id, user_id=user_id, limit=1000
             )
-            
-            completed = [c for c in contributions if c.status == ContributionStatus.completed]
-            pending = [c for c in contributions if c.status in (ContributionStatus.initiated, ContributionStatus.pending)]
+
+            completed = [
+                c for c in contributions if c.status == ContributionStatus.completed
+            ]
+            pending = [
+                c
+                for c in contributions
+                if c.status
+                in (ContributionStatus.initiated, ContributionStatus.pending)
+            ]
             failed = [c for c in contributions if c.status == ContributionStatus.failed]
-            
+
             total_contributed = sum(c.amount for c in completed)
             total_pending = sum(c.amount for c in pending)
-            
+
             return {
                 "total_contributed": float(total_contributed),
                 "total_pending": float(total_pending),
@@ -751,10 +782,12 @@ class ContributionService:
                         "amount": float(c.amount),
                         "status": c.status.value,
                         "created_at": c.created_at.isoformat(),
-                        "fulfilled_at": c.fulfilled_at.isoformat() if c.fulfilled_at else None
+                        "fulfilled_at": (
+                            c.fulfilled_at.isoformat() if c.fulfilled_at else None
+                        ),
                     }
                     for c in contributions[:20]  # Return last 20
-                ]
+                ],
             }
         except Exception as e:
             logger.error(f"Failed to get user group contributions: {e}")
@@ -762,5 +795,3 @@ class ContributionService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Could not fetch contribution summary",
             )
-
-

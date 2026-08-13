@@ -41,6 +41,4 @@ class CoopActivity(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
-    cooperative: Mapped["CoopCooperative"] = relationship(
-        back_populates="activities"
-    )
+    cooperative: Mapped["CoopCooperative"] = relationship(back_populates="activities")

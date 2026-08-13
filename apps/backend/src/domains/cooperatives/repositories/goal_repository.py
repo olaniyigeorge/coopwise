@@ -20,10 +20,14 @@ class GoalRepository:
 
     async def get_by_id(self, goal_id: UUID | str) -> CoopGoal | None:
         goal_id = str(goal_id)
-        result = await self._session.execute(select(CoopGoal).where(CoopGoal.id == goal_id))
+        result = await self._session.execute(
+            select(CoopGoal).where(CoopGoal.id == goal_id)
+        )
         return result.scalar_one_or_none()
 
-    async def list_for_cooperative(self, cooperative_id: UUID | str) -> Sequence[CoopGoal]:
+    async def list_for_cooperative(
+        self, cooperative_id: UUID | str
+    ) -> Sequence[CoopGoal]:
         cooperative_id = str(cooperative_id)
         result = await self._session.execute(
             select(CoopGoal)

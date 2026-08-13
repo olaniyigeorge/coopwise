@@ -1,9 +1,4 @@
-
-
 from typing import Protocol
-
-
-
 
 
 class EmailSenderPort(Protocol):

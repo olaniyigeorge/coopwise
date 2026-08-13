@@ -32,7 +32,7 @@ class SqlAlchemyUserRepository:
         await self._db.commit()
         await self._db.refresh(user)
         return user
-    
+
     def _conflict_message(self, e: IntegrityError) -> str:
         constraint_name = getattr(e.orig, "constraint_name", None)
         if constraint_name in _CONSTRAINT_FIELD_MESSAGES:

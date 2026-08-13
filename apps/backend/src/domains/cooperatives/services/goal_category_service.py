@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domains.cooperatives.exceptions import GoalCategoryConflictError
 from src.domains.cooperatives.schemas import GoalCategoryCreate
 from src.domains.cooperatives.models.goals import CoopGoalCategory
-from src.domains.cooperatives.repositories.goal_category_repository import GoalCategoryRepository
+from src.domains.cooperatives.repositories.goal_category_repository import (
+    GoalCategoryRepository,
+)
 
 
 class GoalCategoryService:
@@ -39,7 +41,7 @@ class GoalCategoryService:
         return await self._repo.get_by_id(category_id)
 
     async def get_by_code(self, code: str) -> CoopGoalCategory | None:
-        return await self._repo.get_by_code(code)        
+        return await self._repo.get_by_code(code)
 
     async def add(self, category: CoopGoalCategory) -> CoopGoalCategory:
         return await self._repo.add(category)

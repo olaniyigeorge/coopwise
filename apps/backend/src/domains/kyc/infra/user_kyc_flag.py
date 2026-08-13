@@ -2,14 +2,13 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-from src.domains.users.models import User 
+from src.domains.users.models import User
 
 
-
-class UserKYCFlager():
+class UserKYCFlager:
 
     def __init__(self, db: AsyncSession) -> None:
-            self._db = db
+        self._db = db
 
     async def set_kyc_verified(self, user_id, verified: bool) -> None:
         await self._db.execute(

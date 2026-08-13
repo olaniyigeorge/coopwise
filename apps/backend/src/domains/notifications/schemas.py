@@ -4,7 +4,11 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
 from src.domains.users.schemas import UserDetail
-from src.domains.notifications.models import EventType, NotificationStatus, NotificationType
+from src.domains.notifications.models import (
+    EventType,
+    NotificationStatus,
+    NotificationType,
+)
 
 
 class NotificationDetail(BaseModel):

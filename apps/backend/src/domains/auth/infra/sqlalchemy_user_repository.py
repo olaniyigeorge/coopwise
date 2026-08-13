@@ -8,6 +8,7 @@ with get_by_firebase_uid; get_by_phone_number added back as a first-class
 lookup since phone is now an equally-primary identifier, not a secondary
 field.
 """
+
 from __future__ import annotations
 
 from typing import Optional

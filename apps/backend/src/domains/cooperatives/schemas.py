@@ -27,6 +27,7 @@ from src.domains.cooperatives.models.enums import (
 
 # --- Cooperative ---
 
+
 class CooperativeCreate(BaseModel):
     name: str
     description: str | None = None
@@ -55,6 +56,7 @@ class CooperativeRead(BaseModel):
 
 
 # --- Rules ---
+
 
 class GovernanceRuleCreate(BaseModel):
     decision_model: DecisionModel
@@ -106,6 +108,7 @@ class RuleRead(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class CooperativeFullRead(BaseModel):
     cooperative: CooperativeRead
     governance_rule: RuleRead | None
@@ -116,8 +119,8 @@ class CooperativeFullRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-
 # --- Goals ---
+
 
 class GoalCreate(BaseModel):
     beneficiary_pattern_id: UUID
@@ -165,6 +168,7 @@ class GoalContractCreate(BaseModel):
     deadline: date | None = None
     extra_terms: dict[str, Any] | None = None
 
+
 class GoalContractRead(BaseModel):
     id: UUID
     goal_id: UUID
@@ -180,6 +184,7 @@ class GoalContractRead(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class OwnershipShareCreate(BaseModel):
     user_id: UUID
@@ -201,6 +206,7 @@ class OwnershipShareRead(BaseModel):
 
 # --- Catalog (beneficiary patterns / goal categories) ---
 
+
 class BeneficiaryPatternRead(BaseModel):
     id: UUID
     code: str
@@ -214,7 +220,6 @@ class BeneficiaryPatternRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-
 class GoalCategoryCreate(BaseModel):
     code: str
     name: str
@@ -222,7 +227,6 @@ class GoalCategoryCreate(BaseModel):
     icon: str | None = None
     parent_category_id: UUID | None = None
     suggested_beneficiary_pattern_id: UUID | None = None
-
 
 
 class GoalCategoryRead(BaseModel):

@@ -5,7 +5,9 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domains.cooperatives.models.goals import CoopBeneficiaryPattern
-from src.domains.cooperatives.repositories.beneficiary_pattern_repository import BeneficiaryPatternRepository
+from src.domains.cooperatives.repositories.beneficiary_pattern_repository import (
+    BeneficiaryPatternRepository,
+)
 
 
 class BeneficiaryPatternService:

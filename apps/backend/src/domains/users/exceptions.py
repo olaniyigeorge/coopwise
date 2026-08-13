@@ -17,8 +17,8 @@ class UserUpdateError(UserDomainError):
         self.reason = reason
         super().__init__(reason)
 
+
 class UserConflictError(UserDomainError):
     def __init__(self, reason: str):
         self.reason = reason
         super().__init__(reason)
-

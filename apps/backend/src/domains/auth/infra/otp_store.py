@@ -10,6 +10,7 @@ Key design:
   otp:{channel}:{identifier}:attempts    -> failed verify attempt count (TTL = CODE_TTL)
   otp:ratelimit:{channel}:{identifier}   -> request count in the current window
 """
+
 from __future__ import annotations
 
 import secrets

@@ -13,6 +13,7 @@ NullOtpSender swapped in for local/dev) before the provider decision is
 final. Swapping in a real provider later means filling in the marked
 method body only — nothing else in the auth domain changes.
 """
+
 from __future__ import annotations
 
 import httpx
@@ -38,7 +39,9 @@ class SmsOtpSender:
         # TODO: replace with the chosen provider's actual send-SMS call.
         # Keep the message copy short/clear — many target users are on
         # low-end devices with small SMS previews.
-        message = f"Your CoopWise verification code is {code}. It expires in 10 minutes."
+        message = (
+            f"Your CoopWise verification code is {code}. It expires in 10 minutes."
+        )
         try:
             resp = await self._http.post(
                 f"{self._api_base_url}/sms/send",
@@ -64,6 +67,7 @@ class EmailOtpSender:
         except Exception as e:
             logger.error(f"[EmailOtpSender] failed to enqueue for {identifier}: {e}")
             raise OtpDeliveryError(f"Could not queue email to {identifier}")
+
 
 class NullOtpSender:
     """Local/dev/test stand-in for either channel: logs the code instead of

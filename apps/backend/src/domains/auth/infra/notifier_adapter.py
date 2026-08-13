@@ -33,4 +33,6 @@ class NotificationServiceAuthNotifier:
             type="info",
             entity_url=None,
         )
-        await NotificationService.create_and_push_notification_to_user(noti_data, self._db)
+        await NotificationService.create_and_push_notification_to_user(
+            noti_data, self._db
+        )
