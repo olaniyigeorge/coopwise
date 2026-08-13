@@ -7,7 +7,7 @@ import uuid
 from fastapi import Query, WebSocket, WebSocketDisconnect, Depends
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 from src.domains.notifications.models import NotificationStatus
 from src.api.middlewares.dependencies import get_current_user, get_current_user_ws

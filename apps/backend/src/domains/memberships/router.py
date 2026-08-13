@@ -2,8 +2,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from src.infra.payments import flow_service
-from src.domains.cooperatives.schemas import CooperativeStatus
 
 from src.shared.utils.logger import logger
 from src.domains.analytics.models import ActivityType
@@ -14,7 +12,7 @@ from src.domains.cooperatives.services.cooperative_service import CooperativeSer
 from src.domains.notifications.service import NotificationService
 from src.domains.users.service import UserService
 from src.domains.auth.schemas import AuthenticatedUser
-from src.domains.memberships.schemas import MembershipCreate, MembershipDetails
+from src.domains.memberships.schemas import MembershipDetails
 from src.infra.db.dependencies import get_async_db_session
 from src.domains.memberships.service import CooperativeMembershipService
 from src.api.middlewares.dependencies import get_current_user

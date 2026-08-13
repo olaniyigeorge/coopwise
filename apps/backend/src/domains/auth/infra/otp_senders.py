@@ -18,7 +18,6 @@ from __future__ import annotations
 import httpx
 
 from src.infra.celery.tasks.otp_tasks import send_otp_email_task
-from src.infra.emails.ports import EmailSenderPort
 from src.domains.auth.exceptions import OtpDeliveryError
 from src.domains.auth.ports import OtpChannel
 from src.shared.utils.logger import logger

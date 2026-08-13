@@ -1,3 +1,21 @@
+from typing import List, Dict, Any
+from datetime import datetime, timedelta
+from uuid import UUID
+from decimal import Decimal
+
+from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, and_
+from sqlalchemy.orm import sessionmaker
+
+from src.domains.contributions.service import ContributionService, ContributionActionType
+from src.domains.cooperatives.models.cooperative import CoopCooperative, CooperativeStatus
+from src.domains.contributions.models import Contribution, ContributionStatus
+from src.domains.memberships.models.group_membership import GroupMembership
+from src.shared.utils.logger import logger
+from src.domains.auth.schemas import AuthenticatedUser
+
+
 """
 Timed Contribution Worker
 
@@ -17,24 +35,6 @@ Security:
 - Audit logging of all automated actions
 - Rate limiting per group and user
 """
-
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
-from uuid import UUID
-from decimal import Decimal
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
-from sqlalchemy.orm import sessionmaker
-
-from src.domains.contributions.service import ContributionService, ContributionActionType
-from src.domains.cooperatives.services.cooperative_service import CooperativeService
-from src.domains.memberships.service import CooperativeMembershipService
-from src.domains.cooperatives.models.cooperative import CooperativeGroup, CooperativeStatus, ContributionFrequency
-from src.domains.contributions.models import Contribution, ContributionStatus
-from src.domains.memberships.models.group_membership import GroupMembership
-from src.shared.utils.logger import logger
-from src.domains.auth.schemas import AuthenticatedUser
 
 
 class TimedContributionWorker:
@@ -141,7 +141,7 @@ class TimedContributionWorker:
                 duration = (summary["end_time"] - start_time).total_seconds()
                 
                 logger.info("=" * 60)
-                logger.info(f"Timed contribution processing completed")
+                logger.info("Timed contribution processing completed")
                 logger.info(f"Duration: {duration:.2f} seconds")
                 logger.info(f"Total processed: {summary['total_processed']}")
                 logger.info(f"Successful: {summary['successful']}")
@@ -161,12 +161,12 @@ class TimedContributionWorker:
             return summary
 
     @staticmethod
-    async def _get_active_groups(db: AsyncSession) -> List[CooperativeGroup]:
+    async def _get_active_groups(db: AsyncSession) -> List[CoopCooperative]:
         """Query all active cooperative groups"""
         try:
             result = await db.execute(
-                select(CooperativeGroup).where(
-                    CooperativeGroup.status == CooperativeStatus.active
+                select(CoopCooperative).where(
+                    CoopCooperative.status == CooperativeStatus.active
                 )
             )
             groups = result.scalars().all()
@@ -250,7 +250,7 @@ class TimedContributionWorker:
                 select(GroupMembership).where(
                     and_(
                         GroupMembership.group_id == group_id,
-                        GroupMembership.is_active == True
+                        GroupMembership.is_active
                     )
                 )
             )
@@ -381,7 +381,7 @@ class TimedContributionWorker:
                             wallet_address=None
                         )
 
-                        group = await db.get(CooperativeGroup, contrib.group_id)
+                        group = await db.get(CoopCooperative, contrib.group_id)
                         if not group:
                             logger.error(f"Group not found for contribution {contrib.id}")
                             continue
@@ -424,7 +424,3 @@ class TimedContributionWorker:
         )
 
         return summary
-
-
-# Import here to avoid circular imports
-from fastapi import HTTPException

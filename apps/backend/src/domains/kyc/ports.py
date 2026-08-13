@@ -1,17 +1,11 @@
 from typing import Optional, Protocol
 from uuid import UUID
 
-from src.domains.kyc.schemas import BankAccountVerificationResult, IdentityVerificationResult, KYCAdminListItem
+from src.domains.kyc.schemas import BankAccountVerificationResult, IdentityVerificationResult
 from src.domains.kyc.models import (
     KYCStatus, KYCVerification, KYCStepType, KYCStepStatus
 )
 from src.domains.kyc.audit_models import KYCAuditLog
-
-class KYCAuditRepositoryPort(Protocol):
-    async def create(
-        self, *, kyc_id, admin_id, action: str, step: str | None,
-        reason: str | None, metadata: dict, ip_address: str | None, user_agent: str | None,
-    ): ...
 
 class KYCRepositoryPort(Protocol):
     async def get_by_user_id(self, user_id: UUID) -> Optional[KYCVerification]: ...
@@ -71,8 +65,6 @@ class IdentityVerificationProviderPort(Protocol):
         video_key: Optional[str] = None,
     ) -> IdentityVerificationResult: ...
 
-
-from typing import Optional, Any
 
 
 

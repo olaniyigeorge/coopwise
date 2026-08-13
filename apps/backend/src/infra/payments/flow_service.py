@@ -1,6 +1,5 @@
 
 import asyncio
-import logging
 from flow_py_sdk import flow_client, cadence
 from flow_py_sdk.cadence import Address, UFix64, String, Array, UInt64, UInt8
 from src.shared.utils.logger import logger
@@ -102,8 +101,8 @@ class FlowService:
         Called async after circle creation confirms.
         """
         cadence_script = open("cadence/transactions/StartCircleCron.cdc").read()
-
-        async with flow_client(host=TESTNET_HOST, port=TESTNET_PORT) as client:
+        logger.log(f"[FlowService] {cadence_script}")
+        async with flow_client(host=TESTNET_HOST, port=TESTNET_PORT):
             args = [
                 UInt64(circle_id),
                 UInt8(2),    # Low priority
@@ -111,7 +110,7 @@ class FlowService:
                 UInt64(2500),# keeperExecutionEffort
             ]
             # ... same signing/sending pattern as create_circle
-            logger.info(f"[FlowService] Cron started for circle {circle_id}")
+            logger.info(f"[FlowService] Cron started for circle {circle_id} with args {args}")
 
     async def stop_circle_cron(self, circle_id: int) -> None:
         """

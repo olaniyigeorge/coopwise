@@ -2,7 +2,6 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
-from enum import Enum
 
 from src.domains.users.schemas import UserDetail
 from src.domains.memberships.models.enums import MembershipRole, MembershipStatus

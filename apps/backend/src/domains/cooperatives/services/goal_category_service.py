@@ -43,12 +43,3 @@ class GoalCategoryService:
 
     async def add(self, category: CoopGoalCategory) -> CoopGoalCategory:
         return await self._repo.add(category)
-
-    async def list(self):
-        return await self._repo.list()
-
-    async def get_by_id(self, category_id: UUID | str) -> CoopGoalCategory | None:
-        return await self._repo.get_by_id(category_id)
-
-    async def get_by_code(self, code: str) -> CoopGoalCategory | None:
-        return await self._repo.get_by_code(code)

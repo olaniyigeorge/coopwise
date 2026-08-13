@@ -110,7 +110,8 @@ def load_rate_limit_rules(path: str) -> Dict[str, Any]:
         assert "capacity" in rules.get("default", {}) and "refill_rate" in rules.get("default", {})
         for rule in rules.get("rules", []):
             assert "path_prefix" in rule and "capacity" in rule and "refill_rate" in rule
-            float(rule["capacity"]); float(rule["refill_rate"])
+            _ = float(rule["capacity"])
+            _ = float(rule["refill_rate"])
     except (AssertionError, TypeError, ValueError) as e:
         logger.error(f"Invalid rate_limit_rules.json shape: {e}. Falling back to safe default.")
         return default

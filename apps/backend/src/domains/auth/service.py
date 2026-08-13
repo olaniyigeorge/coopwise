@@ -22,7 +22,6 @@ from datetime import timedelta
 from typing import Callable, Optional
 from uuid import UUID, uuid4
 
-from config import AppConfig
 from src.domains.auth.exceptions import (
     FirebaseVerificationError,
     FullNameRequiredError,

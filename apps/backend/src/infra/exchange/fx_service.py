@@ -48,7 +48,7 @@ class FXService:
         try:
             async with httpx.AsyncClient(timeout=3.0) as client:
                 r = await client.get(
-                    f"https://open.er-api.com/v6/latest/USD"
+                    "https://open.er-api.com/v6/latest/USD"
                 )
                 r.raise_for_status()
                 rates = r.json().get("rates", {})

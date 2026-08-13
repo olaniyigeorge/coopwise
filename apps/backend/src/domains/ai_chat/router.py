@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone

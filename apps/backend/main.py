@@ -1,15 +1,13 @@
 from contextlib import asynccontextmanager
-from fastapi.exceptions import ResponseValidationError
 import uvicorn
 from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import sqlalchemy
 
-from src.infra.db import all_models 
 from src.api.middlewares.middlewares import app_middleware, DistributedTokenBucketMiddleware
 from src.infra.cache.redis_client import redis_manager
 from src.infra.db.database import db_manager

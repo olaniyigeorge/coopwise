@@ -1,10 +1,10 @@
-# generate_keys.py
+import base64
 import subprocess
 
 subprocess.run(["openssl", "ecparam", "-genkey", "-name", "prime256v1", "-noout", "-out", "private.pem"], check=True)
 subprocess.run(["openssl", "ec", "-in", "private.pem", "-pubout", "-out", "public.pem"], check=True)
 
-import base64
+
 
 with open("private.pem", "rb") as f:
     priv_b64 = base64.b64encode(f.read()).decode()

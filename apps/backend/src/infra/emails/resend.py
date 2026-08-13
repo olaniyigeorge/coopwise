@@ -17,7 +17,7 @@ is enough to unblock OTP-flow testing in the meantime.
 """
 from __future__ import annotations
 
-from typing import Optional, Protocol
+from typing import Optional
 
 import resend
 

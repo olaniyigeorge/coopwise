@@ -1,13 +1,12 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, make_url
+from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 
 from config import AppConfig
 from src.infra.db.database import Base
 
-from src.infra.db import all_models
 
 
 

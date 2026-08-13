@@ -1,7 +1,7 @@
 import json
 from typing import List
 from redis import Redis
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.infra.cache.redis_client import get_cache, update_cache
 from src.domains.analytics.schemas import ActivityCreate, ActivityDetail
@@ -10,6 +10,14 @@ from src.domains.analytics.models import ActivityLog
 from datetime import datetime
 from uuid import UUID
 from src.shared.utils.logger import logger
+
+
+from src.domains.wallets.service import WalletService
+from src.domains.dashboard.schemas import Summary
+from src.domains.contributions.models import Contribution, ContributionStatus
+from src.domains.cooperatives.models.cooperative import CoopCooperative
+from src.domains.memberships.service import CooperativeMembershipService
+
 
 
 class ActivityService:
@@ -93,25 +101,6 @@ class ActivityService:
 
 
 
-
-import json
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from redis.asyncio import Redis
-from datetime import datetime
-
-from src.domains.wallets.service import WalletService
-from src.domains.auth.schemas import AuthenticatedUser
-from src.domains.dashboard.schemas import Summary, Targets
-from src.infra.cache.redis_client import get_cache, update_cache
-from src.domains.contributions.models import Contribution, ContributionStatus
-from src.domains.memberships.models.group_membership import GroupMembership
-from src.domains.cooperatives.models.cooperative import CoopCooperative
-from src.domains.memberships.service import CooperativeMembershipService
-from src.shared.utils.logger import logger
-from src.domains.users.models import User
-
-
 class SummaryService:
 
     @staticmethod
@@ -153,7 +142,7 @@ class SummaryService:
                 select(Contribution.due_date)
                 .where(
                     Contribution.user_id == user.id,
-                    Contribution.due_date != None,
+                    Contribution.due_date.is_not(None),
                     Contribution.due_date > datetime.now(),
                 )
                 .order_by(Contribution.due_date.asc())
@@ -172,7 +161,7 @@ class SummaryService:
                 select(CoopCooperative.next_payout_date, CoopCooperative.id)
                 .where(
                     CoopCooperative.id.in_(group_ids),
-                    CoopCooperative.next_payout_date != None,
+                    CoopCooperative.next_payout_date.is_not(None),
                     CoopCooperative.next_payout_date > datetime.now(),
                 )
                 .order_by(CoopCooperative.next_payout_date.asc())

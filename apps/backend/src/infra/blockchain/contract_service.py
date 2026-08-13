@@ -1,10 +1,7 @@
-from typing import Dict, Any, Optional, List
-import json
-from uuid import UUID
+from typing import Dict, Any, Optional
 from decimal import Decimal
 from enum import Enum
 from src.shared.utils.logger import logger
-from config import AppConfig as config
 import os
 
 

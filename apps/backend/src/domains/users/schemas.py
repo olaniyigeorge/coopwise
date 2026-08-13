@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, List, Optional
+from typing import Annotated, Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, constr
 from uuid import UUID
 from src.domains.users.models import IncomeRange, SavingFrequency, UserRoles

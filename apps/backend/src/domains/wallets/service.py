@@ -1,5 +1,4 @@
 # app/services/wallet_service.py
-from datetime import datetime
 import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
@@ -18,8 +17,7 @@ from src.domains.wallets.schemas import (
     WalletWithdraw,
 )
 from src.domains.auth.schemas import AuthenticatedUser
-from src.shared.utils.exchange_client import fetch_exchange_rate
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from decimal import Decimal
 from src.shared.utils.logger import logger
 from uuid import UUID

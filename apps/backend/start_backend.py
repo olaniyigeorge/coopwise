@@ -1,6 +1,10 @@
 import subprocess
 import sys
 import platform
+import os
+import time
+import signal
+from pathlib import Path
 
 from src.shared.utils.logger import logger
 
@@ -11,12 +15,7 @@ Start script for Revela Backend Services
 Memory-optimized for 512MB Render instances with stdout logging
 """
 
-import os
-import sys
-import time
-import signal
-import subprocess
-from pathlib import Path
+
 
 # Color codes for terminal output
 class Colors:

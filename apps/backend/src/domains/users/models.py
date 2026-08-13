@@ -3,7 +3,7 @@ from uuid import uuid4
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.domains.cooperatives.models.cooperative import CoopInvitation
+    pass
 
 
 
@@ -138,7 +138,6 @@ class User(Base):
 
 
 # Deferred relationship to avoid circular import with ChatWithAI
-from src.domains.ai_chat.models import ChatWithAI  # noqa: E402
 
 User.ai_chats = relationship(
     "ChatWithAI", back_populates="user", cascade="all, delete-orphan"

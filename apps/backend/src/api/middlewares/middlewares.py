@@ -7,8 +7,6 @@ from starlette.types import ASGIApp
 import time
 from src.shared.utils.logger import logger
 
-import redis.asyncio as redis
-from redis.asyncio.client import Redis as RedisClient
 
 class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
     """

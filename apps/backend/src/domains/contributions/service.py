@@ -4,7 +4,6 @@ from typing import Optional, Dict, Any, List
 from decimal import Decimal
 from enum import Enum
 from src.domains.cooperatives.models.enums import ContributionFrequency
-from config import AppConfig as config
 from fastapi import HTTPException, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -203,12 +202,12 @@ class ContributionService:
                     amount=amount,
                     db=db
                 )
-            except:
+            except  Exception as e:
                 logger.error(f"Failed to cleanup locked funds for user {user.id}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An unexpected error occurred while processing your contribution.",
-            )
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="An unexpected error occurred while processing your contribution.",
+                )
 
     @staticmethod
     async def process_auto_contribution(

@@ -4,7 +4,6 @@ from sqlalchemy import Column, Text, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from src.infra.db.database import Base
-from sqlalchemy import Column, Text
 
 
 class ChatWithAI(Base):

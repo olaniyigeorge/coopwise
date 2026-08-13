@@ -32,19 +32,7 @@ class RequestOtp(BaseModel):
 
 class RefreshSessionRequest(BaseModel):
     refresh_token: str
-    
-class VerifyOtp(BaseModel):
-    channel: OtpChannel
-    identifier: str
-    code: Annotated[str, constr(min_length=4, max_length=8)]
-    # Required only for brand-new registrations — enforced in the service,
-    # not here, so we can return a precise FullNameRequiredError rather
-    # than a generic 422 the client can't act on differently from "bad code".
-    full_name: Optional[str] = None
-
-    model_config = ConfigDict(use_enum_values=True)
-
-
+  
 class FirebaseSignIn(BaseModel):
     firebase_id_token: str
     # Same reasoning as VerifyOtp.full_name — required only on first sight

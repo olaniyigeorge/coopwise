@@ -13,7 +13,7 @@ from src.domains.kyc.tasks import process_identity_submission
 from src.shared.idempotency.idempotency import IdempotencyGuard, require_idempotency_key
 from src.shared.security.webhook_signing import verify_hmac_signature
 import filetype  
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Header, Query, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 
 from config import AppConfig as config
 from src.api.middlewares.dependencies import get_current_admin_user, get_current_user
@@ -24,7 +24,7 @@ from src.domains.kyc.exceptions import (
 )
 from src.domains.kyc.models import KYCStatus, KYCStepStatus, KYCStepType, KYCIdDocumentType
 from src.domains.kyc.service import (
-    KYCService, PersonalInfoInput, ContactInfoInput, IdentityInput, BankingInfoInput,
+    KYCService, PersonalInfoInput, ContactInfoInput, BankingInfoInput,
 )
 from src.domains.kyc.schemas import (
     KYCAdminDetailResponse, KYCAdminListResponse, PersonalInfoRequest, ContactInfoRequest, BankingInfoRequest,

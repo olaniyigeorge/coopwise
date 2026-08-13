@@ -16,7 +16,7 @@ from src.domains.cooperatives.dependencies import (
     get_membership_rule_service,
     get_ownership_share_service,
 )
-from src.domains.cooperatives.models.goals import CoopGoal, CoopGoalCategory, CoopOwnershipShare
+from src.domains.cooperatives.models.goals import CoopGoal, CoopOwnershipShare
 from src.domains.cooperatives.models.rules import (
     CoopDecisionRule,
     CoopFinancialRule,

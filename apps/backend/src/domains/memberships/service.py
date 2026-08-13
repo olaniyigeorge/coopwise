@@ -1,6 +1,5 @@
 from typing import List, Optional
 from uuid import UUID
-from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 

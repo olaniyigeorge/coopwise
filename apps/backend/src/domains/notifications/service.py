@@ -18,7 +18,6 @@ from src.domains.notifications.schemas import (
     NotificationCreate,
     NotificationDetail,
 )
-from src.domains.notifications.schemas import NotificationUpdate
 from src.domains.notifications.models import Notification, NotificationStatus
 from src.infra.cache.redis_client import get_cache, update_cache
 from src.shared.utils.logger import logger

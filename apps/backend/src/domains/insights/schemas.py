@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
@@ -77,7 +77,6 @@ async def to_pydantic(insight: AIInsight) -> AIInsightDetail:
     )
 
 
-from datetime import timedelta
 
 AI_INSIGHT_TEMPLATES = [
     # Engagement / Participation

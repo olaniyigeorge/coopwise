@@ -24,7 +24,6 @@ from uuid import UUID
 
 
 from src.domains.users.tasks import upload_avatar_task
-from src.domains.kyc.ports import ObjectStoragePort
 from src.domains.users.exceptions import (
     UserConflictError,
     UserFetchError,

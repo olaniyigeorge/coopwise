@@ -1,4 +1,3 @@
-
 import os
 import pytest
 import pytest_asyncio
@@ -6,23 +5,9 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.pool import NullPool
 
+# noqa: E402
 from src.infra.db.database import db_manager
 from src.infra.db.dependencies import get_async_db_session
-
-"""
-Import every model referenced by User's relationship() string names so
-SQLAlchemy's mapper registry can resolve them. This mirrors what happens
-in the real app: main.py / Base.metadata.create_all() touches every
-domain's models module, registering them all before any query runs.
-"""
-from src.domains.ai_chat import models as _ai_chat_models  # noqa: F401
-from src.domains.contributions import models as _contrib_models  # noqa: F401
-from src.domains.insights import models as _insights_models  # noqa: F401
-from src.domains.memberships import models as _membership_models  # noqa: F401
-from src.domains.notifications import models as _notification_models  # noqa: F401
-from src.domains.support import models as _support_models  # noqa: F401
-from src.domains.users import models as _user_models  # noqa: F401
-from src.domains.wallets import models as _wallet_models  # noqa: F401
 
 
 DATABASE_URL = os.environ["DATABASE_URL"]

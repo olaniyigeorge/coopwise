@@ -14,7 +14,7 @@ class QuickstartUser(HttpUser):
     def view_items(self):
 
         for item_id in range(10):
-            self.client.get(f"/api/v1/cooperatives")
+            self.client.get("/api/v1/cooperatives")
             time.sleep(1)
 
     def on_start(self):

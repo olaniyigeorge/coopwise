@@ -2,7 +2,7 @@ from decimal import Decimal
 import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 
 from src.domains.auth.schemas import AuthenticatedUser
 
@@ -13,6 +13,20 @@ from src.domains.wallets.models import LocalCurrency
 from config import AppConfig as config
 from src.domains.payments.schemas import ChargeResponse, PaystackPayload
 from src.shared.utils.logger import logger
+#--------------------
+from typing import Optional, Dict, Any, List
+from datetime import datetime, timedelta
+from uuid import UUID
+from enum import Enum
+
+from sqlalchemy import and_
+
+from src.domains.cooperatives.models.cooperative import CoopCooperative
+from src.domains.contributions.models import Contribution, ContributionStatus
+from src.domains.memberships.models.group_membership import GroupMembership
+from src.infra.blockchain.contract_service import contract_service
+
+
 
 COOPWISE_USD_NGN_RATE = 1 / 1500
 
@@ -30,23 +44,23 @@ class PaymentService:
         try:
             url = "https://api.paystack.co/transaction/initialize"
 
-            datum = {
-                "amount": payload.amount,
-                "email": payload.email,
-                "currency": payload.currency or "NGN",
-                "tx_ref": payload.tx_ref or "CP-WS-000000000000",
-                "fullname": payload.fullname or "John Doe",
-                "phone_number": payload.phone_number or "08012345678",
-                "client_ip": payload.client_ip or "154.123.220.1",
-                "device_fingerprint": payload.device_fingerprint or "0000000000",
-                "meta": {
-                    "flightID": payload.tx_ref or "0000000",
-                    "sideNote": getattr(
-                        payload.meta, "note", "Payment on Coopwise through API v1"
-                    ),
-                },
-                "is_permanent": False,
-            }
+            # datum = {
+            #     "amount": payload.amount,
+            #     "email": payload.email,
+            #     "currency": payload.currency or "NGN",
+            #     "tx_ref": payload.tx_ref or "CP-WS-000000000000",
+            #     "fullname": payload.fullname or "John Doe",
+            #     "phone_number": payload.phone_number or "08012345678",
+            #     "client_ip": payload.client_ip or "154.123.220.1",
+            #     "device_fingerprint": payload.device_fingerprint or "0000000000",
+            #     "meta": {
+            #         "flightID": payload.tx_ref or "0000000",
+            #         "sideNote": getattr(
+            #             payload.meta, "note", "Payment on Coopwise through API v1"
+            #         ),
+            #     },
+            #     "is_permanent": False,
+            # }
 
             data = {
                 "email": payload.email,
@@ -134,7 +148,7 @@ class PaymentService:
     async def init_pay_with_paystack_and_record(
         db: AsyncSession, user: AuthenticatedUser, payload: PaystackPayload
     ) -> ChargeResponse | None:
-        pay = await PaymentService.init_pay_with_paystack(payload)
+        PaymentService.init_pay_with_paystack(payload)
 
         ledger_create = WalletLedgerCreate(
             wallet_id=user.id,
@@ -276,7 +290,7 @@ class PaymentService:
 
         # 5. Mark deposit as paid
         if check_payment.status:
-            deposit_data = cashramp.mark_deposit_as_paid(
+            cashramp.mark_deposit_as_paid(
                 payment_request_id=init_payment_data.id, receipt_url=str
             )
 
@@ -332,8 +346,6 @@ class PaymentService:
 
 
 
-
-
 """
 Payout Service
 
@@ -352,23 +364,6 @@ Security:
 - Audit trail for all payouts
 - Guard against double payouts
 """
-
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
-from uuid import UUID
-from decimal import Decimal
-from enum import Enum
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
-from src.shared.utils.logger import logger
-from fastapi import HTTPException, status
-
-from src.domains.cooperatives.models.cooperative import CoopCooperative, CooperativeStatus
-from src.domains.contributions.models import Contribution, ContributionStatus
-from src.domains.memberships.models.group_membership import GroupMembership
-from src.infra.blockchain.contract_service import contract_service
-
 
 class PayoutPhase(Enum):
     """Phases of a payout cycle"""
@@ -602,7 +597,7 @@ class PayoutService:
                 select(GroupMembership).where(
                     and_(
                         GroupMembership.group_id == group_id,
-                        GroupMembership.is_active == True
+                        GroupMembership.is_active
                     )
                 )
             )
@@ -679,7 +674,7 @@ class PayoutService:
                 select(GroupMembership).where(
                     and_(
                         GroupMembership.group_id == group_id,
-                        GroupMembership.is_active == True
+                        GroupMembership.is_active
                     )
                 )
             )
@@ -716,7 +711,7 @@ class PayoutService:
                     "cycleDuration", group_address
                 ) or 86400
             ))
-
+            logger.info(f"Check Payou Readiness] total_contributed: {total_contributed}")
             return {
                 "is_ready": is_ready,
                 "members_contributed": members_paid,

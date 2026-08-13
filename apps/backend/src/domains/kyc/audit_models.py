@@ -1,7 +1,7 @@
 from datetime import datetime
 import uuid
 from sqlalchemy import JSON, String, DateTime, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infra.db.database import Base
 

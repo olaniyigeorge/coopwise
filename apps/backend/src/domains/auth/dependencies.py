@@ -19,11 +19,9 @@ from src.domains.auth.infra.otp_senders import (
 from src.domains.auth.infra.otp_store import RedisOtpStore
 from src.domains.auth.infra.sqlalchemy_user_repository import SqlAlchemyUserRepository
 from src.domains.auth.infra.system_adapters import SystemClock
-from src.domains.auth.infra.tasks import provision_wallet_task
 from src.domains.auth.ports import OtpChannel
 from src.domains.auth.service import AuthService
 from src.infra.db.dependencies import get_async_db_session
-from src.infra.emails.resend import get_email_sender
 
 from src.infra.celery.app import celery_app
 

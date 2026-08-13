@@ -6,7 +6,6 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domains.kyc.schemas import KYCAdminListItem
 from src.domains.kyc.models import (
     KYCIdDocumentType,
     KYCStatus,
