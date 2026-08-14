@@ -5,15 +5,28 @@ from uuid import UUID
 
 from src.domains.memberships.models.group_membership import GroupMembership
 from src.shared.utils.logger import logger
-from src.domains.cooperatives.events import CooperativeActivated, EventDispatcher, NoOpEventDispatcher
-from src.domains.cooperatives.exceptions import CooperativeNotFoundError, IllegalStatusTransitionError, NotAuthorizedError
+from src.domains.cooperatives.events import (
+    CooperativeActivated,
+    EventDispatcher,
+    NoOpEventDispatcher,
+)
+from src.domains.cooperatives.exceptions import (
+    CooperativeNotFoundError,
+    IllegalStatusTransitionError,
+    NotAuthorizedError,
+)
 from src.domains.cooperatives.models.cooperative import CoopCooperative
 from src.domains.cooperatives.models.enums import CooperativeModel, CooperativeStatus
 from src.domains.cooperatives.uow import UnitOfWork
 
 
 class CooperativeService:
-    def __init__(self, uow: UnitOfWork, events: EventDispatcher | None = None, logger: Any | None = None) -> None:
+    def __init__(
+        self,
+        uow: UnitOfWork,
+        events: EventDispatcher | None = None,
+        logger: Any | None = None,
+    ) -> None:
         self._uow = uow
         self._events = events or NoOpEventDispatcher()
 
@@ -43,7 +56,6 @@ class CooperativeService:
         await self._uow.commit()
         return cooperative
 
-
     async def get_for_user(
         self,
         user_id: UUID | str,
@@ -68,7 +80,9 @@ class CooperativeService:
     async def list(self, *, limit: int = 50):
         return await self._uow.cooperatives.list(limit=limit)
 
-    async def list_cooperatives(self, filters: dict[str, Any] | None = None, page: int = 1, page_size: int = 20):
+    async def list_cooperatives(
+        self, filters: dict[str, Any] | None = None, page: int = 1, page_size: int = 20
+    ):
         return await self._uow.cooperatives.list(limit=page_size)
 
     async def get_cooperative(self, cooperative_id: UUID | str) -> CoopCooperative:
@@ -77,7 +91,9 @@ class CooperativeService:
             raise CooperativeNotFoundError(str(cooperative_id))
         return cooperative
 
-    async def get_cooperative_detail(self, cooperative_id: UUID | str) -> dict[str, Any]:
+    async def get_cooperative_detail(
+        self, cooperative_id: UUID | str
+    ) -> dict[str, Any]:
         cooperative = await self.get_cooperative(cooperative_id)
         return {
             "cooperative": cooperative,
@@ -86,7 +102,9 @@ class CooperativeService:
             "goal_count": 0,
         }
 
-    async def update(self, cooperative_id: UUID | str, acting_user_id: UUID | str, **fields: Any) -> CoopCooperative:
+    async def update(
+        self, cooperative_id: UUID | str, acting_user_id: UUID | str, **fields: Any
+    ) -> CoopCooperative:
         cooperative = await self.get_cooperative(cooperative_id)
         if acting_user_id is not None:
             # auth is intentionally lightweight at this scaffold stage
@@ -97,15 +115,25 @@ class CooperativeService:
         await self._uow.commit()
         return cooperative
 
-    async def activate(self, cooperative_id: UUID | str, acting_user_id: UUID | str) -> CoopCooperative:
+    async def activate(
+        self, cooperative_id: UUID | str, acting_user_id: UUID | str
+    ) -> CoopCooperative:
         cooperative = await self.get_cooperative(cooperative_id)
         if cooperative.status != CooperativeStatus.PENDING:
-            raise IllegalStatusTransitionError(f"{cooperative.status}", f"{CooperativeStatus.ACTIVE}")
+            raise IllegalStatusTransitionError(
+                f"{cooperative.status}", f"{CooperativeStatus.ACTIVE}"
+            )
         if acting_user_id is None:
             raise NotAuthorizedError()
 
         cooperative.status = CooperativeStatus.ACTIVE
         await self._uow.commit()
-        logger.info(f"cooperative.activated: cooperative_id={str(cooperative.id)}, actor_id={str(acting_user_id)}")
-        await self._events.dispatch(CooperativeActivated(cooperative_id=cooperative.id, actor_id=UUID(str(acting_user_id))))        
+        logger.info(
+            f"cooperative.activated: cooperative_id={str(cooperative.id)}, actor_id={str(acting_user_id)}"
+        )
+        await self._events.dispatch(
+            CooperativeActivated(
+                cooperative_id=cooperative.id, actor_id=UUID(str(acting_user_id))
+            )
+        )
         return cooperative

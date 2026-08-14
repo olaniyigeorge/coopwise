@@ -1,5 +1,4 @@
 from datetime import datetime
-from decimal import Decimal
 from enum import Enum
 from uuid import uuid4
 
@@ -51,8 +50,8 @@ class Contribution(Base):
         default=ContributionStatus.pledged,
         nullable=False,
     )
-    round_number = Column(Numeric, nullable=True)   # which circle round this is for
-    tx_id = Column(String, nullable=True)  
+    round_number = Column(Numeric, nullable=True)  # which circle round this is for
+    tx_id = Column(String, nullable=True)
     note = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)

@@ -28,5 +28,7 @@ def render_otp_email(*, code: str, expires_minutes: int = 10) -> tuple[str, str]
       </p>
     """
     subject = "Your CoopWise verification code"
-    html = render_email_base(preheader=f"Your CoopWise code is {code}", body_html=body_html)
+    html = render_email_base(
+        preheader=f"Your CoopWise code is {code}", body_html=body_html
+    )
     return subject, html

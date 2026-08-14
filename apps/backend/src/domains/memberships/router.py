@@ -2,8 +2,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from src.infra.payments import flow_service
-from src.domains.cooperatives.schemas import CooperativeStatus
 
 from src.shared.utils.logger import logger
 from src.domains.analytics.models import ActivityType
@@ -14,7 +12,7 @@ from src.domains.cooperatives.services.cooperative_service import CooperativeSer
 from src.domains.notifications.service import NotificationService
 from src.domains.users.service import UserService
 from src.domains.auth.schemas import AuthenticatedUser
-from src.domains.memberships.schemas import MembershipCreate, MembershipDetails
+from src.domains.memberships.schemas import MembershipDetails
 from src.infra.db.dependencies import get_async_db_session
 from src.domains.memberships.service import CooperativeMembershipService
 from src.api.middlewares.dependencies import get_current_user
@@ -86,9 +84,7 @@ async def accept_invite(
     if not auth_user:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    group_data = await CooperativeService.get_coop_group_by_id(
-        db, membership.group_id
-    )
+    group_data = await CooperativeService.get_coop_group_by_id(db, membership.group_id)
 
     if not group_data:
         raise HTTPException(status_code=404, detail="Group not found.")
@@ -221,20 +217,6 @@ async def list_members_by_group(
     return await CooperativeMembershipService.get_memberships_by_group(
         coop_id, filter, db
     )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # @router.post("/{circle_id}/join", response_model=CoopGroupDetails)

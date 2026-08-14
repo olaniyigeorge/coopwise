@@ -1,5 +1,3 @@
-
-
 class CrossmintApiError(Exception):
     """Base for any non-2xx response from Crossmint's REST API."""
 

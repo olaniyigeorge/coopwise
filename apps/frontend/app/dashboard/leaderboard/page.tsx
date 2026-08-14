@@ -3,7 +3,6 @@
 import React from "react";
 import DashboardLayout from "@/components/dashboard/layout";
 import { useLeaderboard, LeaderboardCircle } from "@/hooks/useLeaderboard";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Trophy,
   Users,

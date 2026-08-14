@@ -1,4 +1,3 @@
-
 GOAL_CATEGORY_SEED = [
     {
         "code": "savings_general",

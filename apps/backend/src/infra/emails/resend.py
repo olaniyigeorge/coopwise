@@ -15,15 +15,17 @@ password) required just to run the app locally. Add SMTP back later if you
 specifically want to see real emails land in an inbox during dev; logging
 is enough to unblock OTP-flow testing in the meantime.
 """
+
 from __future__ import annotations
 
-from typing import Optional, Protocol
+from typing import Optional
 
 import resend
 
 from src.shared.utils.logger import logger
 from src.infra.emails.ports import EmailSenderPort
 from src.infra.emails.exceptions import EmailSendError
+
 
 def _validate_from_address(email: str) -> None:
     domain = email.split("@")[-1].lower() if "@" in email else ""
@@ -38,7 +40,9 @@ class ResendEmailSender:
     """Production/staging sender. Requires RESEND_API_KEY and EMAIL_FROM
     (a verified, non-Gmail domain) to be configured."""
 
-    def __init__(self, *, api_key: str, from_email: str, from_name: str = "CoopWise") -> None:
+    def __init__(
+        self, *, api_key: str, from_email: str, from_name: str = "CoopWise"
+    ) -> None:
         _validate_from_address(from_email)
         resend.api_key = api_key
         self._from = f"{from_name} <{from_email}>"
@@ -81,7 +85,11 @@ def get_email_sender(
     and staging use Resend; anything else (development, test, local) logs
     instead of sending.
     """
-    if environment in ("production", "development",  "staging"): # TODO:  COnsider removing this gate
+    if environment in (
+        "production",
+        "development",
+        "staging",
+    ):  # TODO:  COnsider removing this gate
         if not resend_api_key or not from_email:
             raise EmailSendError(
                 "RESEND_API_KEY and EMAIL_FROM are required in production/staging"

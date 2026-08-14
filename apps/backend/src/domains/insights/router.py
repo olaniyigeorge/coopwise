@@ -10,7 +10,6 @@ from src.domains.insights.service import InsightEngine
 from src.api.middlewares.dependencies import get_current_user
 from src.domains.auth.schemas import AuthenticatedUser
 from src.infra.db.dependencies import get_async_db_session
-from src.shared.utils.logger import logger
 
 
 router = APIRouter(prefix="/api/v1/insights", tags=["Insights"])
@@ -100,7 +99,7 @@ async def ask_google_llm(prompt: str):
         insight_text = data["candidates"][0]["content"]["parts"][0]["text"]
         return insight_text
 
-    except requests.RequestException as e:
+    except requests.RequestException:
         # Do not include the full exception string, which may contain the request URL (and API key).
         raise RuntimeError("Failed to fetch AI insight")
 

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { AnimatePresence, motion } from "framer-motion"
 import {
@@ -122,7 +122,7 @@ const OnboardingWizard = () => {
     },
   })
 
-  const values = form.watch()
+  const values = useWatch({ control: form.control })
 
   const handleAvatarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -156,12 +156,12 @@ const OnboardingWizard = () => {
         const uploadResult = await uploadAvatar(user!.id, avatarFile)
         profile_picture_url = uploadResult.profile_picture_url
       }
-      // const payload = { ...data, profile_picture_url }
+      const payload = { ...data, profile_picture_url }
       if (!useAuthStore.getState().user) {
         throw new Error("User is not loaded.");
       }
       const currentUser = useAuthStore.getState().user
-      const result = await completeOnboarding(currentUser!.id, data)
+      const result = await completeOnboarding(currentUser!.id, payload)
       setUser(result.user)
       setJustCompleted(true)
       setTimeout(() => router.push("/dashboard"), 650)

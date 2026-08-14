@@ -3,6 +3,7 @@ from typing import Literal
 from rapidfuzz import fuzz
 import re
 
+
 def _normalize_name(name: str) -> str:
     name = name.upper().strip()
     name = re.sub(r"[.,'-]", " ", name)
@@ -10,6 +11,7 @@ def _normalize_name(name: str) -> str:
     # strip common titles/honorifics that show up in bank records
     name = re.sub(r"\b(MR|MRS|MISS|DR|ENGR|CHIEF|ALHAJI|ALHAJA)\b", "", name)
     return name.strip()
+
 
 def _names_reasonably_match(bank_name: str, kyc_name: str, threshold: int = 82) -> bool:
     if not bank_name or not kyc_name:
@@ -27,7 +29,10 @@ def score_name_match(bank_name: str, kyc_name: str) -> float:
     a, b = _normalize_name(bank_name), _normalize_name(kyc_name)
     return max(fuzz.token_sort_ratio(a, b), fuzz.token_set_ratio(a, b))
 
-def classify_name_match(bank_name: str, kyc_name: str) -> Literal["match", "review", "no_match"]:
+
+def classify_name_match(
+    bank_name: str, kyc_name: str
+) -> Literal["match", "review", "no_match"]:
     score = score_name_match(bank_name, kyc_name)
     if score >= 90:
         return "match"

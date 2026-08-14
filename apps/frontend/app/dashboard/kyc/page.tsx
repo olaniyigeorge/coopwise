@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Button } from '@/components/ui/button'
@@ -10,14 +10,14 @@ import { STAGE_ORDER, type KYCOverview } from '@/types/kyc'
 import StageStatusBadge from '@/components/dashboard/kyc/stage-status-badge'
 import { toast } from 'sonner'
 
-const STATUS_COPY: Record<KYCOverview['overall_status'], { label: string; className: string }> = {
-  not_started: { label: 'Not started', className: 'bg-brand-ink/5 text-brand-ink/60' },
-  in_progress: { label: 'In progress', className: 'bg-brand-gold/10 text-brand-gold' },
-  pending_review: { label: 'Pending review', className: 'bg-brand-gold/10 text-brand-gold' },
-  verified: { label: 'Verified', className: 'bg-primary/10 text-primary' },
-  rejected: { label: 'Rejected', className: 'bg-red-50 text-red-600' },
-  expired: { label: 'Expired', className: 'bg-red-50 text-red-600' },
-}
+// const STATUS_COPY: Record<KYCOverview['overall_status'], { label: string; className: string }> = {
+//   not_started: { label: 'Not started', className: 'bg-brand-ink/5 text-brand-ink/60' },
+//   in_progress: { label: 'In progress', className: 'bg-brand-gold/10 text-brand-gold' },
+//   pending_review: { label: 'Pending review', className: 'bg-brand-gold/10 text-brand-gold' },
+//   verified: { label: 'Verified', className: 'bg-primary/10 text-primary' },
+//   rejected: { label: 'Rejected', className: 'bg-red-50 text-red-600' },
+//   expired: { label: 'Expired', className: 'bg-red-50 text-red-600' },
+// }
 
 // Matches the shape ApiService throws on a non-2xx response:
 // `API request failed (${status}): ${body}`

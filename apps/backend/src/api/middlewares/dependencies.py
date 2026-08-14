@@ -31,15 +31,12 @@ from src.domains.auth.infra.jose_token_service import AsymmetricTokenService
 from src.domains.auth.schemas import AuthenticatedUser
 
 
-
 # ---------------------------- 👤 Auth Dependencies ----------------------------
 
 oauth2_scheme = HTTPBearer(auto_error=False)
 
 _token_service = AsymmetricTokenService(
-    config.JWT_PRIVATE_KEY,
-    config.JWT_PUBLIC_KEY,
-    config.JWT_KID
+    config.JWT_PRIVATE_KEY, config.JWT_PUBLIC_KEY, config.JWT_KID
 )
 
 
@@ -113,9 +110,7 @@ async def get_token_optional(
     if not authorization:
         return None
 
-    scheme, token = get_authorization_scheme_param(
-        authorization
-    )
+    scheme, token = get_authorization_scheme_param(authorization)
 
     if scheme.lower() != "bearer":
         return None
@@ -192,6 +187,7 @@ async def get_current_user_ws(
         role=role,
     )
 
+
 # TODO: Consider a new of this with different admin priviledges eg per group
 async def get_current_admin_user(
     current_user: AuthenticatedUser = Depends(get_current_user),
@@ -205,6 +201,7 @@ async def get_current_admin_user(
 
     return current_user
 
+
 # This doesn't work the way i want it yet
 def is_admin_or_owner(path_param: str = "user_id"):
     async def _dependency(
@@ -215,17 +212,17 @@ def is_admin_or_owner(path_param: str = "user_id"):
         if current_user.role.value == "admin" or current_user.id == resource_owner_id:
             return current_user
         raise HTTPException(status_code=403, detail="Not authorized")
+
     return _dependency
 
 
 user_dependency = Depends(get_current_user)
 
-admin_or_owner_dependency = Depends(
-    is_admin_or_owner
-)
+admin_or_owner_dependency = Depends(is_admin_or_owner)
 
 
 # ---------------------------- 🧠 Database Session Dependency ----------------------------
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with db_manager.get_session() as session:

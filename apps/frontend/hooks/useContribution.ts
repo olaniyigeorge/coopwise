@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 // import * as fcl from "@onflow/fcl";
 import axios from "axios";
 
-import { CONTRIBUTE_CDC } from "@/lib/flow/config";
+// import { CONTRIBUTE_CDC } from "@/lib/flow/config";
 import AuthService from "@/services/auth-service";
 
 export type ContributionStatus =
@@ -30,20 +30,20 @@ export interface UseContributionReturn {
   reset: () => void;
 }
 
-function hexToBytes(hex: string): number[] {
-  const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
-  const bytes: number[] = [];
-  for (let i = 0; i < clean.length; i += 2) {
-    bytes.push(parseInt(clean.slice(i, i + 2), 16));
-  }
-  return bytes;
-}
+// function hexToBytes(hex: string): number[] {
+//   const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+//   const bytes: number[] = [];
+//   for (let i = 0; i < clean.length; i += 2) {
+//     bytes.push(parseInt(clean.slice(i, i + 2), 16));
+//   }
+//   return bytes;
+// }
 
-const FLOW_NETWORK = process.env.NEXT_PUBLIC_FLOW_NETWORK ?? "testnet";
-const EXPLORER_BASE =
-  FLOW_NETWORK === "mainnet"
-    ? "https://flowscan.io/tx"
-    : "https://testnet.flowscan.io/tx";
+// const FLOW_NETWORK = process.env.NEXT_PUBLIC_FLOW_NETWORK ?? "testnet";
+// const EXPLORER_BASE =
+//   FLOW_NETWORK === "mainnet"
+//     ? "https://flowscan.io/tx"
+//     : "https://testnet.flowscan.io/tx";
 
 export function useContribution(circleId: number | string): UseContributionReturn {
   const id = `${circleId}`;

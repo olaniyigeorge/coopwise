@@ -33,7 +33,7 @@ function TestimonialCard({ t }: { t: (typeof testimonials)[number] }) {
     <div className="w-[320px] md:w-[380px] flex-shrink-0 bg-white rounded-2xl border border-brand-ink/10 p-6 md:p-7 shadow-sm">
       <Quote className="h-6 w-6 text-brand-gold/70 mb-4" fill="currentColor" strokeWidth={0} />
       <p className="text-sm md:text-[15px] text-brand-ink/75 leading-relaxed mb-6">
-        "{t.quote}"
+        &quot;{t.quote}&quot;
       </p>
       <div className="flex items-center gap-3">
         <Image

@@ -67,6 +67,7 @@ export default function Dashboard() {
           setKycVerified(kyc.overall_status === 'verified')
         } catch (err) {
           // 404 = no KYC record yet, that's fine — leave kycVerified undefined
+          console.error(err)
           setKycVerified(false)
         }
       }
@@ -98,7 +99,7 @@ export default function Dashboard() {
   // NOTE: onboarding_status / kyc_status aren't on the DashboardData type yet.
   // Reading them defensively so StatusBanner activates the moment the
   // backend ships these fields, without breaking the build today.
-  const onboardingStatus = (dashboardData?.user as any)?.onboarding_status as string | undefined
+  // const onboardingStatus = (dashboardData?.user as any)?.onboarding_status as string | undefined
   const kycStatus = kycVerified
 
   return (
@@ -111,7 +112,7 @@ export default function Dashboard() {
             <h1 className="font-display text-2xl font-bold text-brand-ink tracking-tight">
               Welcome back, {firstName} 👋
             </h1>
-            <p className="text-sm text-brand-ink/55 mt-0.5">Here's an overview of your savings</p>
+            <p className="text-sm text-brand-ink/55 mt-0.5">Here&apos;s an overview of your savings</p>
           </div>
           <div className="hidden md:flex items-center gap-2">
             <Button

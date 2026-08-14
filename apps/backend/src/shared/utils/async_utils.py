@@ -1,8 +1,6 @@
-
-
-
 import asyncio
 from typing import Awaitable, Any
+
 
 def run_async_in_celery_task(coro: Awaitable[Any]) -> Any:
     """
@@ -17,6 +15,6 @@ def run_async_in_celery_task(coro: Awaitable[Any]) -> Any:
         # No running loop, create a new one for this task/thread
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    
+
     # Run the coroutine until complete using the determined loop
     return loop.run_until_complete(coro)

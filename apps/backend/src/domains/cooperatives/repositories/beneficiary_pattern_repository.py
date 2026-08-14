@@ -14,13 +14,17 @@ class BeneficiaryPatternRepository:
         self._session = session
 
     async def list(self) -> Sequence[CoopBeneficiaryPattern]:
-        result = await self._session.execute(select(CoopBeneficiaryPattern).order_by(CoopBeneficiaryPattern.name))
+        result = await self._session.execute(
+            select(CoopBeneficiaryPattern).order_by(CoopBeneficiaryPattern.name)
+        )
         return result.scalars().all()
 
     async def get_by_id(self, pattern_id: UUID | str) -> CoopBeneficiaryPattern | None:
         pattern_id = str(pattern_id)
         result = await self._session.execute(
-            select(CoopBeneficiaryPattern).where(CoopBeneficiaryPattern.id == pattern_id)
+            select(CoopBeneficiaryPattern).where(
+                CoopBeneficiaryPattern.id == pattern_id
+            )
         )
         return result.scalar_one_or_none()
 

@@ -3,8 +3,7 @@ from uuid import uuid4
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.domains.cooperatives.models.cooperative import CoopInvitation
-
+    pass
 
 
 from src.domains.memberships.models.group_membership import GroupMembership
@@ -50,16 +49,18 @@ class User(Base):
     )
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=True)
-    password = Column(String, nullable=True) # password is nullable so OAUth users don't need one
+    password = Column(
+        String, nullable=True
+    )  # password is nullable so OAUth users don't need one
     full_name = Column(String, nullable=False)
     phone_number = Column(String(16), unique=True, nullable=True, index=True)
     profile_picture_url = Column(String, nullable=True)
 
     role = Column(Enum(UserRoles), default=UserRoles.user)
-    
+
     firebase_uid = Column(String, unique=True, index=True, nullable=True)
 
-    #  Crossmint / Web3 identity 
+    #  Crossmint / Web3 identity
     crossmint_user_id = Column(String, unique=True, index=True, nullable=True)
     flow_address = Column(String, unique=True, index=True, nullable=True)
     wallet_provider = Column(String, nullable=True, default="crossmint")
@@ -73,9 +74,13 @@ class User(Base):
     # Verification flags
     is_email_verified = Column(Boolean, default=False)
     is_phone_verified = Column(Boolean, default=False)
-    is_kyc_verified = Column(Boolean, default=False, nullable=False, server_default="false")
+    is_kyc_verified = Column(
+        Boolean, default=False, nullable=False, server_default="false"
+    )
 
-    wallet_activated = Column(Boolean, default=False, nullable=False, server_default="false")
+    wallet_activated = Column(
+        Boolean, default=False, nullable=False, server_default="false"
+    )
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.now, nullable=False)
@@ -83,7 +88,7 @@ class User(Base):
         DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
     )
 
-    #  Relationships 
+    #  Relationships
     memberships = relationship(
         "GroupMembership",
         back_populates="user",
@@ -138,7 +143,6 @@ class User(Base):
 
 
 # Deferred relationship to avoid circular import with ChatWithAI
-from src.domains.ai_chat.models import ChatWithAI  # noqa: E402
 
 User.ai_chats = relationship(
     "ChatWithAI", back_populates="user", cascade="all, delete-orphan"

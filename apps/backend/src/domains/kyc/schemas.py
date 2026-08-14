@@ -6,11 +6,15 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from src.domains.kyc.models import (
-    KYCStatus, KYCStepType, KYCStepStatus,
+    KYCStatus,
+    KYCStepType,
+    KYCStepStatus,
     KYCIdentityVerification,
-    KYCIdDocumentType, EmploymentStatus, KYCVerification, SourceOfFunds,
+    KYCIdDocumentType,
+    EmploymentStatus,
+    KYCVerification,
+    SourceOfFunds,
 )
-
 
 
 # ---- Domain-level input DTOs (router maps its pydantic schemas to these — keeps service FastAPI-agnostic) ----
@@ -58,8 +62,8 @@ class BankingInfoInput:
     account_name: str
 
 
-
 # ---------- Requests ----------
+
 
 class PersonalInfoRequest(BaseModel):
     legal_full_name: str = Field(..., min_length=2, max_length=255)
@@ -124,6 +128,7 @@ class FinalizeRejectRequest(BaseModel):
 
 # ---------- Responses ----------
 
+
 class StepSummary(BaseModel):
     step: KYCStepType
     status: KYCStepStatus
@@ -135,6 +140,7 @@ class StepSummary(BaseModel):
 
 class KYCSummaryResponse(BaseModel):
     """Dashboard progress overview."""
+
     kyc_id: UUID
     overall_status: KYCStatus
     current_step: Optional[KYCStepType] = None
@@ -206,6 +212,7 @@ class BankingInfoDetail(BaseModel):
 
 class KYCStatusResponse(BaseModel):
     """Full detail view — everything except encrypted/raw provider payloads."""
+
     id: UUID
     user_id: UUID
     status: KYCStatus
@@ -221,7 +228,6 @@ class KYCStatusResponse(BaseModel):
     verified_at: Optional[datetime]
 
     model_config = ConfigDict(from_attributes=True)
-
 
 
 class StartKYCResponse(BaseModel):
@@ -246,28 +252,10 @@ class IdentityVerificationResult(BaseModel):
     reference_id: str
     raw_response: Any
     requires_manual_review: bool = False
-    liveness_score: Optional[float] = None,
-    liveness_check_passed: Optional[bool] =  None
-
+    liveness_score: Optional[float] = (None,)
+    liveness_check_passed: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class KYCAdminPersonalInfo(BaseModel):
@@ -314,10 +302,6 @@ class KYCAdminBankingInfo(BaseModel):
     rejection_reason: str | None
 
     model_config = ConfigDict(from_attributes=True)
-
-
-
-
 
 
 class KYCAdminListItem(BaseModel):
@@ -381,20 +365,24 @@ class KYCAdminIdentityDetail(BaseModel):
         return cls(
             status=idv.status,
             document_type=idv.document_type,
-            document_image_url=idv.document_image_key,   # already a full secure_url, not a raw key
+            document_image_url=idv.document_image_key,  # already a full secure_url, not a raw key
             selfie_image_url=idv.selfie_image_key,
             video_url=idv.video_key,
             liveness_check_passed=idv.liveness_check_passed,
             liveness_score=idv.liveness_score,
             extracted_document_name=getattr(idv, "extracted_document_name", None),
-            legal_full_name=kyc.personal_info.legal_full_name if kyc.personal_info else None,
-            full_name_match_score=kyc.banking_info.account_name_match_score if kyc.banking_info else None,
+            legal_full_name=(
+                kyc.personal_info.legal_full_name if kyc.personal_info else None
+            ),
+            full_name_match_score=(
+                kyc.banking_info.account_name_match_score if kyc.banking_info else None
+            ),
             provider=idv.provider,
             provider_reference_id=idv.provider_reference_id,
             submitted_at=idv.submitted_at,
             rejection_reason=idv.rejection_reason,
         )
-    
+
 
 class KYCAdminDetailResponse(BaseModel):
     kyc_id: UUID
@@ -408,15 +396,29 @@ class KYCAdminDetailResponse(BaseModel):
     audit_log: list[KYCAuditLogEntry]
 
     @classmethod
-    def from_kyc(cls, kyc: "KYCVerification", audit_log: list, user_email: str | None = None) -> "KYCAdminDetailResponse":
+    def from_kyc(
+        cls, kyc: "KYCVerification", audit_log: list, user_email: str | None = None
+    ) -> "KYCAdminDetailResponse":
         return cls(
             kyc_id=kyc.id,
             user_id=kyc.user_id,
             user_email=user_email,
             status=kyc.status,
-            personal_info=KYCAdminPersonalInfo.model_validate(kyc.personal_info) if kyc.personal_info else None,
-            contact_info=KYCAdminContactInfo.model_validate(kyc.contact_info) if kyc.contact_info else None,
+            personal_info=(
+                KYCAdminPersonalInfo.model_validate(kyc.personal_info)
+                if kyc.personal_info
+                else None
+            ),
+            contact_info=(
+                KYCAdminContactInfo.model_validate(kyc.contact_info)
+                if kyc.contact_info
+                else None
+            ),
             identity_verification=KYCAdminIdentityDetail.from_kyc(kyc),
-            banking_info=KYCAdminBankingInfo.model_validate(kyc.banking_info) if kyc.banking_info else None,
+            banking_info=(
+                KYCAdminBankingInfo.model_validate(kyc.banking_info)
+                if kyc.banking_info
+                else None
+            ),
             audit_log=[KYCAuditLogEntry.model_validate(a) for a in audit_log],
         )

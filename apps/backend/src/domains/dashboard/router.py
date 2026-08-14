@@ -1,13 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-from redis.asyncio import Redis
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domains.dashboard.dependencies import get_dashboard_service
-from src.infra.db.dependencies import get_async_db_session
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.dashboard.schemas import DashboardData
 from src.api.middlewares.dependencies import get_current_user
-from src.infra.cache.redis_client import get_redis
 from src.domains.dashboard.service import DashboardService
 from src.shared.utils.logger import logger
 

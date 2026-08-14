@@ -9,7 +9,8 @@ def get_crossmint_wallet_client() -> CrossmintWalletClient:
         chain=config.CROSSMINT_CHAIN,
         server_signer_address=config.CROSSMINT_SERVER_SIGNER_ADDRESS,
         api_base_url=(
-            "https://www.crossmint.com/api" if config.ENV == "production"
+            "https://www.crossmint.com/api"
+            if config.ENV == "production"
             else "https://staging.crossmint.com/api"
         ),
     )

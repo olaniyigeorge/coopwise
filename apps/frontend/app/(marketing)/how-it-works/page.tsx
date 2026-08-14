@@ -98,7 +98,7 @@ export default function HowItWorksPage() {
           </h1>
           <p className="text-base md:text-lg text-brand-ink/70 max-w-2xl mx-auto mt-5">
             No app tour needed. Six steps, start to finish — from opening the link to watching
-            your group's ledger fill up.
+            your group&apos;s ledger fill up.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3 justify-center mt-8">
             <Link href="/signup" className="w-full sm:w-auto">
@@ -166,7 +166,7 @@ export default function HowItWorksPage() {
           <div className="text-center mb-14 max-w-2xl mx-auto">
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">Inside CoopWise</p>
             <h2 className="font-display text-3xl md:text-4xl font-bold text-brand-ink text-balance">
-              What's Actually in the App
+              What&apos;s Actually in the App
             </h2>
           </div>
 

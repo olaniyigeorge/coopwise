@@ -8,5 +8,7 @@ class NotificationProvider(ABC):
     """Shared provider contract for all notification delivery channels."""
 
     @abstractmethod
-    async def send(self, recipient: str, message: str, metadata: Dict[str, Any]) -> bool:
+    async def send(
+        self, recipient: str, message: str, metadata: Dict[str, Any]
+    ) -> bool:
         raise NotImplementedError()

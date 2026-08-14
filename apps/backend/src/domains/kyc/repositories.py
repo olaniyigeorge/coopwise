@@ -6,7 +6,6 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domains.kyc.schemas import KYCAdminListItem
 from src.domains.kyc.models import (
     KYCIdDocumentType,
     KYCStatus,
@@ -21,7 +20,6 @@ from src.domains.kyc.models import (
 from src.domains.kyc.audit_models import KYCAuditLog
 
 from src.domains.kyc.ports import KYCRepositoryPort
-
 
 
 class SQLAlchemyKYCRepository(KYCRepositoryPort):
@@ -57,7 +55,7 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
         )
 
         return kyc
-    
+
     async def get_by_id(
         self,
         kyc_id: UUID,
@@ -102,7 +100,7 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
         )
         result = await self._db.execute(stmt)
         return result.scalars().all()
-    
+
     async def list_submissions(
         self,
         status: Optional[KYCStatus],
@@ -115,8 +113,13 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
 
         stmt = (
             select(KYCVerification)
-            .outerjoin(KYCPersonalInfo, KYCPersonalInfo.kyc_verification_id == KYCVerification.id)
-            .outerjoin(KYCBankingInfo, KYCBankingInfo.kyc_verification_id == KYCVerification.id)
+            .outerjoin(
+                KYCPersonalInfo,
+                KYCPersonalInfo.kyc_verification_id == KYCVerification.id,
+            )
+            .outerjoin(
+                KYCBankingInfo, KYCBankingInfo.kyc_verification_id == KYCVerification.id
+            )
             .options(
                 selectinload(KYCVerification.personal_info),
                 selectinload(KYCVerification.contact_info),
@@ -147,16 +150,14 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
         result = await self._db.execute(stmt)
         rows = result.unique().scalars().all()
         return rows, total
-    
+
     async def _upsert(
         self,
         model,
         kyc_id: UUID,
         data: dict,
     ):
-        stmt = select(model).where(
-            model.kyc_verification_id == kyc_id
-        )
+        stmt = select(model).where(model.kyc_verification_id == kyc_id)
 
         instance = await self._db.scalar(stmt)
 
@@ -245,7 +246,6 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
 
         await self._db.flush()
 
-
     async def set_step_status(
         self,
         kyc_id: UUID,
@@ -256,16 +256,12 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
 
         model = self._STEP_MODEL[step]
 
-        stmt = select(model).where(
-            model.kyc_verification_id == kyc_id
-        )
+        stmt = select(model).where(model.kyc_verification_id == kyc_id)
 
         instance = await self._db.scalar(stmt)
 
         if instance is None:
-            raise ValueError(
-                f"{step.value} has not been created"
-            )
+            raise ValueError(f"{step.value} has not been created")
 
         instance.status = status
         instance.rejection_reason = rejection_reason
@@ -305,43 +301,42 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
         stmt = (
             select(KYCVerification)
             .join(KYCIdentityVerification)
-            .where(
-                KYCIdentityVerification.provider_reference_id
-                == reference_id
-            )
+            .where(KYCIdentityVerification.provider_reference_id == reference_id)
         )
 
         return await self._db.scalar(stmt)
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class SQLAlchemyKYCAuditRepository:
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def create(self, *, kyc_id, admin_id, action, step, reason, metadata, ip_address, user_agent):
+    async def create(
+        self,
+        *,
+        kyc_id,
+        admin_id,
+        action,
+        step,
+        reason,
+        metadata,
+        ip_address,
+        user_agent,
+    ):
         entry = KYCAuditLog(
-            kyc_id=kyc_id, admin_id=admin_id, action=action, step=step,
-            reason=reason, metadata_=metadata, ip_address=ip_address, user_agent=user_agent,
+            kyc_id=kyc_id,
+            admin_id=admin_id,
+            action=action,
+            step=step,
+            reason=reason,
+            metadata_=metadata,
+            ip_address=ip_address,
+            user_agent=user_agent,
         )
         self._session.add(entry)
         await self._session.commit()
         return entry
-    
+
     async def list_for_kyc(self, kyc_id: UUID) -> list[KYCAuditLog]:
         stmt = (
             select(KYCAuditLog)

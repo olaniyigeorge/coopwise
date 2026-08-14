@@ -13,7 +13,8 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  // const { search } = new URL(req.url)
+  const { search } = new URL(req.url)
+  console.log(`Seraching for ${search}`)
   const response = await backendFetch(`/api/v1/cooperatives`) // ${search}
   return forwardResponse(response)
 }

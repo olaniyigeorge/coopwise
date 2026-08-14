@@ -7,7 +7,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@crossmint/client-sdk-react-ui": "^4.3.0",
@@ -85,8 +85,8 @@
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
     "cors": "^2.8.5",
-    "eslint": "^9.32.0",
-    "eslint-config-next": "16.2.1",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.1",
     "express": "^5.1.0",
     "http-proxy-middleware": "^3.0.5",
     "postcss": "^8",

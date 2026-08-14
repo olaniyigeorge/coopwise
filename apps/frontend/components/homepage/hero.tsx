@@ -1,11 +1,10 @@
 "use client"
 
-import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from "@/components/ui/button"
 import useAuthStore from '@/stores/auth-store'
-import { ArrowRight, ShieldCheck } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
 export default function Hero() {
   const { isAuthenticated } = useAuthStore()

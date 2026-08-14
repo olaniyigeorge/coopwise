@@ -28,19 +28,23 @@ class GroupGoal(BaseModel):
 
 class Targets(BaseModel):
     savings_target: float  # User's personal savings goal
-    group_goals: List[Any]   # CoopGroupTargetSummary   Goals for each group user is part of
+    group_goals: List[
+        Any
+    ]  # CoopGroupTargetSummary   Goals for each group user is part of
 
 
 class ExploreGroups(BaseModel):
     user_groups: List[Any]
-    suggested_groups: List[Any] # CoopGroupTargetSummary
+    suggested_groups: List[Any]  # CoopGroupTargetSummary
 
 
 class DashboardData(BaseModel):
     user: Optional[UserDetail]
     summary: Optional[Summary]
     targets: Optional[Targets]
-    groups: Optional[ExploreGroups]  # Includes all user's groups + first page of suggested groups
+    groups: Optional[
+        ExploreGroups
+    ]  # Includes all user's groups + first page of suggested groups
     activities: List[ActivityDetail]  # Events triggered by the user in recent history
     ai_insights: List[
         AIInsightDetail

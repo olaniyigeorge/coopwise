@@ -8,6 +8,7 @@ AI_CHAT_SYSTEM = "You are a helpful financial assistant for a cooperative saving
 MAX_HISTORY_MESSAGES = 20
 REDIS_KEY_PREFIX = "ai_chat:"
 
+
 def load_messages(redis_client: Redis, uid: str) -> list:
     try:
         data = redis_client.get(f"{REDIS_KEY_PREFIX}{uid}")
@@ -15,11 +16,13 @@ def load_messages(redis_client: Redis, uid: str) -> list:
     except Exception:
         return []
 
+
 def save_messages(redis_client: Redis, uid: str, messages: list):
     try:
         redis_client.set(f"{REDIS_KEY_PREFIX}{uid}", json.dumps(messages), ex=86400)
     except Exception as e:
         logger.error(f"Failed to save messages: {e}")
+
 
 def clear_messages(redis_client: Redis, uid: str):
     try:
@@ -27,8 +30,12 @@ def clear_messages(redis_client: Redis, uid: str):
     except Exception as e:
         logger.error(f"Failed to clear messages: {e}")
 
-async def openai_chat_with_messages(messages: list, max_tokens: int = 800, temperature: float = 0.6) -> str:
+
+async def openai_chat_with_messages(
+    messages: list, max_tokens: int = 800, temperature: float = 0.6
+) -> str:
     from config import AppConfig as config
+
     api_key = getattr(config, "OPENAI_API_KEY", None)
     if not api_key:
         return "AI assistant is not configured."
@@ -36,11 +43,17 @@ async def openai_chat_with_messages(messages: list, max_tokens: int = 800, tempe
         resp = await client.post(
             "https://api.openai.com/v1/chat/completions",
             headers={"Authorization": f"Bearer {api_key}"},
-            json={"model": "gpt-4o-mini", "messages": messages, "max_tokens": max_tokens, "temperature": temperature},
+            json={
+                "model": "gpt-4o-mini",
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+            },
             timeout=30,
         )
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"]
+
 
 class EventService:
     def __init__(self, db: AsyncSession):

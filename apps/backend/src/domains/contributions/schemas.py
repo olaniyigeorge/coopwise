@@ -36,23 +36,22 @@ class ContributionDetail(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-
 class CircleHistoryEntry(BaseModel):
     # From Contribution
     contribution_id: UUID
     amount: float
     currency: str
-    status: str                          # ContributionStatus enum value
+    status: str  # ContributionStatus enum value
     note: Optional[str] = None
     due_date: Optional[datetime] = None
     fulfilled_at: Optional[datetime] = None
     created_at: datetime
 
     # From User (joined)
-    member_name: str                     # full_name or username fallback
+    member_name: str  # full_name or username fallback
     member_address: Optional[str] = None  # flow_address
 
     # Computed
-    explorer_url: Optional[str] = None   # only populated once tx_id column exists
+    explorer_url: Optional[str] = None  # only populated once tx_id column exists
 
     model_config = ConfigDict(from_attributes=True)

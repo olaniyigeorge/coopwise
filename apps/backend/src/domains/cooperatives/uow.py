@@ -2,11 +2,17 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domains.cooperatives.repositories.beneficiary_pattern_repository import BeneficiaryPatternRepository
+from src.domains.cooperatives.repositories.beneficiary_pattern_repository import (
+    BeneficiaryPatternRepository,
+)
 from src.domains.cooperatives.repositories.goal_contract import GoalContractRepository
-from src.domains.cooperatives.repositories.cooperative_repository import CooperativeRepository
+from src.domains.cooperatives.repositories.cooperative_repository import (
+    CooperativeRepository,
+)
 from src.domains.cooperatives.repositories.goal_repository import GoalRepository
-from src.domains.cooperatives.repositories.ownership_share_repository import OwnershipShareRepository
+from src.domains.cooperatives.repositories.ownership_share_repository import (
+    OwnershipShareRepository,
+)
 from src.domains.cooperatives.repositories.rules_repository import RulesRepository
 
 

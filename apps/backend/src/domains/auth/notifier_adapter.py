@@ -26,7 +26,9 @@ class NotificationServiceAuthNotifier:
             type="info",
             entity_url=None,
         )
-        await NotificationService.create_and_push_notification_to_user(noti_data, self._db)
+        await NotificationService.create_and_push_notification_to_user(
+            noti_data, self._db
+        )
 
     async def notify_wallet_linked(self, user: User, flow_address: str) -> None:
         try:
@@ -38,7 +40,9 @@ class NotificationServiceAuthNotifier:
                 type="info",
                 entity_url=None,
             )
-            await NotificationService.create_and_push_notification_to_user(noti_data, self._db)
+            await NotificationService.create_and_push_notification_to_user(
+                noti_data, self._db
+            )
         except Exception as e:
             # Preserves original router behavior: notification failure is non-fatal
             # for a wallet sync.

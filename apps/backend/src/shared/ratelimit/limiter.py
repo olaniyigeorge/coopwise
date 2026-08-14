@@ -46,8 +46,9 @@ class RateLimiter:
 def rate_limit(limit: int, window_seconds: int, scope: str, key_func=None):
     """FastAPI dependency factory — use in a route's `dependencies=[...]` list.
 
-        dependencies=[Depends(rate_limit(limit=5, window_seconds=3600, scope="kyc:identity"))]
+    dependencies=[Depends(rate_limit(limit=5, window_seconds=3600, scope="kyc:identity"))]
     """
+
     async def dependency(
         request: Request,
         redis: Redis = Depends(get_redis),
@@ -68,4 +69,5 @@ def rate_limit(limit: int, window_seconds: int, scope: str, key_func=None):
                 detail=f"Rate limit exceeded for {scope}. Try again in {result.retry_after_seconds}s.",
                 headers={"Retry-After": str(result.retry_after_seconds)},
             )
+
     return dependency

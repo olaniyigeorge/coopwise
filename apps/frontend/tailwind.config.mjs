@@ -1,6 +1,7 @@
+import animate from "tailwindcss-animate"
+
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  darkMode: ["class"],
+export default {
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -88,8 +89,8 @@ module.exports = {
     },
   },
   plugins: [
-    require("tailwindcss-animate"),
-    function({ addUtilities }) {
+    animate,
+    function ({ addUtilities }) {
       const newUtilities = {
         '.touch-manipulation': {
           'touch-action': 'manipulation',

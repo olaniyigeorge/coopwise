@@ -5,6 +5,7 @@ from uuid import UUID
 from src.infra.celery.app import celery_app
 from src.shared.utils.logger import logger
 
+
 @celery_app.task(
     name="auth.provision_wallet",
     bind=True,
@@ -42,11 +43,12 @@ def provision_wallet_task(self, user_id_str: str, platform_jwt: str) -> None:
 
             logger.info(f"[provision_wallet_task] provisioning wallet for {user_id}")
             address = await provider.provision_wallet(user_id, user.email)
-            user.flow_address = address 
+            user.flow_address = address
             user.wallet_provider = "crossmint"
             await repo.update(user)
-            logger.info(f"[provision_wallet_task] wallet provisioned for {user_id}: {address}")
-
+            logger.info(
+                f"[provision_wallet_task] wallet provisioned for {user_id}: {address}"
+            )
 
     try:
         asyncio.run(_run())

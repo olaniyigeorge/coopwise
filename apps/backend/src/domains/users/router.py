@@ -3,7 +3,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
-from src.api.middlewares.dependencies import get_current_admin_user, get_current_user, is_admin_or_owner, get_current_admin_user
+from src.api.middlewares.dependencies import (
+    get_current_user,
+    is_admin_or_owner,
+    get_current_admin_user,
+)
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.users.schemas import AvatarUploadResponse, UserDetail, UserUpdate
 from src.domains.users.service import UserService
@@ -42,13 +46,13 @@ async def get_users(
     # get_current_admin_user already raises on failure before this body runs.
     try:
         return await user_service.get_users(skip=skip, limit=limit)
-    except UserFetchError as e:
+    except UserFetchError:
         raise HTTPException(status_code=500, detail="Could not fetch users")
-
 
 
 ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_AVATAR_BYTES = 5 * 1024 * 1024  # 5MB
+
 
 @router.patch("/{user_id}/avatar", response_model=AvatarUploadResponse, status_code=202)
 async def update_user_avatar(
@@ -98,8 +102,9 @@ async def update_user(
         raise HTTPException(status_code=404, detail=str(e))
     except UserConflictError as e:
         raise HTTPException(status_code=409, detail=str(e))
-    except UserUpdateError as e:
+    except UserUpdateError:
         raise HTTPException(status_code=500, detail="Could not update user")
+
 
 @router.get("/{user_id}", response_model=UserDetail)
 async def get_user(

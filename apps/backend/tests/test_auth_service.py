@@ -1,24 +1,31 @@
 from datetime import timedelta
-from uuid import uuid4
 
 import pytest
 
 from src.domains.auth.exceptions import (
-    EmailAlreadyRegisteredError,
+    FirebaseVerificationError,
+    FullNameRequiredError,
+    InvalidCredentialsError,
     InvalidTokenError,
     InvalidTokenTypeError,
-    PhoneNumberAlreadyRegisteredError,
+    OtpInvalidOrExpiredError,
     TokenExpiredError,
-    UserNotFoundError,
-    UsernameAlreadyRegisteredError,
+)
+from src.domains.auth.ports import FirebaseIdentity, OtpChannel
+from src.domains.auth.schemas import (
+    FirebaseSignIn,
+    PasswordSignIn,
+    RequestOtp,
+    VerifyOtp,
 )
 from src.domains.auth.service import AuthService
-from src.domains.users.models import UserRoles
-from src.domains.users.schemas import UserCreate, iAuthWallet
 
 from .fakes_auth import (
     FakeAuthNotifier,
     FakeClock,
+    FakeFirebaseVerifier,
+    FakeOtpSender,
+    FakeOtpStore,
     FakePasswordHasher,
     FakeTokenService,
     FakeUserRepository,
@@ -33,6 +40,24 @@ def user_repo():
 
 
 @pytest.fixture
+def otp_store():
+    return FakeOtpStore()
+
+
+@pytest.fixture
+def otp_senders():
+    return {
+        OtpChannel.phone: FakeOtpSender(OtpChannel.phone),
+        OtpChannel.email: FakeOtpSender(OtpChannel.email),
+    }
+
+
+@pytest.fixture
+def firebase_verifier():
+    return FakeFirebaseVerifier()
+
+
+@pytest.fixture
 def notifier():
     return FakeAuthNotifier()
 
@@ -43,244 +68,295 @@ def clock():
 
 
 @pytest.fixture
-def auth_service(user_repo, notifier, clock):
+def auth_service(user_repo, otp_store, otp_senders, firebase_verifier, notifier, clock):
     return AuthService(
         user_repo=user_repo,
+        otp_store=otp_store,
+        otp_senders=otp_senders,
+        firebase_verifier=firebase_verifier,
+        access_token_service=FakeTokenService(),
+        refresh_token_service=FakeTokenService(),
         password_hasher=FakePasswordHasher(),
-        token_service=FakeTokenService(),
         clock=clock,
         notifier=notifier,
-        client_domain="https://app.coopwise.example",
     )
 
 
-def make_user_create(**overrides) -> UserCreate:
-    defaults = dict(
-        username="ada",
-        email="ada@coopwise.example",
-        password="supersecret",
-        full_name="Ada Lovelace",
-        phone_number="+2348012345678",
-    )
-    defaults.update(overrides)
-    return UserCreate(**defaults)
+# ------------------------------------------------------------------- OTP request
 
 
-# ----------------------------------------------------------------- register
-
-class TestRegisterUser:
-    async def test_creates_user_with_hashed_password(self, auth_service, user_repo):
-        user = await auth_service.register_user(make_user_create())
-
-        assert user.email == "ada@coopwise.example"
-        assert user.password == "hashed::supersecret"
-        assert user.role == UserRoles.user
-        assert user.id in user_repo.users
-
-    async def test_defaults_username_from_email_local_part_when_missing(self, auth_service):
-        user = await auth_service.register_user(make_user_create(username=None))
-        assert user.username == "ada"
-
-    async def test_fires_registration_notification(self, auth_service, notifier):
-        user = await auth_service.register_user(make_user_create())
-        assert notifier.registered_calls == [user]
-
-    async def test_duplicate_email_rejected(self, auth_service):
-        await auth_service.register_user(make_user_create())
-        with pytest.raises(EmailAlreadyRegisteredError):
-            await auth_service.register_user(
-                make_user_create(username="other", phone_number="+2348000000000")
-            )
-
-    async def test_duplicate_username_rejected(self, auth_service):
-        await auth_service.register_user(make_user_create())
-        with pytest.raises(UsernameAlreadyRegisteredError):
-            await auth_service.register_user(
-                make_user_create(email="other@coopwise.example", phone_number="+2348000000000")
-            )
-
-    async def test_duplicate_phone_number_rejected(self, auth_service):
-        await auth_service.register_user(make_user_create())
-        with pytest.raises(PhoneNumberAlreadyRegisteredError):
-            await auth_service.register_user(
-                make_user_create(email="other@coopwise.example", username="other")
-            )
-
-    async def test_duplicate_checks_short_circuit_before_notification(
-        self, auth_service, notifier
+class TestRequestOtp:
+    async def test_sends_code_via_matching_channel_sender(
+        self, auth_service, otp_senders
     ):
-        await auth_service.register_user(make_user_create())
-        notifier.registered_calls.clear()
-        with pytest.raises(EmailAlreadyRegisteredError):
-            await auth_service.register_user(
-                make_user_create(username="other", phone_number="+2348000000000")
+        await auth_service.request_otp(
+            RequestOtp(channel=OtpChannel.email, identifier="ada@coopwise.example")
+        )
+        sender = otp_senders[OtpChannel.email]
+        assert len(sender.sent) == 1
+        identifier, code = sender.sent[0]
+        assert identifier == "ada@coopwise.example"
+        assert code  # non-empty, whatever the store generated
+
+
+# -------------------------------------------------------------------- OTP verify
+
+
+class TestVerifyOtp:
+    async def test_new_user_registers_and_fires_notification(
+        self, auth_service, otp_store, notifier, user_repo
+    ):
+        code = await otp_store.issue_code(OtpChannel.email, "ada@coopwise.example")
+        result = await auth_service.verify_otp(
+            VerifyOtp(
+                channel="email",
+                identifier="ada@coopwise.example",
+                code=code,
+                full_name="Ada Lovelace",
             )
-        assert notifier.registered_calls == []
-
-
-# ------------------------------------------------------------- authenticate
-
-class TestAuthenticateUser:
-    async def test_correct_credentials_returns_user(self, auth_service):
-        registered = await auth_service.register_user(make_user_create())
-        user = await auth_service.authenticate_user("ada@coopwise.example", "supersecret")
-        assert user.id == registered.id
-
-    async def test_wrong_password_returns_none(self, auth_service):
-        await auth_service.register_user(make_user_create())
-        user = await auth_service.authenticate_user("ada@coopwise.example", "wrong")
-        assert user is None
-
-    async def test_unknown_email_returns_none(self, auth_service):
-        user = await auth_service.authenticate_user("nobody@coopwise.example", "whatever")
-        assert user is None
-
-
-# -------------------------------------------------------------------- tokens
-
-class TestAccessTokens:
-    async def test_encodes_given_claims(self, auth_service):
-        token = await auth_service.create_access_token({"sub": "ada@coopwise.example", "id": "1"})
-        payload = await auth_service.decode_token(token)
-        assert payload["sub"] == "ada@coopwise.example"
-        assert payload["id"] == "1"
-        assert "exp" in payload
-
-    async def test_decode_invalid_token_raises(self, auth_service):
-        with pytest.raises(InvalidTokenError):
-            await auth_service.decode_token("not-a-real-token")
-
-    async def test_respects_custom_expiry(self, auth_service, clock):
-        token = await auth_service.create_access_token(
-            {"sub": "ada@coopwise.example"}, expires_delta=timedelta(hours=2)
         )
-        payload = await auth_service.decode_token(token)
-        expected_exp = (clock.now() + timedelta(hours=2)).timestamp()
-        assert payload["exp"] == expected_exp
+        assert result.is_new_user is True
+        assert result.user.email == "ada@coopwise.example"
+        assert user_repo.users[result.user.id].is_email_verified is True
+        assert len(notifier.registered_calls) == 1
 
+    async def test_new_user_without_full_name_raises(self, auth_service, otp_store):
+        code = await otp_store.issue_code(OtpChannel.email, "ada@coopwise.example")
+        with pytest.raises(FullNameRequiredError):
+            await auth_service.verify_otp(
+                VerifyOtp(channel="email", identifier="ada@coopwise.example", code=code)
+            )
 
-# ------------------------------------------------------------- password reset
+    async def test_wrong_code_raises(self, auth_service, otp_store):
+        await otp_store.issue_code(OtpChannel.email, "ada@coopwise.example")
+        with pytest.raises(OtpInvalidOrExpiredError):
+            await auth_service.verify_otp(
+                VerifyOtp(
+                    channel="email",
+                    identifier="ada@coopwise.example",
+                    code="000000",
+                    full_name="Ada Lovelace",
+                )
+            )
 
-class TestPasswordReset:
-    async def test_send_reset_link_for_unknown_email_raises(self, auth_service):
-        with pytest.raises(UserNotFoundError):
-            await auth_service.send_reset_password_link("ghost@coopwise.example")
-
-    async def test_send_reset_link_for_known_email_succeeds(self, auth_service):
-        await auth_service.register_user(make_user_create())
-        result = await auth_service.send_reset_password_link("ada@coopwise.example")
-        assert "message" in result
-
-    async def test_confirm_reset_token_round_trips(self, auth_service):
-        user = await auth_service.register_user(make_user_create())
-        token = await auth_service.create_password_reset_token(user)
-        payload = await auth_service.confirm_reset_token(token)
-        assert payload["sub"] == user.email
-        assert payload["type"] == "reset"
-
-    async def test_confirm_reset_token_rejects_wrong_type(self, auth_service):
-        # An access token (no type="reset") should not be accepted as a reset token.
-        token = await auth_service.create_access_token({"sub": "ada@coopwise.example"})
-        with pytest.raises(InvalidTokenTypeError):
-            await auth_service.confirm_reset_token(token)
-
-    async def test_confirm_reset_token_rejects_expired_token(self, auth_service, clock):
-        user = await auth_service.register_user(make_user_create())
-        token = await auth_service.create_password_reset_token(
-            user, expires_delta=timedelta(minutes=15)
+    async def test_existing_user_marks_verified_and_is_not_new(
+        self, auth_service, otp_store, user_repo
+    ):
+        existing = user_repo.seed(email="ada@coopwise.example", is_email_verified=False)
+        code = await otp_store.issue_code(OtpChannel.email, "ada@coopwise.example")
+        result = await auth_service.verify_otp(
+            VerifyOtp(channel="email", identifier="ada@coopwise.example", code=code)
         )
-        clock.advance(timedelta(minutes=16))
-        with pytest.raises(TokenExpiredError):
-            await auth_service.confirm_reset_token(token)
+        assert result.is_new_user is False
+        assert result.user.id == existing.id
+        assert user_repo.users[existing.id].is_email_verified is True
 
-    async def test_change_password_updates_hash_and_allows_new_login(self, auth_service):
-        user = await auth_service.register_user(make_user_create())
-        token = await auth_service.create_password_reset_token(user)
 
-        result = await auth_service.change_password(token, "newpassword123")
-        assert result["status"] == "success"
+# --------------------------------------------------------------- password sign-in
 
-        assert await auth_service.authenticate_user("ada@coopwise.example", "supersecret") is None
-        relogged = await auth_service.authenticate_user("ada@coopwise.example", "newpassword123")
-        assert relogged is not None
 
-    async def test_change_password_with_expired_token_raises(self, auth_service, clock):
-        user = await auth_service.register_user(make_user_create())
-        token = await auth_service.create_password_reset_token(
-            user, expires_delta=timedelta(minutes=15)
+class TestPasswordSignIn:
+    async def test_correct_password_succeeds(self, auth_service, user_repo):
+        hashed = FakePasswordHasher().hash("supersecret")
+        user_repo.seed(email="ada@coopwise.example", password=hashed)
+        result = await auth_service.sign_in_with_password(
+            PasswordSignIn(identifier="ada@coopwise.example", password="supersecret")
         )
-        clock.advance(timedelta(minutes=20))
-        with pytest.raises(TokenExpiredError):
-            await auth_service.change_password(token, "newpassword123")
+        assert result.user.email == "ada@coopwise.example"
+
+    async def test_wrong_password_raises(self, auth_service, user_repo):
+        hashed = FakePasswordHasher().hash("supersecret")
+        user_repo.seed(email="ada@coopwise.example", password=hashed)
+        with pytest.raises(InvalidCredentialsError):
+            await auth_service.sign_in_with_password(
+                PasswordSignIn(identifier="ada@coopwise.example", password="wrong")
+            )
+
+    async def test_user_with_no_password_set_raises(self, auth_service, user_repo):
+        user_repo.seed(email="ada@coopwise.example", password=None)
+        with pytest.raises(InvalidCredentialsError):
+            await auth_service.sign_in_with_password(
+                PasswordSignIn(identifier="ada@coopwise.example", password="whatever")
+            )
+
+    async def test_unknown_identifier_raises(self, auth_service):
+        with pytest.raises(InvalidCredentialsError):
+            await auth_service.sign_in_with_password(
+                PasswordSignIn(identifier="ghost@coopwise.example", password="x")
+            )
 
 
-# -------------------------------------------------------------------- wallet
+# ----------------------------------------------------------------- firebase sign-in
 
-class TestFlowSync:
-    async def test_creates_new_user_when_no_match_found(self, auth_service, user_repo):
-        wallet_data = iAuthWallet(
-            crossmint_user_id="cm_abc123",
-            email="",
-            flow_address="0xABCDEF1234567890",
-        )
-        result = await auth_service.flow_sync(wallet_data, current_user=None)
 
-        assert result["user"]["crossmint_user_id"] == "cm_abc123"
-        assert result["user"]["flow_address"] == "0xABCDEF1234567890"
-        assert result["user"]["email"] == "cm_abc123@crossmint.local"
-        assert len(user_repo.users) == 1
-
-    async def test_finds_existing_user_by_crossmint_id(self, auth_service):
-        first = await auth_service.flow_sync(
-            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xAAA"),
-            current_user=None,
-        )
-        second = await auth_service.flow_sync(
-            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xAAA"),
-            current_user=None,
-        )
-        assert first["user"]["id"] == second["user"]["id"]
-
-    async def test_finds_existing_user_by_email_fallback(self, auth_service):
-        registered = await auth_service.register_user(make_user_create())
-        result = await auth_service.flow_sync(
-            iAuthWallet(
-                crossmint_user_id="cm_new",
+class TestFirebaseSignIn:
+    async def test_new_user_provisioned_from_identity(
+        self, auth_service, firebase_verifier
+    ):
+        firebase_verifier.register(
+            "tok-1",
+            FirebaseIdentity(
+                firebase_uid="fb-1",
                 email="ada@coopwise.example",
-                flow_address="0xBBB",
+                email_verified=True,
+                full_name="Ada Lovelace",
             ),
-            current_user=None,
         )
-        assert result["user"]["id"] == str(registered.id)
-        assert result["user"]["crossmint_user_id"] == "cm_new"
-        assert result["user"]["flow_address"] == "0xBBB"
+        result = await auth_service.sign_in_with_firebase(
+            FirebaseSignIn(firebase_id_token="tok-1")
+        )
+        assert result.is_new_user is True
+        assert result.user.email == "ada@coopwise.example"
 
-    async def test_updates_flow_address_on_existing_linked_user(self, auth_service):
-        first = await auth_service.flow_sync(
-            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xAAA"),
-            current_user=None,
+    async def test_existing_user_found_by_email_fallback_links_uid(
+        self, auth_service, firebase_verifier, user_repo
+    ):
+        existing = user_repo.seed(
+            email="ada@coopwise.example", firebase_uid=None, is_email_verified=False
         )
-        second = await auth_service.flow_sync(
-            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xCCC"),
-            current_user=None,
+        firebase_verifier.register(
+            "tok-1",
+            FirebaseIdentity(
+                firebase_uid="fb-1",
+                email="ada@coopwise.example",
+                email_verified=True,
+            ),
         )
-        assert first["user"]["id"] == second["user"]["id"]
-        assert second["user"]["flow_address"] == "0xCCC"
+        result = await auth_service.sign_in_with_firebase(
+            FirebaseSignIn(firebase_id_token="tok-1")
+        )
+        assert result.is_new_user is False
+        assert result.user.id == existing.id
+        assert user_repo.users[existing.id].firebase_uid == "fb-1"
+        assert user_repo.users[existing.id].is_email_verified is True
 
-    async def test_fires_wallet_linked_notification(self, auth_service, notifier):
-        await auth_service.flow_sync(
-            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xAAA"),
-            current_user=None,
-        )
-        assert len(notifier.wallet_linked_calls) == 1
-        linked_user, flow_address = notifier.wallet_linked_calls[0]
-        assert flow_address == "0xAAA"
+    async def test_invalid_token_raises_verification_error(self, auth_service):
+        with pytest.raises(FirebaseVerificationError):
+            await auth_service.sign_in_with_firebase(
+                FirebaseSignIn(firebase_id_token="not-a-real-token")
+            )
 
-    async def test_returns_usable_access_token(self, auth_service):
-        result = await auth_service.flow_sync(
-            iAuthWallet(crossmint_user_id="cm_abc123", email="", flow_address="0xAAA"),
-            current_user=None,
+
+# ------------------------------------------------------------------- refresh session
+
+
+class TestRefreshSession:
+    async def test_round_trips_to_new_session(self, auth_service, otp_store):
+        code = await otp_store.issue_code(OtpChannel.email, "ada@coopwise.example")
+        first = await auth_service.verify_otp(
+            VerifyOtp(
+                channel="email",
+                identifier="ada@coopwise.example",
+                code=code,
+                full_name="Ada Lovelace",
+            )
         )
-        payload = await auth_service.decode_token(result["access_token"])
-        assert payload["id"] == result["user"]["id"]
-        assert payload["flow_address"] == "0xAAA"
+        refreshed = await auth_service.refresh_platform_session(first.refresh_token)
+        assert refreshed.user.id == first.user.id
+
+    async def test_wrong_token_type_rejected(self, auth_service, otp_store):
+        # Simulate a token that decodes successfully via the refresh-token
+        # service but was never minted as a refresh token (e.g. type
+        # claim missing/wrong) — the defensive check in
+        # refresh_platform_session, not the "different signing key
+        # entirely" case (that fails at decode() with InvalidTokenError,
+        # not InvalidTokenTypeError).
+        bogus_token = auth_service._refresh_tokens.encode(
+            {"id": "some-id", "type": "not-a-refresh-token"}, timedelta(minutes=5)
+        )
+        with pytest.raises(InvalidTokenTypeError):
+            await auth_service.refresh_platform_session(bogus_token)
+
+    async def test_access_token_rejected_by_refresh_decode(
+        self, auth_service, otp_store
+    ):
+        # An access token was signed by a different TokenServicePort
+        # entirely, so it should fail at decode(), not at the type check.
+        code = await otp_store.issue_code(OtpChannel.email, "ada@coopwise.example")
+        session = await auth_service.verify_otp(
+            VerifyOtp(
+                channel="email",
+                identifier="ada@coopwise.example",
+                code=code,
+                full_name="Ada Lovelace",
+            )
+        )
+        with pytest.raises(InvalidTokenError):
+            await auth_service.refresh_platform_session(session.access_token)
+
+    async def test_expired_refresh_token_raises(self, auth_service, otp_store, clock):
+        code = await otp_store.issue_code(OtpChannel.email, "ada@coopwise.example")
+        session = await auth_service.verify_otp(
+            VerifyOtp(
+                channel="email",
+                identifier="ada@coopwise.example",
+                code=code,
+                full_name="Ada Lovelace",
+            )
+        )
+        clock.advance(timedelta(days=31))
+        with pytest.raises(TokenExpiredError):
+            await auth_service.refresh_platform_session(session.refresh_token)
+
+
+# ---------------------------------------------------------- wallet provisioning hook
+
+
+class TestWalletProvisioningCallback:
+    async def test_fires_on_successful_login_without_blocking(
+        self, user_repo, otp_store, otp_senders, firebase_verifier, notifier, clock
+    ):
+        calls: list[tuple] = []
+        service = AuthService(
+            user_repo=user_repo,
+            otp_store=otp_store,
+            otp_senders=otp_senders,
+            firebase_verifier=firebase_verifier,
+            access_token_service=FakeTokenService(),
+            refresh_token_service=FakeTokenService(),
+            password_hasher=FakePasswordHasher(),
+            clock=clock,
+            notifier=notifier,
+            on_user_authenticated=lambda user, token: calls.append((user.id, token)),
+        )
+        code = await otp_store.issue_code(OtpChannel.email, "ada@coopwise.example")
+        result = await service.verify_otp(
+            VerifyOtp(
+                channel="email",
+                identifier="ada@coopwise.example",
+                code=code,
+                full_name="Ada Lovelace",
+            )
+        )
+        assert len(calls) == 1
+        assert calls[0] == (result.user.id, result.access_token)
+
+    async def test_callback_failure_does_not_fail_login(
+        self, user_repo, otp_store, otp_senders, firebase_verifier, notifier, clock
+    ):
+        def boom(user, token):
+            raise RuntimeError("crossmint is down")
+
+        service = AuthService(
+            user_repo=user_repo,
+            otp_store=otp_store,
+            otp_senders=otp_senders,
+            firebase_verifier=firebase_verifier,
+            access_token_service=FakeTokenService(),
+            refresh_token_service=FakeTokenService(),
+            password_hasher=FakePasswordHasher(),
+            clock=clock,
+            notifier=notifier,
+            on_user_authenticated=boom,
+        )
+        code = await otp_store.issue_code(OtpChannel.email, "ada@coopwise.example")
+        # Should not raise, despite the callback blowing up.
+        result = await service.verify_otp(
+            VerifyOtp(
+                channel="email",
+                identifier="ada@coopwise.example",
+                code=code,
+                full_name="Ada Lovelace",
+            )
+        )
+        assert result.is_new_user is True

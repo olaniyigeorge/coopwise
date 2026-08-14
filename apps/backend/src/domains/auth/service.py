@@ -15,6 +15,7 @@ CHANGED vs the Crossmint-Auth version:
     Celery task lives in infra/tasks.py, kept out of this file so
     AuthService has no Celery import either).
 """
+
 from __future__ import annotations
 
 import secrets
@@ -22,7 +23,6 @@ from datetime import timedelta
 from typing import Callable, Optional
 from uuid import UUID, uuid4
 
-from config import AppConfig
 from src.domains.auth.exceptions import (
     FirebaseVerificationError,
     FullNameRequiredError,
@@ -114,20 +114,22 @@ class AuthService:
                 raise FullNameRequiredError(
                     "full_name is required to complete registration"
                 )
-            
+
             user = await self._provision_user(
-                phone_number=payload.identifier if channel == OtpChannel.phone else None,
+                phone_number=(
+                    payload.identifier if channel == OtpChannel.phone else None
+                ),
                 email=payload.identifier if channel == OtpChannel.email else None,
                 full_name=payload.full_name,
                 is_phone_verified=channel == OtpChannel.phone,
                 is_email_verified=channel == OtpChannel.email,
-                password=payload.password,          # NEW — only used on registration
+                password=payload.password,  # NEW — only used on registration
             )
         else:
             user = await self._mark_verified_if_needed(user, channel)
 
         return await self._issue_session(user, is_new_user)
-    
+
     # ------------------------------------------------------------- provisioning
     async def _provision_user(
         self,
@@ -139,7 +141,7 @@ class AuthService:
         is_email_verified: bool,
         firebase_uid: Optional[str] = None,
         profile_picture_url: Optional[str] = None,
-        password: Optional[str] = None,                 # NEW
+        password: Optional[str] = None,  # NEW
     ) -> User:
         username = await self._generate_unique_username(email, phone_number)
         user = User(
@@ -153,13 +155,13 @@ class AuthService:
             is_email_verified=is_email_verified,
             is_phone_verified=is_phone_verified,
             role=UserRoles.user,
-            password=self._passwords.hash(password) if password else None,   # NEW
+            password=self._passwords.hash(password) if password else None,  # NEW
         )
         user = await self._users.add(user)
         if self._notifier is not None:
             await self._notifier.notify_user_registered(user)
         return user
-    
+
     # ------------------------------------------------------------- Password Sign In with Email or phonenumber
     async def sign_in_with_password(self, payload: PasswordSignIn) -> SessionResponse:
         identifier = payload.identifier.strip()
@@ -216,14 +218,17 @@ class AuthService:
             if user.firebase_uid is None:
                 user.firebase_uid = identity.firebase_uid
                 changed = True
-            if identity.email and not user.is_email_verified and identity.email_verified:
+            if (
+                identity.email
+                and not user.is_email_verified
+                and identity.email_verified
+            ):
                 user.is_email_verified = True
                 changed = True
             if changed:
                 user = await self._users.update(user)
 
         return await self._issue_session(user, is_new_user)
-
 
     # --------------------------------------------------------------- session refresh
     async def refresh_platform_session(self, refresh_token: str) -> SessionResponse:
@@ -283,7 +288,9 @@ class AuthService:
 
         if self._on_user_authenticated is not None:
             try:
-                logger.info(f"[AuthService] dispatching wallet provisioning for user {user.id}" )
+                logger.info(
+                    f"[AuthService] dispatching wallet provisioning for user {user.id}"
+                )
                 self._on_user_authenticated(user, access_token)
             except Exception as e:
                 # Wallet provisioning dispatch must NEVER fail a login.
@@ -300,7 +307,7 @@ class AuthService:
         claims = {
             "sub": user.email or user.phone_number,
             "id": str(user.id),
-            "iss": "https://coopwise-qhgd.onrender.com", 
+            "iss": "https://coopwise-qhgd.onrender.com",
             "role": user.role.value,
             "onboarding_status": self._onboarding_status(user),
             "type": "access",
@@ -341,5 +348,5 @@ class AuthService:
             flow_address=user.flow_address,
             profile_picture_url=user.profile_picture_url,
             onboarding_status=self._onboarding_status(user),
-            is_kyc_verified=user.is_kyc_verified
+            is_kyc_verified=user.is_kyc_verified,
         )

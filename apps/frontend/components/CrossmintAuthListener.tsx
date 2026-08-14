@@ -1,13 +1,13 @@
-// components/CrossmintAuthListener.tsx
+
 "use client";
 
-import { useEffect } from "react";
+// import { useEffect } from "react";
 // import { useAuth } from "@crossmint/client-sdk-react-ui";
-import { useAuthStore } from "@/lib/hooks/use-app-store";
+// import { useAuthStore } from "@/lib/hooks/use-app-store";
 
 export function CrossmintAuthListener() {
   // const { user, status } = useAuth();
-  const { setUser, setIsAuthenticated, setLoading } = useAuthStore();
+  //const { setUser, setIsAuthenticated, setLoading } = useAuthStore();
 
   // useEffect(() => {
   //   if (status === "logged-in" && user) {

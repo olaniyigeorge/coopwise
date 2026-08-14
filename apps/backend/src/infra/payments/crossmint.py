@@ -16,6 +16,7 @@ see https://docs.crossmint.com/wallets/guides/signers/server-signer.
 email. (An email-typed adminSigner is not a valid config for this
 server-to-server flow — that's the separate client-side BYOA path.)
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -74,13 +75,21 @@ class CrossmintWalletClient:
 
         url = f"{self._api_base_url}/2025-06-09{path}"
         try:
-            resp = await self._http.request(method, url, json=json, params=params, headers=headers)
+            resp = await self._http.request(
+                method, url, json=json, params=params, headers=headers
+            )
             resp.raise_for_status()
         except httpx.HTTPStatusError as e:
-            logger.error(f"[CrossmintWalletClient] {method} {path} failed: {e.response.status_code} {e.response.text} {error_context}")
-            raise error_cls(f"Crossmint API error ({e.response.status_code}): {e.response.text} {error_context}") from e
+            logger.error(
+                f"[CrossmintWalletClient] {method} {path} failed: {e.response.status_code} {e.response.text} {error_context}"
+            )
+            raise error_cls(
+                f"Crossmint API error ({e.response.status_code}): {e.response.text} {error_context}"
+            ) from e
         except httpx.HTTPError as e:
-            logger.error(f"[CrossmintWalletClient] {method} {path} failed: {e} {error_context}")
+            logger.error(
+                f"[CrossmintWalletClient] {method} {path} failed: {e} {error_context}"
+            )
             raise error_cls(f"Crossmint API request failed: {error_context}") from e
 
         return resp.json()
@@ -100,7 +109,8 @@ class CrossmintWalletClient:
             "owner": f"email:{user_email}",
         }
         data = await self._request(
-            "POST", "/wallets",
+            "POST",
+            "/wallets",
             json=payload,
             idempotency_key=f"provision-{user_id}",
             error_cls=WalletProvisioningError,
@@ -108,7 +118,9 @@ class CrossmintWalletClient:
         )
         address = data.get("address")
         if not address:
-            raise WalletProvisioningError(f"Crossmint response missing wallet address for user {user_id}")
+            raise WalletProvisioningError(
+                f"Crossmint response missing wallet address for user {user_id}"
+            )
         return address
 
     # ---- WalletQueryPort (wallet domain) -----------------------------
@@ -116,7 +128,8 @@ class CrossmintWalletClient:
     async def get_wallet(self, user_id: UUID) -> dict[str, Any]:
         locator = _WalletLocator.by_user_id(user_id, self._chain)
         return await self._request(
-            "GET", f"/wallets/{locator}",
+            "GET",
+            f"/wallets/{locator}",
             error_cls=WalletNotFoundError,
             error_context=f"user_id={user_id}",
         )
@@ -132,7 +145,8 @@ class CrossmintWalletClient:
         if chains:
             params["chains"] = ",".join(chains)
         return await self._request(
-            "GET", f"/wallets/{locator}/balances",
+            "GET",
+            f"/wallets/{locator}/balances",
             params=params,
             error_cls=WalletBalanceError,
             error_context=f"user_id={user_id}",
@@ -148,7 +162,8 @@ class CrossmintWalletClient:
     ) -> dict[str, Any]:
         locator = _WalletLocator.by_user_id(user_id, self._chain)
         return await self._request(
-            "POST", f"/wallets/{locator}/tokens/{token_locator}/transfers",
+            "POST",
+            f"/wallets/{locator}/tokens/{token_locator}/transfers",
             json={"recipient": recipient, "amount": amount},
             idempotency_key=idempotency_key,
             error_cls=WalletTransferError,

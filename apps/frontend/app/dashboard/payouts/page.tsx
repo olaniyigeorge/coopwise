@@ -3,7 +3,6 @@
 import React from "react";
 import DashboardLayout from "@/components/dashboard/layout";
 import { useMyPayouts, PayoutStatus } from "@/hooks/useMyPayouts";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   CheckCircle2,
   Clock,

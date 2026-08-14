@@ -1,23 +1,21 @@
 "use client"
 
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowRightIcon, RefreshCwIcon, LightbulbIcon, SparklesIcon } from 'lucide-react'
-import { useAuth } from '@/lib/auth-context'
 import { getUserInsights } from '@/lib/insights-mock-data'
-import AIInsightCard from './ai-insight-card'
 
 export default function AIInsightsSummary() {
   const router = useRouter()
-  const { user } = useAuth()
+  // const { user } = useAuth()
   
   // Get a limited set of insights for the dashboard
   const insights = useMemo(() => {
     const allInsights = getUserInsights() // user?.id || '1'
     // Return only the first 3 insights
     return allInsights.slice(0, 3)
-  }, [user?.id])
+  }, [])
   
   const hasInsights = insights.length > 0
   

@@ -1,14 +1,11 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, make_url
+from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 
 from config import AppConfig
 from src.infra.db.database import Base
-
-from src.infra.db import all_models
-
 
 
 print("Registered tables:", Base.metadata.tables.keys())
@@ -23,7 +20,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Assume this is your async DB URL from env or config
-raw_db_url  = AppConfig.DATABASE_URL 
+raw_db_url = AppConfig.DATABASE_URL
 
 # Replace only the driver part from 'asyncpg' to 'psycopg2'
 sync_db_url = raw_db_url.replace("postgresql+asyncpg", "postgresql")
@@ -74,6 +71,7 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
+
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
 
@@ -91,6 +89,7 @@ def run_migrations_online() -> None:
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

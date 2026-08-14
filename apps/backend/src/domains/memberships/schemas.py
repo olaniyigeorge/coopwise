@@ -2,7 +2,6 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
-from enum import Enum
 
 from src.domains.users.schemas import UserDetail
 from src.domains.memberships.models.enums import MembershipRole, MembershipStatus
@@ -15,7 +14,6 @@ class MembershipCreate(BaseModel):
     role: MembershipRole
     status: MembershipStatus
     payout_position: int = 1
-    
 
 
 class AcceptMembership(BaseModel):
@@ -45,14 +43,13 @@ class MembershipExtDetails(MembershipDetails):
     model_config = ConfigDict(from_attributes=True)
 
 
-
 class CircleMemberDetail(BaseModel):
     # From GroupMembership
     user_id: UUID
     group_id: UUID
-    role: str                              # MembershipRole enum value
-    status: str                            # MembershipStatus enum value
-    payout_position: int                   # position in the payout queue
+    role: str  # MembershipRole enum value
+    status: str  # MembershipStatus enum value
+    payout_position: int  # position in the payout queue
     has_received_payout_this_cycle: bool
     joined_at: Optional[datetime] = None
 

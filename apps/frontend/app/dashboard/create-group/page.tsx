@@ -4,7 +4,6 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/dashboard/layout'
 import CreateGroupForm from '@/components/dashboard/create-group-form'
-import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -136,7 +135,7 @@ export default function CreateGroup() {
   const [currentStep, setCurrentStep] = useState(1)
   const [groupData, setGroupData] = useState<any>(null)
   const [isCreating, setIsCreating] = useState(false)
-
+  console.log(isCreating)
   const handleNext = async (formValues: any) => {
     try {
       // Store the form values to use in step 2

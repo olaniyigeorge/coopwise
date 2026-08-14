@@ -1,19 +1,16 @@
 from datetime import datetime
 from decimal import Decimal
-import json
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 from src.domains.users.service import UserService
 from config import AppConfig as config
-from src.infra.payments import cashramp_service
 from src.domains.notifications.service import NotificationService
 from src.domains.payments.service import COOPWISE_USD_NGN_RATE, PaymentService
 from src.domains.wallets.models import (
     LedgerStatus,
     LedgerType,
-    PaymentGateway,
     StableCurrency,
 )
 from src.domains.notifications.schemas import NotificationCreate
@@ -24,7 +21,6 @@ from src.domains.wallets.schemas import (
     WalletDeposit,
     WalletLedgerCreate,
     WalletWithdraw,
-    WalletBalance,
     WalletDetail,
 )
 from src.api.middlewares.dependencies import get_current_user
@@ -244,7 +240,7 @@ async def finalise_deposit(
             reference, db
         )
 
-    if ledger_record.status not in [ LedgerStatus.initiated, LedgerStatus.pending ]:
+    if ledger_record.status not in [LedgerStatus.initiated, LedgerStatus.pending]:
         raise HTTPException(
             status_code=400, detail="Transaction already processed or invalid."
         )
@@ -256,6 +252,10 @@ async def finalise_deposit(
     # Settle the payment ledger into the user's wallet
     updated_wallet = await WalletService.settle_payment_ledger_into_wallet(
         ledger_record.id, db, redis
+    )
+
+    logger.info(
+        f"[Deposit finalised] payment ledge settled into wallet {updated_wallet}"
     )
 
     return {

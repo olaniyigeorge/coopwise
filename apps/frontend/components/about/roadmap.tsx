@@ -45,16 +45,16 @@ export default function Roadmap() {
 
       <div className="relative max-w-6xl mx-auto px-4">
         <div className="text-center mb-14 max-w-2xl mx-auto">
-          <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">How We're Building</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">How We&apos;re Building</p>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-white text-balance">
-            Web3 Is the Engine. It's Never the Entry Point.
+            Web3 Is the Engine. It&apos;s Never the Entry Point.
           </h2>
           <p className="text-white/60 mt-4">
             Members onboard entirely through tools they already know. Decentralized infrastructure
             is phased in underneath, on our timeline — not theirs to figure out.
           </p>
           <p className="text-white/50 mt-3 text-sm">
-            Each phase exists to make one thing true: your group's discipline becomes worth
+            Each phase exists to make one thing true: your group&apos;s discipline becomes worth
             something outside the group.
           </p>
         </div>

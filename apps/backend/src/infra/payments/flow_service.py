@@ -1,6 +1,4 @@
-
 import asyncio
-import logging
 from flow_py_sdk import flow_client, cadence
 from flow_py_sdk.cadence import Address, UFix64, String, Array, UInt64, UInt8
 from src.shared.utils.logger import logger
@@ -49,7 +47,7 @@ class FlowService:
                 .set_proposer(
                     proposer.address,
                     proposer.keys[0].index,
-                    proposer.keys[0].sequence_number
+                    proposer.keys[0].sequence_number,
                 )
                 .set_payer(proposer.address)
                 .add_authorizer(proposer.address)
@@ -78,20 +76,21 @@ class FlowService:
                         break
                 except Exception:
                     pass
-            
+
             event_type = (
-                f"A.{COOPWISE_CONTRACT_ADDRESS.lstrip('0x')}"
-                f".CoopWise.CircleCreated"
+                f"A.{COOPWISE_CONTRACT_ADDRESS.lstrip('0x')}" f".CoopWise.CircleCreated"
             )
             for event in result.events:
                 if event.type == event_type:
                     # event.payload is Cadence JSON
                     # circleId is first field
-                    circle_id = int(event.payload["value"]["fields"][0]["value"]["value"])
-                    
+                    circle_id = int(
+                        event.payload["value"]["fields"][0]["value"]["value"]
+                    )
+
                     # Fire-and-forget: start the cron schedule
                     asyncio.create_task(self._start_circle_cron(circle_id))
-                    
+
                     return circle_id
 
             raise ValueError(f"CircleCreated event not found in tx {tx_id}")
@@ -102,16 +101,18 @@ class FlowService:
         Called async after circle creation confirms.
         """
         cadence_script = open("cadence/transactions/StartCircleCron.cdc").read()
-
-        async with flow_client(host=TESTNET_HOST, port=TESTNET_PORT) as client:
+        logger.log(f"[FlowService] {cadence_script}")
+        async with flow_client(host=TESTNET_HOST, port=TESTNET_PORT):
             args = [
                 UInt64(circle_id),
-                UInt8(2),    # Low priority
-                UInt64(500), # executorExecutionEffort
-                UInt64(2500),# keeperExecutionEffort
+                UInt8(2),  # Low priority
+                UInt64(500),  # executorExecutionEffort
+                UInt64(2500),  # keeperExecutionEffort
             ]
             # ... same signing/sending pattern as create_circle
-            logger.info(f"[FlowService] Cron started for circle {circle_id}")
+            logger.info(
+                f"[FlowService] Cron started for circle {circle_id} with args {args}"
+            )
 
     async def stop_circle_cron(self, circle_id: int) -> None:
         """
@@ -120,7 +121,9 @@ class FlowService:
         """
         # Submit CancelCronSchedule.cdc with /storage/coopwiseCron_{circle_id}
         cron_path = f"coopwiseCron_{circle_id}"
-        logger.info(f"[FlowService] Stopping cron for circle {circle_id} at {cron_path}")
+        logger.info(
+            f"[FlowService] Stopping cron for circle {circle_id} at {cron_path}"
+        )
         # ... submit CancelCronSchedule.cdc
 
     async def get_circle_info(self, circle_id: int) -> dict:
@@ -135,31 +138,9 @@ class FlowService:
         """
         async with flow_client(host=TESTNET_HOST, port=TESTNET_PORT) as client:
             result = await client.execute_script(
-                script=script.encode(),
-                arguments=[UInt64(circle_id)]
+                script=script.encode(), arguments=[UInt64(circle_id)]
             )
             return result
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # """

@@ -14,6 +14,7 @@ from src.domains.memberships.models.enums import InvitationStatus
 from src.domains.memberships.models.mixins import UUIDPrimaryKeyMixin, TimestampMixin
 from src.infra.db.database import Base
 
+
 class CoopInvitation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """
     Owns the pre-membership invite lifecycle only. Accepting an invitation is a
@@ -25,7 +26,10 @@ class CoopInvitation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "coop_invitations"
 
     cooperative_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("coop_cooperatives.id"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("coop_cooperatives.id"),
+        nullable=False,
+        index=True,
     )
     invited_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
@@ -37,8 +41,12 @@ class CoopInvitation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     status: Mapped[InvitationStatus] = mapped_column(
         String(32), default=InvitationStatus.PENDING, nullable=False
     )
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    responded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     cooperative: Mapped["CoopCooperative"] = relationship(
         back_populates="invitations", overlaps="memberships,users"

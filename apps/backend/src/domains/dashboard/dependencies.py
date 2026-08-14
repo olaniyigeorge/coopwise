@@ -8,7 +8,6 @@ from src.infra.cache.redis_client import get_redis
 from src.domains.dashboard.service import DashboardService
 
 
-
 def get_dashboard_service(
     db: AsyncSession = Depends(get_async_db_session),
     redis: Redis = Depends(get_redis),

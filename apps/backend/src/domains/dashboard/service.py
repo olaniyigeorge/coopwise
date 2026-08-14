@@ -35,13 +35,20 @@ class DashboardService:
             "cooperative_members": self._get_cooperative_members(user),
         }
 
-        list_fields = {"activities", "ai_insights", "notifications", "cooperative_members"}
+        list_fields = {
+            "activities",
+            "ai_insights",
+            "notifications",
+            "cooperative_members",
+        }
 
         results = await asyncio.gather(*sections.values(), return_exceptions=True)
         data: dict[str, Any] = {}
         for key, result in zip(sections.keys(), results):
             if isinstance(result, Exception):
-                logger.error(f"Dashboard section '{key}' failed for user {user.id}: {result}")
+                logger.error(
+                    f"Dashboard section '{key}' failed for user {user.id}: {result}"
+                )
                 data[key] = [] if key in list_fields else None
             else:
                 data[key] = result
@@ -68,7 +75,9 @@ class DashboardService:
         )
 
     async def _get_activities(self, user: AuthenticatedUser):
-        return await ActivityService.get_user_recent_activities(self._db, user, self._redis)
+        return await ActivityService.get_user_recent_activities(
+            self._db, user, self._redis
+        )
 
     async def _get_ai_insights(self, user: AuthenticatedUser):
         return await InsightEngine.get_user_insights(
@@ -84,15 +93,3 @@ class DashboardService:
         return await CooperativeMembershipService.get_top_memberships(
             self._db, user, skip=0, limit=20
         )
-
-
-
-
-
-
-
-
-
-
-
-

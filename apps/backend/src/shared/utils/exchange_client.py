@@ -1,5 +1,4 @@
 import httpx
-import os
 
 from config import AppConfig as config
 from src.shared.utils.logger import logger

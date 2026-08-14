@@ -91,18 +91,18 @@ function BadgePill({ verified }: { verified: boolean }) {
     </span>
   )
 }
-function RolePill({ role }: { role: string }) {
-  return (
-    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
-      role!=="admin"
-        ? 'bg-green-50 text-green-700 border border-green-200'
-        : 'bg-blue-50 text-blue-700 border border-blue-200'
-    }`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${role!=='admin' ? 'bg-green-500' : 'bg-blue-400'}`} />
-      {role}
-    </span>
-  )
-}
+// function RolePill({ role }: { role: string }) {
+//   return (
+//     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+//       role!=="admin"
+//         ? 'bg-green-50 text-green-700 border border-green-200'
+//         : 'bg-blue-50 text-blue-700 border border-blue-200'
+//     }`}>
+//       <span className={`w-1.5 h-1.5 rounded-full ${role!=='admin' ? 'bg-green-500' : 'bg-blue-400'}`} />
+//       {role}
+//     </span>
+//   )
+// }
 
 function GoalPurposeInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false)
@@ -163,8 +163,6 @@ export default function ProfileContent() {
     savingGoal: '',
     savingFrequency: '',
   })
-
-  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (profile) {

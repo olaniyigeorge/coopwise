@@ -31,7 +31,7 @@ celery_app = Celery(
         "src.domains.auth.infra.tasks",
         "src.domains.kyc.tasks",
         "src.domains.users.tasks",
-        "src.infra.celery.tasks.otp_tasks"
+        "src.infra.celery.tasks.otp_tasks",
     ],
 )
 
@@ -53,11 +53,13 @@ celery_app.conf.task_queues = (
 celery_app.conf.task_default_queue = "celery"
 
 celery_app.conf.task_routes = {
-    "src.domains.notifications.tasks.deliver_push":        {"queue": "push"},
-    "src.domains.notifications.tasks.deliver_sms":         {"queue": "sms"},
-    "src.domains.notifications.tasks.deliver_email":       {"queue": "email"},
+    "src.domains.notifications.tasks.deliver_push": {"queue": "push"},
+    "src.domains.notifications.tasks.deliver_sms": {"queue": "sms"},
+    "src.domains.notifications.tasks.deliver_email": {"queue": "email"},
     "src.domains.notifications.tasks.review_manual_queue": {"queue": "celery"},
-    "src.domains.users.tasks.object_storage_tasks.upload_avatar_task": {"queue": "media"},
+    "src.domains.users.tasks.object_storage_tasks.upload_avatar_task": {
+        "queue": "media"
+    },
     "auth.send_otp_email": {"queue": "email"},
 }
 
@@ -75,10 +77,12 @@ def _bootstrap_worker_process(**kwargs) -> None:
 
     engine_kwargs = {}
     if "sqlite" in config.DATABASE_URL:
-        engine_kwargs.update({
-            "connect_args": {"check_same_thread": False},
-            "poolclass": sqlalchemy.StaticPool,
-        })
+        engine_kwargs.update(
+            {
+                "connect_args": {"check_same_thread": False},
+                "poolclass": sqlalchemy.StaticPool,
+            }
+        )
     else:
         # Each Celery task runs asyncio.run(), which tears down its event
         # loop on completion. A pooled connection persists across that
@@ -87,7 +91,7 @@ def _bootstrap_worker_process(**kwargs) -> None:
         # opens a fresh connection per checkout and closes it on checkin,
         # so nothing ever survives past the loop that created it.
         engine_kwargs.update({"poolclass": sqlalchemy.pool.NullPool})
-    
+
     db_manager.initialize(
         config.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1),
         **engine_kwargs,
@@ -95,6 +99,7 @@ def _bootstrap_worker_process(**kwargs) -> None:
 
     configure_cloudinary()
     logger.info("[worker_process_init] worker process bootstrap complete")
+
 
 # --- General config ---------------------------------------------------------
 celery_app.conf.update(
@@ -133,7 +138,9 @@ celery_app.conf.update(
 
 
 @task_prerun.connect
-def _log_task_prerun(sender=None, task_id=None, task=None, args=None, kwargs=None, **kw):
+def _log_task_prerun(
+    sender=None, task_id=None, task=None, args=None, kwargs=None, **kw
+):
     logger.info(f"\n[celery] START {task.name} id={task_id} args={args} kwargs=\n")
 
 
@@ -144,7 +151,10 @@ def _log_task_postrun(sender=None, task_id=None, task=None, state=None, **kw):
 
 @task_failure.connect
 def _log_task_failure(sender=None, task_id=None, exception=None, traceback=None, **kw):
-    logger.error(f"\n[celery] FAILED {sender.name} id={task_id} exc={exception!r}\n", exc_info=True)
+    logger.error(
+        f"\n[celery] FAILED {sender.name} id={task_id} exc={exception!r}\n",
+        exc_info=True,
+    )
 
 
 @task_retry.connect

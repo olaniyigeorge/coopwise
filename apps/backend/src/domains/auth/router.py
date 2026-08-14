@@ -5,6 +5,7 @@ CHANGED vs the Crossmint-Auth version:
   - /session (Crossmint JWT exchange) is GONE.
   - Four endpoints now: request-otp, verify-otp, firebase, session/refresh.
 """
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.domains.auth.dependencies import get_auth_service
@@ -18,7 +19,7 @@ from src.domains.auth.exceptions import (
     OtpRateLimitedError,
     TokenExpiredError,
     UserNotFoundError,
-    InvalidTokenError
+    InvalidTokenError,
 )
 from src.domains.auth.schemas import (
     FirebaseSignIn,
@@ -31,7 +32,6 @@ from src.domains.auth.schemas import (
 from src.domains.auth.service import AuthService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth & Onboarding"])
-
 
 
 @router.post("/otp/request", status_code=204)
@@ -66,6 +66,7 @@ async def verify_otp(
     except FullNameRequiredError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.post("/login", response_model=SessionResponse)
 async def sign_in_with_password(
     payload: PasswordSignIn,
@@ -77,8 +78,8 @@ async def sign_in_with_password(
         return await auth_service.sign_in_with_password(payload)
     except InvalidCredentialsError as e:
         raise HTTPException(status_code=401, detail=str(e))
-    
-    
+
+
 @router.post("/firebase", response_model=SessionResponse)
 async def sign_in_with_firebase(
     payload: FirebaseSignIn,

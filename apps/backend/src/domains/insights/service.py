@@ -132,7 +132,7 @@ class InsightEngine:
     async def get_save_new_insight(
         db: AsyncSession, user: AuthenticatedUser, redis: Redis
     ):
-        logger.info(f"\n\n creating and saving new insight....... \n\n")
+        logger.info("\n\n creating and saving new insight....... \n\n")
         try:
             insight = await InsightEngine.get_ai_insight(db, user, redis)
         except Exception as e:
@@ -401,7 +401,7 @@ class InsightEngine:
                 headers={"Content-Type": "application/json"},
                 json=payload,
                 timeout=10,
-            ) 
+            )
             response.raise_for_status()
 
             data = response.json()

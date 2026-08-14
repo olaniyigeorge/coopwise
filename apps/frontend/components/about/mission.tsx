@@ -22,24 +22,24 @@ export default function Mission() {
               the people in it.
             </p>
             <p>
-              This isn't a niche behavior. Across Africa, savings cooperatives support more small
+              This isn&apos;t a niche behavior. Across Africa, savings cooperatives support more small
               businesses than almost any formal institution — arguably the closest thing the
               continent has to an SME bank. Where microfinance has struggled to reach the bottom
               of the pyramid, informal cooperatives have quietly done the job for generations,
               running on nothing more than trust between members.
             </p>
             <p>
-              It's also worth being precise about what this is, today. A savings circle is a 
-              discipline product, not a lending product — you're not borrowing against a promise, 
-              you're building a record through delivery. That record is what eventually makes 
-              credit possible, on terms that don't require collateral you don't have. What breaks 
-              these groups isn't the model; it's the bookkeeping. Someone forgets who paid. A 
+              It&apos;s also worth being precise about what this is, today. A savings circle is a 
+              discipline product, not a lending product — you&apos;re not borrowing against a promise, 
+              you&apos;re building a record through delivery. That record is what eventually makes 
+              credit possible, on terms that don&apos;t require collateral you don&apos;t have. What breaks 
+              these groups isn&apos;t the model; it&apos;s the bookkeeping. Someone forgets who paid. A 
               payout order gets disputed because nobody wrote it down. A treasurer moves cities 
               and takes the records along.
             </p>
             <p>
               CoopWise exists to fix that layer, not replace the tradition underneath it. Every
-              contribution logged. Every payout traceable. And longer-term, we're building toward
+              contribution logged. Every payout traceable. And longer-term, we&apos;re building toward
               something the DeFi world has talked about for years but rarely delivered in a real
               <span className="bg-brand-gold/15 text-brand-gold px-1 rounded">African context: a trust layer that lets value built inside one cooperative move into
               others — without asking a single member to understand what a blockchain is to

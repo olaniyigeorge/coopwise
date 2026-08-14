@@ -25,8 +25,7 @@ def _utcnow() -> datetime:
 
 
 class EventDispatcher(Protocol):
-    async def dispatch(self, event: object) -> None:
-        ...
+    async def dispatch(self, event: object) -> None: ...
 
 
 class NoOpEventDispatcher:

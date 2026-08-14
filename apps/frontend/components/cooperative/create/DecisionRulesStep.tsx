@@ -54,7 +54,7 @@ export function DecisionRulesStep({ onContinue, onBack }: DecisionRulesStepProps
   const [errorByType, setErrorByType] = useState<Partial<Record<DecisionType, string>>>({});
 
   // Local, per-type key/value builder for escalation_path — dict[str, Any]
-  // on the backend with no fixed schema, so this isn't sourced from the
+  // on the backend with no fixed schema, so this isn&apos;t sourced from the
   // shared store.
   const [escalationPairs, setEscalationPairs] = useState<Record<DecisionType, KVPair[]>>(() =>
     DECISION_TYPES.reduce((acc, t) => {
@@ -196,7 +196,7 @@ export function DecisionRulesStep({ onContinue, onBack }: DecisionRulesStepProps
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Define any fields that fit this escalation path — e.g.
-                      "trigger" / "3 missed payments", "action" / "notify admin".
+                      &apos;trigger&apos; / &apos;3 missed payments&apos;, &apos;action&apos; / &apos;notify admin&apos;.
                     </p>
                     {pairs.map((pair, i) => (
                       <div key={i} className="flex gap-2 items-center">
