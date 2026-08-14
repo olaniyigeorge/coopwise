@@ -12,21 +12,21 @@ from src.domains.cooperatives.models import goals as _goals_models  # noqa: F401
 from src.domains.cooperatives.models import mixins as _mixins_models  # noqa: F401
 from src.domains.cooperatives.models import enums as _enums_models  # noqa: F401
 from src.domains.cooperatives.models import (
-    activity_log as _activity_log_models,   # noqa: F401
-)  
+    activity_log as _activity_log_models,  # noqa: F401
+)
 from src.domains.cooperatives.models import (
-    cooperative as _cooperative_models,    # noqa: F401
-) 
+    cooperative as _cooperative_models,  # noqa: F401
+)
 
 from src.domains.memberships.models import (
-    enums as _membership_enums_models,   # noqa: F401
-) 
+    enums as _membership_enums_models,  # noqa: F401
+)
 from src.domains.memberships.models import (
-    invitation as _membership_invitation_models,    # noqa: F401
-) 
+    invitation as _membership_invitation_models,  # noqa: F401
+)
 from src.domains.memberships.models import (
-    group_membership as _group_membership_models, # noqa: F401
-)  
+    group_membership as _group_membership_models,  # noqa: F401
+)
 from src.domains.memberships.models import mixins as _membership_mixins  # noqa: F401
 
 from src.domains.contributions import models as _contributions_models  # noqa: F401
