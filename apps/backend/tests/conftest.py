@@ -1,22 +1,21 @@
-import os
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.pool import NullPool
 
+from config import AppConfig as config
+from src.infra.db import all_models  # noqa: F401, E402
+
 # noqa: E402
 from src.infra.db.database import db_manager
 from src.infra.db.dependencies import get_async_db_session
 
 
-DATABASE_URL = os.environ["DATABASE_URL"]
-
-
 @pytest.fixture(scope="session", autouse=True)
 def _init_db_manager():
     if not db_manager._is_initialized:
-        db_manager.initialize(DATABASE_URL, poolclass=NullPool)
+        db_manager.initialize(config.DATABASE_URL, poolclass=NullPool)
     yield
 
 

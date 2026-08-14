@@ -57,7 +57,7 @@ class GlobalConfig(BaseSettings):
     # Sentry: optional, only active in production
     SENTRY_DSN: Optional[str] = None
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
     @field_validator("JWT_PRIVATE_KEY", "JWT_PUBLIC_KEY", mode="after")
     @classmethod
