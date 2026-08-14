@@ -40,48 +40,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-name: Coopwise CI
-description: CI workflow for Coopwise project
-
-on:
-  push:
-    branches: [main, staging, 0G]
-  pull_request:
-    branches: [main, staging, 0G]
-
-jobs:
-  backend:
-    name: Backend Lint & Test
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/backend
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: coopwise
-          POSTGRES_PASSWORD: coopwise
-          POSTGRES_DB: coopwise_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U coopwise -d coopwise_db"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     env:
       ENV: test
       PROJECT_NAME: Coopwise
