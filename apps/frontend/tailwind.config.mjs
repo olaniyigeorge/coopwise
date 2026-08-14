@@ -88,8 +88,8 @@ module.exports = {
     },
   },
   plugins: [
-    require("tailwindcss-animate"),
-    function({ addUtilities }) {
+    animate,
+    function ({ addUtilities }) {
       const newUtilities = {
         '.touch-manipulation': {
           'touch-action': 'manipulation',

@@ -33,7 +33,7 @@ export default function Values() {
         <div className="text-center mb-14 max-w-2xl mx-auto">
           <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">What We Stand For</p>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-brand-ink text-balance">
-            Four Rules We Don't Break
+            Four Rules We Don&apos;t Break
           </h2>
         </div>
 

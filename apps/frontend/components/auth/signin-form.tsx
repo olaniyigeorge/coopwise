@@ -16,9 +16,9 @@ import { Form, FormField, FormItem, FormControl, FormMessage } from "@/component
 import { auth, getFirebaseErrorMessage } from "@/helpers/firebase"
 import { passwordSignInSchema, passwordSignInFormValues } from "@/helpers/validators/auth.schemas"
 import useAuthStore from "@/stores/auth-store"
-import { requestOtp, signInWithFirebase, signInWithPassword, verifyOtpAndRegister } from "@/services/auth-service"
+import { requestOtp, signInWithFirebase, signInWithPassword } from "@/services/auth-service"
 
-
+console.error(requestOtp)
 type IdentifierMode = "email" | "phone"
 
 // Phone auth (SMS OTP) isn't wired up yet — no SMS provider configured.

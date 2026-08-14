@@ -85,7 +85,7 @@ export default function InvitePreviewCard({
         </Button>
 
         <p className="text-center text-xs text-gray-400">
-          You'll be asked to log in or create an account
+          You&apos;ll be asked to log in or create an account
         </p>
       </div>
     </div>

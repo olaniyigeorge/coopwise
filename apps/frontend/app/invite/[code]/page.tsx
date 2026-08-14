@@ -1,4 +1,3 @@
-// apps/web/app/invite/[code]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,14 +14,14 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 };
 
 
-function safeDecodeCode(code: string): string {
-  try {
-    const decoded = atob(code);
-    // If it looks like a valid invite code after decoding, use it
-    if (decoded.includes(":")) return decoded;
-  } catch {}
-  return code; // already raw
-}
+// function safeDecodeCode(code: string): string {
+//   try {
+//     const decoded = atob(code);
+//     // If it looks like a valid invite code after decoding, use it
+//     if (decoded.includes(":")) return decoded;
+//   } catch {}
+//   return code; // already raw
+// }
 
 
 export default function InvitePreviewPage() {
@@ -168,7 +167,7 @@ export default function InvitePreviewPage() {
 
         {/* Terms */}
         <div className="bg-white rounded-xl p-4 border space-y-2">
-          <h2 className="text-sm font-medium">What you're agreeing to</h2>
+          <h2 className="text-sm font-medium">What you&apos;re agreeing to</h2>
           <ul className="text-xs text-muted-foreground space-y-1.5">
             <li>
               Contribute{" "}

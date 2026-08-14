@@ -85,7 +85,7 @@ export function ActivationChecklist({ onActivated, onBack }: ActivationChecklist
       <div>
         <h2 className="text-xl font-semibold">Review & activate</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          "{basicsDraft.name}" — once activated, members can start
+          &quot;{basicsDraft.name}&quot; — once activated, members can start
           contributing under these rules.
         </p>
       </div>

@@ -21,7 +21,7 @@ export default function Footer() {
               <span className="font-display text-lg font-bold text-white">CoopWise</span>
             </Link>
             <p className="text-sm text-white/50 max-w-xs leading-relaxed">
-              Trust infrastructure for people the credit system doesn't see yet — built on ajo, esusu, and tontine.
+              Trust infrastructure for people the credit system doesn&apos;t see yet — built on ajo, esusu, and tontine.
             </p>
           </div>
 

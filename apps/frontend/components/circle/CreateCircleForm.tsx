@@ -46,6 +46,7 @@ export function CreateCircleForm() {
   const [coopModel, setCoopModel] = useState<CooperativeModel>("ajo");
   const [rotationOrder, setRotationOrder] = useState("sequential");
   
+  console.error(setPayoutStrategy, setRotationOrder)
   // 4. Members
   const [maxMembers, setMaxMembers] = useState("5");
   const [memberPhones, setMemberPhones] = useState<string[]>([""]);

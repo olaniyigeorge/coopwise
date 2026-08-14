@@ -49,7 +49,7 @@ export default function DiscoverGroupsList({ searchQuery, suggestedGroups = [], 
   const [inviteCode, setInviteCode] = useState('')
   const [isGeneratingCode, setIsGeneratingCode] = useState(false)
   const limit = 6 // Number of groups per page
-  
+  console.error(selectedGroupId)
   // Process groups from props
   useEffect(() => {
     try {

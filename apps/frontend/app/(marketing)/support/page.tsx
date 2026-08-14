@@ -56,14 +56,14 @@ export default function SupportPage() {
       icon: <Phone className="w-6 h-6" />,
       title: "Phone",
       description: "Talk it through with someone directly",
-      availability: "Mon–Fri, 9AM–6PM WAT",
+      availability: "Mon–Fri, 9AM-6PM WAT",
       action: "Call Now",
       link: "tel:+2348144913556"
     },
     {
       icon: <Mail className="w-6 h-6" />,
       title: "Email",
-      description: "Send the details, we'll dig into it properly",
+      description: "Send the details, we&apos;ll dig into it properly",
       availability: "We reply within 24 hours",
       action: "Send Email",
       link: "mailto:hellocoopwise@gmail.com"
@@ -100,7 +100,7 @@ export default function SupportPage() {
         "Making a contribution",
         "How payouts are calculated",
         "Reading your transaction history",
-        "When a payment doesn't go through"
+        "When a payment doesn&apos;t go through"
       ]
     },
     {
@@ -136,13 +136,13 @@ export default function SupportPage() {
         <div className="space-y-2">
           <p>To reset your password:</p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Go to the CoopWise login page and select "Forgot Password."</li>
+            <li>Go to the CoopWise login page and select &quot;Forgot Password.&quot;</li>
             <li>Enter the email address tied to your account.</li>
             <li>Check your inbox for a reset link — and your spam folder, just in case.</li>
             <li>Set a new password (8+ characters, a mix of letters, numbers, and symbols).</li>
             <li>Log in as normal.</li>
           </ol>
-          <p>No email after 10 minutes? Reach out and we'll sort it out directly.</p>
+          <p>No email after 10 minutes? Reach out and we&apos;ll sort it out directly.</p>
         </div>
       )
     },
@@ -157,10 +157,10 @@ export default function SupportPage() {
             can quietly alter after the fact.
           </p>
           <p>
-            We're a small, early-stage team, and we'd rather say that plainly than borrow language
-            (deposit insurance, "bank-level" guarantees) that doesn't reflect where we are today.
-            As the roadmap below shows, we're building toward on-chain, independently auditable
-            escrow — that's the direction, not a promise about right now.
+            We&apos;re a small, early-stage team, and we&apos;d rather say that plainly than borrow language
+            (deposit insurance, &quot;bank-level&quot; guarantees) that doesn&apos;t reflect where we are today.
+            As the roadmap below shows, we&apos;re building toward on-chain, independently auditable
+            escrow — that&apos;s the direction, not a promise about right now.
           </p>
         </div>
       )
@@ -169,15 +169,15 @@ export default function SupportPage() {
       question: "Can I leave a savings group anytime?",
       answer: (
         <div className="space-y-2">
-          <p>Yes — you're never locked in. To leave:</p>
+          <p>Yes — you&apos;re never locked in. To leave:</p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Open your group settings and select "Leave Group."</li>
+            <li>Open your group settings and select &quot;Leave Group.&quot;</li>
             <li>Review any pending contributions or upcoming payouts your exit might affect.</li>
-            <li>Worth a conversation with the group first — your departure can shift others' plans.</li>
-            <li>Settle any outstanding obligations under your group's own rules.</li>
+            <li>Worth a conversation with the group first — your departure can shift others&apos; plans.</li>
+            <li>Settle any outstanding obligations under your group&apos;s own rules.</li>
             <li>Confirm.</li>
           </ol>
-          <p>Your contribution history stays visible, and you're paid out according to the group's agreed structure.</p>
+          <p>Your contribution history stays visible, and you&apos;re paid out according to the group&apos;s agreed structure.</p>
         </div>
       )
     },
@@ -185,30 +185,30 @@ export default function SupportPage() {
       question: "How do I invite people to my group?",
       answer: (
         <div className="space-y-2">
-          <p>From your group dashboard, select "Invite Members." From there you can:</p>
+          <p>From your group dashboard, select &quot;Invite Members.&quot; From there you can:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Share your group's unique link by text, email, or social</li>
+            <li>Share your group&apos;s unique link by text, email, or social</li>
             <li>Hand out the invite code for manual entry</li>
             <li>Require admin approval before new members join</li>
           </ul>
-          <p>Every invite carries the group's rules and contribution terms, so nobody joins without knowing what they're signing up for.</p>
+          <p>Every invite carries the group&apos;s rules and contribution terms, so nobody joins without knowing what they&apos;re signing up for.</p>
         </div>
       )
     },
     {
-      question: "What happens if someone doesn't pay?",
+      question: "What happens if someone doesn&apos;t pay?",
       answer: (
         <div className="space-y-2">
-          <p>Today, that's handled by your group directly:</p>
+          <p>Today, that&apos;s handled by your group directly:</p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Reminders go out before a due date, and again if it's missed.</li>
+            <li>Reminders go out before a due date, and again if it&apos;s missed.</li>
             <li>Group admins can set grace periods or agree on a payment plan.</li>
-            <li>The full contribution record is visible to everyone, so there's no ambiguity about who owes what.</li>
-            <li>Persistent non-payment is a group decision — CoopWise doesn't override that.</li>
+            <li>The full contribution record is visible to everyone, so there&apos;s no ambiguity about who owes what.</li>
+            <li>Persistent non-payment is a group decision — CoopWise doesn&apos;t override that.</li>
           </ol>
           <p>
             AI-assisted dispute resolution — reviewing the record and proposing a fair outcome
-            automatically — is on our roadmap, not live yet. We'll say so here the day it ships.
+            automatically — is on our roadmap, not live yet. We&quot;ll say so here the day it ships.
           </p>
         </div>
       )
@@ -218,10 +218,10 @@ export default function SupportPage() {
       answer: (
         <div className="space-y-2">
           <p>
-            Creating and joining a group is free today. We haven't finalized a pricing model yet,
-            and we're not going to publish numbers before they're real. When there's anything to
-            pay for, it'll be small, clearly disclosed, and never a surprise deducted from your
-            group's savings.
+            Creating and joining a group is free today. We haven&apos;t finalized a pricing model yet,
+            and we&apos;re not going to publish numbers before they&apos;re real. When there&apos;s anything to
+            pay for, it&apos;ll be small, clearly disclosed, and never a surprise deducted from your
+            group&apos;s savings.
           </p>
         </div>
       )
@@ -448,7 +448,7 @@ export default function SupportPage() {
             Where We Are Right Now
           </div>
           <h2 className="font-display text-2xl md:text-3xl font-bold text-white mb-5 text-balance">
-            We'd Rather Tell You What's Not Built Yet
+            We&quot;d Rather Tell You What&quot;s Not Built Yet
           </h2>
           <p className="text-white/60 leading-relaxed mb-2">
             CoopWise is early — Phase 1 of a longer roadmap. Group creation, contributions, and
@@ -457,7 +457,7 @@ export default function SupportPage() {
           </p>
           <p className="text-white/60 leading-relaxed">
             Until those ship, email and phone reach an actual person on our team — not a queue.
-            Every gap on this page is one we're actively closing.
+            Every gap on this page is one we&apos;re actively closing.
           </p>
         </div>
       </section>
@@ -495,8 +495,8 @@ export default function SupportPage() {
             <div>
               <h3 className="font-display font-semibold text-brand-ink mb-1.5">Notice something wrong with your account?</h3>
               <p className="text-sm text-brand-ink/60 mb-4">
-                Unauthorized access, a transaction you don't recognize, anything security-related —
-                treat it as urgent and contact us right away. We'll treat it the same way.
+                Unauthorized access, a transaction you don&apos;t recognize, anything security-related —
+                treat it as urgent and contact us right away. We&quot;ll treat it the same way.
               </p>
               <a href="tel:+2349037018310">
                 <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white">
@@ -516,7 +516,7 @@ export default function SupportPage() {
             Still Need Help?
           </h2>
           <p className="text-brand-ink/65 mb-8 max-w-xl mx-auto">
-            No bots, no ticket number to remember — just tell us what's going on.
+            No bots, no ticket number to remember — just tell us what&quot;s going on.
           </p>
           <div className="flex items-center gap-3 justify-center flex-wrap">
             <a href="mailto:hellocoopwise@gmail.com">

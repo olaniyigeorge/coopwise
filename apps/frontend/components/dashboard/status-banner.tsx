@@ -19,7 +19,7 @@ export default function StatusBanner({ isKycVerified }: StatusBannerProps) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-brand-ink">Identity verification is still pending.</p>
         <p className="text-xs text-brand-ink/60">
-          It only takes a couple of minutes, and it's required before you can send or receive payouts.
+          It only takes a couple of minutes, and it&apos;s required before you can send or receive payouts.
         </p>
       </div>
       <Link

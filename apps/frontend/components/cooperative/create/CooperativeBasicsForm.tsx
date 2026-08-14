@@ -61,7 +61,7 @@ export function CooperativeBasicsForm({ onContinue }: CooperativeBasicsFormProps
         <div>
           <h2 className="text-xl font-semibold">Cooperative basics</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            "{basicsDraft.name}" has already been created — continue to set up its rules.
+            &quot;{basicsDraft.name}&apos; has already been created — continue to set up its rules.
           </p>
         </div>
         <div className="flex justify-end">
@@ -112,7 +112,7 @@ export function CooperativeBasicsForm({ onContinue }: CooperativeBasicsFormProps
         {/* Cover image upload deferred: FLAGGED — unconfirmed whether
             POST /cooperatives accepts a cover_image_url at creation or
             expects a separate multipart upload call afterward. Wiring
-            this once that's confirmed. */}
+            this once that&apos;s confirmed. */}
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}

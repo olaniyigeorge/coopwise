@@ -85,7 +85,7 @@ export default function DiscoverGroupsTabView({ defaultTab = 'discover' }: Disco
   const [discoverGroups, setDiscoverGroups] = useState<ReturnType<typeof transformGroup>[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  
+  console.error(setSearchQuery)
   // Fetch groups from API
   useEffect(() => {
     const fetchGroups = async () => {

@@ -22,11 +22,11 @@ export default function AboutHero() {
         </div>
 
         <p className="font-display text-lg md:text-xl font-semibold text-brand-ink/60 mb-2">
-          Africa's Oldest Fintech. Finally Built to Scale.
+          Africa&apos;s Oldest Fintech. Finally Built to Scale.
         </p>
 
         <h1 className="font-display text-4xl sm:text-5xl md:text-[3.2rem] font-bold text-brand-ink leading-[1.1] text-balance">
-          We're Building the Infrastructure for Communities to Build Businesses,
+          We&apos;re Building the Infrastructure for Communities to Build Businesses,
           Assets, and Institutions Together.
         </h1>
 

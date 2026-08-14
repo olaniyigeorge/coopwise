@@ -107,8 +107,8 @@ export default function InviteJoinHandler({ inviteCode, groupName }: InviteJoinH
             <DialogTitle className="text-xl">Join {groupName}</DialogTitle>
             <DialogDescription className="text-sm text-gray-500">
               {isAuthenticated
-                ? "You're about to join this savings group."
-                : "You'll need to log in or create an account to join this group."}
+                ? "You&apos;re about to join this savings group."
+                : "You&apos;ll need to log in or create an account to join this group."}
             </DialogDescription>
           </DialogHeader>
           

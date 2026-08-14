@@ -55,7 +55,7 @@ export default function ComingSoon() {
           </h2>
           <p className="text-white/60 mt-4 text-base md:text-lg">
             Today, CoopWise runs on rails you already trust — bank transfer, card, familiar apps.
-            Underneath, we're quietly building a decentralized core, so your group's collective
+            Underneath, we&apos;re quietly building a decentralized core, so your group&apos;s collective
             standing becomes something the wider financial system can recognize.
           </p>
         </div>
@@ -79,7 +79,7 @@ export default function ComingSoon() {
 
         <div className="mt-12 flex flex-col items-center gap-4 text-center">
           <p className="text-white/50 text-sm max-w-md">
-            Web3 is the engine underneath, not the entry point. You'll never need a crypto wallet
+            Web3 is the engine underneath, not the entry point. You&apos;ll never need a crypto wallet
             to benefit from it.
           </p>
           <Button onClick={() => router.push("/signup")} className="bg-brand-gold hover:bg-brand-gold/90 text-brand-ink font-semibold px-6 group">

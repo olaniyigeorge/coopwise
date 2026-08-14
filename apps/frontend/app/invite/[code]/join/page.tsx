@@ -1,4 +1,3 @@
-// apps/web/app/invite/[code]/join/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,15 +10,15 @@ import { Loader2, Check, AlertTriangle, Users, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
-function parseInviteCode(code: string): string | null {
-  try {
-    const stripped = code.replace(/^COOPWISE_/, "");
-    const [, groupId] = stripped.split(":");
-    return groupId ?? null;
-  } catch {
-    return null;
-  }
-}
+// function parseInviteCode(code: string): string | null {
+//   try {
+//     const stripped = code.replace(/^COOPWISE_/, "");
+//     const [, groupId] = stripped.split(":");
+//     return groupId ?? null;
+//   } catch {
+//     return null;
+//   }
+// }
 
 function decodeInviteCode(encodedCode: string): { raw: string; groupId: string } | null {
   try {
@@ -63,7 +62,7 @@ export default function JoinCirclePage() {
         `/signin?returnUrl=${encodeURIComponent(`/invite/${code}/join`)}`
       );
     }
-  }, [user]);
+  }, [user, code, decoded?.raw, router]);
 
   // Fetch circle preview
   useEffect(() => {
@@ -162,7 +161,7 @@ export default function JoinCirclePage() {
                 <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
                   <Check className="w-6 h-6 text-green-600" />
                 </div>
-                <p className="font-semibold text-gray-900">You're in!</p>
+                <p className="font-semibold text-gray-900">You&apos;re in!</p>
                 <p className="text-sm text-gray-500 mt-1">Redirecting to your circle…</p>
               </div>
             ) : (
