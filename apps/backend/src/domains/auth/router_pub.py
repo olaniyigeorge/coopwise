@@ -29,7 +29,7 @@ def _load_public_key() -> jwk.JWK:
 
 
 key = _load_public_key()
-key.update(kid="coopwise-2026-07", use="sig", alg="ES256")
+key.update(kid=config.JWT_KID, use="sig", alg="ES256")
 
 
 @router.get("/.well-known/jwks.json")
