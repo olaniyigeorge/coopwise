@@ -8,12 +8,44 @@ import { usePathname } from 'next/navigation'
 import { Toaster } from 'sonner'
 import useAuthStore from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
+import { motion, AnimatePresence, Variants} from 'framer-motion'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
   fullWidth?: boolean
   noPadding?: boolean
   className?: string
+}
+
+// Level 2: Component / Page Entrance Motion Variant
+const pageFadeUp: Variants = {
+  initial: {
+    opacity: 0,
+    y: 6,
+  },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.25,
+      ease: [0.16, 1, 0.3, 1], // Custom smooth ease-out curve
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -4,
+    transition: {
+      duration: 0.15,
+      ease: 'easeIn',
+    },
+  },
+}
+
+// Mobile Overlay Backdrop Motion Variant
+const backdropVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
 }
 
 export default function DashboardLayout({ 
@@ -26,7 +58,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { user } = useAuthStore()
   
-  // Get header configuration based on the current pathname
+  // Get header configuration based on current route
   const getHeaderConfig = () => {
     const path = pathname || '/dashboard'
     
@@ -63,7 +95,6 @@ export default function DashboardLayout({
       case '/dashboard/create-group':
       case '/dashboard/create-circle':
         return {
-          // Empty title since it's already in the page content
           title: '',
           showBackButton: true,
           backUrl: '/dashboard'
@@ -79,13 +110,8 @@ export default function DashboardLayout({
         }
       
       case '/dashboard/my-group':
-        return {
-          title: '',
-          subtitle: '',
-          showBackButton: false
-        }
-      
       case '/dashboard/discover-groups':
+      case '/dashboard/contributions':
         return {
           title: '',
           subtitle: '',
@@ -112,7 +138,6 @@ export default function DashboardLayout({
           showBackButton: false
         }
 
-      // Consolidated account hub — replaces the old standalone /dashboard/profile
       case '/dashboard/account':
       case '/dashboard/account/profile':
         return {
@@ -135,13 +160,6 @@ export default function DashboardLayout({
           showBackButton: false
         }
       
-      case '/dashboard/contributions':
-        return {
-          title: '',
-          subtitle: '',
-          showBackButton: false
-        }
-      
       default:
         return {
           title: 'Dashboard',
@@ -149,6 +167,7 @@ export default function DashboardLayout({
         }
     }
   }
+
   const headerConfig = getHeaderConfig()
 
   const handleCloseSidebar = () => {
@@ -159,24 +178,31 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-brand-paper" onClick={handleCloseSidebar}>
-      {/* Mobile backdrop */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+      {/* Mobile Backdrop Fade */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div 
+            variants={backdropVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+      </AnimatePresence>
       
-      {/* Sidebar */}
+      {/* Sidebar Navigation */}
       <Sidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)} 
       />
       
-      {/* Main Content Area */}
+      {/* Main Container */}
       <div className={cn(
-        "min-h-screen transition-all duration-200 ease-in-out",
+        "min-h-screen transition-all duration-300 ease-out",
         "lg:ml-[208px]"
       )}>
         <Header 
@@ -186,20 +212,30 @@ export default function DashboardLayout({
           userName={user?.full_name || "User"}
         />
         
-        <main className={cn(
-          !noPadding && "p-3 sm:p-4 lg:p-6",
-          "pb-20 lg:pb-6", // Bottom padding to account for mobile navigation
-          fullWidth ? "w-full" : "mx-auto",
-          className
-        )}>
-          {children}
-        </main>
+        {/* Animated Page Route Content */}
+        <AnimatePresence mode="wait">
+          <motion.main 
+            key={pathname}
+            variants={pageFadeUp}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className={cn(
+              !noPadding && "p-3 sm:p-4 lg:p-6",
+              "pb-20 lg:pb-6", // Spacer for fixed mobile bottom nav
+              fullWidth ? "w-full" : "mx-auto",
+              className
+            )}
+          >
+            {children}
+          </motion.main>
+        </AnimatePresence>
       </div>
       
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation Bar */}
       <MobileBottomNav />
       
-      {/* Toast Notifications */}
+      {/* Global Toast Notifications */}
       <Toaster 
         position="top-right" 
         expand={false}
