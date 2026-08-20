@@ -10,6 +10,8 @@
  * schemas. Marked inline with `// UNCONFIRMED`.
  */
 
+import { UUID } from "crypto";
+
 // ---------------------------------------------------------------------------
 // Cooperative
 // ---------------------------------------------------------------------------
@@ -31,6 +33,7 @@ export interface Cooperative {
   cover_image_url: string | null;
   coop_model: CoopModel;
   status: CooperativeStatus;
+  created_by: UUID;
   created_at: string;
   updated_at: string;
 }
@@ -126,7 +129,7 @@ export type ContributionFrequency = // UNCONFIRMED enum values
   | "monthly";
 
 export type PenaltyType = "none" | "flat" | "percentage"; // UNCONFIRMED
-export type PayoutStrategy = "rotating" | "pooled" | "on_demand"; // UNCONFIRMED
+export type PayoutStrategy = "rotating" | "equal" | "priority";
 export type RotationOrder = "sequential" | "random";
 
 export interface FinancialRule extends VersionedRule {
