@@ -36,8 +36,8 @@ const PENALTY_TYPES: { value: PenaltyType; label: string }[] = [
 
 const PAYOUT_STRATEGIES: { value: PayoutStrategy; label: string }[] = [
   { value: "rotating", label: "Rotating — one member per cycle" },
-  { value: "pooled", label: "Pooled — funds stay in the group" },
-  { value: "on_demand", label: "On-demand — withdrawn as needed" },
+  { value: "equal", label: "Equal — share in goal" },
+  { value: "priority", label: "Priority — on-demand request" },
 ];
 
 const ROTATION_ORDER: { value: RotationOrder; label: string }[] = [
