@@ -9,6 +9,7 @@ import { MembershipRuleForm } from "@/components/cooperative/create/MembershipRu
 import { FinancialRuleForm } from "@/components/cooperative/create/FinancialRuleForm";
 import { DecisionRulesStep } from "@/components/cooperative/create/DecisionRulesStep";
 import { ActivationChecklist } from "@/components/cooperative/create/ActivationChecklist";
+import DashboardLayout from "@/components/dashboard/layout";
 
 const STEP_LABELS: Record<WizardStepId, string> = {
   type: "Type",
@@ -65,7 +66,8 @@ export default function CreateCooperativePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-10">
+    <DashboardLayout>
+    <div className="max-w-2xl mx-auto py-6">
       <WizardProgress current={currentStep} />
 
       {currentStep === "type" && <CooperativeTypeStep onContinue={nextStep} />}
@@ -86,5 +88,6 @@ export default function CreateCooperativePage() {
         <ActivationChecklist onActivated={handleActivated} onBack={prevStep} />
       )}
     </div>
+    </DashboardLayout>
   );
 }

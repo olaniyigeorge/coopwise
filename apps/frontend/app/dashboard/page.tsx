@@ -110,7 +110,7 @@ export default function Dashboard() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="font-display text-2xl font-bold text-brand-ink tracking-tight">
-              Welcome back, {firstName} 👋
+              Welcome back, {firstName}
             </h1>
             <p className="text-sm text-brand-ink/55 mt-0.5">Here&apos;s an overview of your savings</p>
           </div>
