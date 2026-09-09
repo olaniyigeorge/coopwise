@@ -1,91 +1,23 @@
 import { UUID } from 'crypto';
-import AuthService from './auth-service';
+import ApiService from './api-service';
 
-// export interface DashboardData {
-//   savings: {
-//     total: number;
-//     goal: number;
-//     progress: number;
-//   };
-//   wallet: {
-//     balance: number;
-//   };
-//   nextContribution: {
-//     groupName?: string;
-//     amount?: number;
-//     dueDate?: string;
-//     hasUpcoming: boolean;
-//   };
-//   nextPayout: {
-//     groupName?: string;
-//     amount?: number;
-//     dueDate?: string;
-//     hasUpcoming: boolean;
-//   };
-//   recentActivity: {
-//     id: string;
-//     type: string;
-//     description: string;
-//     date: string;
-//     amount?: number;
-//     status?: string;
-//   }[];
-//   savingsGoal: {
-//     name: string;
-//     current: number;
-//     target: number;
-//     progress: number;
-//     remaining: number;
-//   };
-//   aiInsights: {
-//     available: boolean;
-//     insights?: {
-//       title: string;
-//       description: string;
-//     }[];
-//   };
-// }
 
+
+
+const BASE = "/dashboard"
 
 export async function getDashboardData(): Promise<DashboardData> {
   try {
-    const token = await AuthService.getToken();
-    if (!token) {
-      console.warn('No authentication token found, returning default data');
-      return defDashData;
-    }
-
-    console.log('Fetching dashboard data with token:', token.substring(0, 10) + '...');
-    
-    const response = await fetch('/api/dashboard', {
-      method: 'GET',
+    return await ApiService.get<DashboardData>(BASE, {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store'
+        "Cache-Control": "no-cache, no-store",
       },
-      cache: 'no-store',
-      next: { revalidate: 0 }
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Dashboard API error data:', errorData);
-      console.error('Dashboard API error status:', response.status);
-      throw new Error(`Error fetching dashboard data: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('Dashboard data from API:', data);
-    
-    return data;
+    })
   } catch (error) {
-    console.error('Failed to fetch dashboard data:', error);
-    return defDashData;
+    console.error("Failed to fetch dashboard data:", error)
+    return defDashData
   }
-} 
-
-
+}
 
 
 
@@ -218,12 +150,19 @@ export enum MembershipRole {
     MEMBER = "member"
 }
 
+// export enum MembershipStatus {
+//   CLICKED = "clicked",
+//   ACCEPTED = "accepted",
+//   PENDING = "pending",
+//   REJECTED = "rejected",
+//   CANCELLED = "cancelled"
+// }
 export enum MembershipStatus {
-  CLICKED = "clicked",
-  ACCEPTED = "accepted",
+  ACTIVE = "active",
+  SUSPENDED = "suspended",
+  LEFT = "left",
+  REMOVED = "removed",
   PENDING = "pending",
-  REJECTED = "rejected",
-  CANCELLED = "cancelled"
 }
 
 
@@ -545,7 +484,7 @@ export const defDashData: DashboardData = {
       group_id: "22222222-2222-2222-2222-222222222222",
       role: MembershipRole.ADMIN,
       invited_by: "00000000-0000-0000-0000-000000000000",
-      status: MembershipStatus.ACCEPTED,
+      status: MembershipStatus.ACTIVE,
       joined_at: null,
       created_at: "2025-06-07T16:00:25.189824",
       updated_at: "2025-06-07T16:00:25.189828"
