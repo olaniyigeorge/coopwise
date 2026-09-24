@@ -21,9 +21,9 @@ Money is downstream. Trust is upstream. Don't build or pitch CoopWise as "Venmo 
 
 This SKILL.md carries the thesis you should hold in mind for every task. For the full depth, pull the relevant reference file:
 
-- **`references/business-thesis.md`** — full positioning, the primitive being digitized, goals-as-first-class-primitive model, product principles, the moat, AI's real role, B2B expansion, economic insights (why they win / how they make money / what trends affect them). Read this before any strategy, pitch, investor, or landing-page-copy task.
-- **`references/roadmap-monetization.md`** — phased roadmap (Web2 MVP → pluggable Web3 → decentralized core) and the locked monetization model. Read this before any pricing, fee-structure, or "what should we build next" conversation.
-- **`references/technical-architecture.md`** — backend domain structure, frontend structure, design system tokens, auth/wallet architecture, and Olaniyi's standing engineering conventions. Read this before writing or reviewing any code in the repo.
+- **`business-thesis.md`** — full positioning, the primitive being digitized, goals-as-first-class-primitive model, product principles, the moat, AI's real role, B2B expansion, economic insights (why they win / how they make money / what trends affect them). Read this before any strategy, pitch, investor, or landing-page-copy task.
+- **`roadmap-monetization.md`** — phased roadmap (Web2 MVP → pluggable Web3 → decentralized core) and the locked monetization model. Read this before any pricing, fee-structure, or "what should we build next" conversation.
+- **`technical-architecture.md`** — backend domain structure, frontend structure, design system tokens, auth/wallet architecture, and Olaniyi's standing engineering conventions. Read this before writing or reviewing any code in the repo.
 
 ## Quick-reference: the core model
 

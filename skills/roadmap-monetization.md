@@ -11,6 +11,7 @@ The goal/beneficiary-pattern model should be read as an architectural refinement
 Rough phase shape (confirm current phase with Olaniyi at the start of any roadmap conversation — this list is directional, not a committed date-bound plan):
 
 - **Phase 0–1 — Group Savings (current build focus):** core contribution tracking, group/cooperative creation, KYC, wallet infra, goal creation with beneficiary-pattern gating.
+  - **Current status (2026-09-24):** the Crossmint/Flow wallet integration (`infra/blockchain`, `infra/wallet_client.py`, `frontend/lib/crossmint`, `frontend/lib/flow`) has foundational code in place but is **untested end-to-end**. Olaniyi's explicit call: get the Web2 path (fiat contributions, KYC, group/goal flows, payouts) working and verified first, then extend into the Web3/wallet layer — don't build further on top of Crossmint/Flow until Web2 is solid. Treat any new wallet/blockchain work as blocked behind that unless Olaniyi says otherwise.
 - **Phase 1 continued / Phase 2 — Governance layer:** dispute resolution primitives, AI governance assistant, ownership/exit rules for pooled-for-shared goals.
 - **Phase 3 — Trust standing as collateral:** the mechanic that lets accumulated trust records unlock financing/origination — this is the bridge from "savings infrastructure" to the platform-equity monetization model below.
 - **Phase 4 — AI-driven governance and dispute resolution at scale**, decentralized core.
@@ -35,4 +36,4 @@ This is the **current direction** and the lens that should drive product and par
 ### How to talk about this externally
 - To investors: lead with the platform-equity/growth-share framing — it's the differentiated, defensible story.
 - To users/cooperatives: the 0.5% transaction fee is the concrete, easy-to-explain number; don't lead with "we take equity in your growth" language toward end users, that's a backend monetization lens, not a user-facing pitch.
-- Treat this file as the source of truth if a stale monetization figure surfaces elsewhere in old docs (e.g. `docs/coopwise.md` in the repo still has the old $0.05/$1.00 draft — that's superseded).
+- Treat this file as the source of truth if a stale monetization figure surfaces elsewhere in old docs (e.g. `docs/archive/minddump.md` has the old $0.05/$1.00 draft — that's superseded).
