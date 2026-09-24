@@ -1,5 +1,6 @@
 import hmac
 import hashlib
+from uuid import UUID
 from fastapi import APIRouter, Request, Header, HTTPException, Depends
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,11 +10,13 @@ from src.shared.utils.logger import logger
 from src.infra.cache.redis_client import get_redis
 from src.api.middlewares.dependencies import get_current_user
 from src.domains.auth.schemas import AuthenticatedUser
-from src.domains.payments.schemas import PaystackPayload
+from src.domains.payments.schemas import PaystackPayload, PayoutRecordRead
 from src.domains.contributions.service import ContributionService
+from src.domains.memberships.models.enums import MembershipRole
+from src.domains.memberships.service import CooperativeMembershipService
 from src.domains.wallets.service import WalletService
 from config import AppConfig as config
-from src.domains.payments.service import PaymentService
+from src.domains.payments.service import PaymentService, PayoutService, PayoutError
 
 
 from src.infra.db.dependencies import get_async_db_session
@@ -65,6 +68,17 @@ async def paystack_webhook(
     reference = data.get("reference")
     status_ = data.get("status")
     amount = data.get("amount") / 100  # Convert back to naira
+
+    if event in ("transfer.success", "transfer.failed", "transfer.reversed"):
+        payout_record = await PayoutService.mark_payout_from_webhook(
+            db=db,
+            reference=reference,
+            success=event == "transfer.success",
+            failure_reason=None if event == "transfer.success" else data.get("reason"),
+        )
+        if not payout_record:
+            return {"message": "No matching payout record for reference."}
+        return {"message": f"Payout {payout_record.status.value}."}
 
     if event != "charge.success" or status_ != "success":
         return {"message": "Ignored non-success event."}
@@ -125,6 +139,67 @@ async def paystack_callback(
     # return RedirectResponse(url=f"{config.CLIENT_DOMAIN}?status=success&ref={reference}")
 
     return f"{config.CLIENT_DOMAIN}?status=success&ref={reference}"
+
+
+@router.post(
+    "/payouts/{group_id}/execute",
+    response_model=PayoutRecordRead,
+    summary="Execute the next fiat payout for a group",
+)
+async def execute_group_payout(
+    group_id: UUID,
+    db: AsyncSession = Depends(get_async_db_session),
+    user: AuthenticatedUser = Depends(get_current_user),
+):
+    membership = await CooperativeMembershipService.get_membership_by_user_and_group(
+        user_id=user.id, group_id=group_id, db=db
+    )
+    if (
+        not membership
+        or not membership.is_active
+        or membership.role != MembershipRole.admin
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Only an active group admin can execute a payout.",
+        )
+
+    try:
+        return await PayoutService.execute_payout(db=db, group_id=group_id)
+    except PayoutError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get(
+    "/payouts/{group_id}",
+    response_model=list[PayoutRecordRead],
+    summary="Get a group's payout history",
+)
+async def get_group_payout_history(
+    group_id: UUID,
+    db: AsyncSession = Depends(get_async_db_session),
+    user: AuthenticatedUser = Depends(get_current_user),
+):
+    membership = await CooperativeMembershipService.get_membership_by_user_and_group(
+        user_id=user.id, group_id=group_id, db=db
+    )
+    if not membership or not membership.is_active:
+        raise HTTPException(
+            status_code=403, detail="You are not an active member of this group."
+        )
+    return await PayoutService.get_payout_history(db=db, group_id=group_id)
+
+
+@router.get(
+    "/payouts/me",
+    response_model=list[PayoutRecordRead],
+    summary="Get the current user's fiat payout history",
+)
+async def get_my_payout_history(
+    db: AsyncSession = Depends(get_async_db_session),
+    user: AuthenticatedUser = Depends(get_current_user),
+):
+    return await PayoutService.get_payouts_for_user(db=db, user_id=user.id)
 
 
 # @router.get("/cashramp/account-info", summary="Get merchant account information")

@@ -1,5 +1,11 @@
+from datetime import datetime
+from decimal import Decimal
+from uuid import UUID
+
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+
+from src.domains.payments.models import PayoutStatus
 
 
 class SubAccount(BaseModel):
@@ -89,3 +95,20 @@ class ChargeResponse(BaseModel):
     status: str
     message: str
     meta: ChargeResponseMeta
+
+
+class PayoutRecordRead(BaseModel):
+    id: UUID
+    group_id: UUID
+    user_id: UUID
+    round_number: int
+    amount: Decimal
+    currency: str
+    status: PayoutStatus
+    provider: str
+    provider_reference: str | None = None
+    failure_reason: str | None = None
+    created_at: datetime
+    completed_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
