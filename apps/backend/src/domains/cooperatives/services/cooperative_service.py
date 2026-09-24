@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
+from src.domains.memberships.models.enums import MembershipRole, MembershipStatus
 from src.domains.memberships.models.group_membership import GroupMembership
 from src.shared.utils.logger import logger
 from src.domains.cooperatives.events import (
@@ -53,6 +55,18 @@ class CooperativeService:
         )
 
         await self._uow.cooperatives.add(cooperative)
+
+        # The creator must be an active member of their own cooperative, or
+        # they can never contribute to it — there is no other self-join path.
+        creator_membership = GroupMembership(
+            user_id=created_by_uuid,
+            group_id=cooperative.id,
+            role=MembershipRole.admin,
+            status=MembershipStatus.ACTIVE,
+            joined_at=datetime.now(timezone.utc),
+        )
+        self._uow.session.add(creator_membership)
+
         await self._uow.commit()
         return cooperative
 
@@ -76,6 +90,16 @@ class CooperativeService:
 
     async def get_by_id(self, cooperative_id: UUID | str) -> CoopCooperative | None:
         return await self._uow.cooperatives.get_by_id(cooperative_id)
+
+    @classmethod
+    async def get_coop_group_by_id(
+        cls, db: Any, cooperative_id: UUID | str
+    ) -> CoopCooperative | None:
+        """Compatibility shim for call sites written against the pre-UoW static
+        API (contributions/memberships services) — takes a raw session instead
+        of a UnitOfWork instance."""
+        uow = UnitOfWork(db)
+        return await uow.cooperatives.get_by_id(cooperative_id)
 
     async def list(self, *, limit: int = 50):
         return await self._uow.cooperatives.list(limit=limit)

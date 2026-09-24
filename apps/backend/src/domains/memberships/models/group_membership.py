@@ -46,5 +46,9 @@ class GroupMembership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="memberships", overlaps="users,cooperatives"
     )
 
+    @property
+    def is_active(self) -> bool:
+        return self.status == MembershipStatus.ACTIVE
+
     def __repr__(self) -> str:
         return f"<GroupMembership user={self.user_id} group={self.group_id} role={self.role}>"

@@ -95,7 +95,7 @@ class ContributionService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Cooperative group not found.",
             )
-        if not group.status.value == "active":
+        if not group.status == "active":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Group is not active.",
@@ -110,16 +110,16 @@ class ContributionService:
             )
 
         # Check wallet balance with buffer for fees (5% buffer)
-        wallet_balance = await WalletService.get_balance(user.id, db)
+        wallet_balance = await WalletService.get_effective_balance(user.id, db)
         required_amount = amount * Decimal("1.05")  # 5% buffer for fees
-        if wallet_balance.stable_coin_balance < required_amount:
+        if wallet_balance < required_amount:
             logger.warning(
                 f"Insufficient balance: user={user.id}, required={required_amount}, "
-                f"available={wallet_balance.stable_coin_balance}"
+                f"available={wallet_balance}"
             )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Insufficient wallet balance. Required: {required_amount}, Available: {wallet_balance.stable_coin_balance}",
+                detail=f"Insufficient wallet balance. Required: {required_amount}, Available: {wallet_balance}",
             )
 
         # Lock funds in wallet (prevents double-spend)
@@ -252,7 +252,7 @@ class ContributionService:
             )
 
             group = await CooperativeService.get_coop_group_by_id(db, group_id)
-            if not group or group.status.value != "active":
+            if not group or group.status != "active":
                 logger.warning(
                     f"Auto-contribution skipped: group not active group={group_id}"
                 )

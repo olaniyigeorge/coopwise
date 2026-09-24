@@ -248,7 +248,7 @@ class GoalCategoryRead(BaseModel):
 class GroupMemberRead(BaseModel):
     id: UUID
     user_id: UUID
-    cooperative_id: UUID
+    group_id: UUID
     role: str | None = None
     status: str | None = None
 
