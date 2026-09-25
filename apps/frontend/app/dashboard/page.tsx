@@ -133,7 +133,7 @@ export default function Dashboard() {
                   variant="ghost"
                   size="sm"
                   className="text-xs text-primary"
-                  onClick={() => router.push('/dashboard/groups')}
+                  onClick={() => router.push('/dashboard/my-group')}
                 >
                   View All
                 </Button>

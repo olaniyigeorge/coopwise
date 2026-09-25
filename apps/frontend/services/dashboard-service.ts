@@ -243,19 +243,18 @@ export interface Targets {
 
 
 // Coop Group Details
+// Matches the real CooperativeRead wire shape (id/name/description/
+// cover_image/status/coop_model/created_by/timestamps) — no
+// contribution/target/member-count fields, those live on the separate
+// FinancialRule/MembershipRule sub-resources, not flat on the cooperative.
 export interface CoopGroupDetails {
   id: UUID;
   name: string;
-  creator_id: UUID;
+  created_by: UUID;
   description?: string | null;
-  contribution_amount: number;
-  contribution_frequency: ContributionFrequency;
-  payout_strategy: PayoutStrategy;
+  cover_image?: string | null;
   coop_model: CooperativeModel;
-  max_members: number;
-  target_amount: number;
   status: CooperativeStatus;
-  rules?: Array<Record<string, any>> | null; // rules are list of dicts, so object[]
   created_at: string;
   updated_at: string;
 }
@@ -324,13 +323,18 @@ export interface NotificationDetail {
 
 
 // Membership Details
+// Matches the real GroupMembership row (memberships/schemas.py's
+// MembershipDetails) — id is a UUID, not int, and there's no invited_by
+// column (that lives only on the separate CoopInvitation model, not
+// wired up yet). status is a plain string: the column mixes
+// MembershipStatus values ("active", from cooperative auto-enrollment)
+// and invite-lifecycle values ("clicked"/"pending"/"accepted"/...).
 export interface MembershipDetails {
-  id: number;
+  id: UUID;
   user_id?: UUID | null; // null means still invite
   group_id: UUID;
   role: MembershipRole;
-  invited_by: UUID;
-  status: MembershipStatus;
+  status: string;
   joined_at?: string | null;
   created_at: string;
   updated_at: string;
@@ -393,45 +397,10 @@ export const defDashData: DashboardData = {
     ]
   },
   groups: {
-    user_groups: [
-      {
-        id: "22222222-2222-2222-2222-222222222222",
-        name: "Community Savings Fund",
-        creator_id: "00000000-0000-0000-0000-000000000000",
-        description: null,
-        contribution_amount: 15000,
-        contribution_frequency: ContributionFrequency.WEEKLY,
-        payout_strategy: PayoutStrategy.ROTATING,
-        coop_model: CooperativeModel.AJO,
-        max_members: 12,
-        target_amount: 180000,
-        status: CooperativeStatus.ACTIVE,
-        rules: [
-          {
-            title: "Contribution Rule",
-            description: "Members must contribute ₦15,000 every week without fail."
-          },
-          {
-            title: "Membership Cap",
-            description: "Group is limited to 12 active members to maintain accountability."
-          },
-          {
-            title: "Payout Decision",
-            description: "Payout will be made when target is reached and members vote on purchase or split."
-          },
-          {
-            title: "Transparency",
-            description: "All wallet balances and transactions are visible to members in real-time."
-          },
-          {
-            title: "AI Nudges",
-            description: "AI will send reminders and savings insights based on your habits."
-          }
-        ],
-        created_at: "2025-06-07T16:00:25.176801",
-        updated_at: "2025-06-07T16:00:25.176805"
-      }
-    ],
+    // Empty rather than fabricated — this is also the initial state shown
+    // before the real fetch resolves, so a fake cooperative here would
+    // flash on every page load, not just on a genuine fetch failure.
+    user_groups: [],
     suggested_groups: []
   },
   activities: [
@@ -479,11 +448,10 @@ export const defDashData: DashboardData = {
   notifications: [],
   cooperative_members: [
     {
-      id: 1,
+      id: "00000000-0000-0000-0000-000000000001",
       user_id: "00000000-0000-0000-0000-000000000000",
       group_id: "22222222-2222-2222-2222-222222222222",
       role: MembershipRole.ADMIN,
-      invited_by: "00000000-0000-0000-0000-000000000000",
       status: MembershipStatus.ACTIVE,
       joined_at: null,
       created_at: "2025-06-07T16:00:25.189824",
