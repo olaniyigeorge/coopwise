@@ -149,7 +149,7 @@ class PaymentService:
     async def init_pay_with_paystack_and_record(
         db: AsyncSession, user: AuthenticatedUser, payload: PaystackPayload
     ) -> ChargeResponse | None:
-        PaymentService.init_pay_with_paystack(payload)
+        await PaymentService.init_pay_with_paystack(payload)
 
         ledger_create = WalletLedgerCreate(
             wallet_id=user.id,
@@ -247,6 +247,10 @@ class PaymentService:
 
             logger.info(f"\n{result}\n")
             return result
+        except HTTPException:
+            # The precise 400 raised above for a Paystack-reported failure —
+            # don't let the blanket handler below flatten it into a 500.
+            raise
         except Exception as e:
             logger.error(f"Paystack verification error: {e}")
             raise HTTPException(
