@@ -544,12 +544,12 @@ export default function CooperativeDetailPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center space-x-2 mt-4">
-            <div className="grid flex-1 gap-2">
+            <div className="grid flex-1 min-w-0 gap-2">
               <label className="text-xs font-medium text-gray-500">
                 Shareable Invite Link
               </label>
-              <div className="flex w-fit items-center border rounded-md p-2 bg-gray-50">
-                <span className="text-sm font-medium flex-1 truncate">
+              <div className="flex w-full min-w-0 items-center border rounded-md p-2 bg-gray-50">
+                <span className="text-sm font-medium flex-1 min-w-0 truncate">
                   {typeof window !== "undefined" ? window.location.origin : ""}/dashboard/join-group?code={inviteCode}
                 </span>
               </div>
