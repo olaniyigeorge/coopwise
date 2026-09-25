@@ -1,0 +1,19 @@
+"use client"
+
+import React, { Suspense } from 'react'
+import DashboardLayout from '@/components/dashboard/layout'
+import JoinGroupContent from '@/components/dashboard/join-group-content'
+
+export default function JoinGroupPage() {
+  return (
+    <DashboardLayout>
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-2xl font-semibold text-gray-800 mb-2">Join a Cooperative</h1>
+        <p className="text-gray-600 mb-6">Enter an invite code to join an existing cooperative</p>
+        <Suspense fallback={<div>Loading...</div>}>
+          <JoinGroupContent />
+        </Suspense>
+      </div>
+    </DashboardLayout>
+  )
+}

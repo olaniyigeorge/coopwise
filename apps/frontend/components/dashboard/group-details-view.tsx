@@ -102,7 +102,7 @@ const GroupHeader = ({ name, description, groupId }: { name: string; description
               <label className="text-xs font-medium text-gray-500">
                 Shareable Invite Link
               </label>
-              <div className="flex items-center border rounded-md p-2 bg-gray-50">
+              <div className="flex w-fit items-center border rounded-md p-2 bg-gray-50">
                 <span className="text-sm font-medium flex-1 truncate">
                   {window.location.origin}/invite/{inviteCode}
                 </span>
