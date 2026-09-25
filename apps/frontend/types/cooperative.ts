@@ -195,21 +195,28 @@ export type BeneficiaryPatternCode =
 export interface BeneficiaryPattern {
   id: string;
   code: BeneficiaryPatternCode;
-  label: string;
-  description: string; // plain-English blurb shown in Step 7 select
+  name: string;
+  description: string | null;
+  requires_beneficiary: boolean;
+  requires_ownership_shares: boolean;
+  requires_claim_process: boolean;
   contract_schema: {
     required_fields: string[];
-  };
+  } | null;
 }
 
 export interface GoalCategory {
   id: string;
+  code: string;
   name: string;
-  parent_id: string | null;
+  description: string | null;
+  icon: string | null;
+  parent_category_id: string | null;
   suggested_beneficiary_pattern_id: string | null; // hint only, never a gate
+  is_system_defined: boolean;
 }
 
-export type GoalStatus = "proposed" | "active" | "completed" | "cancelled"; // UNCONFIRMED
+export type GoalStatus = "proposed" | "active" | "completed" | "abandoned";
 
 export interface Goal {
   id: string;
@@ -237,9 +244,12 @@ export interface CreateGoalPayload {
 
 // --- Goal contracts (dynamic per beneficiary_pattern) ---------------------
 
-export type WithdrawalRestriction = "locked_until_deadline" | "flexible"; // UNCONFIRMED
-export type ExitRuleType = "buyout" | "dissolution_vote" | "fixed_term"; // UNCONFIRMED
-export type ValuationMethod = "book_value" | "market_appraisal" | "agreed_fixed"; // UNCONFIRMED
+// `visibility` / `withdrawal_restriction` are free-text on the backend
+// (GoalContractCreate.withdrawal_restriction: str | None) — these are just
+// the values the UI offers, not an enforced enum.
+export type WithdrawalRestriction = "locked_until_deadline" | "flexible";
+export type ExitRuleType = "buyout" | "dissolve_and_split" | "vote_to_sell";
+export type ValuationMethod = "contribution_based" | "market_appraisal" | "negotiated";
 export type ContractBasis = "contribution_based" | "negotiated";
 
 export interface RotatingTrackedContractFields {
@@ -277,14 +287,32 @@ export type GoalContractFields =
   | PooledForSharedContractFields
   | PooledContingentContractFields;
 
+// Matches GoalContractRead — flat on the wire, not nested under `fields`.
 export interface GoalContract {
   id: string;
   goal_id: string;
-  beneficiary_pattern_id: string;
-  fields: GoalContractFields;
+  visibility: string | null;
+  withdrawal_restriction: string | null;
+  beneficiary_user_id: string | null;
+  exit_rule_type: ExitRuleType | null;
+  valuation_method: ValuationMethod | null;
+  claim_eligibility_criteria: Record<string, unknown> | null;
+  deadline: string | null;
+  extra_terms: Record<string, unknown> | null;
 }
 
-export type CreateGoalContractPayload = GoalContractFields;
+// Matches GoalContractCreate — a flat, all-optional bag of fields; the
+// service layer enforces which ones are required/allowed per pattern.
+export interface CreateGoalContractPayload {
+  visibility?: string;
+  withdrawal_restriction?: string;
+  beneficiary_user_id?: string;
+  exit_rule_type?: ExitRuleType;
+  valuation_method?: ValuationMethod;
+  claim_eligibility_criteria?: Record<string, unknown>;
+  deadline?: string;
+  extra_terms?: Record<string, unknown>;
+}
 
 export interface IncompleteGoalContractErrorBody {
   detail: {
@@ -299,15 +327,17 @@ export interface IncompleteGoalContractErrorBody {
 export interface OwnershipShare {
   id: string;
   goal_id: string;
-  member_user_id: string;
+  user_id: string;
   share_pct: number; // 0-100
   basis: ContractBasis;
+  vested_at: string | null;
 }
 
 export interface CreateOwnershipSharePayload {
-  member_user_id: string;
+  user_id: string;
   share_pct: number;
   basis: ContractBasis;
+  vested_at?: string | null;
 }
 
 export interface OwnershipShareOverallocatedErrorBody {
@@ -328,10 +358,12 @@ export interface OwnershipShareOverallocatedErrorBody {
  * legacy router. This type/service call is speculative until that's
  * confirmed — see rules-service.ts / goal-service.ts TODOs.
  */
+// Matches GroupMemberRead — the backend has no joined display_name/avatar
+// on this endpoint, only IDs.
 export interface CooperativeMember {
   id: string; // membership id
   user_id: string;
-  display_name: string;
-  avatar_url: string | null;
-  role: string; // UNCONFIRMED — likely "admin" | "member"
+  group_id: string;
+  role: string | null;
+  status: string | null;
 }

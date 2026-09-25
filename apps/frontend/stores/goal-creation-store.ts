@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   BeneficiaryPatternCode,
   CreateGoalPayload,
-  GoalContractFields,
+  CreateGoalContractPayload,
   CreateOwnershipSharePayload,
 } from "@/types/cooperative";
 
@@ -27,7 +27,7 @@ interface GoalCreationState {
   basicsDraft: Partial<CreateGoalPayload>;
   selectedPatternCode: BeneficiaryPatternCode | null;
 
-  contractDraft: Partial<GoalContractFields>;
+  contractDraft: CreateGoalContractPayload;
   contractMissing: string[] | null; // from IncompleteGoalContractError, for the banner
 
   ownershipShares: OwnershipShareDraft[];
@@ -38,7 +38,7 @@ interface GoalCreationState {
   setGoalId: (id: string) => void;
   updateBasicsDraft: (patch: Partial<CreateGoalPayload>) => void;
   selectPattern: (code: BeneficiaryPatternCode, patternId: string) => void;
-  updateContractDraft: (patch: Partial<GoalContractFields>) => void;
+  updateContractDraft: (patch: CreateGoalContractPayload) => void;
   setContractMissing: (missing: string[] | null) => void;
   addOwnershipRow: () => void;
   updateOwnershipRow: (rowId: string, patch: Partial<CreateOwnershipSharePayload>) => void;
@@ -53,7 +53,7 @@ const initialState = {
   goalId: null as string | null,
   basicsDraft: {} as Partial<CreateGoalPayload>,
   selectedPatternCode: null as BeneficiaryPatternCode | null,
-  contractDraft: {} as Partial<GoalContractFields>,
+  contractDraft: {} as CreateGoalContractPayload,
   contractMissing: null as string[] | null,
   ownershipShares: [] as OwnershipShareDraft[],
   currentStep: "basics" as GoalWizardStepId,
@@ -96,7 +96,7 @@ export const useGoalCreationStore = create<GoalCreationState>()(
         set((s) => ({
           ownershipShares: [
             ...s.ownershipShares,
-            { _rowId: crypto.randomUUID(), basis: "contribution_based" },
+            { _rowId: crypto.randomUUID(), basis: "contribution_based" as const },
           ],
         })),
 
