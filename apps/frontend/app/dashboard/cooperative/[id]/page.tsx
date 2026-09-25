@@ -126,7 +126,7 @@ export default function CooperativeDetailPage() {
 
   const copyInviteLink = async () => {
     try {
-      const shareableUrl = `${window.location.origin}/invite/${inviteCode}`
+      const shareableUrl = `${window.location.origin}/dashboard/join-group?code=${encodeURIComponent(inviteCode)}`
       await navigator.clipboard.writeText(shareableUrl)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
@@ -550,7 +550,7 @@ export default function CooperativeDetailPage() {
               </label>
               <div className="flex w-fit items-center border rounded-md p-2 bg-gray-50">
                 <span className="text-sm font-medium flex-1 truncate">
-                  {typeof window !== "undefined" ? window.location.origin : ""}/invite/{inviteCode}
+                  {typeof window !== "undefined" ? window.location.origin : ""}/dashboard/join-group?code={inviteCode}
                 </span>
               </div>
             </div>
