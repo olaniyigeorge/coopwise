@@ -11,6 +11,7 @@ from src.domains.analytics.service import ActivityService
 from src.domains.cooperatives.services.cooperative_service import CooperativeService
 from src.domains.notifications.service import NotificationService
 from src.domains.users.service import UserService
+from src.domains.users.infra.sqlalchemy_user_repository import SqlAlchemyUserRepository
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.memberships.schemas import MembershipDetails
 from src.infra.db.dependencies import get_async_db_session
@@ -79,7 +80,8 @@ async def accept_invite(
             status_code=404, detail="Invite not found or already accepted."
         )
 
-    auth_user = await UserService.get_user_by_id(db, user.id)
+    user_service = UserService(user_repo=SqlAlchemyUserRepository(db))
+    auth_user = await user_service.get_user_by_id(user.id)
 
     if not auth_user:
         raise HTTPException(status_code=404, detail="User not found.")
@@ -101,7 +103,7 @@ async def accept_invite(
     await ActivityService.log(db, activity_data)
 
     noti_data = NotificationCreate(
-        user_id=group_data.creator_id,
+        user_id=group_data.created_by,
         title="Invited Request Accepted",
         message=f"{auth_user.full_name} has accepted an invite to join the cooperative {group_data.name}.",
         event_type="group",

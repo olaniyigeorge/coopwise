@@ -24,12 +24,18 @@ class AcceptMembership(BaseModel):
 
 
 class MembershipDetails(BaseModel):
-    id: int
+    # Matches the real GroupMembership ORM columns — id is a UUID (not int),
+    # and there's no invited_by column (that lives only on the separate,
+    # not-yet-wired-up CoopInvitation model). status is a plain str: the
+    # column mixes two vocabularies at runtime — MembershipStatus values
+    # ("active", from cooperative auto-enrollment) and invite-lifecycle
+    # values ("clicked"/"pending"/"accepted"/...) — no single enum covers
+    # both, and the DB column itself has no CHECK constraint.
+    id: UUID
     user_id: UUID | None  # None means its still an invite
     group_id: UUID  # UUID as string
     role: MembershipRole
-    invited_by: UUID
-    status: MembershipStatus
+    status: str
     joined_at: datetime | None
     created_at: datetime
     updated_at: datetime

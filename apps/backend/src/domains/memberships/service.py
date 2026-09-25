@@ -148,7 +148,7 @@ class CooperativeMembershipService:
             coop_group = group_result.scalars().first()
 
             # check is user is the group creator or has a membership with elevated role
-            if coop_group.creator_id != user.id:
+            if coop_group.created_by != user.id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="You do not have permissions to confirm a membership",
@@ -194,14 +194,13 @@ class CooperativeMembershipService:
     async def checkout_invite_code(
         db: AsyncSession, invite_code: str, user: AuthenticatedUser
     ):
-        invited_id__group_id = invite_code[11:]
+        invited_id__group_id = invite_code[len(config.INVITE_CODE_PREFIX):]
         inviter_id, group_id = invited_id__group_id.split(":")
         group_id = UUID(group_id)
         inviter_id = UUID(inviter_id)
         try:
             stmt = select(GroupMembership).where(
                 GroupMembership.group_id == group_id,
-                GroupMembership.invited_by == inviter_id,
                 GroupMembership.user_id == user.id,
             )
             result = await db.execute(stmt)
@@ -212,7 +211,6 @@ class CooperativeMembershipService:
                     user_id=user.id,
                     group_id=group_id,
                     role="member",
-                    invited_by=inviter_id,
                     status="clicked",
                 )
 
@@ -237,14 +235,13 @@ class CooperativeMembershipService:
     async def accept_invite_code(
         db: AsyncSession, user: AuthenticatedUser, invite_code: str
     ) -> Optional[GroupMembership]:
-        invited_id__group_id = invite_code[11:]
+        invited_id__group_id = invite_code[len(config.INVITE_CODE_PREFIX):]
         inviter_id, group_id = invited_id__group_id.split(":")
         group_id = UUID(group_id)
         inviter_id = UUID(inviter_id)
         try:
             stmt = select(GroupMembership).where(
                 GroupMembership.group_id == group_id,
-                GroupMembership.invited_by == inviter_id,
                 GroupMembership.user_id == user.id,
             )
             result = await db.execute(stmt)
