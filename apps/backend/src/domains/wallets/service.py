@@ -1,5 +1,6 @@
 # app/services/wallet_service.py
 import json
+import secrets
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from src.domains.wallets.models import (
@@ -24,6 +25,15 @@ from uuid import UUID
 from redis.asyncio import Redis
 from src.infra.cache.redis_client import get_cache, update_cache
 from typing import Dict, Any
+
+
+def _internal_ledger_reference(kind: str) -> str:
+    """WalletLedger.reference is NOT NULL + unique — internal (non-gateway)
+    ledger entries (deposit/withdraw/lock/finalize/release) never went
+    through a payment gateway that hands back a reference of its own, so
+    they need one generated here or every insert violates the NOT NULL
+    constraint."""
+    return f"{kind}-{secrets.token_hex(12)}"
 
 
 class WalletService:
@@ -80,6 +90,7 @@ class WalletService:
         # 4. Add ledger entry
         ledger = WalletLedger(
             wallet_id=wallet.id,
+            reference=_internal_ledger_reference("deposit"),
             type=LedgerType.deposit,
             stable_amount=stable_amt,
             local_amount=Decimal(data.local_amount),
@@ -147,6 +158,7 @@ class WalletService:
         # 5. Record ledger
         ledger = WalletLedger(
             wallet_id=wallet.id,
+            reference=_internal_ledger_reference("withdrawal"),
             type=LedgerType.withdrawal,
             stable_amount=stable_amt,
             local_amount=Decimal(data.local_amount),
@@ -197,6 +209,7 @@ class WalletService:
             # Create ledger entry for lock
             ledger = WalletLedger(
                 wallet_id=wallet.id,
+                reference=_internal_ledger_reference("lock"),
                 type=LedgerType.debit_locked,
                 stable_amount=-amount,  # Negative for debit
                 local_amount=Decimal(0),  # Not applicable for internal transfer
@@ -243,6 +256,7 @@ class WalletService:
             # Create ledger entry for finalization
             ledger = WalletLedger(
                 wallet_id=wallet.id,
+                reference=_internal_ledger_reference("finalize"),
                 type=LedgerType.debit_finalize,
                 stable_amount=-amount,
                 local_amount=Decimal(0),
@@ -293,6 +307,7 @@ class WalletService:
             # Create ledger entry for release
             ledger = WalletLedger(
                 wallet_id=wallet.id,
+                reference=_internal_ledger_reference("release"),
                 type=LedgerType.debit_revert,
                 stable_amount=amount,  # Positive for credit back
                 local_amount=Decimal(0),

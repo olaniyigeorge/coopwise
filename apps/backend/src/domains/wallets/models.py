@@ -43,6 +43,12 @@ class Wallet(Base):
     stable_coin_balance = Column(
         Numeric(precision=20, scale=8), default=0, nullable=False
     )
+    # Funds set aside for an in-flight contribution (locked_for_contribution ->
+    # finalize_contribution_debit, or released back on failure). Referenced
+    # throughout wallets/service.py's lock/finalize/release trio.
+    stable_coin_locked = Column(
+        Numeric(precision=20, scale=8), default=0, nullable=False
+    )
     # The user’s default “display” fiat currency. Converts on-the-fly per payment gateway used on trx.
     local_currency = Column(
         Enum(LocalCurrency), default=LocalCurrency.NGN, nullable=False
@@ -81,6 +87,13 @@ class LedgerType(enum.Enum):
     withdrawal = "withdrawal"  # - wallet
     contribution = "contribution"  # - wallet
     refund = "refund"  # + wallet e.g. reversed contribution
+    # Internal balance <-> locked transfers backing the contribution
+    # lock/finalize/release protocol (WalletService.lock_for_contribution
+    # et al.) — these were referenced by the service before existing here,
+    # an AttributeError on every lock/finalize/release call.
+    debit_locked = "debit_locked"  # balance -> locked, funds set aside
+    debit_finalize = "debit_finalize"  # locked -> gone, moved to group pool
+    debit_revert = "debit_revert"  # locked -> balance, released back
 
 
 class LedgerStatus(enum.Enum):

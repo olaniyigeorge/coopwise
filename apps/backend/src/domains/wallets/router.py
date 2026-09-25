@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 from src.domains.users.service import UserService
+from src.domains.users.infra.sqlalchemy_user_repository import SqlAlchemyUserRepository
 from config import AppConfig as config
 from src.domains.notifications.service import NotificationService
 from src.domains.payments.service import COOPWISE_USD_NGN_RATE, PaymentService
@@ -49,7 +50,8 @@ async def initiate_deposit(
         uuid.uuid4()
     )  # TODO Check possibility of confirming if Unique transaction reference is not an existing wallet ledger record
 
-    user_detail = await UserService.get_user_by_id(db, user.id)
+    user_service = UserService(user_repo=SqlAlchemyUserRepository(db))
+    user_detail = await user_service.get_user_by_id(user.id)
 
     # Choose from a list of payment gateways
     if payment_gateway == "paystack":
