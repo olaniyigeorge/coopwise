@@ -99,7 +99,7 @@ export default function GroupCard({
   // If it's a user's cooperative and has an ID, make it clickable to view details
   if (isMyGroup && id) {
     return (
-      <Link href={`/dashboard/my-group/${id}`} className="block">
+      <Link href={`/dashboard/cooperative/${id}`} className="block">
         {cardContent}
       </Link>
     )

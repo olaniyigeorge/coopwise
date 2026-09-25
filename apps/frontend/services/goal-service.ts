@@ -21,6 +21,9 @@ const GoalService = {
   async createGoal(cooperativeId: string, payload: CreateGoalPayload) {
     return ApiService.post<Goal>(`/cooperatives/${cooperativeId}/goals`, payload);
   },
+  async listGoals(cooperativeId: string) {
+    return ApiService.get<Goal[]>(`/cooperatives/${cooperativeId}/goals`);
+  },
   async getGoal(goalId: string) {
     return ApiService.get<Goal>(`/cooperatives/goals/${goalId}`);
   },

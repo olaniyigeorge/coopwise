@@ -5,24 +5,32 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence, Variants } from 'framer-motion'
 import { toast } from 'sonner'
-import { 
-  Users, 
-  Target, 
-  Plus, 
-  ArrowLeft, 
-  Calendar, 
-  ShieldCheck, 
-  Clock, 
-  Activity, 
+import {
+  Users,
+  Target,
+  Plus,
+  ArrowLeft,
+  Calendar,
+  ShieldCheck,
+  Clock,
   AlertCircle,
-  TrendingUp,
-  CreditCard,
-  Settings,
-  MoreVertical
+  Share,
+  Copy,
+  Check,
+  Loader2,
 } from 'lucide-react'
 import CooperativeService from '@/services/cooperative-service'
+import GoalService from '@/services/goal-service'
 import DashboardLayout from '@/components/dashboard/layout'
-import { Cooperative } from '@/types/cooperative'
+import { Cooperative, CooperativeMember, Goal, ActivityDetail } from '@/types/cooperative'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 // --- Motion Variants ---
 const containerVariants: Variants = {
@@ -63,18 +71,34 @@ export default function CooperativeDetailPage() {
   const id = params?.id as string
 
   const [cooperative, setCooperative] = useState<Cooperative | null>(null)
+  const [members, setMembers] = useState<CooperativeMember[]>([])
+  const [goals, setGoals] = useState<Goal[]>([])
+  const [activities, setActivities] = useState<ActivityDetail[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'members' | 'activity'>('overview')
 
+  const [showInviteDialog, setShowInviteDialog] = useState(false)
+  const [inviteCode, setInviteCode] = useState("")
+  const [isGeneratingInvite, setIsGeneratingInvite] = useState(false)
+  const [copied, setCopied] = useState(false)
+
   useEffect(() => {
-    async function loadCooperative() {
+    async function load() {
       if (!id) return
       try {
         setLoading(true)
         setError(null)
-        const data = await CooperativeService.getCooperative(id)
-        setCooperative(data)
+        const [coopData, memberData, goalData, activityData] = await Promise.all([
+          CooperativeService.getCooperative(id),
+          CooperativeService.getCooperativeMembers(id),
+          GoalService.listGoals(id),
+          CooperativeService.getCooperativeActivities(id),
+        ])
+        setCooperative(coopData)
+        setMembers(memberData)
+        setGoals(goalData)
+        setActivities(activityData)
       } catch (err: any) {
         const errorMsg = err?.response?.data?.message || err.message || 'Failed to load cooperative details.'
         setError(errorMsg)
@@ -84,8 +108,32 @@ export default function CooperativeDetailPage() {
       }
     }
 
-    loadCooperative()
+    load()
   }, [id])
+
+  const generateInvite = async () => {
+    try {
+      setIsGeneratingInvite(true)
+      const data = await CooperativeService.generateInviteCode(id)
+      setInviteCode(data.invite_code || "")
+      setShowInviteDialog(true)
+    } catch {
+      toast.error("Failed to generate invite code. Please try again.")
+    } finally {
+      setIsGeneratingInvite(false)
+    }
+  }
+
+  const copyInviteLink = async () => {
+    try {
+      const shareableUrl = `${window.location.origin}/invite/${inviteCode}`
+      await navigator.clipboard.writeText(shareableUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error("Failed to copy to clipboard.")
+    }
+  }
 
   if (loading) {
     return (
@@ -147,20 +195,35 @@ export default function CooperativeDetailPage() {
             Back
           </button>
 
-          <Link
-            href={`/dashboard/cooperative/${id}/goals/create`}
-            passHref
-          >
+          <div className="flex items-center gap-2">
             <motion.button
               variants={buttonHover}
               whileHover="hover"
               whileTap="tap"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors"
+              onClick={generateInvite}
+              disabled={isGeneratingInvite}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 hover:border-emerald-300 hover:text-emerald-700 rounded-xl shadow-sm transition-colors"
             >
-              <Plus className="w-4 h-4 mr-1.5" />
-              Create Goal
+              {isGeneratingInvite ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : (
+                <Share className="w-4 h-4 mr-1.5" />
+              )}
+              Share invite
             </motion.button>
-          </Link>
+
+            <Link href={`/dashboard/cooperative/${id}/goals/create`} passHref>
+              <motion.button
+                variants={buttonHover}
+                whileHover="hover"
+                whileTap="tap"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                Create Goal
+              </motion.button>
+            </Link>
+          </div>
         </motion.div>
 
         {/* Cooperative Header Card */}
@@ -181,21 +244,6 @@ export default function CooperativeDetailPage() {
               </div>
               <p className="text-sm text-neutral-600 leading-relaxed">{cooperative.description}</p>
             </div>
-
-            <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
-              <button 
-                aria-label="Cooperative settings"
-                className="p-2.5 text-neutral-400 hover:text-neutral-600 rounded-xl hover:bg-neutral-50 border border-transparent hover:border-neutral-200 transition-all"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-              <button 
-                aria-label="More options"
-                className="p-2.5 text-neutral-400 hover:text-neutral-600 rounded-xl hover:bg-neutral-50 border border-transparent hover:border-neutral-200 transition-all"
-              >
-                <MoreVertical className="w-5 h-5" />
-              </button>
-            </div>
           </div>
 
           <div className="mt-6 pt-6 border-t border-neutral-100 flex flex-wrap items-center gap-6 text-xs text-neutral-500">
@@ -214,24 +262,16 @@ export default function CooperativeDetailPage() {
         </motion.div>
 
         {/* Dynamic Metric Cards */}
-        <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-5 bg-white border border-neutral-100 shadow-sm rounded-2xl flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-neutral-500">Total Savings</p>
-              <h3 className="text-xl font-bold text-neutral-900 mt-0.5">₦0.00</h3>
-            </div>
-          </div>
-
+        <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-5 bg-white border border-neutral-100 shadow-sm rounded-2xl flex items-center gap-4">
             <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
               <Users className="w-6 h-6" />
             </div>
             <div>
               <p className="text-xs font-medium text-neutral-500">Total Members</p>
-              <h3 className="text-xl font-bold text-neutral-900 mt-0.5">1 Member</h3>
+              <h3 className="text-xl font-bold text-neutral-900 mt-0.5">
+                {members.length} Member{members.length === 1 ? '' : 's'}
+              </h3>
             </div>
           </div>
 
@@ -240,8 +280,10 @@ export default function CooperativeDetailPage() {
               <Target className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-medium text-neutral-500">Active Goals</p>
-              <h3 className="text-xl font-bold text-neutral-900 mt-0.5">0 Active</h3>
+              <p className="text-xs font-medium text-neutral-500">Goals</p>
+              <h3 className="text-xl font-bold text-neutral-900 mt-0.5">
+                {goals.length} {goals.length === 1 ? 'Goal' : 'Goals'}
+              </h3>
             </div>
           </div>
         </motion.div>
@@ -301,18 +343,36 @@ export default function CooperativeDetailPage() {
                       </Link>
                     </div>
 
-                    <div className="p-8 text-center border-2 border-dashed border-neutral-200 rounded-xl space-y-3">
-                      <Target className="w-10 h-10 text-neutral-300 mx-auto" />
-                      <div>
-                        <p className="text-sm font-medium text-neutral-800">No active goals configured</p>
-                        <p className="text-xs text-neutral-500 mt-0.5">Set target amounts and deadlines for your cooperative.</p>
+                    {goals.length === 0 ? (
+                      <div className="p-8 text-center border-2 border-dashed border-neutral-200 rounded-xl space-y-3">
+                        <Target className="w-10 h-10 text-neutral-300 mx-auto" />
+                        <div>
+                          <p className="text-sm font-medium text-neutral-800">No active goals configured</p>
+                          <p className="text-xs text-neutral-500 mt-0.5">Set target amounts and deadlines for your cooperative.</p>
+                        </div>
+                        <Link href={`/dashboard/cooperative/${id}/goals/create`}>
+                          <button className="mt-2 px-4 py-2 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors">
+                            Create Target Goal
+                          </button>
+                        </Link>
                       </div>
-                      <Link href={`/dashboard/cooperative/${id}/goals/create`}>
-                        <button className="mt-2 px-4 py-2 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors">
-                          Create Target Goal
-                        </button>
-                      </Link>
-                    </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {goals.slice(0, 3).map((goal) => (
+                          <div key={goal.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                            <div>
+                              <p className="text-sm font-medium text-neutral-900">{goal.name}</p>
+                              <p className="text-xs text-neutral-500 capitalize">{goal.status}</p>
+                            </div>
+                            {goal.target_amount != null && (
+                              <span className="text-xs font-semibold text-neutral-700">
+                                {goal.currency} {goal.target_amount.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -346,21 +406,47 @@ export default function CooperativeDetailPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="p-8 bg-white border border-neutral-100 shadow-sm rounded-2xl text-center space-y-4"
+                className="space-y-4"
               >
-                <Target className="w-12 h-12 text-emerald-600 mx-auto" />
-                <div>
-                  <h3 className="text-lg font-bold text-neutral-900">Cooperative Savings Goals</h3>
-                  <p className="text-sm text-neutral-500 max-w-md mx-auto mt-1">
-                    Track targets, monthly payouts, and group milestones in one centralized view.
-                  </p>
-                </div>
-                <Link href={`/dashboard/cooperative/${id}/goals/create`}>
-                  <button className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors">
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    Create First Goal
-                  </button>
-                </Link>
+                {goals.length === 0 ? (
+                  <div className="p-8 bg-white border border-neutral-100 shadow-sm rounded-2xl text-center space-y-4">
+                    <Target className="w-12 h-12 text-emerald-600 mx-auto" />
+                    <div>
+                      <h3 className="text-lg font-bold text-neutral-900">Cooperative Savings Goals</h3>
+                      <p className="text-sm text-neutral-500 max-w-md mx-auto mt-1">
+                        Track targets, monthly payouts, and group milestones in one centralized view.
+                      </p>
+                    </div>
+                    <Link href={`/dashboard/cooperative/${id}/goals/create`}>
+                      <button className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors">
+                        <Plus className="w-4 h-4 mr-1.5" />
+                        Create First Goal
+                      </button>
+                    </Link>
+                  </div>
+                ) : (
+                  goals.map((goal) => (
+                    <div key={goal.id} className="p-5 bg-white border border-neutral-100 shadow-sm rounded-2xl">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="text-sm font-semibold text-neutral-900">{goal.name}</h4>
+                          {goal.description && (
+                            <p className="text-xs text-neutral-500 mt-1">{goal.description}</p>
+                          )}
+                        </div>
+                        <span className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200 capitalize">
+                          {goal.status}
+                        </span>
+                      </div>
+                      {goal.target_amount != null && (
+                        <p className="text-xs text-neutral-600 mt-3">
+                          Target: <span className="font-semibold">{goal.currency} {goal.target_amount.toLocaleString()}</span>
+                          {goal.target_date && ` · Due ${new Date(goal.target_date).toLocaleDateString()}`}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                )}
               </motion.div>
             )}
 
@@ -374,20 +460,37 @@ export default function CooperativeDetailPage() {
                 className="p-6 bg-white border border-neutral-100 shadow-sm rounded-2xl space-y-4"
               >
                 <h3 className="text-base font-semibold text-neutral-900">Member Roster</h3>
-                <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center">
-                      C
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-neutral-900">Creator / Admin</p>
-                      <p className="text-xs text-neutral-500 font-mono">{cooperative.created_by}</p>
-                    </div>
+                {members.length === 0 ? (
+                  <p className="text-sm text-neutral-500">No members yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {members.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-100"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center">
+                            {member.role === 'admin' ? 'A' : 'M'}
+                          </div>
+                          <p className="text-xs text-neutral-500 font-mono">{member.user_id}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {member.role && (
+                            <span className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200 capitalize">
+                              {member.role}
+                            </span>
+                          )}
+                          {member.status && (
+                            <span className="px-2.5 py-1 text-xs font-semibold text-neutral-600 bg-neutral-100 rounded-full border border-neutral-200 capitalize">
+                              {member.status}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <span className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200">
-                    Admin
-                  </span>
-                </div>
+                )}
               </motion.div>
             )}
 
@@ -398,16 +501,66 @@ export default function CooperativeDetailPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="p-8 bg-white border border-neutral-100 shadow-sm rounded-2xl text-center space-y-3"
+                className="p-6 bg-white border border-neutral-100 shadow-sm rounded-2xl"
               >
-                <Clock className="w-10 h-10 text-neutral-300 mx-auto" />
-                <p className="text-sm font-medium text-neutral-700">No recent activity recorded</p>
-                <p className="text-xs text-neutral-500">Contributions and goal creations will show up here.</p>
+                {activities.length === 0 ? (
+                  <div className="text-center space-y-3 py-6">
+                    <Clock className="w-10 h-10 text-neutral-300 mx-auto" />
+                    <p className="text-sm font-medium text-neutral-700">No recent activity recorded</p>
+                    <p className="text-xs text-neutral-500">Contributions and goal creations will show up here.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activities.map((activity) => (
+                      <div key={activity.id} className="flex items-start justify-between border-b border-neutral-100 pb-3 last:border-b-0 last:pb-0">
+                        <div>
+                          <p className="text-sm text-neutral-800">{activity.description}</p>
+                          <p className="text-xs text-neutral-400 mt-0.5">
+                            {new Date(activity.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                        {activity.amount != null && (
+                          <span className="text-xs font-semibold text-neutral-700">
+                            {activity.amount.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
       </motion.div>
+
+      {/* Invite Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share cooperative invite</DialogTitle>
+            <DialogDescription>
+              Share this invite code with people you want to join this cooperative.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2 mt-4">
+            <div className="grid flex-1 gap-2">
+              <label className="text-xs font-medium text-gray-500">
+                Shareable Invite Link
+              </label>
+              <div className="flex w-fit items-center border rounded-md p-2 bg-gray-50">
+                <span className="text-sm font-medium flex-1 truncate">
+                  {typeof window !== "undefined" ? window.location.origin : ""}/invite/{inviteCode}
+                </span>
+              </div>
+            </div>
+            <Button type="button" size="icon" className="px-3" onClick={copyInviteLink}>
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              <span className="sr-only">Copy</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   )
 }

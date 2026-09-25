@@ -1,19 +1,19 @@
 "use client"
 
-import React from 'react'
-import { useParams } from 'next/navigation'
-import DashboardLayout from '@/components/dashboard/layout'
-import GroupDetailsView from '@/components/dashboard/group-details-view'
+import { useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 
-export default function GroupDetailsPage() {
+// The real cooperative detail page (members, goals, invite, activity) lives
+// at /dashboard/cooperative/[id] — this route only still exists because
+// older links (group cards, bookmarks) point here.
+export default function MyGroupDetailRedirect() {
   const params = useParams()
-  const groupId = params.id as string
+  const router = useRouter()
+  const id = params?.id as string
 
-  return (
-    <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
-        <GroupDetailsView groupId={groupId} />
-      </div>
-    </DashboardLayout>
-  )
-} 
+  useEffect(() => {
+    if (id) router.replace(`/dashboard/cooperative/${id}`)
+  }, [id, router])
+
+  return null
+}

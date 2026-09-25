@@ -352,18 +352,27 @@ export interface OwnershipShareOverallocatedErrorBody {
 // Members (needed for Step 8 beneficiary picker + Step 9 share rows)
 // ---------------------------------------------------------------------------
 
-/**
- * FLAGGED (design doc §7.4): a cooperative-scoped members-list endpoint is
- * not in the given endpoint list; `/coop_id/members` only exists on the
- * legacy router. This type/service call is speculative until that's
- * confirmed — see rules-service.ts / goal-service.ts TODOs.
- */
 // Matches GroupMemberRead — the backend has no joined display_name/avatar
-// on this endpoint, only IDs.
+// on this endpoint, only IDs. Confirmed working: GET /{id}/members.
 export interface CooperativeMember {
   id: string; // membership id
   user_id: string;
   group_id: string;
   role: string | null;
   status: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Activity feed
+// ---------------------------------------------------------------------------
+
+export interface ActivityDetail {
+  id: string;
+  user_id: string;
+  group_id: string | null;
+  type: string;
+  description: string;
+  entity_id?: string | null;
+  amount?: number | null;
+  created_at: string;
 }

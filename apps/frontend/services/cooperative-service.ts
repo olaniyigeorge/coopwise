@@ -3,6 +3,7 @@ import type {
   Cooperative,
   CreateCooperativePayload,
   CooperativeMember,
+  ActivityDetail,
 } from "@/types/cooperative";
 
 
@@ -37,6 +38,10 @@ const CooperativeService = {
     return ApiService.get<CooperativeMember[]>(`${BASE}/${id}/members`);
   },
 
+  async getCooperativeActivities(id: string) {
+    return ApiService.get<ActivityDetail[]>(`${BASE}/${id}/activities`);
+  },
+
   // Generates an invite code for this cooperative (memberships domain).
   async generateInviteCode(cooperativeId: string) {
     return ApiService.get<{ message: string; invite_code: string }>(
@@ -52,9 +57,11 @@ const CooperativeService = {
   },
 
   // Accepts an invite code, turning the click into an active membership.
+  // Matches the real GroupMembership row (memberships/schemas.py's
+  // MembershipDetails) — id is a UUID, not int/number.
   async acceptInviteCode(inviteCode: string) {
     return ApiService.post<{
-      id: number;
+      id: string;
       user_id: string;
       group_id: string;
       role: string;
