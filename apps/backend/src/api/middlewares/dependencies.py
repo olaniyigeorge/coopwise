@@ -51,6 +51,24 @@ def _decode_platform_token(token: str) -> dict:
     return _token_service.decode(token)
 
 
+def _authenticated_user_from_payload(payload: dict) -> AuthenticatedUser:
+    """Builds AuthenticatedUser from a decoded token payload.
+
+    `sub` is whichever identifier the user logged in with (email or phone
+    number) — AuthenticatedUser.email is a strict EmailStr, so routing a
+    phone number into it fails pydantic validation and 500s every
+    authenticated request for phone-signup users.
+    """
+    sub = payload.get("sub")
+    is_email = bool(sub and "@" in sub)
+    return AuthenticatedUser(
+        id=UUID(payload["id"]),
+        email=sub if is_email else None,
+        phone_number=None if is_email else sub,
+        role=payload["role"],
+    )
+
+
 async def get_current_user(
     credentials: Annotated[
         Optional[HTTPAuthorizationCredentials],
@@ -91,11 +109,7 @@ async def get_current_user(
             detail="Invalid token payload",
         )
 
-    return AuthenticatedUser(
-        id=UUID(user_id),
-        email=payload.get("sub"),
-        role=role,
-    )
+    return _authenticated_user_from_payload(payload)
 
 
 async def get_token_optional(
@@ -141,11 +155,7 @@ async def get_optional_current_user(
     if not user_id or not role:
         return None
 
-    return AuthenticatedUser(
-        id=UUID(user_id),
-        email=payload.get("sub"),
-        role=role,
-    )
+    return _authenticated_user_from_payload(payload)
 
 
 async def get_current_user_ws(
@@ -181,11 +191,7 @@ async def get_current_user_ws(
             detail="Invalid token payload",
         )
 
-    return AuthenticatedUser(
-        id=UUID(user_id),
-        email=payload.get("sub"),
-        role=role,
-    )
+    return _authenticated_user_from_payload(payload)
 
 
 # TODO: Consider a new of this with different admin priviledges eg per group
