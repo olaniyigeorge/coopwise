@@ -6,9 +6,7 @@ from alembic import context
 
 from config import AppConfig
 from src.infra.db.database import Base
-
-
-print("Registered tables:", Base.metadata.tables.keys())
+from src.infra.db import all_models  # noqa: F401  (populates Base.metadata for autogenerate)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

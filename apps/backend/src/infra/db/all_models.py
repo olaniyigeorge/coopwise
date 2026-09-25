@@ -31,6 +31,7 @@ from src.domains.memberships.models import mixins as _membership_mixins  # noqa:
 
 from src.domains.contributions import models as _contributions_models  # noqa: F401
 from src.domains.kyc import models as _kyc_models  # noqa: F401
+from src.domains.kyc import audit_models as _kyc_audit_models  # noqa: F401
 from src.domains.notifications import models as _notifications_models  # noqa: F401
 from src.domains.payments import models as _payments_models  # noqa: F401
 from src.domains.wallets import models as _wallets_models  # noqa: F401
