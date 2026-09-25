@@ -13,6 +13,7 @@ from src.domains.cooperatives.events import (
 from src.domains.cooperatives.exceptions import (
     GoalContractAlreadyExistsError,
     GoalNotFoundError,
+    IncompleteGoalContractError,
     InvalidContractFieldsError,
 )
 from src.domains.cooperatives.models.goals import CoopGoal, CoopGoalContract
@@ -136,6 +137,11 @@ class GoalService:
         ]
         if invalid:
             raise InvalidContractFieldsError(pattern.code, invalid)
+
+        required = (pattern.contract_schema or {}).get("required_fields", [])
+        missing = [f for f in required if submitted.get(f) is None]
+        if missing:
+            raise IncompleteGoalContractError(missing)
 
         contract = CoopGoalContract(goal_id=goal.id, **data.model_dump())
         await self._uow.goal_contracts.add(contract)

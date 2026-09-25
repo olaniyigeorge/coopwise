@@ -148,6 +148,8 @@ _STATUS_MAP: dict[type[CooperativeDomainError], int] = {
     GoalCategoryConflictError: 409,
     GoalContractAlreadyExistsError: 409,
     InvalidContractFieldsError: 422,
+    IncompleteGoalContractError: 422,
+    OwnershipShareOverallocatedError: 422,
 }
 
 

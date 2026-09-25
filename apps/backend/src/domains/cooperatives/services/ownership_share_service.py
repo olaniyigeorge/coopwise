@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
 from src.domains.cooperatives.events import NoOpEventDispatcher
+from src.domains.cooperatives.exceptions import OwnershipShareOverallocatedError
 from src.domains.cooperatives.models.goals import CoopOwnershipShare
 from src.domains.cooperatives.uow import CooperativeUnitOfWork
 
@@ -20,6 +22,13 @@ class OwnershipShareService:
         self._logger = logger
 
     async def add(self, share: CoopOwnershipShare) -> CoopOwnershipShare:
+        existing_total = await self._uow.ownership_shares.sum_share_pct_for_goal(
+            share.goal_id
+        )
+        new_total = existing_total + Decimal(str(share.share_pct))
+        if new_total > Decimal("100"):
+            raise OwnershipShareOverallocatedError(float(new_total))
+
         await self._uow.ownership_shares.add(share)
         await self._uow.commit()
         return share
