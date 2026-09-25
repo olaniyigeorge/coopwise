@@ -109,7 +109,7 @@ export default function CooperativeDetailPage() {
         <div className="max-w-2xl mx-auto py-12 text-center space-y-4">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
           <h2 className="text-xl font-bold text-neutral-900">Cooperative Not Found</h2>
-          <p className="text-sm text-neutral-500">{error || "The cooperative group you are looking for does not exist or has been removed."}</p>
+          <p className="text-sm text-neutral-500">{error || "The cooperative you are looking for does not exist or has been removed."}</p>
           <button
             onClick={() => router.push('/dashboard')}
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors"

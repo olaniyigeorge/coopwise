@@ -193,9 +193,9 @@ export default function Dashboard() {
           </Button>
           <Button
             className="flex-1"
-            onClick={() => router.push('/dashboard/create-circle')}
+            onClick={() => router.push('/dashboard/create-cooperative')}
           >
-            Create Group
+            Create Cooperative
           </Button>
         </div>
       </div>

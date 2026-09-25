@@ -26,7 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
-import GroupService from '@/services/group-service'
+import CooperativeService from '@/services/cooperative-service'
 
 // Schema for invite code validation
 const inviteCodeSchema = z.object({
@@ -35,14 +35,11 @@ const inviteCodeSchema = z.object({
   }),
 })
 
-// Interface for group data
+// Interface for cooperative preview data
 interface GroupData {
   name: string;
   description: string;
-  contributionAmount: string | number;
-  frequency: string;
-  memberCount: string;
-  rules: Array<Record<string, any>> | null;
+  coopModel: string;
 }
 
 // Update the component props interface
@@ -60,10 +57,7 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
   const [groupData, setGroupData] = useState<GroupData>({
     name: "",
     description: "",
-    contributionAmount: "",
-    frequency: "",
-    memberCount: "",
-    rules: []
+    coopModel: "",
   })
   const [currentInviteCode, setCurrentInviteCode] = useState("")
   
@@ -81,55 +75,52 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
     
     try {
       // Call the API to verify the invite code
-      const response = await GroupService.verifyInviteCode(values.inviteCode);
-      console.log('Verify response:', response);
-      
-      // Extract group data from the response
+      const response = await CooperativeService.verifyInviteCode(values.inviteCode) as {
+        membership?: { group_id: string; status?: string }
+      };
+
+      // Extract cooperative data from the response
       if (response && response.membership) {
         const membership = response.membership;
-        
-        // Check if the user has already joined this group
+
+        // Check if the user has already joined this cooperative
         if (membership.status && membership.status.toLowerCase() == 'accepted') {
           toast({
             title: "Already Joined",
-            description: "You have already joined or requested to join this group.",
+            description: "You have already joined or requested to join this cooperative.",
             variant: "default",
           });
-          
-          // Still fetch and show group details
+
+          // Still fetch and show cooperative details
         }
-        
-        // Get group details
+
+        // Get cooperative details
         try {
-          const groupDetails = await GroupService.getGroupDetails(membership.group_id);
-          console.log('Group details:', groupDetails);
-          
-          if (groupDetails) {
+          const cooperative = await CooperativeService.getCooperative(membership.group_id);
+
+          if (cooperative) {
             // Format the data for display
             setGroupData({
-              name: groupDetails.name || "Unknown Group",
-              description: groupDetails.description || "No description available",
-              contributionAmount: groupDetails.contribution_amount || 0,
-              frequency: groupDetails.contribution_frequency || "Not specified",
-              memberCount: `${groupDetails.members?.length || 0} out of ${groupDetails.max_members || 'unlimited'}`,
-              rules: groupDetails.rules || []
+              name: cooperative.name || "Unknown Cooperative",
+              description: cooperative.description || "No description available",
+              coopModel: cooperative.coop_model,
             });
-            
-            // Show the group details modal
+
+            // Show the cooperative details modal
             setShowGroupDetails(true);
           }
         } catch (error: any) {
-          console.error("Error fetching group details:", error);
+          console.error("Error fetching cooperative details:", error);
           toast({
             title: "Error",
-            description: error.message || "Could not fetch group details. Please try again.",
+            description: error.message || "Could not fetch cooperative details. Please try again.",
             variant: "destructive",
           });
         }
       } else {
         toast({
           title: "Error",
-          description: "Invalid invite code or group not found.",
+          description: "Invalid invite code or cooperative not found.",
           variant: "destructive",
         });
       }
@@ -163,9 +154,8 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
     
     try {
       // Call the API to accept the invite code
-      const response = await GroupService.acceptInviteCode(currentInviteCode);
-      console.log('Join response:', response);
-      
+      await CooperativeService.acceptInviteCode(currentInviteCode);
+
       // Close the group details modal and show success
       setShowGroupDetails(false);
       
@@ -273,43 +263,24 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
       <Dialog open={showGroupDetails} onOpenChange={setShowGroupDetails}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Group Details</DialogTitle>
+            <DialogTitle>Cooperative Details</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Group Name:</h3>
+              <h3 className="text-sm font-medium text-gray-500">Cooperative Name:</h3>
               <p className="font-medium">{groupData.name}</p>
             </div>
-            
+
             <div>
               <h3 className="text-sm font-medium text-gray-500">Description:</h3>
               <p>{groupData.description}</p>
             </div>
-            
+
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Contribution Amount/Frequency:</h3>
-              <p>₦{groupData.contributionAmount}/{groupData.frequency}</p>
+              <h3 className="text-sm font-medium text-gray-500">Model:</h3>
+              <p className="capitalize">{groupData.coopModel}</p>
             </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Number of Members:</h3>
-              <p>{groupData.memberCount}</p>
-            </div>
-            
-            {groupData.rules && (
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Group Rules:</h3>
-                <ul className="list-disc pl-5 space-y-1 text-sm">
-                  {groupData.rules.map((rule, index) => (
-                    <div className='flex items-start space-x-2' key={index}>
-                      <h3 className='text-sm font-medium text-gray-500'>Rule {index + 1}: {rule.title}</h3>
-                      <p className="text-gray-700">{rule.description || "No description provided"}</p>                    
-                    </div>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
           
           <DialogFooter className="flex flex-row space-x-2">

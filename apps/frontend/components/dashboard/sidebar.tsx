@@ -57,8 +57,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     if (path === '/dashboard/my-group') {
       return (
         pathname === '/dashboard/my-group' ||
-        pathname?.startsWith('/dashboard/my-group/') ||
-        pathname?.startsWith('/dashboard/circle/')
+        pathname?.startsWith('/dashboard/my-group/')
       )
     }
     return pathname === path || pathname?.startsWith(`${path}/`)

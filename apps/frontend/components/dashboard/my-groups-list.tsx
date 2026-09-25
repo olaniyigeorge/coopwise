@@ -4,72 +4,32 @@ import React, { useState, useEffect } from 'react'
 import GroupCard from './group-card'
 import EmptyGroupState from './empty-group-state'
 import { Pagination } from '@/components/ui/pagination'
-import { Group } from '@/services/group-service'
+import type { Cooperative } from '@/types/cooperative'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface MyGroupsListProps {
   hasGroups: boolean | null
   searchQuery: string
-  userGroups?: Group[]
+  userGroups?: Cooperative[]
   isLoading?: boolean
 }
 
 type TransformedGroup = {
   id: string
   name: string
-  memberCount: number
-  maxMembers: number
-  contributionAmount: string
-  frequency: string
   description: string
-  badge: 'member' | 'admin'
-  nextContribution: { amount: string; dueDate: string; daysLeft: number }
-  nextPayout: { amount: string; date: string }
+  coopModel: string
+  badge: 'active' | 'pending'
 }
 
-function getNextContributionDate(frequency: string): string {
-  const next = new Date()
-  if (frequency === 'daily') next.setDate(next.getDate() + 1)
-  else if (frequency === 'weekly') next.setDate(next.getDate() + 7)
-  else next.setMonth(next.getMonth() + 1)
-  return next.toLocaleDateString('en-NG', { month: 'short', day: 'numeric' })
-}
-
-function getNextContributionDaysLeft(frequency: string): number {
-  if (frequency === 'daily') return 1
-  if (frequency === 'weekly') return 7
-  return 30
-}
-
-function getNextPayoutDate(frequency: string): string {
-  const next = new Date()
-  if (frequency === 'daily') next.setDate(next.getDate() + 10)
-  else if (frequency === 'weekly') next.setDate(next.getDate() + 56)
-  else next.setMonth(next.getMonth() + 6)
-  return next.toLocaleDateString('en-NG', { month: 'short', day: 'numeric' })
-}
-
-function transformMyGroup(group: Group): TransformedGroup {
-  const memberCount = group.memberCount || Math.floor(Math.random() * group.max_members) + 1
+function transformMyGroup(cooperative: Cooperative): TransformedGroup {
   return {
-    id: group.id,
-    name: group.name,
-    memberCount,
-    maxMembers: group.max_members,
-    contributionAmount: `₦${group.contribution_amount.toLocaleString()}`,
-    frequency: group.contribution_frequency,
-    description: group.description || `A ${group.contribution_frequency} savings group`,
-    badge: (group.role as 'member' | 'admin') || 'member',
-    nextContribution: {
-      amount: `₦${group.contribution_amount.toLocaleString()}`,
-      dueDate: getNextContributionDate(group.contribution_frequency),
-      daysLeft: getNextContributionDaysLeft(group.contribution_frequency),
-    },
-    nextPayout: {
-      amount: `₦${(group.contribution_amount * 5).toLocaleString()}`,
-      date: getNextPayoutDate(group.contribution_frequency),
-    },
+    id: cooperative.id,
+    name: cooperative.name,
+    description: cooperative.description || '',
+    coopModel: cooperative.coop_model,
+    badge: cooperative.status === 'active' ? 'active' : 'pending',
   }
 }
 
@@ -107,7 +67,7 @@ export default function MyGroupsList({ hasGroups, searchQuery, userGroups = [], 
     return (
       <div className="flex justify-center items-center py-12 text-gray-400 gap-2">
         <Loader2 className="h-5 w-5 animate-spin" />
-        <span className="text-sm">Loading groups...</span>
+        <span className="text-sm">Loading cooperatives...</span>
       </div>
     )
   }
@@ -123,9 +83,9 @@ export default function MyGroupsList({ hasGroups, searchQuery, userGroups = [], 
               d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
         </div>
-        <p className="text-sm font-medium text-gray-700">No groups found</p>
+        <p className="text-sm font-medium text-gray-700">No cooperatives found</p>
         <p className="text-xs text-gray-400 mt-1">
-          {searchQuery ? `No results for "${searchQuery}"` : "You don't have any groups yet"}
+          {searchQuery ? `No results for "${searchQuery}"` : "You don't have any cooperatives yet"}
         </p>
       </div>
     )
@@ -139,17 +99,11 @@ export default function MyGroupsList({ hasGroups, searchQuery, userGroups = [], 
             key={group.id}
             id={group.id}
             name={group.name}
-            memberCount={group.memberCount}
-            maxMembers={group.maxMembers}
-            contributionAmount={group.contributionAmount}
-            frequency={group.frequency}
             description={group.description}
+            coopModel={group.coopModel}
             badge={group.badge}
             isMyGroup={true}
-            nextContribution={group.nextContribution}
-            nextPayout={group.nextPayout}
-            onViewDetails={() => router.push(`/dashboard/group/${group.id}`)}
-            onRequestInvite={() => router.push(`/dashboard/group/${group.id}/invite`)}
+            onViewDetails={() => router.push(`/dashboard/my-group/${group.id}`)}
           />
         ))}
       </div>

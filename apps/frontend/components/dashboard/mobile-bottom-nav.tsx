@@ -32,7 +32,7 @@ const navigationItems: NavItem[] = [
   },
   {
     name: 'Create',
-    href: '/dashboard/create-circle',
+    href: '/dashboard/create-cooperative',
     icon: <PlusCircle className="w-5 h-5" />
   },
   {
@@ -57,8 +57,7 @@ export default function MobileBottomNav() {
     if (path === '/dashboard/my-group') {
       return (
         pathname === path ||
-        pathname?.startsWith(`${path}/`) ||
-        pathname?.startsWith('/dashboard/circle/')
+        pathname?.startsWith(`${path}/`)
       )
     }
     return pathname === path || pathname?.startsWith(`${path}/`)

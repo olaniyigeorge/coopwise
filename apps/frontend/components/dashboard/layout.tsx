@@ -71,14 +71,6 @@ export default function DashboardLayout({
       }
     }
 
-    if (path.startsWith('/dashboard/circle/')) {
-      return {
-        title: '',
-        subtitle: '',
-        showBackButton: false
-      }
-    }
-    
     switch (path) {
       case '/dashboard':
         return {
@@ -92,8 +84,7 @@ export default function DashboardLayout({
           showBackButton: true,
           backUrl: '/dashboard'
         }
-      case '/dashboard/create-group':
-      case '/dashboard/create-circle':
+      case '/dashboard/create-cooperative':
         return {
           title: '',
           showBackButton: true,
