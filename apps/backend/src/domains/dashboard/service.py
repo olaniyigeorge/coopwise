@@ -10,6 +10,7 @@ from src.domains.dashboard.schemas import DashboardData
 from src.shared.utils.logger import logger
 
 from src.domains.cooperatives.services.cooperative_service import CooperativeService
+from src.domains.cooperatives.uow import UnitOfWork
 from src.domains.analytics.service import ActivityService, SummaryService
 from src.domains.insights.service import InsightEngine
 from src.domains.notifications.service import NotificationService
@@ -70,8 +71,25 @@ class DashboardService:
         return await SummaryService.get_user_targets(user, self._db, self._redis)
 
     async def _get_groups(self, user: AuthenticatedUser):
-        return await CooperativeService.get_user_and_suggested_groups(
-            user, self._db, self._redis
+        from src.domains.cooperatives.schemas import CooperativeRead
+        from src.domains.dashboard.schemas import ExploreGroups
+
+        service = CooperativeService(UnitOfWork(self._db))
+        user_groups = await service.get_for_user(user.id)
+        user_group_ids = {g.id for g in user_groups}
+
+        all_groups = await service.list_cooperatives(page_size=50)
+        suggested = [g for g in all_groups if g.id not in user_group_ids]
+
+        return ExploreGroups(
+            user_groups=[
+                CooperativeRead.model_validate(g).model_dump(mode="json")
+                for g in user_groups
+            ],
+            suggested_groups=[
+                CooperativeRead.model_validate(g).model_dump(mode="json")
+                for g in suggested
+            ],
         )
 
     async def _get_activities(self, user: AuthenticatedUser):
