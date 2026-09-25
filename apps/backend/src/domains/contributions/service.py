@@ -16,6 +16,9 @@ from src.domains.contributions.models import Contribution, ContributionStatus
 from src.shared.utils.logger import logger
 from src.infra.blockchain.contract_service import contract_service
 from src.domains.wallets.service import WalletService
+from src.domains.cooperatives.uow import UnitOfWork
+from src.domains.cooperatives.services.rule_services import FinancialRuleService
+from src.domains.cooperatives.exceptions import RuleNotFoundError
 
 
 class ContributionActionType(Enum):
@@ -155,7 +158,7 @@ class ContributionService:
             # Submit to smart contract
             contract_result = await contract_service.submit_contribution(
                 group_address=group_address or str(group.id),
-                user_address=user.wallet_address or str(user.id),
+                user_address=str(user.id),  # AuthenticatedUser carries no wallet_address today
                 amount=amount,
                 network=network,
             )
@@ -258,6 +261,18 @@ class ContributionService:
                 )
                 return None
 
+            # Financial rule holds contribution_amount/frequency — these
+            # aren't flat fields on CoopCooperative itself.
+            try:
+                financial_rule = await FinancialRuleService(
+                    UnitOfWork(db)
+                ).get_active(group_id)
+            except RuleNotFoundError:
+                logger.warning(
+                    f"Auto-contribution skipped: no financial rule configured for group={group_id}"
+                )
+                return None
+
             # Check if contribution is due based on frequency
             if not await ContributionService._is_contribution_due(
                 db, group_id, user.id
@@ -268,11 +283,11 @@ class ContributionService:
                 return None
 
             # Check wallet balance
-            wallet_balance = await WalletService.get_balance(user.id, db)
-            if wallet_balance.stable_coin_balance < group.contribution_amount:
+            wallet_balance = await WalletService.get_effective_balance(user.id, db)
+            if wallet_balance < financial_rule.contribution_amount:
                 logger.warning(
                     f"Insufficient balance for auto-contribution: user={user.id}, "
-                    f"required={group.contribution_amount}, available={wallet_balance.stable_coin_balance}"
+                    f"required={financial_rule.contribution_amount}, available={wallet_balance}"
                 )
                 # Don't raise - just skip this user
                 return None
@@ -284,7 +299,7 @@ class ContributionService:
 
             # Lock funds
             lock_result = await WalletService.lock_for_contribution(
-                user_id=user.id, amount=group.contribution_amount, db=db
+                user_id=user.id, amount=financial_rule.contribution_amount, db=db
             )
             if not lock_result.get("success"):
                 logger.error(
@@ -296,10 +311,14 @@ class ContributionService:
             contribution = Contribution(
                 group_id=group_id,
                 user_id=user.id,
-                amount=group.contribution_amount,
-                currency="NGN",
+                amount=financial_rule.contribution_amount,
+                currency=financial_rule.currency,
                 status=ContributionStatus.initiated,
-                note=f"Automatic {group.contribution_frequency.value} contribution",
+                note=(
+                    "Automatic "
+                    f"{getattr(financial_rule.contribution_frequency, 'value', financial_rule.contribution_frequency)}"
+                    " contribution"
+                ),
             )
 
             db.add(contribution)
@@ -309,8 +328,8 @@ class ContributionService:
             # Submit to smart contract
             contract_result = await contract_service.submit_contribution(
                 group_address=str(group_address),
-                user_address=user.wallet_address or str(user.id),
-                amount=group.contribution_amount,
+                user_address=str(user.id),  # AuthenticatedUser carries no wallet_address today
+                amount=financial_rule.contribution_amount,
                 network=network,
             )
 
@@ -323,14 +342,14 @@ class ContributionService:
                 )
                 logger.info(
                     f"Auto-contribution processed: user={user.id}, group={group_id}, "
-                    f"amount={group.contribution_amount}"
+                    f"amount={financial_rule.contribution_amount}"
                 )
                 await db.refresh(contribution)
                 return contribution
             else:
                 # Release locked funds and mark as failed
                 await WalletService.release_locked_funds(
-                    user_id=user.id, amount=group.contribution_amount, db=db
+                    user_id=user.id, amount=financial_rule.contribution_amount, db=db
                 )
                 await ContributionService.mark_contribution_failed(
                     db=db,
@@ -421,7 +440,7 @@ class ContributionService:
         group_address = str(group.id)  # TODO: Use blockchain_address
         contract_result = await contract_service.submit_contribution(
             group_address=group_address,
-            user_address=user.wallet_address or str(user.id),
+            user_address=str(user.id),  # AuthenticatedUser carries no wallet_address today
             amount=-amount,  # Negative = withdrawal
             network=network,
         )
@@ -477,7 +496,7 @@ class ContributionService:
         group_address = str(group.id)  # TODO: Use blockchain_address
         contract_result = await contract_service.emergency_refund(
             group_address=group_address,
-            user_address=user.wallet_address or str(user.id),
+            user_address=str(user.id),  # AuthenticatedUser carries no wallet_address today
             network=network,
         )
 
@@ -514,6 +533,13 @@ class ContributionService:
         if not group:
             return False
 
+        try:
+            financial_rule = await FinancialRuleService(UnitOfWork(db)).get_active(
+                group_id
+            )
+        except RuleNotFoundError:
+            return False
+
         # Get last contribution
         last_contribution = await db.execute(
             select(Contribution)
@@ -534,13 +560,15 @@ class ContributionService:
 
         # Check based on frequency
         now = datetime.now()
-        frequency = group.contribution_frequency
+        frequency = financial_rule.contribution_frequency
 
-        if frequency == ContributionFrequency.daily:
+        if frequency == ContributionFrequency.DAILY:
             due_date = last.created_at + timedelta(days=1)
-        elif frequency == ContributionFrequency.weekly:
+        elif frequency == ContributionFrequency.WEEKLY:
             due_date = last.created_at + timedelta(weeks=1)
-        elif frequency == ContributionFrequency.monthly:
+        elif frequency == ContributionFrequency.BIWEEKLY:
+            due_date = last.created_at + timedelta(weeks=2)
+        elif frequency == ContributionFrequency.MONTHLY:
             due_date = last.created_at + timedelta(days=30)
         else:
             return False
