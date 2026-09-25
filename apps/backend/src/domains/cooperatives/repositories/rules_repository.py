@@ -33,7 +33,7 @@ class RulesRepository(Generic[T]):
         return result.scalar_one_or_none()
 
     async def get_current_rule(
-        self, cooperative_id: UUID, rule_type: str
+        self, cooperative_id: UUID, rule_type: str, decision_type: str | None = None
     ) -> Any | None:
         match rule_type:
             case "governance":
@@ -47,12 +47,19 @@ class RulesRepository(Generic[T]):
             case _:
                 raise ValueError(f"Unknown rule_type: {rule_type!r}")
 
-        result = await self._session.execute(
-            select(model).where(
-                model.cooperative_id == cooperative_id,
-                model.effective_to.is_(None),
-            )
-        )
+        conditions = [
+            model.cooperative_id == cooperative_id,
+            model.effective_to.is_(None),
+        ]
+        # Unlike the other three rule types (one active row per cooperative),
+        # a cooperative can have up to 5 simultaneously-active decision
+        # rules, uniquely keyed by (cooperative_id, decision_type) — without
+        # this filter, scalar_one_or_none() raises MultipleResultsFound the
+        # moment 2+ decision types are configured for the same cooperative.
+        if rule_type == "decision":
+            conditions.append(model.decision_type == decision_type)
+
+        result = await self._session.execute(select(model).where(*conditions))
         return result.scalar_one_or_none()
 
     async def get_active_for_cooperative(

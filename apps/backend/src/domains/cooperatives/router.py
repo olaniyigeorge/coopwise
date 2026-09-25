@@ -1,10 +1,16 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
+from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domains.cooperatives.exceptions import CooperativeNotFoundError
 from src.api.middlewares.dependencies import get_current_user
 from src.domains.auth.schemas import AuthenticatedUser
+from src.domains.analytics.schemas import ActivityDetail
+from src.domains.analytics.service import ActivityService
+from src.infra.cache.redis_client import get_redis
+from src.infra.db.dependencies import get_async_db_session
 from src.domains.cooperatives.dependencies import (
     get_beneficiary_pattern_service,
     get_cooperative_service,
@@ -106,6 +112,28 @@ async def get_cooperative_members(
         raise CooperativeNotFoundError(cooperative_id=cooperative_id)
 
     return await service.get_members(cooperative_id)
+
+
+@router.get(
+    "/{cooperative_id}/activities",
+    response_model=list[ActivityDetail],
+)
+async def get_cooperative_activities(
+    cooperative_id: UUID,
+    limit: int = 20,
+    user: AuthenticatedUser = Depends(get_current_user),
+    service: CooperativeService = Depends(get_cooperative_service),
+    db: AsyncSession = Depends(get_async_db_session),
+    redis: Redis = Depends(get_redis),
+):
+    cooperative = await service.get_by_id(cooperative_id)
+
+    if cooperative is None:
+        raise CooperativeNotFoundError(cooperative_id=cooperative_id)
+
+    return await ActivityService.get_group_activities(
+        db, cooperative_id, user, redis, limit=limit
+    )
 
 
 @router.get("/{cooperative_id}", response_model=CooperativeRead)
@@ -234,9 +262,10 @@ async def create_decision_rule(
 @router.get("/{cooperative_id}/rules/decision/active", response_model=RuleRead)
 async def get_active_decision_rule(
     cooperative_id: UUID,
+    decision_type: str,
     service: DecisionRuleService = Depends(get_decision_rule_service),
 ):
-    return await service.get_active(cooperative_id)
+    return await service.get_active(cooperative_id, decision_type)
 
 
 # --- Goals ---

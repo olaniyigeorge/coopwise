@@ -178,7 +178,7 @@ class DecisionRuleService:
         self, rule: CoopDecisionRule, *, acting_user_id: UUID | str
     ) -> CoopDecisionRule:
         current = await self._uow.rules.get_current_rule(
-            rule.cooperative_id, "decision"
+            rule.cooperative_id, "decision", decision_type=rule.decision_type
         )
 
         if current is not None:
@@ -204,8 +204,12 @@ class DecisionRuleService:
         )
         return rule
 
-    async def get_active(self, cooperative_id: UUID | str) -> CoopDecisionRule:
-        rule = await self._uow.rules.get_current_rule(cooperative_id, "decision")
+    async def get_active(
+        self, cooperative_id: UUID | str, decision_type: str
+    ) -> CoopDecisionRule:
+        rule = await self._uow.rules.get_current_rule(
+            cooperative_id, "decision", decision_type=decision_type
+        )
         if rule is None:
             raise RuleNotFoundError(str(cooperative_id), "decision")
         return rule

@@ -185,9 +185,17 @@ class CoopDecisionRule(UUIDPrimaryKeyMixin, VersionedMixin, TimestampMixin, Base
     __tablename__ = "coop_decision_rules"
 
     __table_args__ = (
+        # Composite, not just cooperative_id — this docstring's own claim of
+        # "one active row per (cooperative_id, decision_type)" was
+        # contradicted by the index actually only covering cooperative_id,
+        # which made creating a second decision rule of a different type
+        # while the first was still active fail as a false unique-constraint
+        # "version conflict" (the create() path catches IntegrityError and
+        # raises RuleVersionConflictError).
         Index(
             "uq_coop_decision_rules_active",
             "cooperative_id",
+            "decision_type",
             unique=True,
             postgresql_where=text("effective_to IS NULL"),
         ),

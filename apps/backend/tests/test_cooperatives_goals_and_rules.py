@@ -24,13 +24,16 @@ from src.domains.cooperatives.models.goals import (
     CoopGoalCategory,
     CoopOwnershipShare,
 )
-from src.domains.cooperatives.models.rules import CoopGovernanceRule
+from src.domains.cooperatives.models.rules import CoopDecisionRule, CoopGovernanceRule
 from src.domains.cooperatives.schemas import GoalContractCreate
 from src.domains.cooperatives.services.goal_service import GoalService
 from src.domains.cooperatives.services.ownership_share_service import (
     OwnershipShareService,
 )
-from src.domains.cooperatives.services.rule_services import GovernanceRuleService
+from src.domains.cooperatives.services.rule_services import (
+    DecisionRuleService,
+    GovernanceRuleService,
+)
 from src.domains.cooperatives.uow import UnitOfWork
 from src.domains.users.models import User
 
@@ -261,3 +264,43 @@ async def test_creating_a_second_rule_versions_and_closes_the_first(db_session):
     active = await service.get_active(coop.id)
     assert active.id == second.id
     assert active.decision_model == DecisionModel.MAJORITY_VOTE
+
+
+@pytest.mark.asyncio
+async def test_decision_rules_of_different_types_coexist_independently(db_session):
+    """decision rules are keyed by (cooperative_id, decision_type), unlike
+    the other three rule types — creating one type must not close out or
+    conflict with an already-active rule of a different type."""
+    coop = await _make_cooperative(db_session)
+    service = DecisionRuleService(UnitOfWork(db_session))
+
+    payout_rule = await service.create(
+        CoopDecisionRule(
+            cooperative_id=coop.id,
+            decision_type="payout_order",
+            mechanism="admin",
+        ),
+        acting_user_id=uuid4(),
+    )
+    dispute_rule = await service.create(
+        CoopDecisionRule(
+            cooperative_id=coop.id,
+            decision_type="dispute_resolution",
+            mechanism="vote",
+        ),
+        acting_user_id=uuid4(),
+    )
+
+    assert payout_rule.version == 1
+    assert dispute_rule.version == 1
+
+    await db_session.refresh(payout_rule)
+    assert payout_rule.effective_to is None  # not closed out by the second create
+
+    active_payout = await service.get_active(coop.id, "payout_order")
+    active_dispute = await service.get_active(coop.id, "dispute_resolution")
+    assert active_payout.id == payout_rule.id
+    assert active_dispute.id == dispute_rule.id
+
+    with pytest.raises(RuleNotFoundError):
+        await service.get_active(coop.id, "exit_valuation")
