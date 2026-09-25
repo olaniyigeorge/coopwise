@@ -70,6 +70,14 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
                 selectinload(KYCVerification.banking_info),
             )
             .where(KYCVerification.id == kyc_id)
+            # Every submit_*/approve_step call re-fetches via get_by_id/
+            # get_by_user_id on a session that's often reused across several
+            # calls in one request or Celery task — without this, a
+            # relationship already loaded (even as empty) earlier in the
+            # session's life is trusted as-is instead of re-fetched, so a
+            # step written by an earlier call in the same session can look
+            # like it's still missing.
+            .execution_options(populate_existing=True)
         )
 
         return await self._db.scalar(stmt)
@@ -88,6 +96,7 @@ class SQLAlchemyKYCRepository(KYCRepositoryPort):
                 selectinload(KYCVerification.banking_info),
             )
             .where(KYCVerification.user_id == user_id)
+            .execution_options(populate_existing=True)
         )
 
         return await self._db.scalar(stmt)

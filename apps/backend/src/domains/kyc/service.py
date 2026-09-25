@@ -208,11 +208,21 @@ class KYCService:
             data.bank_code, data.account_number
         )
 
-        match_score = score_name_match(
-            bank_result.resolved_account_name, kyc.personal_info.legal_full_name
+        # Must check success before scoring — resolved_account_name is None
+        # on failure, and score_name_match/classify_name_match assume a str.
+        match_score = (
+            score_name_match(
+                bank_result.resolved_account_name, kyc.personal_info.legal_full_name
+            )
+            if bank_result.success
+            else None
         )
-        match_result = classify_name_match(
-            bank_result.resolved_account_name, kyc.personal_info.legal_full_name
+        match_result = (
+            classify_name_match(
+                bank_result.resolved_account_name, kyc.personal_info.legal_full_name
+            )
+            if bank_result.success
+            else None
         )
 
         await self._repo.upsert_banking_info(
