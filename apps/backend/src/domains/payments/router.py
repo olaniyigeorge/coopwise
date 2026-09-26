@@ -1,8 +1,10 @@
 import hmac
 import hashlib
+from datetime import datetime
 from uuid import UUID
 from fastapi import APIRouter, Request, Header, HTTPException, Depends
-from redis import Redis
+from fastapi.responses import RedirectResponse
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
@@ -15,6 +17,7 @@ from src.domains.contributions.service import ContributionService
 from src.domains.memberships.models.enums import MembershipRole
 from src.domains.memberships.service import CooperativeMembershipService
 from src.domains.wallets.service import WalletService
+from src.domains.wallets.models import LedgerStatus
 from config import AppConfig as config
 from src.domains.payments.service import PaymentService, PayoutService, PayoutError
 
@@ -45,6 +48,7 @@ async def paystack_webhook(
     x_paystack_signature: Optional[str] = Header(None),
     x_forwarded_for: Optional[str] = Header(None),
     db: AsyncSession = Depends(get_async_db_session),
+    redis: Redis = Depends(get_redis),
 ):
     """
     Handles Paystack Webhook notifications and updates the contribution/payment records.
@@ -84,37 +88,34 @@ async def paystack_webhook(
         return {"message": "Ignored non-success event."}
 
     try:
-        # Step 3: Fetch the related contribution & payment by reference
-        payment = await WalletService.get_wallet_ledger(reference, db)
+        # Step 3: Fetch the related ledger entry by reference
+        payment = await WalletService.get_wallet_ledger_by_reference(reference, db)
 
         if not payment:
             raise HTTPException(status_code=404, detail="Payment not found.")
 
-        if payment.status in ["settled", "completed"]:
+        if payment.status == LedgerStatus.settled:
             return {"message": "Payment already settled."}
 
-        # Step 4: Update payment record
-        payment.status = "settled"
-        payment.local_amount = amount
-        payment.stable_amount = amount
-        payment.gateway = data.get("channel")
-        payment.updated_at = data.get("paid_at")
-        await db.commit()
+        # Step 4: Settle the ledger and credit the wallet
+        await WalletService.finalize_deposit(reference, db, redis)
 
-        # Step 5: Update related contribution record
-        if payment.contribution:
+        # Step 5: Update related contribution record, if this deposit was tied to one
+        if payment.contribution_id:
             await ContributionService.update_contribution_status(
                 db=db,
                 contribution_id=payment.contribution_id,
                 contribution_status="completed",
-                paid_at=payment.updated_at,
+                paid_at=datetime.now(),
             )
             return {"message": "Payment and contribution updated successfully."}
 
         return {"message": "Payment updated successfully."}
 
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.info("Webhook processing error:", str(e))
+        logger.error(f"Webhook processing error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Webhook processing failed.")
 
 
@@ -132,13 +133,15 @@ async def paystack_callback(
     verification = await PaymentService.verify_paystack_transaction(reference)
 
     if not verification["status"] or verification["data"]["status"] != "success":
-        # return RedirectResponse(url=f"{config.CLIENT_DOMAIN}/payment?status=failed&ref={reference}")
-        return f"{config.CLIENT_DOMAIN}/payment?status=failed&ref={reference}"
+        return RedirectResponse(
+            url=f"{config.CLIENT_DOMAIN}/dashboard/wallet/fund?status=failed&ref={reference}"
+        )
 
     await WalletService.finalize_deposit(reference, db, redis)
-    # return RedirectResponse(url=f"{config.CLIENT_DOMAIN}?status=success&ref={reference}")
 
-    return f"{config.CLIENT_DOMAIN}?status=success&ref={reference}"
+    return RedirectResponse(
+        url=f"{config.CLIENT_DOMAIN}/dashboard/wallet/fund?status=success&ref={reference}"
+    )
 
 
 @router.post(

@@ -5,11 +5,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-from src.domains.contributions.schemas import ContributionCreate, ContributionDetail
+from src.domains.contributions.schemas import (
+    ContributionCreate,
+    ContributionDetail,
+    GoalProgress,
+)
 from src.api.middlewares.dependencies import get_current_user, get_current_admin_user
 from src.domains.contributions.service import ContributionService
 from src.domains.auth.schemas import AuthenticatedUser
 from src.infra.db.dependencies import get_async_db_session
+from src.domains.memberships.service import CooperativeMembershipService
 
 
 router = APIRouter(prefix="/api/v1/contributions", tags=["Contributions"])
@@ -23,7 +28,6 @@ async def contribute(
     db: AsyncSession = Depends(get_async_db_session),
     current_user: AuthenticatedUser = Depends(get_current_user),
     mode: str = "manual",  # "manual" or "auto"
-    network: str = "flow",  # "flow" or "zama"
 ):
     """
     Makes a contribution of a specific amount to a cooperative group.
@@ -32,11 +36,11 @@ async def contribute(
 
     if mode == "manual":
         contribution = await ContributionService.process_manual_contribution(
-            contribution_data, current_user, db, network
+            contribution_data, current_user, db
         )
     elif mode == "auto":
-        contribution = await ContributionService.process_auto_debit(
-            contribution_data.group_id, current_user, db, network
+        contribution = await ContributionService.process_auto_contribution(
+            contribution_data.group_id, current_user, db
         )
     else:
         raise HTTPException(status_code=400, detail="Invalid contribution mode.")
@@ -45,7 +49,6 @@ async def contribute(
         "message": "Contribution processed successfully",
         "contribution": contribution,
         "mode": mode,
-        "network": network,
     }
 
 
@@ -54,47 +57,56 @@ async def auto_debit(
     group_id: UUID,
     db: AsyncSession = Depends(get_async_db_session),
     current_user: AuthenticatedUser = Depends(get_current_user),
-    network: str = "flow",
 ):
     """
     Trigger an automated debit for the current user's contribution to a group.
     Used by group policies or scheduled tasks.
     """
 
-    contribution = await ContributionService.process_auto_debit(
-        group_id, current_user, db, network
+    contribution = await ContributionService.process_auto_contribution(
+        group_id, current_user, db
     )
 
     return {
         "message": "Automated contribution processed successfully",
         "contribution": contribution,
-        "network": network,
     }
 
-    # noti_data = NotificationCreate(
-    #     user_id=contribution.user_id,
-    #     title="Payment Successful",
-    #     message=f"We settled your payment into {contribution_payment['data']['amount']} for your contribution {contribution.id}",
-    #     event_type="transaction",
-    #     type="success",
-    #     entity_url=f"payment-{contribution.user_id}:{contribution.amount}",
-    # )
-    # await NotificationService.create_and_push_notification_to_user(noti_data, db)
 
-    # deposit_data = WalletDeposit(
-    #     local_amount=Decimal(contribution.amount), currency="NGN"
-    # )
+@router.get("/goals/{goal_id}/progress", response_model=GoalProgress)
+async def get_goal_progress(
+    goal_id: UUID,
+    db: AsyncSession = Depends(get_async_db_session),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    """
+    Fetch a goal's funding progress computed from its completed contributions.
+    """
+    return await ContributionService.get_goal_progress(db, goal_id)
 
-    # wallet = await WalletService.deposit(
-    #     deposit_data, db, user, redis=Depends(get_redis)
-    # )
 
-    # return {
-    #     "message": "Contribution made successfully.",
-    #     "contribution": contribution,
-    #     "charge_response": contribution_payment,
-    #     "wallet": wallet,
-    # }
+@router.get("/group/{group_id}", response_model=List[ContributionDetail])
+async def list_group_contributions(
+    group_id: UUID,
+    skip: int = 0,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_async_db_session),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    """
+    Fetch contributions for a cooperative group. Any active member of the
+    group can view its contribution history.
+    """
+    membership = await CooperativeMembershipService.get_membership_by_user_and_group(
+        user_id=current_user.id, group_id=group_id, db=db
+    )
+    if not membership or not membership.is_active:
+        raise HTTPException(
+            status_code=403, detail="You are not an active member of this cooperative."
+        )
+    return await ContributionService.get_contributions(
+        db, group_id=group_id, skip=skip, limit=limit
+    )
 
 
 @router.get("/{contribution_id}")

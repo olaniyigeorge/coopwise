@@ -147,7 +147,10 @@ class WalletLedger(Base):  # TNX RECORD
 
     wallet = relationship("Wallet", back_populates="ledger_entries", lazy="joined")
     contribution = relationship(
-        "Contribution", back_populates="wallet_ledger", lazy="joined", uselist=False
+        "Contribution",
+        back_populates="wallet_ledger_entries",
+        lazy="joined",
+        uselist=False,
     )
 
 

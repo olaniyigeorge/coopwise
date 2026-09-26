@@ -36,6 +36,15 @@ def _internal_ledger_reference(kind: str) -> str:
     return f"{kind}-{secrets.token_hex(12)}"
 
 
+# Mock rate: 1 stable-coin unit == 1600 local-currency units. Deliberately
+# hardcoded for now (see fetch_exchange_rate TODOs) rather than wired to
+# FXService — kept as one shared constant so every local-currency amount
+# compared against stable_coin_balance (deposits, withdrawals, and
+# contributions/service.py's balance check) uses the same conversion and
+# stays in the same unit space.
+MOCK_LOCAL_TO_STABLE_RATE = Decimal(1) / Decimal(1600)
+
+
 class WalletService:
 
     @staticmethod
@@ -75,9 +84,8 @@ class WalletService:
             f"\n\n\nUser {user.id} is depositing {data.local_amount} {data.currency} into their wallet\n\n\n"
         )
         # 2. Fetch exchange rate quote from CashRamp GraphQL API
-        rate = (
-            1 / 1600
-        )  # TODO (use actual exchange rate func) await fetch_exchange_rate(user.id, data.currency, "USDC")  ---  mock rate 1 USDC == 1600 NGN(local currency)
+        # TODO (use actual exchange rate func) await fetch_exchange_rate(user.id, data.currency, "USDC")
+        rate = MOCK_LOCAL_TO_STABLE_RATE
         stable_amt = Decimal(data.local_amount) * Decimal(rate)
 
         logger.info(f"\n\n\n Stable amount settled into wallet {stable_amt} \n\n\n")
@@ -137,7 +145,7 @@ class WalletService:
             rate = Decimal(cached_rate)
         else:
             # TODO Replace with actual await fetch_exchange_rate(user.id, wallet.local_currency, "USDC") call
-            rate = Decimal(1) / Decimal(1600)  # mock
+            rate = MOCK_LOCAL_TO_STABLE_RATE
             await update_cache(
                 cache_key, str(rate), ttl=30
             )  # Match the 20 - 50 market votality suggested by Accurue Cashramp
@@ -502,5 +510,34 @@ class WalletService:
 
         wallet.stable_coin_balance += mark_ledger_record.stable_amount
         db.add(wallet)
+        await db.commit()
+        await db.refresh(wallet)
 
         return wallet
+
+    @staticmethod
+    async def finalize_deposit(
+        reference: str, db: AsyncSession, redis: Redis
+    ) -> WalletDetail:
+        """
+        Idempotently settle a previously-initiated deposit (Paystack, etc.) by
+        its ledger reference — credits the wallet and marks the ledger
+        settled. Safe to call more than once for the same reference (e.g. a
+        user re-visiting the payment callback URL after a refresh).
+        """
+        ledger = await WalletService.get_wallet_ledger_by_reference(reference, db)
+        if not ledger:
+            raise HTTPException(status_code=404, detail="Transaction ledger not found.")
+
+        if ledger.status == LedgerStatus.settled:
+            wallet = await WalletService.get_wallet_by_id(ledger.wallet_id, db)
+            return WalletDetail.model_validate(wallet)
+
+        wallet = await WalletService.settle_payment_ledger_into_wallet(
+            ledger.id, db, redis
+        )
+        wallet_data = WalletDetail.model_validate(wallet)
+        await update_cache(
+            f"wallet_detail:{wallet.user_id}", wallet_data.model_dump_json(), ttl=300
+        )
+        return wallet_data

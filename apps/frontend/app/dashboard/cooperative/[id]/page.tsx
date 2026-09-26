@@ -19,9 +19,13 @@ import {
   Copy,
   Check,
   Loader2,
+  Wallet,
 } from 'lucide-react'
 import CooperativeService from '@/services/cooperative-service'
 import GoalService from '@/services/goal-service'
+import ContributionService, { GoalProgress } from '@/services/contribution-service'
+import { getDashboardData } from '@/services/dashboard-service'
+import { getApiErrorDetail } from '@/lib/api-error'
 import DashboardLayout from '@/components/dashboard/layout'
 import { Cooperative, CooperativeMember, Goal, ActivityDetail } from '@/types/cooperative'
 import {
@@ -32,6 +36,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 // --- Motion Variants ---
 const containerVariants: Variants = {
@@ -84,22 +97,31 @@ export default function CooperativeDetailPage() {
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false)
   const [copied, setCopied] = useState(false)
 
+  const [showContributeDialog, setShowContributeDialog] = useState(false)
+  const [contributeAmount, setContributeAmount] = useState("")
+  const [contributeGoalId, setContributeGoalId] = useState<string>("none")
+  const [isContributing, setIsContributing] = useState(false)
+  const [walletBalance, setWalletBalance] = useState<number | null>(null)
+  const [goalProgress, setGoalProgress] = useState<Record<string, GoalProgress>>({})
+
   useEffect(() => {
     async function load() {
       if (!id) return
       try {
         setLoading(true)
         setError(null)
-        const [coopData, memberData, goalData, activityData] = await Promise.all([
+        const [coopData, memberData, goalData, activityData, dashboardData] = await Promise.all([
           CooperativeService.getCooperative(id),
           CooperativeService.getCooperativeMembers(id),
           GoalService.listGoals(id),
           CooperativeService.getCooperativeActivities(id),
+          getDashboardData(),
         ])
         setCooperative(coopData)
         setMembers(memberData)
         setGoals(goalData)
         setActivities(activityData)
+        setWalletBalance(dashboardData?.summary?.wallet?.stable_coin_balance ?? null)
       } catch (err: any) {
         const errorMsg = err?.response?.data?.message || err.message || 'Failed to load cooperative details.'
         setError(errorMsg)
@@ -111,6 +133,76 @@ export default function CooperativeDetailPage() {
 
     load()
   }, [id])
+
+  useEffect(() => {
+    if (goals.length === 0) return
+    Promise.all(
+      goals.map((goal) =>
+        ContributionService.getGoalProgress(goal.id)
+          .then((progress) => [goal.id, progress] as const)
+          .catch(() => null)
+      )
+    ).then((results) => {
+      const next: Record<string, GoalProgress> = {}
+      for (const entry of results) {
+        if (entry) next[entry[0]] = entry[1]
+      }
+      setGoalProgress(next)
+    })
+  }, [goals])
+
+  const refreshAfterContribution = async () => {
+    const [activityData, memberData] = await Promise.all([
+      CooperativeService.getCooperativeActivities(id),
+      CooperativeService.getCooperativeMembers(id),
+    ])
+    setActivities(activityData)
+    setMembers(memberData)
+    if (contributeGoalId !== "none") {
+      const progress = await ContributionService.getGoalProgress(contributeGoalId)
+      setGoalProgress((prev) => ({ ...prev, [contributeGoalId]: progress }))
+    }
+  }
+
+  const handleContribute = async () => {
+    const amount = parseFloat(contributeAmount)
+    if (!amount || amount <= 0) {
+      toast.error("Enter a valid contribution amount.")
+      return
+    }
+    try {
+      setIsContributing(true)
+      await ContributionService.contribute({
+        group_id: id,
+        amount,
+        goal_id: contributeGoalId !== "none" ? contributeGoalId : undefined,
+      })
+      toast.success("Contribution successful!")
+      setShowContributeDialog(false)
+      await refreshAfterContribution()
+      setContributeAmount("")
+      setContributeGoalId("none")
+    } catch (err: any) {
+      const detail = getApiErrorDetail(err)
+      const errorMsg = (typeof detail === "string" ? detail : detail?.message) || err?.message || "Failed to process contribution."
+      if (errorMsg.toLowerCase().includes("insufficient")) {
+        // Close the dialog first — its overlay sits above the toast and
+        // would otherwise swallow the click on the action button below.
+        setShowContributeDialog(false)
+        toast.error(errorMsg, {
+          description: "Fund your wallet with Paystack to continue.",
+          action: {
+            label: "Fund wallet",
+            onClick: () => router.push("/dashboard/wallet/fund"),
+          },
+        })
+      } else {
+        toast.error(errorMsg)
+      }
+    } finally {
+      setIsContributing(false)
+    }
+  }
 
   const generateInvite = async () => {
     try {
@@ -197,6 +289,17 @@ export default function CooperativeDetailPage() {
           </button>
 
           <div className="flex items-center gap-2">
+            <motion.button
+              variants={buttonHover}
+              whileHover="hover"
+              whileTap="tap"
+              onClick={() => setShowContributeDialog(true)}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors"
+            >
+              <Wallet className="w-4 h-4 mr-1.5" />
+              Contribute
+            </motion.button>
+
             <motion.button
               variants={buttonHover}
               whileHover="hover"
@@ -445,6 +548,21 @@ export default function CooperativeDetailPage() {
                           {goal.target_date && ` · Due ${new Date(goal.target_date).toLocaleDateString()}`}
                         </p>
                       )}
+                      {goalProgress[goal.id] && (
+                        <div className="mt-3 space-y-1.5">
+                          <div className="h-2 w-full bg-neutral-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-emerald-500 rounded-full transition-all"
+                              style={{ width: `${goalProgress[goal.id].percent_complete ?? 0}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-neutral-500">
+                            {goalProgress[goal.id].currency} {goalProgress[goal.id].contributed_amount.toLocaleString()} raised
+                            {goalProgress[goal.id].percent_complete != null && ` · ${goalProgress[goal.id].percent_complete}% funded`}
+                            {' · '}{goalProgress[goal.id].contributor_count} contributor{goalProgress[goal.id].contributor_count === 1 ? '' : 's'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -571,6 +689,73 @@ export default function CooperativeDetailPage() {
             <Button type="button" size="icon" className="px-3" onClick={copyInviteLink}>
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               <span className="sr-only">Copy</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contribute Dialog */}
+      <Dialog open={showContributeDialog} onOpenChange={setShowContributeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Make a contribution</DialogTitle>
+            <DialogDescription>
+              Funds are debited from your CoopWise wallet balance
+              {walletBalance != null && (
+                <span className="flex items-center justify-between mt-1 text-xs text-neutral-500">
+                  <span>Available balance: <span className="font-semibold text-neutral-700">{walletBalance.toLocaleString()}</span></span>
+                  <Link href="/dashboard/wallet/fund" className="font-semibold text-emerald-700 hover:text-emerald-800">
+                    Fund wallet
+                  </Link>
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="contribute-amount">Amount</Label>
+              <Input
+                id="contribute-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g. 5000"
+                value={contributeAmount}
+                onChange={(e) => setContributeAmount(e.target.value)}
+              />
+            </div>
+
+            {goals.length > 0 && (
+              <div className="space-y-1.5">
+                <Label>Apply toward a goal (optional)</Label>
+                <Select value={contributeGoalId} onValueChange={setContributeGoalId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="No specific goal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No specific goal</SelectItem>
+                    {goals.map((goal) => (
+                      <SelectItem key={goal.id} value={goal.id}>
+                        {goal.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <Button
+              type="button"
+              className="w-full"
+              disabled={isContributing}
+              onClick={handleContribute}
+            >
+              {isContributing ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : (
+                <Wallet className="w-4 h-4 mr-1.5" />
+              )}
+              Confirm contribution
             </Button>
           </div>
         </DialogContent>

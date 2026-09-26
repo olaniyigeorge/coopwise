@@ -15,7 +15,6 @@ from src.shared.utils.logger import logger
 from src.domains.wallets.service import WalletService
 from src.domains.dashboard.schemas import Summary
 from src.domains.contributions.models import Contribution, ContributionStatus
-from src.domains.cooperatives.models.cooperative import CoopCooperative
 from src.domains.memberships.service import CooperativeMembershipService
 
 
@@ -113,13 +112,12 @@ class SummaryService:
             if isinstance(cached_summary, str):
                 cached_summary = json.loads(cached_summary)
 
+            # Wallet balance changes far more often (deposits, contributions)
+            # than the rest of this summary, so always overlay a fresh read —
+            # otherwise a top-up or contribution wouldn't show up here until
+            # this cache entry expires (up to 3 minutes later).
             wallet = await WalletService.get_wallet(db, user, redis)
-
-            if isinstance(
-                cached_summary.get("wallet"), str
-            ):  # Doing this because the wallet and it's cache are updated separately
-                logger.info("\n Setting more recent wallet details.... \n")
-                cached_summary["wallet"] = json.loads(wallet)
+            cached_summary["wallet"] = wallet.model_dump(mode="json")
 
             return cached_summary
 
@@ -147,41 +145,18 @@ class SummaryService:
             )
             next_contribution = next_contrib_query.scalar()
 
-            # 3. Get user’s group memberships
-            memberships = await CooperativeMembershipService.get_memberships_by_user(
-                user.id, db
-            )
-            group_ids = [membership.group_id for membership in memberships]
+            # 3. Get user's group memberships (kept even though unused below —
+            # cheap and other sections may want it; harmless to drop later)
+            await CooperativeMembershipService.get_memberships_by_user(user.id, db)
 
-            # 4. Next payout date from all user groups
-            next_payout_query = await db.execute(
-                select(CoopCooperative.next_payout_date, CoopCooperative.id)
-                .where(
-                    CoopCooperative.id.in_(group_ids),
-                    CoopCooperative.next_payout_date.is_not(None),
-                    CoopCooperative.next_payout_date > datetime.now(),
-                )
-                .order_by(CoopCooperative.next_payout_date.asc())
-                .limit(1)
-            )
-            next_payout_result = next_payout_query.first()
-            next_payout, next_payout_group_id = (
-                next_payout_result if next_payout_result else (None, None)
-            )
+            # Payout timing is rotational (see PayoutService.get_current_round /
+            # get_payable_amount), not a fixed date on CoopCooperative — there's
+            # no `next_payout_date` column to query. Left as None here; wire
+            # this up to PayoutService if/when a per-user "next payout" ETA is
+            # needed on this summary.
+            next_payout = None
 
-            # 5. From that group, get the user’s payout number
-            # payout_number: Optional[int] = None
-            # if next_payout_group_id:
-            #     payout_membership_query = await db.execute(
-            #         select(GroupMembership.payout_position)
-            #         .where(
-            #             GroupMembership.user_id == user.id,
-            #             GroupMembership.group_id == next_payout_group_id
-            #         )
-            #     )
-            #     payout_number = payout_membership_query.scalar()
-
-            # 6 Get user wallet
+            # 4. Get user wallet
             wallet = await WalletService.get_wallet(db, user, redis)
 
             return Summary(
@@ -189,7 +164,7 @@ class SummaryService:
                 next_contribution=(
                     next_contribution.isoformat() if next_contribution else None
                 ),
-                next_payout=next_payout.isoformat() if next_payout else None,
+                next_payout=next_payout,
                 wallet=wallet,
             )
 

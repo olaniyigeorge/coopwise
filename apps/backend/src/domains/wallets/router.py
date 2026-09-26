@@ -112,7 +112,7 @@ async def initiate_deposit(
             str(uuid.uuid4), Decimal(deposit_data.local_amount)
         )
     elif payment_gateway == "mock_success":
-        if config.ENV != "dev" and datetime.now() > CUTOFF_DATE:
+        if config.ENV != "development" and datetime.now() > CUTOFF_DATE:
             raise HTTPException(
                 status_code=400,
                 detail=f"Mock payment is only available in production till {CUTOFF_DATE}.",
@@ -142,7 +142,7 @@ async def initiate_deposit(
         )
         await WalletService.record_ledger_entry(ledger_data, db)
     elif payment_gateway == "mock_fail":
-        if config.ENV != "dev" and datetime.now() > CUTOFF_DATE:
+        if config.ENV != "development" and datetime.now() > CUTOFF_DATE:
             raise HTTPException(
                 status_code=400,
                 detail="Mock payment is only available in production till 30th of June.",
@@ -215,8 +215,12 @@ async def finalise_deposit(
     elif payment_gateway == "mock_fail":
         verification_result = False
     elif payment_gateway == "paystack":
-        raise HTTPException(
-            status_code=501, detail="Paystack verification not yet implemented."
+        from src.domains.payments.service import PaymentService
+
+        verification = await PaymentService.verify_paystack_transaction(reference)
+        verification_result = (
+            bool(verification.get("status"))
+            and verification.get("data", {}).get("status") == "success"
         )
     elif payment_gateway == "cashramp":
         raise HTTPException(

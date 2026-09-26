@@ -7,10 +7,12 @@ from src.domains.contributions.models import ContributionStatus
 
 
 class ContributionCreate(BaseModel):
-    user_id: UUID
+    # Not used for authorization — the authenticated user (from the session)
+    # is always who the contribution is recorded against.
+    user_id: Optional[UUID] = None
     group_id: UUID
     amount: float
-    # wallet_ledger_id: Optional[UUID] = None
+    goal_id: Optional[UUID] = None
     currency: str = "NGN"
     due_date: datetime = None
     note: str = None
@@ -24,7 +26,7 @@ class ContributionDetail(BaseModel):
     user_id: UUID
     group_id: UUID
     amount: float
-    # wallet_ledger_id: Optional[UUID] = None
+    goal_id: Optional[UUID] = None
     currency: str = "NGN"
     due_date: Optional[datetime] = None
     fulfilled_at: Optional[datetime] = None
@@ -32,6 +34,17 @@ class ContributionDetail(BaseModel):
     status: ContributionStatus = ContributionStatus.pledged
     created_at: datetime
     updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GoalProgress(BaseModel):
+    goal_id: UUID
+    target_amount: Optional[float] = None
+    currency: str = "NGN"
+    contributed_amount: float
+    percent_complete: Optional[float] = None
+    contributor_count: int
 
     model_config = ConfigDict(from_attributes=True)
 

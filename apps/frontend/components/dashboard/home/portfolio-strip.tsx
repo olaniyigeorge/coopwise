@@ -1,8 +1,9 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { formatCurrency } from '@/lib/utils'
-import { Users, Target, Lock, Wallet } from 'lucide-react'
+import { Users, Target, Lock, Plus } from 'lucide-react'
 
 interface PortfolioStripProps {
   coopCount: number
@@ -69,9 +70,13 @@ export default function PortfolioStrip({
           </p>
           <p className="text-[11px] text-brand-ink/40">≈ {formatCurrency((walletBalance || 0) * 1600)}</p>
         </div>
-        <div className="w-9 h-9 rounded-full bg-white border border-brand-ink/10 flex items-center justify-center shrink-0">
-          <Wallet className="w-4 h-4 text-brand-ink/70" />
-        </div>
+        <Link
+          href="/dashboard/wallet/fund"
+          className="w-9 h-9 rounded-full bg-white border border-brand-ink/10 flex items-center justify-center shrink-0 hover:border-emerald-300 hover:text-emerald-700 transition-colors group"
+          title="Fund wallet"
+        >
+          <Plus className="w-4 h-4 text-brand-ink/70 group-hover:text-emerald-700" />
+        </Link>
       </div>
     </div>
   )

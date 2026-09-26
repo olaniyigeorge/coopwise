@@ -1,30 +1,34 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  CreditCard,
-  Banknote,
-  Wallet,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
+  Loader2,
+  Wallet,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils';
 import WalletService from '@/services/wallet-service';
 import { getDashboardData, LocalCurrency } from '@/services/dashboard-service';
+import { getApiErrorDetail } from '@/lib/api-error';
+
+// Flip to true once real Paystack keys are configured — this makes
+// "Continue with Paystack" redirect to Paystack's hosted checkout instead
+// of instantly mock-crediting the wallet.
+const PAYSTACK_LIVE = false;
 
 export default function FundWallet() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
-  const [loading, setLoading] = useState(false);
+  const [isPaystackLoading, setIsPaystackLoading] = useState(false);
   const [paymentSuccessful, setPaymentSuccessful] = useState(false);
   const [localCurrency, setLocalCurrency] = useState<LocalCurrency>(LocalCurrency.NGN);
 
@@ -35,17 +39,27 @@ export default function FundWallet() {
     });
   }, []);
 
+  useEffect(() => {
+    const status = searchParams.get('status')
+    if (status === 'success') {
+      setPaymentSuccessful(true);
+      toast({ title: 'Payment successful', description: 'Your wallet has been funded.' });
+    } else if (status === 'failed') {
+      toast({
+        title: 'Payment failed',
+        description: 'Your Paystack payment did not complete. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  }, [searchParams, toast]);
+
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only allow numbers
     const value = e.target.value.replace(/[^0-9]/g, '');
     setAmount(value);
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); 
-
-    console.log(`\n Adding money....    \n`)
-    
+  const handlePaystackFund = async () => {
     if (!amount || parseInt(amount) < 100) {
       toast({
         title: "Invalid amount",
@@ -54,49 +68,43 @@ export default function FundWallet() {
       });
       return;
     }
-
-    setLoading(true);
-
-    
-    // Simulate payment processing
-    // setTimeout(() => {
-    //   setLoading(false);
-    //   setPaymentSuccessful(true);
-      
-    //   // Display success notification
-    //   toast({
-    //     title: "Payment Successful",
-    //     description: `You have successfully added ${formatCurrency(parseInt(amount))} to your wallet.`,
-    //     variant: "default"
-    //   });
-      
-    //   // Reset form after 2 seconds and redirect back to dashboard
-    //   setTimeout(() => {
-    //     router.push('/dashboard');
-    //   }, 2000);
-    // }, 2000);
-
-    setLoading(false);
-
-    const depData = {
-      'payment_gateway': paymentMethod,
-      'local_amount': Number(amount),
-      'currency': localCurrency
-    }
-
     try {
-      const depositResponse = await WalletService.depositInWallet(depData);
-      if (!depositResponse) {
-          toast({
-            title: "Deposit Failed",
-            description: `This deposit attempt failed.`,
-            variant: "destructive"
-          });
-          setPaymentSuccessful(false);
+      setIsPaystackLoading(true);
+
+      if (PAYSTACK_LIVE) {
+        const response = await WalletService.initiateDeposit({
+          payment_gateway: 'paystack',
+          local_amount: Number(amount),
+          currency: localCurrency,
+        });
+        const authUrl = response.init_payment_response?.data?.authorization_url;
+        if (!response.init_payment_response.status || !authUrl) {
+          throw new Error(response.init_payment_response.message || 'Could not start Paystack payment.');
+        }
+        window.location.href = authUrl;
+        return;
       }
+
+      // Test mode: no live Paystack keys yet — initiate + immediately
+      // finalise a mock_success deposit so the credit is real and shows up
+      // on the dashboard right away, without leaving this page.
+      const response = await WalletService.initiateDeposit({
+        payment_gateway: 'mock_success',
+        local_amount: Number(amount),
+        currency: localCurrency,
+      });
+      const txRef = response.init_payment_response?.data?.tx_ref;
+      if (!response.init_payment_response.status || !txRef) {
+        throw new Error(response.init_payment_response.message || 'Could not start deposit.');
+      }
+      await WalletService.finalizeDeposit(txRef, 'mock_success');
       setPaymentSuccessful(true);
-    } catch {
-      setPaymentSuccessful(false);
+    } catch (err: any) {
+      const detail = getApiErrorDetail(err);
+      const message = (typeof detail === "string" ? detail : detail?.message) || err?.message || "Could not fund wallet.";
+      toast({ title: "Payment failed", description: message, variant: "destructive" });
+    } finally {
+      setIsPaystackLoading(false);
     }
   };
 
@@ -110,7 +118,7 @@ export default function FundWallet() {
                 <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
                 <h2 className="text-2xl font-semibold text-green-700">Payment Successful!</h2>
                 <p className="text-green-600 mt-2">
-                  You have successfully added {formatCurrency(parseInt(amount))} to your wallet.
+                  You have successfully added {formatCurrency(parseInt(amount) || 0)} to your wallet.
                 </p>
                 <Button
                   className="mt-6 bg-primary hover:bg-primary/90"
@@ -165,134 +173,34 @@ export default function FundWallet() {
           </CardContent>
         </Card>
 
-        <form onSubmit={handleSubmit}>
-          <Tabs defaultValue="card" className="w-full">
-            <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger value="card" className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4" /> Card
-              </TabsTrigger>
-              <TabsTrigger value="bank" className="flex items-center gap-2">
-                <Banknote className="w-4 h-4" /> Bank
-              </TabsTrigger>
-              <TabsTrigger value="ussd" className="flex items-center gap-2">
-                <Wallet className="w-4 h-4" /> USSD
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="card">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Card Payment</CardTitle>
-                  <CardDescription>Enter your card details</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Card Number</label>
-                    <Input
-                      type="text"
-                      placeholder="0000 0000 0000 0000"
-                      maxLength={19}
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Expiry Date</label>
-                      <Input
-                        type="text"
-                        placeholder="MM/YY"
-                        maxLength={5}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">CVV</label>
-                      <Input
-                        type="text"
-                        placeholder="123"
-                        maxLength={3}
-                        required
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button type="submit" onClick={() => setPaymentMethod("card")} className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
-                    {loading ? 'Processing...' : 'Pay Now'}
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="bank">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Bank Transfer</CardTitle>
-                  <CardDescription>Transfer to the account below</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="mb-2">
-                      <p className="text-sm text-gray-500">Bank Name</p>
-                      <p className="font-medium">CoopWise Bank</p>
-                    </div>
-                    <div className="mb-2">
-                      <p className="text-sm text-gray-500">Account Number</p>
-                      <p className="font-medium">0123456789</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Account Name</p>
-                      <p className="font-medium">CoopWise Ltd</p>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Your Account Number</label>
-                    <Input
-                      type="text"
-                      placeholder="Enter your account number"
-                      maxLength={10}
-                      required
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button type="submit" onClick={() => setPaymentMethod("bank_transfer")} className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
-                    {loading ? 'Processing...' : 'Confirm Transfer'}
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="ussd">
-              <Card>
-                <CardHeader>
-                  <CardTitle>USSD Payment</CardTitle>
-                  <CardDescription>Pay using USSD code</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-                    <p className="text-lg font-bold mb-2">Dial *123*456*{amount || '0000'}#</p>
-                    <p className="text-sm text-gray-500">Dial the code above on your phone to complete payment</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Your Phone Number</label>
-                    <Input
-                      type="text"
-                      placeholder="Enter your phone number"
-                      maxLength={11}
-                      required
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button type="submit" onClick={() => setPaymentMethod("ussd")} className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
-                    {loading ? 'Processing...' : 'Confirm Payment'}
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </form>
+        <Card className="mb-6 border-emerald-200 bg-emerald-50/40">
+          <CardHeader>
+            <CardTitle>Pay with Paystack</CardTitle>
+            <CardDescription>
+              Card, bank transfer, or USSD — securely handled by Paystack.
+              {!PAYSTACK_LIVE && (
+                <span className="block mt-1 text-xs text-amber-600 font-medium">
+                  Test mode: instantly credits your wallet while live Paystack keys are being set up.
+                </span>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button
+              type="button"
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              disabled={isPaystackLoading}
+              onClick={handlePaystackFund}
+            >
+              {isPaystackLoading ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : (
+                <Wallet className="w-4 h-4 mr-1.5" />
+              )}
+              Continue with Paystack
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     </DashboardLayout>
   );

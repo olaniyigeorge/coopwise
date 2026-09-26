@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Home, Users, MessageSquare, HelpCircle, Settings, LogOut, Sparkles, Trophy, Wallet, X } from 'lucide-react'
+import { Home, Users, MessageSquare, HelpCircle, Settings, LogOut, Sparkles, Trophy, Wallet, Banknote, X } from 'lucide-react'
 import { toast } from 'sonner'
 import useAuthStore from '@/stores/auth-store'
 import useNotificationStore from '@/stores/notification-store'
@@ -34,7 +34,8 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const navItems: NavItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'My Group', href: '/dashboard/my-group', icon: Users },
-    { name: 'Payouts', href: '/dashboard/payouts', icon: Wallet },
+    { name: 'Wallet', href: '/dashboard/wallet/fund', icon: Wallet },
+    { name: 'Payouts', href: '/dashboard/payouts', icon: Banknote },
     { name: 'Leaderboard', href: '/dashboard/leaderboard', icon: Trophy },
     { name: 'AI Assistant', href: '/dashboard/ai-chat', icon: Sparkles },
     {

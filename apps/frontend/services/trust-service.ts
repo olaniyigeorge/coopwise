@@ -1,4 +1,4 @@
-import { DashboardData, Activity } from '@/services/dashboard-service'
+import { DashboardData, ActivityDetail, ActivityType } from '@/services/dashboard-service'
 
 export type TrustTier = 'FOUNDATIONAL' | 'ESTABLISHED' | 'ANCHOR' | 'EXEMPLAR'
 
@@ -73,7 +73,7 @@ export function computeOnTimeStreak(
 export function computeTrustStanding(inputs: {
   userId: string
   createdAt?: string
-  activities: Activity[]
+  activities: ActivityDetail[]
   activeCoopCount: number
   yourSavings: number
   targetSavings: number
@@ -83,7 +83,7 @@ export function computeTrustStanding(inputs: {
 
   // Signal 1: Consistency (User's contribution activity count)
   const userContributions = activities.filter(
-    (act) => act.user_id === userId && (act.activity_type === 'MADE_CONTRIBUTION' || act.type === 'MADE_CONTRIBUTION')
+    (act) => act.user_id === userId && act.type === ActivityType.MADE_CONTRIBUTION
   )
   const contribCount = userContributions.length
   // Max 35 points for consistency

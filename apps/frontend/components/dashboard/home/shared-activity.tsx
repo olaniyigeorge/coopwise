@@ -2,11 +2,11 @@
 
 import React from 'react'
 import Image from 'next/image'
-import { Activity } from '@/services/dashboard-service'
+import { ActivityDetail } from '@/services/dashboard-service'
 import { getActivityDescription } from '@/lib/utils'
 
 interface SharedActivityProps {
-  activities: Activity[]
+  activities: ActivityDetail[]
   currentUserId?: string
 }
 

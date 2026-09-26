@@ -24,9 +24,15 @@ export const getActivityDescription = (
   activity: ActivityDetail,
   isOwnActivity = false
 ): string => {
-  const { type, user_id, amount, entity_id } = activity
+  // The backend already writes a real, human-readable description (with the
+  // actual member's name) at log time — use it instead of reconstructing a
+  // generic one from user_id, which only has the raw UUID to work with.
+  if (activity.description) {
+    return activity.description
+  }
 
-  const actor = isOwnActivity ? 'You' : `User (${user_id})`
+  const { type, amount, entity_id } = activity
+  const actor = isOwnActivity ? 'You' : 'A member'
 
   switch (type) {
     case ActivityType.CREATED_GROUP:
@@ -44,7 +50,7 @@ export const getActivityDescription = (
     case ActivityType.RECEIVED_PAYOUT:
       return `${actor} received a payout of ${amount ? formatCurrency(amount) : 'an amount'} from the group.`
     default:
-      return activity.description || `${actor} performed an activity.`
+      return `${actor} performed an activity.`
   }
 }
 

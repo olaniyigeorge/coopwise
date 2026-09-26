@@ -7,18 +7,21 @@ from src.domains.cooperatives.models.enums import ContributionFrequency
 from fastapi import HTTPException, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from src.domains.contributions.schemas import ContributionCreate, ContributionDetail
 from src.domains.memberships.service import CooperativeMembershipService
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.contributions.models import Contribution, ContributionStatus
 
 from src.shared.utils.logger import logger
-from src.infra.blockchain.contract_service import contract_service
-from src.domains.wallets.service import WalletService
+from src.domains.wallets.service import WalletService, MOCK_LOCAL_TO_STABLE_RATE
 from src.domains.cooperatives.uow import UnitOfWork
 from src.domains.cooperatives.services.rule_services import FinancialRuleService
 from src.domains.cooperatives.exceptions import RuleNotFoundError
+from src.domains.cooperatives.models.goals import CoopGoal
+from src.domains.analytics.service import ActivityService
+from src.domains.analytics.schemas import ActivityCreate
+from src.domains.analytics.models import ActivityType
 
 
 class ContributionActionType(Enum):
@@ -49,20 +52,18 @@ class ContributionService:
         contribution_data: ContributionCreate,
         user: AuthenticatedUser,
         db: AsyncSession,
-        group_address: str = None,
-        network: str = "flow",
     ) -> ContributionDetail:
         """
         Process a manual contribution initiated by the user.
 
-        Flow:
-        1. Validate membership in group
+        Web2 flow (no blockchain — see project notes: Flow/Crossmint wallet
+        integration is deliberately deferred until after the Web2 path ships):
+        1. Validate membership in group (and goal, if one is targeted)
         2. Check sufficient wallet balance
         3. Lock funds in wallet (prevent double-spend)
         4. Create contribution record (initiated status)
-        5. Submit to smart contract
-        6. Mark as completed or failed based on contract response
-        7. Handle rollback on failure
+        5. Finalize the wallet debit and mark completed
+        6. Handle rollback on failure
 
         Security checks:
         - User must be active group member
@@ -104,6 +105,15 @@ class ContributionService:
                 detail="Group is not active.",
             )
 
+        # If a goal is targeted, it must belong to this group
+        if contribution_data.goal_id:
+            goal = await db.get(CoopGoal, contribution_data.goal_id)
+            if not goal or goal.cooperative_id != contribution_data.group_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Goal not found in this cooperative.",
+                )
+
         # Validate amount
         amount = Decimal(str(contribution_data.amount))
         if amount <= 0:
@@ -112,9 +122,15 @@ class ContributionService:
                 detail="Contribution amount must be greater than zero.",
             )
 
+        # wallet.stable_coin_balance is denominated in stable-coin units, not
+        # the contribution's local currency — convert before comparing/locking
+        # (same mock rate deposits use to credit the wallet in the first
+        # place), or a funded wallet still reads as "insufficient" forever.
+        stable_amount = amount * MOCK_LOCAL_TO_STABLE_RATE
+
         # Check wallet balance with buffer for fees (5% buffer)
         wallet_balance = await WalletService.get_effective_balance(user.id, db)
-        required_amount = amount * Decimal("1.05")  # 5% buffer for fees
+        required_amount = stable_amount * Decimal("1.05")  # 5% buffer for fees
         if wallet_balance < required_amount:
             logger.warning(
                 f"Insufficient balance: user={user.id}, required={required_amount}, "
@@ -127,7 +143,7 @@ class ContributionService:
 
         # Lock funds in wallet (prevents double-spend)
         lock_result = await WalletService.lock_for_contribution(
-            user_id=user.id, amount=amount, db=db
+            user_id=user.id, amount=stable_amount, db=db
         )
         if not lock_result.get("success"):
             logger.error(f"Failed to lock funds: user={user.id}, amount={amount}")
@@ -139,6 +155,7 @@ class ContributionService:
         # Create contribution record with initiated status
         contribution = Contribution(
             group_id=contribution_data.group_id,
+            goal_id=contribution_data.goal_id,
             user_id=user.id,
             amount=amount,
             currency=contribution_data.currency or "NGN",
@@ -155,43 +172,15 @@ class ContributionService:
                 f"Contribution created: id={contribution.id}, user={user.id}, amount={amount}"
             )
 
-            # Submit to smart contract
-            contract_result = await contract_service.submit_contribution(
-                group_address=group_address or str(group.id),
-                user_address=str(user.id),  # AuthenticatedUser carries no wallet_address today
-                amount=amount,
-                network=network,
+            # Web2 settlement: funds are already locked from a real wallet
+            # balance above, so finalizing here is the actual money movement
+            # (into the group's contribution pool) — no on-chain step involved.
+            await ContributionService.mark_contribution_success(
+                db=db,
+                contribution_id=contribution.id,
+                action_type=ContributionActionType.MANUAL_SUBMIT,
             )
-
-            if contract_result.get("success"):
-                # Mark as completed with TX hash
-                await ContributionService.mark_contribution_success(
-                    db=db,
-                    contribution_id=contribution.id,
-                    tx_hash=contract_result.get("tx_hash"),
-                    action_type=ContributionActionType.MANUAL_SUBMIT,
-                )
-                logger.info(
-                    f"Contribution completed: id={contribution.id}, tx={contract_result.get('tx_hash')}"
-                )
-            else:
-                # Revert wallet lock and mark as failed
-                await WalletService.release_locked_funds(
-                    user_id=user.id, amount=amount, db=db
-                )
-                await ContributionService.mark_contribution_failed(
-                    db=db,
-                    contribution_id=contribution.id,
-                    reason=contract_result.get("error", "Contract submission failed"),
-                    action_type=ContributionActionType.MANUAL_SUBMIT,
-                )
-                logger.error(
-                    f"Contribution failed: id={contribution.id}, reason={contract_result.get('error')}"
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Failed to submit contribution to blockchain. Funds have been returned.",
-                )
+            logger.info(f"Contribution completed: id={contribution.id}")
 
             # Reload to get updated status
             await db.refresh(contribution)
@@ -207,7 +196,7 @@ class ContributionService:
             # Attempt cleanup
             try:
                 await WalletService.release_locked_funds(
-                    user_id=user.id, amount=amount, db=db
+                    user_id=user.id, amount=stable_amount, db=db
                 )
             except Exception as e:
                 logger.error(f"Failed to cleanup locked funds for user {user.id}")
@@ -218,7 +207,7 @@ class ContributionService:
 
     @staticmethod
     async def process_auto_contribution(
-        group_id: UUID, user: AuthenticatedUser, db: AsyncSession, network: str = "flow"
+        group_id: UUID, user: AuthenticatedUser, db: AsyncSession
     ) -> Optional[ContributionDetail]:
         """
         Process an automated contribution based on group policy.
@@ -226,12 +215,12 @@ class ContributionService:
         Called by scheduled worker (e.g., Celery) for recurring contributions.
         This is the primary time-based contribution mechanism.
 
-        Flow:
+        Web2 flow (no blockchain — see process_manual_contribution):
         1. Validate user is active member
         2. Check if contribution is due (based on frequency)
         3. Verify wallet has sufficient balance
         4. Lock funds
-        5. Submit to contract
+        5. Finalize the wallet debit
         6. Record in database
 
         Returns None if contribution is not yet due or fails gracefully.
@@ -282,24 +271,24 @@ class ContributionService:
                 )
                 return None
 
+            # wallet.stable_coin_balance is stable-coin-denominated — convert
+            # the (local-currency) rule amount before comparing/locking, same
+            # as process_manual_contribution.
+            stable_amount = financial_rule.contribution_amount * MOCK_LOCAL_TO_STABLE_RATE
+
             # Check wallet balance
             wallet_balance = await WalletService.get_effective_balance(user.id, db)
-            if wallet_balance < financial_rule.contribution_amount:
+            if wallet_balance < stable_amount:
                 logger.warning(
                     f"Insufficient balance for auto-contribution: user={user.id}, "
-                    f"required={financial_rule.contribution_amount}, available={wallet_balance}"
+                    f"required={stable_amount}, available={wallet_balance}"
                 )
                 # Don't raise - just skip this user
                 return None
 
-            # Get group's contract address (would be stored in cooperative_group table)
-            group_address = (
-                group.id
-            )  # TODO: Add blockchain_address field to cooperative_group
-
             # Lock funds
             lock_result = await WalletService.lock_for_contribution(
-                user_id=user.id, amount=financial_rule.contribution_amount, db=db
+                user_id=user.id, amount=stable_amount, db=db
             )
             if not lock_result.get("success"):
                 logger.error(
@@ -325,43 +314,18 @@ class ContributionService:
             await db.commit()
             await db.refresh(contribution)
 
-            # Submit to smart contract
-            contract_result = await contract_service.submit_contribution(
-                group_address=str(group_address),
-                user_address=str(user.id),  # AuthenticatedUser carries no wallet_address today
-                amount=financial_rule.contribution_amount,
-                network=network,
+            # Web2 settlement (see process_manual_contribution)
+            await ContributionService.mark_contribution_success(
+                db=db,
+                contribution_id=contribution.id,
+                action_type=ContributionActionType.AUTO_DEBIT,
             )
-
-            if contract_result.get("success"):
-                await ContributionService.mark_contribution_success(
-                    db=db,
-                    contribution_id=contribution.id,
-                    tx_hash=contract_result.get("tx_hash"),
-                    action_type=ContributionActionType.AUTO_DEBIT,
-                )
-                logger.info(
-                    f"Auto-contribution processed: user={user.id}, group={group_id}, "
-                    f"amount={financial_rule.contribution_amount}"
-                )
-                await db.refresh(contribution)
-                return contribution
-            else:
-                # Release locked funds and mark as failed
-                await WalletService.release_locked_funds(
-                    user_id=user.id, amount=financial_rule.contribution_amount, db=db
-                )
-                await ContributionService.mark_contribution_failed(
-                    db=db,
-                    contribution_id=contribution.id,
-                    reason=f"Auto-debit contract error: {contract_result.get('error')}",
-                    action_type=ContributionActionType.AUTO_DEBIT,
-                )
-                logger.error(
-                    f"Auto-contribution failed: user={user.id}, group={group_id}, "
-                    f"error={contract_result.get('error')}"
-                )
-                return None
+            logger.info(
+                f"Auto-contribution processed: user={user.id}, group={group_id}, "
+                f"amount={financial_rule.contribution_amount}"
+            )
+            await db.refresh(contribution)
+            return contribution
 
         except Exception as e:
             logger.error(f"Error in process_auto_contribution: {e}", exc_info=True)
@@ -598,11 +562,25 @@ class ContributionService:
             await db.commit()
             await db.refresh(contribution)
 
-            # Finalize wallet debit
+            # Finalize wallet debit — contribution.amount is local-currency;
+            # what's actually locked/held is stable-coin-denominated (see
+            # process_manual_contribution / process_auto_contribution).
             await WalletService.finalize_contribution_debit(
                 user_id=contribution.user_id,
-                amount=Decimal(str(contribution.amount)),
+                amount=Decimal(str(contribution.amount)) * MOCK_LOCAL_TO_STABLE_RATE,
                 db=db,
+            )
+
+            await ActivityService.log(
+                db,
+                ActivityCreate(
+                    user_id=contribution.user_id,
+                    group_id=contribution.group_id,
+                    type=ActivityType.made_contribution,
+                    description=f"Contributed {contribution.currency} {contribution.amount} to the group",
+                    entity_id=str(contribution.id),
+                    amount=float(contribution.amount),
+                ),
             )
 
             logger.info(
@@ -823,3 +801,39 @@ class ContributionService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Could not fetch contribution summary",
             )
+
+    @staticmethod
+    async def get_goal_progress(db: AsyncSession, goal_id: UUID) -> Dict[str, Any]:
+        """
+        Compute a goal's funding progress from its completed contributions.
+        """
+        goal = await db.get(CoopGoal, goal_id)
+        if not goal:
+            raise HTTPException(status_code=404, detail="Goal not found")
+
+        stmt = select(
+            func.coalesce(func.sum(Contribution.amount), 0),
+            func.count(func.distinct(Contribution.user_id)),
+        ).where(
+            Contribution.goal_id == goal_id,
+            Contribution.status == ContributionStatus.completed,
+        )
+        result = await db.execute(stmt)
+        contributed_amount, contributor_count = result.one()
+        contributed_amount = float(contributed_amount)
+
+        target_amount = float(goal.target_amount) if goal.target_amount else None
+        percent_complete = (
+            round(min(contributed_amount / target_amount, 1.0) * 100, 1)
+            if target_amount
+            else None
+        )
+
+        return {
+            "goal_id": goal_id,
+            "target_amount": target_amount,
+            "currency": goal.currency,
+            "contributed_amount": contributed_amount,
+            "percent_complete": percent_complete,
+            "contributor_count": contributor_count,
+        }
