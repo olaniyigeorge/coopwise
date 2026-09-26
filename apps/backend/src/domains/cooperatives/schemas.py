@@ -245,11 +245,21 @@ class GoalCategoryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MemberUserRead(BaseModel):
+    id: UUID
+    full_name: str
+    username: str
+    profile_picture_url: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class GroupMemberRead(BaseModel):
     id: UUID
     user_id: UUID
     group_id: UUID
     role: str | None = None
     status: str | None = None
+    user: MemberUserRead | None = None
 
     model_config = ConfigDict(from_attributes=True)

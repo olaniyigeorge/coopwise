@@ -17,8 +17,6 @@ FONT_HEADING = "'Poppins', Arial, sans-serif"
 FONT_BODY = "'Inter', Arial, sans-serif"
 FONT_MONO = "'IBM Plex Mono', 'Courier New', monospace"
 
-# TODO: replace with a hosted PNG (not the relative /static/ path — email
-# clients can't resolve that). e.g. your Vercel-deployed frontend's public asset.
 LOGO_URL = "https://olaniyigeorge.com/assets/images/coopwise-logo.png"
 
 # Diagonal hairline stripe + gold glow, matching the docs header. Renders in

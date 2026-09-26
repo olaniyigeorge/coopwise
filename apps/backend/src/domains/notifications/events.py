@@ -1,6 +1,8 @@
-"""Notification domain event definitions."""
+"""Notification domain event definitions.
 
-# TODO: implement event payloads for notification lifecycle, retry events, and audit trail.
+Unused stub: no publisher/subscriber wiring exists yet for notification
+lifecycle/retry/audit events. Left unimplemented until that's designed.
+"""
 
 
 class NotificationEvent:

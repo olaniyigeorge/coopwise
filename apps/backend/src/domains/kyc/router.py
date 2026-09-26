@@ -255,7 +255,8 @@ async def _read_validated(
     return content
 
 
-# TODO: malware/AV scan before files his object storage
+# Deferred: no malware/AV scanning provider (e.g. ClamAV) is provisioned yet —
+# uploads go straight to object storage after the type/size checks above.
 @router.post(
     "/identity",
     status_code=status.HTTP_202_ACCEPTED,

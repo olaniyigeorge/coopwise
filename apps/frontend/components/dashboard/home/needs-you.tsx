@@ -96,7 +96,7 @@ export default function NeedsYou({
               <p className="text-brand-ink/40">Collective voting and proposals.</p>
             </div>
           </div>
-          <span className="text-[10px] text-brand-ink/40 italic">// TODO(backend): coming soon</span>
+          <span className="text-[10px] text-brand-ink/40 italic">Coming soon</span>
         </div>
       </div>
     </div>

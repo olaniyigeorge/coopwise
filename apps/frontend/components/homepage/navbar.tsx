@@ -140,9 +140,9 @@ export default function   Navbar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/profile" className="cursor-pointer py-2.5">
+                    <Link href="/dashboard/account" className="cursor-pointer py-2.5">
                       <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
+                      <span>Account</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

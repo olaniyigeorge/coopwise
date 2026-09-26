@@ -352,14 +352,19 @@ export interface OwnershipShareOverallocatedErrorBody {
 // Members (needed for Step 8 beneficiary picker + Step 9 share rows)
 // ---------------------------------------------------------------------------
 
-// Matches GroupMemberRead — the backend has no joined display_name/avatar
-// on this endpoint, only IDs. Confirmed working: GET /{id}/members.
+// Matches GroupMemberRead. Confirmed working: GET /{id}/members.
 export interface CooperativeMember {
   id: string; // membership id
   user_id: string;
   group_id: string;
   role: string | null;
   status: string | null;
+  user: {
+    id: string;
+    full_name: string;
+    username: string;
+    profile_picture_url: string | null;
+  } | null;
 }
 
 // ---------------------------------------------------------------------------

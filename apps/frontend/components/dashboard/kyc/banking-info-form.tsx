@@ -18,8 +18,8 @@ export default function BankingInfoForm({ value, onChange }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* TODO: swap for a bank-select populated from your bank-list/provider endpoint,
-          then auto-resolve account_name via the provider's account-lookup call. */}
+      {/* Deferred: needs a bank-list/account-lookup provider (e.g. Paystack) and its API key
+          before this can become a bank-select with auto-resolved account_name. Manual entry for now. */}
       <div>
         <label className={labelClass}>Bank name</label>
         <input

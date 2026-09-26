@@ -44,7 +44,7 @@ export default function TrustStandingCard({ standing }: TrustStandingCardProps) 
                 Score: <span className="font-bold text-brand-gold">{standing.score}/100</span>
                 {!standing.onTimeTracked && (
                   <span className="ml-2 text-white/40 italic">
-                    (// TODO(backend): tracking on-time as rounds complete)
+                    (on-time tracking starts once your first round completes)
                   </span>
                 )}
               </p>

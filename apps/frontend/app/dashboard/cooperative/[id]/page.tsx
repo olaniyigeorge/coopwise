@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, AnimatePresence, Variants } from 'framer-motion'
 import { toast } from 'sonner'
 import {
@@ -464,16 +465,28 @@ export default function CooperativeDetailPage() {
                   <p className="text-sm text-neutral-500">No members yet.</p>
                 ) : (
                   <div className="space-y-2">
-                    {members.map((member) => (
+                    {members.map((member) => {
+                      const displayName = member.user?.full_name || member.user?.username || 'Unknown member'
+                      const initial = displayName.charAt(0).toUpperCase() || '?'
+                      return (
                       <div
                         key={member.id}
                         className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-100"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center">
-                            {member.role === 'admin' ? 'A' : 'M'}
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center shrink-0 overflow-hidden relative">
+                            {member.user?.profile_picture_url ? (
+                              <Image
+                                src={member.user.profile_picture_url}
+                                alt={displayName}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              initial
+                            )}
                           </div>
-                          <p className="text-xs text-neutral-500 font-mono">{member.user_id}</p>
+                          <p className="text-sm font-medium text-neutral-900 truncate">{displayName}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           {member.role && (
@@ -488,7 +501,8 @@ export default function CooperativeDetailPage() {
                           )}
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </motion.div>

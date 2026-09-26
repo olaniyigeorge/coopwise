@@ -26,6 +26,8 @@ import {
   Shield,
   Zap
 } from 'lucide-react'
+import { toast } from 'sonner'
+import SupportService from '@/services/support-service'
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -125,14 +127,16 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
-    // Simulate API call
-    // TODO call -> /api/v1/support/write-us
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    setIsSubmitting(false)
-    setSubmitted(true)
-    setFormData({ full_name: '', email: '', subject: '', message: '' })
+
+    try {
+      await SupportService.writeUs(formData)
+      setSubmitted(true)
+      setFormData({ full_name: '', email: '', subject: '', message: '' })
+    } catch {
+      toast.error('Failed to send your message. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (

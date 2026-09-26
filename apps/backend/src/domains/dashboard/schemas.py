@@ -14,9 +14,7 @@ class Summary(BaseModel):
         str
     ]  # Next upcoming contribution date across all groups
     next_payout: Optional[str]  # Next payout date across all groups
-    # TODO Change this to Wallet balance
-    # payout_number: Optional[int]  # User's next payout position across groups
-    wallet: Optional[WalletDetail]
+    wallet: Optional[WalletDetail]  # includes stable_coin_balance — the wallet balance
 
 
 class GroupGoal(BaseModel):

@@ -57,13 +57,14 @@ export const SOURCE_OF_FUNDS_OPTIONS: { value: SourceOfFunds; label: string }[] 
   { value: 'other', label: 'Other' },
 ]
 
-// TODO: replace with the real IncomeRange enum values from users.models
+// Matches IncomeRange in apps/backend/src/domains/users/models.py
 export const MONTHLY_INCOME_RANGE_OPTIONS = [
-  { value: 'under_50000', label: 'Under ₦50,000' },
-  { value: '50000_150000', label: '₦50,000 – ₦150,000' },
-  { value: '150000_400000', label: '₦150,000 – ₦400,000' },
-  { value: '400000_1000000', label: '₦400,000 – ₦1,000,000' },
-  { value: 'over_1000000', label: 'Over ₦1,000,000' },
+  { value: 'below_50k', label: 'Below ₦50,000' },
+  { value: 'range_50k_100k', label: '₦50,000 – ₦100,000' },
+  { value: 'range_100k_200k', label: '₦100,000 – ₦200,000' },
+  { value: 'range_200k_350k', label: '₦200,000 – ₦350,000' },
+  { value: 'range_350k_500k', label: '₦350,000 – ₦500,000' },
+  { value: 'above_500k', label: 'Above ₦500,000' },
 ]
 
 export const INCOME_CURRENCY_OPTIONS = ['NGN', 'KES', 'GHS', 'ZAR', 'USD']

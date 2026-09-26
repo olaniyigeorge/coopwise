@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/layout';
 import { Button } from '@/components/ui/button';
@@ -8,15 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
-import { 
-  CreditCard, 
-  Banknote, 
-  Wallet, 
+import {
+  CreditCard,
+  Banknote,
+  Wallet,
   ArrowRight,
   CheckCircle
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils';
 import WalletService from '@/services/wallet-service';
+import { getDashboardData, LocalCurrency } from '@/services/dashboard-service';
 
 export default function FundWallet() {
   const router = useRouter();
@@ -25,7 +26,15 @@ export default function FundWallet() {
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
   const [loading, setLoading] = useState(false);
   const [paymentSuccessful, setPaymentSuccessful] = useState(false);
-  
+  const [localCurrency, setLocalCurrency] = useState<LocalCurrency>(LocalCurrency.NGN);
+
+  useEffect(() => {
+    getDashboardData().then((data) => {
+      const currency = data?.summary?.wallet?.local_currency;
+      if (currency) setLocalCurrency(currency);
+    });
+  }, []);
+
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only allow numbers
     const value = e.target.value.replace(/[^0-9]/g, '');
@@ -72,7 +81,7 @@ export default function FundWallet() {
     const depData = {
       'payment_gateway': paymentMethod,
       'local_amount': Number(amount),
-      'currency': "NGN" // TODO Get user's local_currency
+      'currency': localCurrency
     }
 
     try {

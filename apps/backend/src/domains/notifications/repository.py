@@ -1,6 +1,8 @@
-"""Notification domain repository layer."""
+"""Notification domain repository layer.
 
-# TODO: move notification-specific database access logic into this repository.
+Unused stub: NotificationService (service.py) does its DB access directly
+today. Left unimplemented pending a decision to move that access here.
+"""
 
 
 class NotificationRepository:

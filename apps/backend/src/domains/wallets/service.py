@@ -100,7 +100,7 @@ class WalletService:
         db.add(ledger)
         await db.commit()
 
-        # 5. TODO (Invalidate or update cached wallet if previously cached)
+        # 5. Invalidate/refresh the cached wallet
         wallet_data = WalletDetail.model_validate(wallet)
         logger.info("\n updating cache...\n")
         await update_cache(
