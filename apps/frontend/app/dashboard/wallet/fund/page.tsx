@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/layout';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ import { getApiErrorDetail } from '@/lib/api-error';
 // hosted checkout instead of instantly mock-crediting the wallet.
 const PAYSTACK_LIVE = process.env.NEXT_PUBLIC_PAYSTACK_LIVE === 'true';
 
-export default function FundWallet() {
+function FundWalletContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -203,5 +203,16 @@ export default function FundWallet() {
         </Card>
       </div>
     </DashboardLayout>
+  );
+}
+
+// useSearchParams() (used above to read Paystack's ?status= on return) makes this
+// page client-rendered, and Next requires such pages to sit inside a Suspense
+// boundary or the production build fails while prerendering.
+export default function FundWallet() {
+  return (
+    <Suspense fallback={null}>
+      <FundWalletContent />
+    </Suspense>
   );
 }
