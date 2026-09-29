@@ -55,6 +55,40 @@ class CooperativeRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class CooperativeOrganizer(BaseModel):
+    id: UUID
+    username: str
+    full_name: str
+    profile_picture_url: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CooperativePreview(BaseModel):
+    """
+    What someone holding an invite code may see before joining. Deliberately
+    limited to identity + the terms they would be agreeing to + a headcount:
+    no member list and no money totals.
+    """
+
+    id: UUID
+    name: str
+    description: str | None = None
+    cover_image: str | None = None
+    status: CooperativeStatus
+    coop_model: CooperativeModel
+    created_at: datetime
+    organizer: CooperativeOrganizer | None = None
+    member_count: int = 0
+    max_members: int | None = None
+    requires_approval: bool = False
+    # How a joiner is admitted: "automatic" | "admin_approval" | "member_vote"
+    admission: str = "automatic"
+    contribution_amount: float | None = None
+    contribution_currency: str | None = None
+    contribution_frequency: str | None = None
+
+
 # --- Rules ---
 
 

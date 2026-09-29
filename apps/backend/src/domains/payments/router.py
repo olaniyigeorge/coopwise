@@ -1,5 +1,3 @@
-import hmac
-import hashlib
 from datetime import datetime
 from uuid import UUID
 from fastapi import APIRouter, Request, Header, HTTPException, Depends
@@ -9,6 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from src.shared.utils.logger import logger
+from src.shared.security.webhook_signing import (
+    is_paystack_ip,
+    verify_paystack_signature,
+)
 from src.infra.cache.redis_client import get_redis
 from src.api.middlewares.dependencies import get_current_user
 from src.domains.auth.schemas import AuthenticatedUser
@@ -25,9 +27,6 @@ from src.domains.payments.service import PaymentService, PayoutService, PayoutEr
 from src.infra.db.dependencies import get_async_db_session
 
 router = APIRouter(prefix="/api/v1/payments", tags=["Payments & Integrations"])
-
-PAYSTACK_WHITELIST = ["52.31.139.75", "52.49.173.169", "52.214.14.220"]
-
 
 @router.get("/deposit-with-paystack", summary="Verify Paystack Payment")
 async def deposit_with_paystack(
@@ -56,13 +55,12 @@ async def paystack_webhook(
     body = await request.body()
 
     # Step 1: Verify source IP and signature
-    if x_forwarded_for not in PAYSTACK_WHITELIST:
+    if not is_paystack_ip(x_forwarded_for):
         raise HTTPException(status_code=403, detail="Invalid IP address")
 
-    secret = config.PAYSTACK_SECRET_KEY.encode("utf-8")
-    expected_signature = hmac.new(secret, body, hashlib.sha512).hexdigest()
-
-    if x_paystack_signature != expected_signature:
+    if not verify_paystack_signature(
+        body, x_paystack_signature, config.PAYSTACK_SECRET_KEY
+    ):
         raise HTTPException(status_code=403, detail="Invalid signature")
 
     # Step 2: Deserialize JSON payload
@@ -71,7 +69,6 @@ async def paystack_webhook(
     data = payload.get("data", {})
     reference = data.get("reference")
     status_ = data.get("status")
-    amount = data.get("amount") / 100  # Convert back to naira
 
     if event in ("transfer.success", "transfer.failed", "transfer.reversed"):
         payout_record = await PayoutService.mark_payout_from_webhook(
@@ -86,6 +83,14 @@ async def paystack_webhook(
 
     if event != "charge.success" or status_ != "success":
         return {"message": "Ignored non-success event."}
+
+    # Direct Paystack contribution (no wallet ledger): settle by reference
+    direct = await ContributionService.get_contribution_by_reference(db, reference)
+    if direct:
+        await ContributionService.settle_paystack_contribution(
+            db, direct, int(data.get("amount") or 0)
+        )
+        return {"message": "Contribution payment processed."}
 
     try:
         # Step 3: Fetch the related ledger entry by reference
@@ -132,15 +137,28 @@ async def paystack_callback(
 
     verification = await PaymentService.verify_paystack_transaction(reference)
 
+    direct = await ContributionService.get_contribution_by_reference(db, reference)
+    if direct:
+        paid = verification["data"]["status"] == "success"
+        if paid:
+            paid = await ContributionService.settle_paystack_contribution(
+                db, direct, int(verification["data"].get("amount") or 0)
+            ) or direct.status.value == "completed"
+        outcome = "success" if paid else "failed"
+        return RedirectResponse(
+            url=f"{config.CLIENT_DOMAIN}/payment/return?kind=contribution"
+            f"&group={direct.group_id}&status={outcome}&ref={reference}"
+        )
+
     if not verification["status"] or verification["data"]["status"] != "success":
         return RedirectResponse(
-            url=f"{config.CLIENT_DOMAIN}/dashboard/wallet/fund?status=failed&ref={reference}"
+            url=f"{config.CLIENT_DOMAIN}/payment/return?kind=wallet&status=failed&ref={reference}"
         )
 
     await WalletService.finalize_deposit(reference, db, redis)
 
     return RedirectResponse(
-        url=f"{config.CLIENT_DOMAIN}/dashboard/wallet/fund?status=success&ref={reference}"
+        url=f"{config.CLIENT_DOMAIN}/payment/return?kind=wallet&status=success&ref={reference}"
     )
 
 

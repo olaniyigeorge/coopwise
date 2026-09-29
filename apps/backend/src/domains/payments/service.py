@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 from src.domains.auth.schemas import AuthenticatedUser
 
 from src.domains.wallets.schemas import WalletLedgerCreate
-from src.domains.wallets.service import WalletService
+from src.domains.wallets.service import MOCK_LOCAL_TO_STABLE_RATE, WalletService
 from src.domains.wallets.models import LocalCurrency
 from config import AppConfig as config
 from src.domains.payments.schemas import ChargeResponse, PaystackPayload
@@ -29,15 +29,25 @@ from src.domains.kyc.models import KYCVerification
 from src.infra.security.field_encryptor import FieldEncryptor
 
 
-COOPWISE_USD_NGN_RATE = 1 / 1500
+# One rate for the whole wallet: deposits, withdrawals and contributions must
+# all convert with the same constant or balances drift on a round trip.
+COOPWISE_USD_NGN_RATE = MOCK_LOCAL_TO_STABLE_RATE
 
 
 class PaymentService:
 
     @staticmethod
-    async def init_pay_with_paystack(payload: PaystackPayload) -> ChargeResponse | None:
+    async def init_pay_with_paystack(
+        payload: PaystackPayload,
+        channels: Optional[List[str]] = ("bank_transfer",),
+        extra_metadata: Optional[Dict[str, Any]] = None,
+    ) -> ChargeResponse | None:
         """
-        Make a payment through paystack
+        Make a payment through paystack.
+
+        `channels` defaults to bank transfer only (wallet deposits). Pass None
+        to let Paystack offer every channel enabled on the merchant dashboard
+        (card, bank, USSD, ...), e.g. for direct contribution payments.
         """
         # Simulate a payment request to Paystack
         logger.info(f"\n\n\n\nProcessing payment with Paystack: {payload}\n\n")
@@ -68,14 +78,16 @@ class PaymentService:
                 "amount": payload.amount,
                 "reference": payload.tx_ref,
                 "callback_url": f"{config.DOMAIN}/api/v1/payments/paystack/callback",
-                "channels": ["bank_transfer"],
                 "metadata": {
                     "currency": f"{payload.currency}",
                     "sideNote": getattr(
                         payload.meta, "note", "Payment on Coopwise through API v1"
                     ),
+                    **(extra_metadata or {}),
                 },
             }
+            if channels:
+                data["channels"] = list(channels)
             headers = {
                 "accept": "application/json",
                 "Authorization": f"Bearer {config.PAYSTACK_SECRET_KEY}",  # FLWSECK_TEST-SANDBOXDEMOKEY-X

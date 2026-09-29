@@ -11,7 +11,7 @@ from src.shared.utils.logger import logger
 
 #!/usr/bin/env python3
 """
-Start script for Revela Backend Services
+Start script for Coopwise Backend Services
 Memory-optimized for 512MB Render instances with stdout logging
 """
 

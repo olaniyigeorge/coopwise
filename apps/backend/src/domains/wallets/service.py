@@ -21,6 +21,7 @@ from src.domains.auth.schemas import AuthenticatedUser
 from fastapi import HTTPException
 from decimal import Decimal
 from src.shared.utils.logger import logger
+from src.shared.money import MOCK_LOCAL_TO_STABLE_RATE, to_kobo, to_micro
 from uuid import UUID
 from redis.asyncio import Redis
 from src.infra.cache.redis_client import get_cache, update_cache
@@ -36,13 +37,8 @@ def _internal_ledger_reference(kind: str) -> str:
     return f"{kind}-{secrets.token_hex(12)}"
 
 
-# Mock rate: 1 stable-coin unit == 1600 local-currency units. Deliberately
-# hardcoded for now (see fetch_exchange_rate TODOs) rather than wired to
-# FXService — kept as one shared constant so every local-currency amount
-# compared against stable_coin_balance (deposits, withdrawals, and
-# contributions/service.py's balance check) uses the same conversion and
-# stays in the same unit space.
-MOCK_LOCAL_TO_STABLE_RATE = Decimal(1) / Decimal(1600)
+# The mock local->stable rate is defined once in src.shared.money (re-exported
+# here because other modules import it from this one).
 
 
 class WalletService:
@@ -90,8 +86,9 @@ class WalletService:
 
         logger.info(f"\n\n\n Stable amount settled into wallet {stable_amt} \n\n\n")
 
-        # 3. Credit the wallet
-        wallet.stable_coin_balance += stable_amt
+        # 3. Credit the wallet (rounded once, into whole micro-units)
+        stable_micro = to_micro(stable_amt)
+        wallet.stable_coin_balance_micro += stable_micro
         await db.commit()
         await db.refresh(wallet)
 
@@ -100,8 +97,8 @@ class WalletService:
             wallet_id=wallet.id,
             reference=_internal_ledger_reference("deposit"),
             type=LedgerType.deposit,
-            stable_amount=stable_amt,
-            local_amount=Decimal(data.local_amount),
+            stable_amount_micro=stable_micro,
+            local_amount_minor=to_kobo(data.local_amount),
             local_currency=data.currency,
             exchange_rate=Decimal(rate),
         )
@@ -151,15 +148,15 @@ class WalletService:
             )  # Match the 20 - 50 market votality suggested by Accurue Cashramp
 
         # 3. Convert local amount → stable coin
-        stable_amt = Decimal(data.local_amount) * rate
+        stable_micro = to_micro(Decimal(data.local_amount) * rate)
 
-        if stable_amt > wallet.stable_coin_balance:
+        if stable_micro > wallet.stable_coin_balance_micro:
             raise HTTPException(
                 status_code=400, detail="Insufficient stable coin balance"
             )
 
         # 4. Debit balance
-        wallet.stable_coin_balance -= stable_amt
+        wallet.stable_coin_balance_micro -= stable_micro
         await db.commit()
         await db.refresh(wallet)
 
@@ -168,8 +165,8 @@ class WalletService:
             wallet_id=wallet.id,
             reference=_internal_ledger_reference("withdrawal"),
             type=LedgerType.withdrawal,
-            stable_amount=stable_amt,
-            local_amount=Decimal(data.local_amount),
+            stable_amount_micro=stable_micro,
+            local_amount_minor=to_kobo(data.local_amount),
             local_currency=wallet.local_currency,
             exchange_rate=rate,
         )
@@ -202,14 +199,15 @@ class WalletService:
             if not wallet:
                 return {"success": False, "error": "Wallet not found"}
 
-            if wallet.stable_coin_balance < amount:
+            amount_micro = to_micro(amount)
+            if wallet.stable_coin_balance_micro < amount_micro:
                 return {"success": False, "error": "Insufficient balance"}
 
             # Lock the funds
-            wallet.stable_coin_balance -= amount
-            wallet.stable_coin_locked = (
-                wallet.stable_coin_locked or Decimal(0)
-            ) + amount
+            wallet.stable_coin_balance_micro -= amount_micro
+            wallet.stable_coin_locked_micro = (
+                wallet.stable_coin_locked_micro or 0
+            ) + amount_micro
 
             await db.commit()
             await db.refresh(wallet)
@@ -219,8 +217,8 @@ class WalletService:
                 wallet_id=wallet.id,
                 reference=_internal_ledger_reference("lock"),
                 type=LedgerType.debit_locked,
-                stable_amount=-amount,  # Negative for debit
-                local_amount=Decimal(0),  # Not applicable for internal transfer
+                stable_amount_micro=-amount_micro,  # Negative for debit
+                local_amount_minor=0,  # Not applicable for internal transfer
                 local_currency=wallet.local_currency,
                 exchange_rate=Decimal(1),
                 note="Funds locked for contribution",
@@ -252,11 +250,12 @@ class WalletService:
             if not wallet:
                 return {"success": False, "error": "Wallet not found"}
 
-            if (wallet.stable_coin_locked or Decimal(0)) < amount:
+            amount_micro = to_micro(amount)
+            if (wallet.stable_coin_locked_micro or 0) < amount_micro:
                 return {"success": False, "error": "Insufficient locked funds"}
 
             # Remove from locked (funds are now in contribution pool)
-            wallet.stable_coin_locked -= amount
+            wallet.stable_coin_locked_micro -= amount_micro
 
             await db.commit()
             await db.refresh(wallet)
@@ -266,8 +265,8 @@ class WalletService:
                 wallet_id=wallet.id,
                 reference=_internal_ledger_reference("finalize"),
                 type=LedgerType.debit_finalize,
-                stable_amount=-amount,
-                local_amount=Decimal(0),
+                stable_amount_micro=-amount_micro,
+                local_amount_minor=0,
                 local_currency=wallet.local_currency,
                 exchange_rate=Decimal(1),
                 note="Contribution finalized - funds moved to group pool",
@@ -299,15 +298,16 @@ class WalletService:
             if not wallet:
                 return {"success": False, "error": "Wallet not found"}
 
-            if (wallet.stable_coin_locked or Decimal(0)) < amount:
+            amount_micro = to_micro(amount)
+            if (wallet.stable_coin_locked_micro or 0) < amount_micro:
                 return {
                     "success": False,
                     "error": "Insufficient locked funds to release",
                 }
 
             # Move back to available balance
-            wallet.stable_coin_locked -= amount
-            wallet.stable_coin_balance += amount
+            wallet.stable_coin_locked_micro -= amount_micro
+            wallet.stable_coin_balance_micro += amount_micro
 
             await db.commit()
             await db.refresh(wallet)
@@ -317,8 +317,8 @@ class WalletService:
                 wallet_id=wallet.id,
                 reference=_internal_ledger_reference("release"),
                 type=LedgerType.debit_revert,
-                stable_amount=amount,  # Positive for credit back
-                local_amount=Decimal(0),
+                stable_amount_micro=amount_micro,  # Positive for credit back
+                local_amount_minor=0,
                 local_currency=wallet.local_currency,
                 exchange_rate=Decimal(1),
                 note="Locked funds released due to failed contribution",
@@ -446,8 +446,8 @@ class WalletService:
             wallet_id=ledger_data.wallet_id,
             type=ledger_data.type,
             reference=ledger_data.reference,
-            stable_amount=ledger_data.stable_amount,
-            local_amount=ledger_data.local_amount,
+            stable_amount_micro=to_micro(ledger_data.stable_amount),
+            local_amount_minor=to_kobo(ledger_data.local_amount),
             local_currency=ledger_data.local_currency,
             exchange_rate=ledger_data.exchange_rate,
             status=ledger_data.status or LedgerStatus.initiated,
@@ -476,20 +476,6 @@ class WalletService:
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def deposit_by_reference(reference: str, db: AsyncSession, redis: Redis):
-        # Fetch the ledger
-        ledger = await WalletService.get_wallet_ledger_by_reference(reference, db)
-        if not ledger:
-            raise HTTPException(status_code=404, detail="Transaction ledger not found.")
-
-        # Fetch wallet and update balance
-        wallet = await WalletService.get_wallet(ledger.wallet_id, db, redis)
-        wallet.balance += ledger.stable_amount
-        await db.commit()
-
-        return wallet
-
-    @staticmethod
     async def settle_payment_ledger_into_wallet(
         ledger_id: str, db: AsyncSession, redis: Redis
     ):
@@ -508,7 +494,7 @@ class WalletService:
         if not wallet:
             raise HTTPException(status_code=404, detail="Wallet not found.")
 
-        wallet.stable_coin_balance += mark_ledger_record.stable_amount
+        wallet.stable_coin_balance_micro += mark_ledger_record.stable_amount_micro
         db.add(wallet)
         await db.commit()
         await db.refresh(wallet)

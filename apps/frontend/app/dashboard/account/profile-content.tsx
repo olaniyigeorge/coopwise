@@ -1,7 +1,7 @@
 "use client"
 
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { useState, useEffect, useRef } from 'react'
-import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -237,20 +237,12 @@ export default function ProfileContent() {
         <CardContent className="space-y-4">
           {/* Identity Row */}
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg shrink-0 overflow-hidden relative">
-              {profile?.profile_picture_url ? (
-                <Image
-                    src={profile.profile_picture_url}
-                    alt={profile.full_name || 'Profile picture'}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                profile?.full_name?.charAt(0)?.toUpperCase() ||
-                profile?.email?.charAt(0)?.toUpperCase() ||
-                '?'
-              )}
-            </div>
+            <UserAvatar
+              name={profile?.full_name || profile?.email}
+              src={profile?.profile_picture_url}
+              size="lg"
+              className="shrink-0"
+            />
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-900 truncate">{profile?.full_name || '—'}</p>
               <p className="text-sm text-gray-500 truncate">{profile?.email}</p>

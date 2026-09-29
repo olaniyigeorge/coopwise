@@ -3,8 +3,13 @@ from typing import List
 from redis import Redis
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from src.infra.cache.redis_client import get_cache, update_cache
-from src.domains.analytics.schemas import ActivityCreate, ActivityDetail
+from src.domains.analytics.schemas import (
+    ActivityActor,
+    ActivityCreate,
+    ActivityDetail,
+)
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.analytics.models import ActivityLog
 from datetime import datetime
@@ -90,11 +95,23 @@ class ActivityService:
     ):
         result = await db.execute(
             select(ActivityLog)
+            .options(selectinload(ActivityLog.user))
             .where(ActivityLog.group_id == group_id)
             .order_by(ActivityLog.created_at.desc())
             .limit(limit)
         )
-        return result.scalars().all()
+        return [
+            ActivityDetail.model_validate(activity).model_copy(
+                update={
+                    "actor": (
+                        ActivityActor.model_validate(activity.user)
+                        if activity.user
+                        else None
+                    )
+                }
+            )
+            for activity in result.scalars().all()
+        ]
 
 
 class SummaryService:

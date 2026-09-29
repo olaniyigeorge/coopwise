@@ -18,10 +18,10 @@ import WalletService from '@/services/wallet-service';
 import { getDashboardData, LocalCurrency } from '@/services/dashboard-service';
 import { getApiErrorDetail } from '@/lib/api-error';
 
-// Flip to true once real Paystack keys are configured — this makes
-// "Continue with Paystack" redirect to Paystack's hosted checkout instead
-// of instantly mock-crediting the wallet.
-const PAYSTACK_LIVE = false;
+// Set NEXT_PUBLIC_PAYSTACK_LIVE=true once real Paystack keys are configured
+// on the backend — "Continue with Paystack" then redirects to Paystack's
+// hosted checkout instead of instantly mock-crediting the wallet.
+const PAYSTACK_LIVE = process.env.NEXT_PUBLIC_PAYSTACK_LIVE === 'true';
 
 export default function FundWallet() {
   const router = useRouter();

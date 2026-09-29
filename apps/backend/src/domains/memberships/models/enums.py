@@ -9,6 +9,8 @@ class MembershipRole(str, Enum):
 
 # Enum for Membership status
 class MembershipStatus(str, Enum):
+    PENDING = "pending"  # applied, awaiting the cooperative's admission decision
+    REJECTED = "rejected"  # application declined by admin / member vote
     ACTIVE = "active"
     SUSPENDED = "suspended"
     LEFT = "left"

@@ -13,6 +13,8 @@ from src.domains.memberships.schemas import (
     MembershipCreate,
     MembershipDetails,
 )
+from src.domains.memberships.admission import admit_or_queue
+from src.domains.memberships.models.enums import MembershipStatus
 from src.domains.memberships.models.group_membership import GroupMembership
 from src.shared.utils.logger import logger
 from config import AppConfig as config
@@ -253,9 +255,22 @@ class CooperativeMembershipService:
                     detail="Invite code not found or already accepted.",
                 )
 
-            existing_membership.status = "pending"
-            await db.commit()
-            await db.refresh(existing_membership)
+            current = existing_membership.status
+            if current == MembershipStatus.ACTIVE:
+                # Re-clicking an invite must never downgrade a live member.
+                return existing_membership
+            if current in (MembershipStatus.REMOVED, MembershipStatus.SUSPENDED):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can't rejoin this cooperative with an invite.",
+                )
+
+            if current == MembershipStatus.PENDING:
+                return existing_membership  # already waiting on a decision
+
+            # The cooperative's own rules decide: admitted straight away,
+            # or queued for an admin / a member vote.
+            existing_membership = await admit_or_queue(db, existing_membership)
         except Exception as e:
             logger.error(e)
             raise e

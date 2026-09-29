@@ -281,3 +281,43 @@ async def test_settle_payment_ledger_into_wallet_already_settled_raises_400(db_s
     with pytest.raises(HTTPException) as exc_info:
         await WalletService.settle_payment_ledger_into_wallet(str(ledger.id), db_session, None)
     assert exc_info.value.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_wallet_detail_exposes_exact_balances_never_exponent_form(db_session):
+    """Regression: a zero Numeric(20,8) balance serialised as '0E-8'."""
+    user = await _make_user(db_session)
+    empty = await WalletService.get_wallet(db_session, user, None)
+    body = empty.model_dump(mode="json")
+    assert body["stable_coin_balance"] == "0.000000"
+    assert body["local_balance"] == "0.00"
+
+    await WalletService.deposit(
+        WalletDeposit(payment_gateway="mock_success", local_amount=Decimal("75000"), currency="NGN"),
+        db_session,
+        user,
+        None,
+    )
+    funded = (await WalletService.get_wallet_by_id(empty.id, db_session))
+    from src.domains.wallets.schemas import WalletDetail
+
+    body = WalletDetail.model_validate(funded).model_dump(mode="json")
+    assert body["stable_coin_balance"] == "46.875000"
+    assert body["local_balance"] == "75000.00"
+
+
+@pytest.mark.asyncio
+async def test_repeated_small_deposits_sum_exactly(db_session):
+    user = await _make_user(db_session)
+    for _ in range(3):
+        await WalletService.deposit(
+            WalletDeposit(payment_gateway="mock_success", local_amount=Decimal("0.10"), currency="NGN"),
+            db_session,
+            user,
+            None,
+        )
+    wallet = await WalletService.get_effective_balance(user.id, db_session)
+    # NGN 0.10 at 1/1600 = 62.5 micro-units, rounded half-up ONCE per deposit
+    # to 63, so three deposits are exactly 189 micro-units — a whole number,
+    # with no float drift accumulating.
+    assert wallet == Decimal("0.000189")

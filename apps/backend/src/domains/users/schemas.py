@@ -93,6 +93,23 @@ class UserDetail(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PublicProfile(BaseModel):
+    """
+    What any signed-in member may see about another member. Deliberately
+    excludes contact details (email/phone), savings targets/income and every
+    money amount — only identity plus trust signals.
+    """
+
+    id: UUID
+    username: str
+    full_name: str
+    profile_picture_url: Optional[str] = None
+    is_kyc_verified: bool = False
+    member_since: datetime
+    active_groups_count: int = 0
+    completed_contributions_count: int = 0
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str

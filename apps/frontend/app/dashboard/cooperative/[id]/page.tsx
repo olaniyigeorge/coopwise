@@ -1,9 +1,13 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
+import { activityTextAfterActor } from '@/lib/activity'
+import { UserAvatar } from '@/components/ui/user-avatar'
+import { formatCurrency } from '@/lib/utils'
+import { useAuth } from '@/lib/auth-context'
+import ApplicationsPanel from '@/components/dashboard/applications-panel'
 import { motion, AnimatePresence, Variants } from 'framer-motion'
 import { toast } from 'sonner'
 import {
@@ -71,6 +75,9 @@ const itemVariants: Variants = {
   },
 }
 
+// Keep the activity feed short; the rest is one click away.
+const ACTIVITY_VISIBLE_LIMIT = 8
+
 const buttonHover: Variants = {
   hover: {
     scale: 1.03,
@@ -82,12 +89,30 @@ const buttonHover: Variants = {
 export default function CooperativeDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const id = params?.id as string
 
   const [cooperative, setCooperative] = useState<Cooperative | null>(null)
   const [members, setMembers] = useState<CooperativeMember[]>([])
+  // Only admitted members belong on the roster; applicants live in ApplicationsPanel.
+  const activeMembers = members.filter((m) => (m.status ?? '').toLowerCase() === 'active')
+  const { user: currentUser } = useAuth()
+  const myMembership = members.find((m) => m.user_id === currentUser?.id)
+  const myStatus = (myMembership?.status ?? '').toLowerCase()
+  const isPending = myStatus === 'pending'
+  const wasRejected = myStatus === 'rejected'
+  const [admission, setAdmission] = useState<string | null>(null)
+
+  // A pending applicant is told who is deciding (an admin, or a member vote).
+  useEffect(() => {
+    if (!isPending) return
+    CooperativeService.getCooperativePreview(id)
+      .then((p) => setAdmission(p.admission))
+      .catch(() => {})
+  }, [isPending, id])
   const [goals, setGoals] = useState<Goal[]>([])
   const [activities, setActivities] = useState<ActivityDetail[]>([])
+  const [showAllActivity, setShowAllActivity] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'members' | 'activity'>('overview')
@@ -121,7 +146,11 @@ export default function CooperativeDetailPage() {
         setMembers(memberData)
         setGoals(goalData)
         setActivities(activityData)
-        setWalletBalance(dashboardData?.summary?.wallet?.stable_coin_balance ?? null)
+        setWalletBalance(
+          dashboardData?.summary?.wallet?.local_balance != null
+            ? Number(dashboardData.summary.wallet.local_balance)
+            : null
+        )
       } catch (err: any) {
         const errorMsg = err?.response?.data?.message || err.message || 'Failed to load cooperative details.'
         setError(errorMsg)
@@ -161,6 +190,43 @@ export default function CooperativeDetailPage() {
     if (contributeGoalId !== "none") {
       const progress = await ContributionService.getGoalProgress(contributeGoalId)
       setGoalProgress((prev) => ({ ...prev, [contributeGoalId]: progress }))
+    }
+  }
+
+  // Paystack sends the member back here (via the backend callback) with the
+  // payment outcome; report it once, then clear the params so a refresh
+  // doesn't repeat the toast.
+  useEffect(() => {
+    const payment = searchParams.get('payment')
+    if (!payment) return
+    if (payment === 'success') {
+      toast.success('Payment received — your contribution is complete.', { id: 'payment-result' })
+      refreshAfterContribution().catch(() => {})
+    } else {
+      toast.error('Your Paystack payment did not complete. Please try again.', { id: 'payment-result' })
+    }
+    router.replace(`/dashboard/cooperative/${id}`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  const handlePaystackContribute = async () => {
+    const amount = parseFloat(contributeAmount)
+    if (!amount || amount < 100) {
+      toast.error("Enter an amount of at least ₦100.")
+      return
+    }
+    try {
+      setIsContributing(true)
+      const res = await ContributionService.initiatePaystack({
+        group_id: id,
+        amount,
+        goal_id: contributeGoalId !== "none" ? contributeGoalId : undefined,
+      })
+      window.location.href = res.authorization_url
+    } catch (err: any) {
+      const detail = getApiErrorDetail(err)
+      toast.error((typeof detail === "string" ? detail : detail?.message) || err?.message || "Could not start payment.")
+      setIsContributing(false)
     }
   }
 
@@ -288,7 +354,7 @@ export default function CooperativeDetailPage() {
             Back
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className={isPending || wasRejected ? 'hidden' : 'flex items-center gap-2'}>
             <motion.button
               variants={buttonHover}
               whileHover="hover"
@@ -329,6 +395,28 @@ export default function CooperativeDetailPage() {
             </Link>
           </div>
         </motion.div>
+
+        {(isPending || wasRejected) && (
+          <motion.div
+            variants={itemVariants}
+            className={`rounded-2xl border px-5 py-4 ${
+              wasRejected ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'
+            }`}
+          >
+            <p className={`text-sm font-semibold ${wasRejected ? 'text-red-800' : 'text-amber-900'}`}>
+              {wasRejected
+                ? "Your request to join wasn't approved"
+                : 'Your request to join is waiting for a decision'}
+            </p>
+            <p className={`mt-0.5 text-sm ${wasRejected ? 'text-red-700' : 'text-amber-800'}`}>
+              {wasRejected
+                ? 'You can ask a member for a new invite if you think this was a mistake.'
+                : admission === 'member_vote'
+                  ? "The group's members are voting on your request. You'll be notified, and you can contribute once you're admitted."
+                  : "An admin of this group will review your request. You'll be notified, and you can contribute once you're admitted."}
+            </p>
+          </motion.div>
+        )}
 
         {/* Cooperative Header Card */}
         <motion.div
@@ -374,7 +462,7 @@ export default function CooperativeDetailPage() {
             <div>
               <p className="text-xs font-medium text-neutral-500">Total Members</p>
               <h3 className="text-xl font-bold text-neutral-900 mt-0.5">
-                {members.length} Member{members.length === 1 ? '' : 's'}
+                {activeMembers.length} Member{activeMembers.length === 1 ? '' : 's'}
               </h3>
             </div>
           </div>
@@ -578,33 +666,31 @@ export default function CooperativeDetailPage() {
                 transition={{ duration: 0.2 }}
                 className="p-6 bg-white border border-neutral-100 shadow-sm rounded-2xl space-y-4"
               >
+                <ApplicationsPanel groupId={id} onAdmitted={refreshAfterContribution} />
                 <h3 className="text-base font-semibold text-neutral-900">Member Roster</h3>
-                {members.length === 0 ? (
+                {activeMembers.length === 0 ? (
                   <p className="text-sm text-neutral-500">No members yet.</p>
                 ) : (
                   <div className="space-y-2">
-                    {members.map((member) => {
+                    {activeMembers.map((member) => {
                       const displayName = member.user?.full_name || member.user?.username || 'Unknown member'
-                      const initial = displayName.charAt(0).toUpperCase() || '?'
                       return (
                       <div
                         key={member.id}
                         className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-100"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center shrink-0 overflow-hidden relative">
-                            {member.user?.profile_picture_url ? (
-                              <Image
-                                src={member.user.profile_picture_url}
-                                alt={displayName}
-                                fill
-                                className="object-cover"
-                              />
-                            ) : (
-                              initial
-                            )}
-                          </div>
-                          <p className="text-sm font-medium text-neutral-900 truncate">{displayName}</p>
+                          <UserAvatar name={displayName} src={member.user?.profile_picture_url} size="md" />
+                          {member.user?.id ? (
+                            <Link
+                              href={`/dashboard/users/${member.user.id}`}
+                              className="text-sm font-medium text-neutral-900 truncate hover:text-emerald-700 hover:underline"
+                            >
+                              {displayName}
+                            </Link>
+                          ) : (
+                            <p className="text-sm font-medium text-neutral-900 truncate">{displayName}</p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           {member.role && (
@@ -643,10 +729,33 @@ export default function CooperativeDetailPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {activities.map((activity) => (
-                      <div key={activity.id} className="flex items-start justify-between border-b border-neutral-100 pb-3 last:border-b-0 last:pb-0">
-                        <div>
-                          <p className="text-sm text-neutral-800">{activity.description}</p>
+                    {(showAllActivity ? activities : activities.slice(0, ACTIVITY_VISIBLE_LIMIT)).map((activity) => (
+                      <div key={activity.id} className="flex items-start justify-between gap-3 border-b border-neutral-100 pb-3 last:border-b-0 last:pb-0">
+                        {activity.actor && (
+                          <Link href={`/dashboard/users/${activity.actor.id}`} className="shrink-0" aria-label={`View ${activity.actor.full_name}'s profile`}>
+                            <UserAvatar
+                              name={activity.actor.full_name}
+                              src={activity.actor.profile_picture_url}
+                              size="md"
+                            />
+                          </Link>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-neutral-800">
+                            {activity.actor ? (
+                              <>
+                                <Link
+                                  href={`/dashboard/users/${activity.actor.id}`}
+                                  className="font-semibold text-neutral-900 hover:text-emerald-700 hover:underline"
+                                >
+                                  {activity.actor.full_name}
+                                </Link>{' '}
+                                {activityTextAfterActor(activity.description, activity.actor.full_name)}
+                              </>
+                            ) : (
+                              activity.description
+                            )}
+                          </p>
                           <p className="text-xs text-neutral-400 mt-0.5">
                             {new Date(activity.created_at).toLocaleString()}
                           </p>
@@ -658,6 +767,17 @@ export default function CooperativeDetailPage() {
                         )}
                       </div>
                     ))}
+                    {activities.length > ACTIVITY_VISIBLE_LIMIT && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllActivity((v) => !v)}
+                        className="w-full pt-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                      >
+                        {showAllActivity
+                          ? 'Show less'
+                          : `Show ${activities.length - ACTIVITY_VISIBLE_LIMIT} more`}
+                      </button>
+                    )}
                   </div>
                 )}
               </motion.div>
@@ -700,10 +820,10 @@ export default function CooperativeDetailPage() {
           <DialogHeader>
             <DialogTitle>Make a contribution</DialogTitle>
             <DialogDescription>
-              Funds are debited from your CoopWise wallet balance
+              Pay from your CoopWise wallet balance, or directly with Paystack
               {walletBalance != null && (
                 <span className="flex items-center justify-between mt-1 text-xs text-neutral-500">
-                  <span>Available balance: <span className="font-semibold text-neutral-700">{walletBalance.toLocaleString()}</span></span>
+                  <span>Available balance: <span className="font-semibold text-neutral-700">{formatCurrency(walletBalance, 2)}</span></span>
                   <Link href="/dashboard/wallet/fund" className="font-semibold text-emerald-700 hover:text-emerald-800">
                     Fund wallet
                   </Link>
@@ -755,7 +875,16 @@ export default function CooperativeDetailPage() {
               ) : (
                 <Wallet className="w-4 h-4 mr-1.5" />
               )}
-              Confirm contribution
+              Contribute from wallet
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-emerald-600 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+              disabled={isContributing}
+              onClick={handlePaystackContribute}
+            >
+              Pay with Paystack (card, transfer, USSD)
             </Button>
           </div>
         </DialogContent>

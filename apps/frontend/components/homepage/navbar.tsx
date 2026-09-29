@@ -1,5 +1,6 @@
 "use client"
 
+import { UserAvatar } from '@/components/ui/user-avatar'
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -10,7 +11,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import useAuthStore from '@/stores/auth-store'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu'
 import { toast } from '../ui/use-toast'
-import { Avatar, AvatarFallback } from '../ui/avatar'
 
 
 const navLinks = [
@@ -31,23 +31,8 @@ export default function   Navbar() {
   }, []);
 
   const getFirstName = (name: string) => name.split(' ')[0];
-  const getFirstNameInitial = (name: string) => {
-    const firstName = getFirstName(name);
-    return firstName ? firstName[0].toUpperCase() : '';
-  };
-
-  const getAvatarColor = (name: string) => {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 65%, 55%)`;
-  };
 
   const actualUserName = user?.full_name || '';
-  const avatarColor = getAvatarColor(actualUserName);
-  const firstNameInitial = getFirstNameInitial(actualUserName);
   const firstName = getFirstName(actualUserName);
 
   const isLandingPage = pathname === "/"
@@ -104,26 +89,9 @@ export default function   Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="flex items-center gap-2 cursor-pointer hover:bg-black/5 active:bg-black/10 rounded-full px-1 sm:px-2 py-1 transition-colors touch-manipulation">
-                    {user?.profile_picture_url ? (
-                      <div className="gradient-border object-contain rounded-full">
-                        <Image
-                          src={user.profile_picture_url}
-                          alt={`${user.full_name}'s profile`}
-                          style={{ backgroundColor: avatarColor }}
-                          width={32}
-                          height={32}
-                          className="h-8 w-8 rounded-full object-cover flex-shrink-0"
-                        />
-                      </div>
-                    ) : (
-                      <div className="gradient-border object-contain rounded-full">
-                        <Avatar className="h-8 w-8 flex-shrink-0">
-                          <AvatarFallback style={{ backgroundColor: avatarColor }} className="text-white">
-                            {firstNameInitial}
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
-                    )}
+                    <div className="gradient-border object-contain rounded-full">
+                      <UserAvatar name={actualUserName} src={user?.profile_picture_url} size="sm" className="flex-shrink-0" />
+                    </div>
                     <div className="hidden sm:flex items-center gap-1 min-w-0">
                       <span className="text-sm font-medium text-primary truncate max-w-[100px]">{firstName}</span>
                       <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />

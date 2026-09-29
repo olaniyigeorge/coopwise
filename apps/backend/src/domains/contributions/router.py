@@ -52,6 +52,31 @@ async def contribute(
     }
 
 
+@router.post(
+    "/paystack/initiate",
+    summary="Start a contribution paid directly through Paystack",
+)
+async def initiate_paystack_contribution(
+    contribution_data: ContributionCreate,
+    db: AsyncSession = Depends(get_async_db_session),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    """
+    Creates a pending contribution and returns a Paystack `authorization_url`
+    to redirect the member to. The contribution completes once Paystack
+    confirms payment (webhook / callback) — the wallet is not involved.
+    """
+    result = await ContributionService.initiate_paystack_contribution(
+        contribution_data, current_user, db
+    )
+    return {
+        "message": "Payment initialized",
+        "contribution": ContributionDetail.model_validate(result["contribution"]),
+        "reference": result["reference"],
+        "authorization_url": result["authorization_url"],
+    }
+
+
 @router.post("/auto-debit", summary="Trigger automated debit for group contributions")
 async def auto_debit(
     group_id: UUID,

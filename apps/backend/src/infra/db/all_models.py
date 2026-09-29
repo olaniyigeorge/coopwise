@@ -28,6 +28,7 @@ from src.domains.memberships.models import (
     group_membership as _group_membership_models,  # noqa: F401
 )
 from src.domains.memberships.models import mixins as _membership_mixins  # noqa: F401
+from src.domains.memberships.models import vote as _membership_vote_models  # noqa: F401
 
 from src.domains.contributions import models as _contributions_models  # noqa: F401
 from src.domains.kyc import models as _kyc_models  # noqa: F401

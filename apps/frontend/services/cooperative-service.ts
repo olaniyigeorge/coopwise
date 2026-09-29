@@ -3,6 +3,7 @@ import type {
   Cooperative,
   CreateCooperativePayload,
   CooperativeMember,
+  CooperativePreview,
   ActivityDetail,
 } from "@/types/cooperative";
 
@@ -47,6 +48,11 @@ const CooperativeService = {
     return ApiService.get<{ message: string; invite_code: string }>(
       `${BASE}/${cooperativeId}/invite`
     );
+  },
+
+  // What someone deciding whether to join is allowed to see.
+  async getCooperativePreview(id: string) {
+    return ApiService.get<CooperativePreview>(`${BASE}/${id}/preview`);
   },
 
   // "Checks out" an invite code — previews/registers a click against it.

@@ -5,6 +5,7 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domains.cooperatives.exceptions import CooperativeNotFoundError
+from src.domains.cooperatives.preview import get_cooperative_preview
 from src.api.middlewares.dependencies import get_current_user
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.analytics.schemas import ActivityDetail
@@ -32,6 +33,7 @@ from src.domains.cooperatives.models.rules import (
 from src.domains.cooperatives.schemas import (
     BeneficiaryPatternRead,
     CooperativeCreate,
+    CooperativePreview,
     CooperativeRead,
     CooperativeUpdate,
     DecisionRuleCreate,
@@ -134,6 +136,16 @@ async def get_cooperative_activities(
     return await ActivityService.get_group_activities(
         db, cooperative_id, user, redis, limit=limit
     )
+
+
+@router.get("/{cooperative_id}/preview", response_model=CooperativePreview)
+async def get_cooperative_preview_route(
+    cooperative_id: UUID,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    """Public-safe summary shown to someone deciding whether to join."""
+    return await get_cooperative_preview(db, cooperative_id)
 
 
 @router.get("/{cooperative_id}", response_model=CooperativeRead)

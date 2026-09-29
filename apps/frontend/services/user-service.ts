@@ -69,7 +69,23 @@ function formatUpdatePayload(payload: UpdateUserPayload): UpdateUserPayload {
   return formatted
 }
 
+/** What any signed-in member can see about another member. */
+export interface PublicProfile {
+  id: string
+  username: string
+  full_name: string
+  profile_picture_url: string | null
+  is_kyc_verified: boolean
+  member_since: string
+  active_groups_count: number
+  completed_contributions_count: number
+}
+
 const UserService = {
+  async getPublicProfile(userId: string): Promise<PublicProfile> {
+    return ApiService.get<PublicProfile>(`/users/${userId}/public`)
+  },
+
   /**
    * Fetches the current user's profile. Identity is resolved server-side
    * from the httpOnly session cookie — no id/token is ever handled client-side.

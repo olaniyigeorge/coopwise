@@ -216,6 +216,8 @@ export interface WalletDetail {
   id: UUID;
   user_id: UUID;
   stable_coin_balance: Decimal;
+  /** Balance in the wallet's own currency (server-converted). Arrives as a decimal string. */
+  local_balance: Decimal;
   local_currency: LocalCurrency;
   created_at: string;
   updated_at: string;
@@ -380,6 +382,7 @@ export const defDashData: DashboardData = {
       id: "11111111-1111-1111-1111-111111111111",
       user_id: "00000000-0000-0000-0000-000000000000",
       stable_coin_balance: 0,
+      local_balance: 0,
       local_currency: LocalCurrency.NGN,
       created_at: "2025-06-07T13:01:49.344291",
       updated_at: "2025-06-07T15:48:05.178271"
