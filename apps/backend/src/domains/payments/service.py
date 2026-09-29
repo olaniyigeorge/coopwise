@@ -16,7 +16,7 @@ from src.shared.utils.logger import logger
 
 # --------------------
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func
@@ -477,7 +477,9 @@ class PayoutService:
         return Decimal(result.scalar_one())
 
     @staticmethod
-    async def check_payout_readiness(db: AsyncSession, group_id: UUID) -> Dict[str, Any]:
+    async def check_payout_readiness(
+        db: AsyncSession, group_id: UUID
+    ) -> Dict[str, Any]:
         group = await db.get(CoopCooperative, group_id)
         if not group:
             return {"is_ready": False, "error": "Group not found"}
@@ -529,9 +531,7 @@ class PayoutService:
         kyc_verification = kyc.scalars().first()
         banking_info = kyc_verification.banking_info if kyc_verification else None
         if not banking_info or not banking_info.provider_verified:
-            raise PayoutError(
-                "Recipient has not completed verified bank-account KYC"
-            )
+            raise PayoutError("Recipient has not completed verified bank-account KYC")
 
         round_number = await PayoutService.get_current_round(db, group_id)
 
@@ -577,7 +577,10 @@ class PayoutService:
 
     @staticmethod
     async def mark_payout_from_webhook(
-        db: AsyncSession, reference: str, success: bool, failure_reason: str | None = None
+        db: AsyncSession,
+        reference: str,
+        success: bool,
+        failure_reason: str | None = None,
     ) -> Optional[PayoutRecord]:
         result = await db.execute(
             select(PayoutRecord).where(PayoutRecord.provider_reference == reference)
@@ -586,7 +589,9 @@ class PayoutService:
         if not payout_record:
             return None
 
-        payout_record.status = PayoutStatus.completed if success else PayoutStatus.failed
+        payout_record.status = (
+            PayoutStatus.completed if success else PayoutStatus.failed
+        )
         if success:
             payout_record.completed_at = datetime.now()
         else:

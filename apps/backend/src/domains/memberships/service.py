@@ -196,7 +196,7 @@ class CooperativeMembershipService:
     async def checkout_invite_code(
         db: AsyncSession, invite_code: str, user: AuthenticatedUser
     ):
-        invited_id__group_id = invite_code[len(config.INVITE_CODE_PREFIX):]
+        invited_id__group_id = invite_code[len(config.INVITE_CODE_PREFIX) :]
         inviter_id, group_id = invited_id__group_id.split(":")
         group_id = UUID(group_id)
         inviter_id = UUID(inviter_id)
@@ -237,7 +237,7 @@ class CooperativeMembershipService:
     async def accept_invite_code(
         db: AsyncSession, user: AuthenticatedUser, invite_code: str
     ) -> Optional[GroupMembership]:
-        invited_id__group_id = invite_code[len(config.INVITE_CODE_PREFIX):]
+        invited_id__group_id = invite_code[len(config.INVITE_CODE_PREFIX) :]
         inviter_id, group_id = invited_id__group_id.split(":")
         group_id = UUID(group_id)
         inviter_id = UUID(inviter_id)

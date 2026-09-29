@@ -86,7 +86,9 @@ async def get_policy(db: AsyncSession, group_id: UUID) -> AdmissionPolicy:
         CoopDecisionRule.decision_type == DecisionType.NEW_MEMBER_APPROVAL,
     )
 
-    unanimous = bool(governance and governance.decision_model == DecisionModel.CONSENSUS)
+    unanimous = bool(
+        governance and governance.decision_model == DecisionModel.CONSENSUS
+    )
 
     if decision_rule is not None:
         mode = (
@@ -94,12 +96,18 @@ async def get_policy(db: AsyncSession, group_id: UUID) -> AdmissionPolicy:
             if decision_rule.mechanism == DecisionMechanism.VOTE
             else AdmissionMode.ADMIN
         )
-    elif governance is not None and governance.decision_model != DecisionModel.ADMIN_LED:
+    elif (
+        governance is not None and governance.decision_model != DecisionModel.ADMIN_LED
+    ):
         mode = AdmissionMode.VOTE
     else:
         mode = AdmissionMode.ADMIN
 
-    quorum = governance.quorum_pct if governance and governance.quorum_pct is not None else None
+    quorum = (
+        governance.quorum_pct
+        if governance and governance.quorum_pct is not None
+        else None
+    )
     threshold = (
         governance.voting_threshold_pct
         if governance and governance.voting_threshold_pct is not None
@@ -107,8 +115,14 @@ async def get_policy(db: AsyncSession, group_id: UUID) -> AdmissionPolicy:
     )
     return AdmissionPolicy(
         mode=mode,
-        quorum_pct=float(quorum) if quorum is not None else (100.0 if unanimous else 50.0),
-        threshold_pct=float(threshold) if threshold is not None else (100.0 if unanimous else 50.0),
+        quorum_pct=(
+            float(quorum) if quorum is not None else (100.0 if unanimous else 50.0)
+        ),
+        threshold_pct=(
+            float(threshold)
+            if threshold is not None
+            else (100.0 if unanimous else 50.0)
+        ),
         unanimous=unanimous,
         max_members=max_members,
     )
@@ -129,7 +143,11 @@ def evaluate_votes(
         return "approved"  # quorum reached and nobody objected
     share = approvals * 100 / cast
     # A 50% threshold means a strict majority; any higher bar is "at least".
-    passed = share > policy.threshold_pct if policy.threshold_pct <= 50 else share >= policy.threshold_pct
+    passed = (
+        share > policy.threshold_pct
+        if policy.threshold_pct <= 50
+        else share >= policy.threshold_pct
+    )
     return "approved" if passed else "rejected"
 
 
@@ -146,8 +164,13 @@ async def _active_count(db: AsyncSession, group_id: UUID) -> int:
     ) or 0
 
 
-async def _ensure_room(db: AsyncSession, policy: AdmissionPolicy, group_id: UUID) -> None:
-    if policy.max_members is not None and await _active_count(db, group_id) >= policy.max_members:
+async def _ensure_room(
+    db: AsyncSession, policy: AdmissionPolicy, group_id: UUID
+) -> None:
+    if (
+        policy.max_members is not None
+        and await _active_count(db, group_id) >= policy.max_members
+    ):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="This cooperative is full.",
@@ -159,7 +182,9 @@ def _activate(membership: GroupMembership) -> None:
     membership.joined_at = datetime.now(timezone.utc)
 
 
-async def admit_or_queue(db: AsyncSession, membership: GroupMembership) -> GroupMembership:
+async def admit_or_queue(
+    db: AsyncSession, membership: GroupMembership
+) -> GroupMembership:
     """Apply the cooperative's rules to someone who just accepted an invite."""
     policy = await get_policy(db, membership.group_id)
     if policy.mode == AdmissionMode.AUTOMATIC:
@@ -202,16 +227,22 @@ class ApplicationRead(BaseModel):
     applied_at: datetime | None = None
 
 
-async def _actor_membership(db, actor_id: UUID, group_id: UUID) -> GroupMembership | None:
+async def _actor_membership(
+    db, actor_id: UUID, group_id: UUID
+) -> GroupMembership | None:
     return (
-        await db.execute(
-            select(GroupMembership).where(
-                GroupMembership.user_id == actor_id,
-                GroupMembership.group_id == group_id,
-                GroupMembership.status == MembershipStatus.ACTIVE,
+        (
+            await db.execute(
+                select(GroupMembership).where(
+                    GroupMembership.user_id == actor_id,
+                    GroupMembership.group_id == group_id,
+                    GroupMembership.status == MembershipStatus.ACTIVE,
+                )
             )
         )
-    ).scalars().first()
+        .scalars()
+        .first()
+    )
 
 
 async def _is_admin(db, actor_id: UUID, group_id: UUID) -> bool:
@@ -245,7 +276,9 @@ async def _tally(db, membership: GroupMembership):
     return counts.get(True, 0), counts.get(False, 0), eligible
 
 
-async def _to_read(db, actor_id: UUID, membership: GroupMembership, policy: AdmissionPolicy) -> ApplicationRead:
+async def _to_read(
+    db, actor_id: UUID, membership: GroupMembership, policy: AdmissionPolicy
+) -> ApplicationRead:
     approvals, rejections, eligible = await _tally(db, membership)
     # A vote with nobody eligible to cast it falls back to an admin decision.
     mode = policy.mode
@@ -263,7 +296,9 @@ async def _to_read(db, actor_id: UUID, membership: GroupMembership, policy: Admi
         if mode == AdmissionMode.ADMIN:
             can_decide = await _is_admin(db, actor_id, membership.group_id)
         elif mode == AdmissionMode.VOTE:
-            can_decide = await _actor_membership(db, actor_id, membership.group_id) is not None
+            can_decide = (
+                await _actor_membership(db, actor_id, membership.group_id) is not None
+            )
 
     my_vote = await db.scalar(
         select(MembershipVote.approve).where(
@@ -289,20 +324,30 @@ async def _to_read(db, actor_id: UUID, membership: GroupMembership, policy: Admi
     )
 
 
-async def list_applications(db: AsyncSession, actor_id: UUID, group_id: UUID) -> list[ApplicationRead]:
-    if await _actor_membership(db, actor_id, group_id) is None and not await _is_admin(db, actor_id, group_id):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only members can see applications.")
+async def list_applications(
+    db: AsyncSession, actor_id: UUID, group_id: UUID
+) -> list[ApplicationRead]:
+    if await _actor_membership(db, actor_id, group_id) is None and not await _is_admin(
+        db, actor_id, group_id
+    ):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Only members can see applications."
+        )
     policy = await get_policy(db, group_id)
     pending = (
-        await db.execute(
-            select(GroupMembership)
-            .where(
-                GroupMembership.group_id == group_id,
-                GroupMembership.status == MembershipStatus.PENDING,
+        (
+            await db.execute(
+                select(GroupMembership)
+                .where(
+                    GroupMembership.group_id == group_id,
+                    GroupMembership.status == MembershipStatus.PENDING,
+                )
+                .order_by(GroupMembership.updated_at)
             )
-            .order_by(GroupMembership.updated_at)
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [await _to_read(db, actor_id, m, policy) for m in pending]
 
 
@@ -313,9 +358,13 @@ async def decide(
     if membership is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Application not found.")
     if membership.status != MembershipStatus.PENDING:
-        raise HTTPException(status.HTTP_409_CONFLICT, "This application has already been decided.")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "This application has already been decided."
+        )
     if membership.user_id == actor_id:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "You can't decide on your own application.")
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "You can't decide on your own application."
+        )
 
     policy = await get_policy(db, membership.group_id)
     view = await _to_read(db, actor_id, membership, policy)
@@ -337,7 +386,11 @@ async def decide(
             )
         ).scalar_one_or_none()
         if vote is None:
-            db.add(MembershipVote(membership_id=membership.id, voter_id=actor_id, approve=approve))
+            db.add(
+                MembershipVote(
+                    membership_id=membership.id, voter_id=actor_id, approve=approve
+                )
+            )
         else:
             vote.approve = approve
         await db.flush()

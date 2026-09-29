@@ -1,4 +1,3 @@
-from decimal import Decimal
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -35,11 +34,15 @@ def _data(coop, amount=2500.0):
 
 
 @pytest.mark.asyncio
-async def test_initiate_creates_pending_contribution_and_returns_checkout_url(db_session):
+async def test_initiate_creates_pending_contribution_and_returns_checkout_url(
+    db_session,
+):
     user, coop = await _setup(db_session)
 
     with patch.object(
-        PaymentService, "init_pay_with_paystack", new=AsyncMock(return_value=PAYSTACK_INIT_OK)
+        PaymentService,
+        "init_pay_with_paystack",
+        new=AsyncMock(return_value=PAYSTACK_INIT_OK),
     ) as init:
         result = await ContributionService.initiate_paystack_contribution(
             _data(coop), user, db_session
@@ -87,7 +90,9 @@ async def test_initiate_marks_contribution_failed_when_paystack_rejects(db_sessi
 async def _initiated(db_session, amount=2500.0):
     user, coop = await _setup(db_session)
     with patch.object(
-        PaymentService, "init_pay_with_paystack", new=AsyncMock(return_value=PAYSTACK_INIT_OK)
+        PaymentService,
+        "init_pay_with_paystack",
+        new=AsyncMock(return_value=PAYSTACK_INIT_OK),
     ):
         result = await ContributionService.initiate_paystack_contribution(
             _data(coop, amount), user, db_session

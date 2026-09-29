@@ -23,7 +23,16 @@ import enum
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 
@@ -58,9 +67,7 @@ class PayoutRecord(Base):
     amount = Column(Numeric(12, 2), nullable=False)
     currency = Column(String(10), default="NGN", nullable=False)
 
-    status = Column(
-        Enum(PayoutStatus), default=PayoutStatus.pending, nullable=False
-    )
+    status = Column(Enum(PayoutStatus), default=PayoutStatus.pending, nullable=False)
     provider = Column(String(32), default="paystack", nullable=False)
     recipient_code = Column(String, nullable=True)
     provider_reference = Column(String, nullable=True, index=True)

@@ -287,7 +287,9 @@ class ContributionService:
             if not response or not response.get("status"):
                 raise ValueError((response or {}).get("message", "Paystack rejected"))
         except Exception as e:
-            logger.error(f"Paystack init failed for contribution {contribution.id}: {e}")
+            logger.error(
+                f"Paystack init failed for contribution {contribution.id}: {e}"
+            )
             await ContributionService.mark_contribution_failed(
                 db, contribution.id, f"Paystack initialization failed: {e}"
             )
@@ -391,9 +393,9 @@ class ContributionService:
             # Financial rule holds contribution_amount/frequency — these
             # aren't flat fields on CoopCooperative itself.
             try:
-                financial_rule = await FinancialRuleService(
-                    UnitOfWork(db)
-                ).get_active(group_id)
+                financial_rule = await FinancialRuleService(UnitOfWork(db)).get_active(
+                    group_id
+                )
             except RuleNotFoundError:
                 logger.warning(
                     f"Auto-contribution skipped: no financial rule configured for group={group_id}"
@@ -412,7 +414,9 @@ class ContributionService:
             # wallet.stable_coin_balance is stable-coin-denominated — convert
             # the (local-currency) rule amount before comparing/locking, same
             # as process_manual_contribution.
-            stable_amount = financial_rule.contribution_amount * MOCK_LOCAL_TO_STABLE_RATE
+            stable_amount = (
+                financial_rule.contribution_amount * MOCK_LOCAL_TO_STABLE_RATE
+            )
 
             # Check wallet balance
             wallet_balance = await WalletService.get_effective_balance(user.id, db)
@@ -468,156 +472,6 @@ class ContributionService:
         except Exception as e:
             logger.error(f"Error in process_auto_contribution: {e}", exc_info=True)
             return None
-
-    @staticmethod
-    async def request_withdrawal(
-        group_id: UUID,
-        user: AuthenticatedUser,
-        amount: Decimal,
-        db: AsyncSession,
-        network: str = "flow",
-    ) -> Dict[str, Any]:
-        """
-        Request a withdrawal of funds from the group vault.
-
-        This could be before payout is scheduled or for emergency situations.
-
-        Security:
-        - User must be member
-        - Amount must not exceed user's balance in group
-        - Creates withdrawal record for manager approval
-        - Requires blockchain confirmation
-        """
-        # Validate membership
-        membership = (
-            await CooperativeMembershipService.get_membership_by_user_and_group(
-                user_id=user.id, group_id=group_id, db=db
-            )
-        )
-        if not membership or not membership.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not an active member of this group.",
-            )
-
-        # Get group
-        from src.domains.cooperatives.services.cooperative_service import (
-            CooperativeService,
-        )
-
-        group = await CooperativeService.get_coop_group_by_id(db, group_id)
-        if not group:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Group not found.",
-            )
-
-        # Validate amount
-        if amount <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Withdrawal amount must be positive.",
-            )
-
-        # Check user balance in group (query total contributions minus payouts)
-        # For now, simplified check
-        total_contributed = await db.execute(
-            select(Contribution).where(
-                and_(
-                    Contribution.user_id == user.id,
-                    Contribution.group_id == group_id,
-                    Contribution.status == ContributionStatus.completed,
-                )
-            )
-        )
-        total_amount = sum(c.amount for c in total_contributed.scalars().all())
-
-        if total_amount < amount:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Insufficient balance. Your total contribution: {total_amount}, Requested: {amount}",
-            )
-
-        # Submit withdrawal to contract (which handles priority/schedule)
-        group_address = str(group.id)  # TODO: Use blockchain_address
-        contract_result = await contract_service.submit_contribution(
-            group_address=group_address,
-            user_address=str(user.id),  # AuthenticatedUser carries no wallet_address today
-            amount=-amount,  # Negative = withdrawal
-            network=network,
-        )
-
-        return {
-            "success": contract_result.get("success"),
-            "tx_hash": contract_result.get("tx_hash"),
-            "amount": str(amount),
-            "group_id": str(group_id),
-            "status": "pending" if contract_result.get("success") else "failed",
-            "message": (
-                contract_result.get("error")
-                if not contract_result.get("success")
-                else "Withdrawal request submitted"
-            ),
-        }
-
-    @staticmethod
-    async def emergency_refund(
-        group_id: UUID, user: AuthenticatedUser, db: AsyncSession, network: str = "flow"
-    ) -> Dict[str, Any]:
-        """
-        Request emergency refund from group vault.
-
-        This is for special circumstances (group dissolution, user hardship, etc.)
-        Requires additional authorization/approval.
-        """
-        # Validate membership
-        membership = (
-            await CooperativeMembershipService.get_membership_by_user_and_group(
-                user_id=user.id, group_id=group_id, db=db
-            )
-        )
-        if not membership:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not a member of this group.",
-            )
-
-        # Get group
-        from src.domains.cooperatives.services.cooperative_service import (
-            CooperativeService,
-        )
-
-        group = await CooperativeService.get_coop_group_by_id(db, group_id)
-        if not group:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Group not found.",
-            )
-
-        # Call emergency refund on contract
-        group_address = str(group.id)  # TODO: Use blockchain_address
-        contract_result = await contract_service.emergency_refund(
-            group_address=group_address,
-            user_address=str(user.id),  # AuthenticatedUser carries no wallet_address today
-            network=network,
-        )
-
-        logger.warning(
-            f"EMERGENCY REFUND requested: user={user.id}, group={group_id}, "
-            f"success={contract_result.get('success')}"
-        )
-
-        return {
-            "success": contract_result.get("success"),
-            "tx_hash": contract_result.get("tx_hash"),
-            "refund_amount": str(contract_result.get("refund_amount", 0)),
-            "group_id": str(group_id),
-            "message": (
-                "Emergency refund initiated"
-                if contract_result.get("success")
-                else contract_result.get("error")
-            ),
-        }
 
     @staticmethod
     async def _is_contribution_due(

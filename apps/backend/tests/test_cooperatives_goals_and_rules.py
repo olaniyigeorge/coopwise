@@ -63,7 +63,14 @@ async def _get_pattern(db_session, code: str) -> CoopBeneficiaryPattern:
 
 async def _get_category(db_session) -> CoopGoalCategory:
     result = await db_session.execute(select(CoopGoalCategory).limit(1))
-    return result.scalars().first()
+    category = result.scalars().first()
+    if category is None:
+        # A fresh database (e.g. CI) has none: categories are created through
+        # the API, not seeded, so make the one these tests need.
+        category = CoopGoalCategory(code="test_category", name="Test Category")
+        db_session.add(category)
+        await db_session.flush()
+    return category
 
 
 async def _make_goal(db_session, coop, pattern_code: str) -> CoopGoal:
@@ -196,26 +203,34 @@ async def test_ownership_shares_exceeding_100_raises(db_session):
     service = OwnershipShareService(UnitOfWork(db_session))
 
     user1 = User(
-        id=uuid4(), username=f"user_{uuid4().hex[:8]}",
-        email=f"{uuid4().hex[:8]}@coopwise.example", full_name="A",
+        id=uuid4(),
+        username=f"user_{uuid4().hex[:8]}",
+        email=f"{uuid4().hex[:8]}@coopwise.example",
+        full_name="A",
     )
     user2 = User(
-        id=uuid4(), username=f"user_{uuid4().hex[:8]}",
-        email=f"{uuid4().hex[:8]}@coopwise.example", full_name="B",
+        id=uuid4(),
+        username=f"user_{uuid4().hex[:8]}",
+        email=f"{uuid4().hex[:8]}@coopwise.example",
+        full_name="B",
     )
     db_session.add_all([user1, user2])
     await db_session.flush()
 
     await service.add(
         CoopOwnershipShare(
-            goal_id=goal.id, user_id=user1.id, share_pct=Decimal("60"),
+            goal_id=goal.id,
+            user_id=user1.id,
+            share_pct=Decimal("60"),
             basis=OwnershipBasis.CONTRIBUTION_BASED,
         )
     )
     with pytest.raises(OwnershipShareOverallocatedError):
         await service.add(
             CoopOwnershipShare(
-                goal_id=goal.id, user_id=user2.id, share_pct=Decimal("40.01"),
+                goal_id=goal.id,
+                user_id=user2.id,
+                share_pct=Decimal("40.01"),
                 basis=OwnershipBasis.CONTRIBUTION_BASED,
             )
         )

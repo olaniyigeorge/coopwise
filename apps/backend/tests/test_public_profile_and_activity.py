@@ -80,7 +80,6 @@ async def test_group_activities_include_actor(db_session):
 @pytest.mark.asyncio
 async def test_cooperative_preview_shows_terms_and_headcount_only(db_session):
     from src.domains.cooperatives.models.enums import ContributionFrequency
-    from src.domains.cooperatives.models.rules import CoopFinancialRule
     from src.domains.cooperatives.preview import get_cooperative_preview
     from tests.test_contribution_service import _make_financial_rule
 
@@ -88,7 +87,10 @@ async def test_cooperative_preview_shows_terms_and_headcount_only(db_session):
     coop = await _make_cooperative(db_session)
     await _make_membership(db_session, member.id, coop.id)
     await _make_financial_rule(
-        db_session, coop.id, amount=Decimal("2500"), frequency=ContributionFrequency.WEEKLY
+        db_session,
+        coop.id,
+        amount=Decimal("2500"),
+        frequency=ContributionFrequency.WEEKLY,
     )
 
     preview = await get_cooperative_preview(db_session, coop.id)

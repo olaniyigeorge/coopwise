@@ -9,7 +9,12 @@ from fastapi import HTTPException
 from src.domains.contributions.models import Contribution, ContributionStatus
 from src.domains.cooperatives.models.cooperative import CoopCooperative
 from src.domains.cooperatives.models.enums import CooperativeModel, CooperativeStatus
-from src.domains.kyc.models import KYCBankingInfo, KYCStatus, KYCStepStatus, KYCVerification
+from src.domains.kyc.models import (
+    KYCBankingInfo,
+    KYCStatus,
+    KYCStepStatus,
+    KYCVerification,
+)
 from src.domains.memberships.models.enums import MembershipRole, MembershipStatus
 from src.domains.memberships.models.group_membership import GroupMembership
 from src.domains.payments.models import PayoutRecord, PayoutStatus
@@ -177,7 +182,9 @@ async def test_execute_payout_rejects_single_member_group(db_session):
 
 
 @pytest.mark.asyncio
-async def test_execute_payout_records_failure_instead_of_raising_on_paystack_error(db_session):
+async def test_execute_payout_records_failure_instead_of_raising_on_paystack_error(
+    db_session,
+):
     """Paystack-side failures are a durable audit trail on the record, not
     an exception — the money-movement path this whole service exists for."""
     creator = await _make_user(db_session, "Creator")
@@ -338,7 +345,10 @@ async def test_mark_payout_from_webhook_marks_failed_with_reason(db_session):
     await db_session.flush()
 
     result = await PayoutService.mark_payout_from_webhook(
-        db_session, reference="ref-xyz-789", success=False, failure_reason="bank declined"
+        db_session,
+        reference="ref-xyz-789",
+        success=False,
+        failure_reason="bank declined",
     )
 
     assert result.status == PayoutStatus.failed

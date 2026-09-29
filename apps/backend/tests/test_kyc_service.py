@@ -12,7 +12,9 @@ from src.domains.kyc.exceptions import (
     KYCNotFoundError,
     StepAlreadyApprovedError,
 )
-from src.domains.kyc.infra.bank_verification_provider import MockBankVerificationProvider
+from src.domains.kyc.infra.bank_verification_provider import (
+    MockBankVerificationProvider,
+)
 from src.domains.kyc.infra.notifier_adapter import NotificationServiceKYCNotifier
 from src.domains.kyc.infra.user_kyc_flag import UserKYCFlager
 from src.domains.kyc.models import KYCStatus, KYCStepStatus, KYCStepType
@@ -96,7 +98,10 @@ PERSONAL_INFO = PersonalInfoInput(
     income_currency="NGN",
 )
 CONTACT_INFO = ContactInfoInput(
-    residential_address="1 Main St", city="Lagos", state="Lagos", postal_code="100001",
+    residential_address="1 Main St",
+    city="Lagos",
+    state="Lagos",
+    postal_code="100001",
     country="NG",
 )
 IDENTITY = IdentityInput(
@@ -108,15 +113,21 @@ IDENTITY = IdentityInput(
     selfie_image_content_type="image/png",
 )
 BANKING_OK = BankingInfoInput(
-    bank_name="Test Bank", bank_code="058", account_number="0123456789",
+    bank_name="Test Bank",
+    bank_code="058",
+    account_number="0123456789",
     account_name="Olaniyi George",
 )
 BANKING_NAME_MISMATCH = BankingInfoInput(
-    bank_name="Test Bank", bank_code="058", account_number="0123456789",
+    bank_name="Test Bank",
+    bank_code="058",
+    account_number="0123456789",
     account_name="Someone Completely Different",
 )
 BANKING_UNRESOLVABLE = BankingInfoInput(
-    bank_name="Test Bank", bank_code="058", account_number="0000000000",
+    bank_name="Test Bank",
+    bank_code="058",
+    account_number="0000000000",
     account_name="Olaniyi George",
 )
 
@@ -228,9 +239,13 @@ async def test_submit_identity_failure_raises_and_marks_step_rejected(db_session
 
 
 @pytest.mark.asyncio
-async def test_submit_identity_success_with_manual_review_routes_to_submitted(db_session):
+async def test_submit_identity_success_with_manual_review_routes_to_submitted(
+    db_session,
+):
     user = await _make_user(db_session)
-    service = _build_service(db_session, identity_success=True, identity_manual_review=True)
+    service = _build_service(
+        db_session, identity_success=True, identity_manual_review=True
+    )
     await service.start(user.id)
 
     await service.submit_identity(user.id, IDENTITY)
@@ -242,7 +257,9 @@ async def test_submit_identity_success_with_manual_review_routes_to_submitted(db
 @pytest.mark.asyncio
 async def test_submit_identity_success_without_manual_review_auto_approves(db_session):
     user = await _make_user(db_session)
-    service = _build_service(db_session, identity_success=True, identity_manual_review=False)
+    service = _build_service(
+        db_session, identity_success=True, identity_manual_review=False
+    )
     await service.start(user.id)
 
     await service.submit_identity(user.id, IDENTITY)
@@ -313,7 +330,9 @@ async def test_webhook_for_unknown_reference_is_a_silent_no_op(db_session):
 
 
 @pytest.mark.asyncio
-async def test_approve_step_only_marks_verified_once_all_four_steps_approved(db_session):
+async def test_approve_step_only_marks_verified_once_all_four_steps_approved(
+    db_session,
+):
     user = await _make_user(db_session)
     service = _build_service(db_session, identity_manual_review=False)
     kyc = await service.start(user.id)
@@ -330,7 +349,9 @@ async def test_approve_step_only_marks_verified_once_all_four_steps_approved(db_
     await service.approve_step(kyc.id, KYCStepType.personal_info)
     await service.approve_step(kyc.id, KYCStepType.contact_info)
     reloaded = await service.get_status(user.id)
-    assert reloaded.status == KYCStatus.pending_review  # not yet — banking still "submitted"
+    assert (
+        reloaded.status == KYCStatus.pending_review
+    )  # not yet — banking still "submitted"
 
     # Approving banking_info is the fourth and last step (identity was
     # already auto-approved earlier) — this should flip the whole record.

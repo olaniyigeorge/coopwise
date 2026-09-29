@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { TrustStanding } from '@/services/trust-service'
-import { ShieldCheck, Info } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 
 interface TrustStandingCardProps {
   standing: TrustStanding

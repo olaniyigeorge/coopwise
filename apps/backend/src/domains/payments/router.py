@@ -28,6 +28,7 @@ from src.infra.db.dependencies import get_async_db_session
 
 router = APIRouter(prefix="/api/v1/payments", tags=["Payments & Integrations"])
 
+
 @router.get("/deposit-with-paystack", summary="Verify Paystack Payment")
 async def deposit_with_paystack(
     payload: PaystackPayload,
@@ -141,9 +142,12 @@ async def paystack_callback(
     if direct:
         paid = verification["data"]["status"] == "success"
         if paid:
-            paid = await ContributionService.settle_paystack_contribution(
-                db, direct, int(verification["data"].get("amount") or 0)
-            ) or direct.status.value == "completed"
+            paid = (
+                await ContributionService.settle_paystack_contribution(
+                    db, direct, int(verification["data"].get("amount") or 0)
+                )
+                or direct.status.value == "completed"
+            )
         outcome = "success" if paid else "failed"
         return RedirectResponse(
             url=f"{config.CLIENT_DOMAIN}/payment/return?kind=contribution"

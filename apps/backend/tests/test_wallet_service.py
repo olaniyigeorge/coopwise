@@ -7,8 +7,12 @@ from sqlalchemy import select
 
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.users.models import User
-from src.domains.wallets.models import LedgerStatus, LedgerType, Wallet, WalletLedger
-from src.domains.wallets.schemas import WalletDeposit, WalletLedgerCreate, WalletWithdraw
+from src.domains.wallets.models import LedgerStatus, LedgerType, Wallet
+from src.domains.wallets.schemas import (
+    WalletDeposit,
+    WalletLedgerCreate,
+    WalletWithdraw,
+)
 from src.domains.wallets.service import WalletService
 from src.domains.users.models import UserRoles
 
@@ -46,7 +50,9 @@ async def test_deposit_creates_wallet_if_missing_and_credits_balance(db_session)
     assert await _get_wallet(db_session, user.id) is None
 
     detail = await WalletService.deposit(
-        WalletDeposit(payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"),
+        WalletDeposit(
+            payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"
+        ),
         db_session,
         user,
         None,
@@ -85,7 +91,9 @@ async def test_withdraw_insufficient_balance_raises_400(db_session):
 async def test_withdraw_happy_path_debits_balance(db_session):
     user = await _make_user(db_session)
     await WalletService.deposit(
-        WalletDeposit(payment_gateway="mock_success", local_amount=Decimal("3200"), currency="NGN"),
+        WalletDeposit(
+            payment_gateway="mock_success", local_amount=Decimal("3200"), currency="NGN"
+        ),
         db_session,
         user,
         None,
@@ -101,16 +109,22 @@ async def test_withdraw_happy_path_debits_balance(db_session):
 
 @pytest.mark.asyncio
 async def test_lock_for_contribution_missing_wallet_returns_failure_dict(db_session):
-    result = await WalletService.lock_for_contribution(uuid4(), Decimal("1"), db_session)
+    result = await WalletService.lock_for_contribution(
+        uuid4(), Decimal("1"), db_session
+    )
     assert result == {"success": False, "error": "Wallet not found"}
 
 
 @pytest.mark.asyncio
-async def test_lock_for_contribution_insufficient_balance_returns_failure_dict(db_session):
+async def test_lock_for_contribution_insufficient_balance_returns_failure_dict(
+    db_session,
+):
     user = await _make_user(db_session)
     await WalletService.create_user_wallet(user, db_session)
 
-    result = await WalletService.lock_for_contribution(user.id, Decimal("5"), db_session)
+    result = await WalletService.lock_for_contribution(
+        user.id, Decimal("5"), db_session
+    )
 
     assert result == {"success": False, "error": "Insufficient balance"}
     wallet = await _get_wallet(db_session, user.id)
@@ -122,13 +136,17 @@ async def test_lock_for_contribution_insufficient_balance_returns_failure_dict(d
 async def test_lock_for_contribution_moves_funds_from_balance_to_locked(db_session):
     user = await _make_user(db_session)
     await WalletService.deposit(
-        WalletDeposit(payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"),
+        WalletDeposit(
+            payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"
+        ),
         db_session,
         user,
         None,
     )
 
-    result = await WalletService.lock_for_contribution(user.id, Decimal("1"), db_session)
+    result = await WalletService.lock_for_contribution(
+        user.id, Decimal("1"), db_session
+    )
 
     assert result == {"success": True, "locked_amount": Decimal("1")}
     wallet = await _get_wallet(db_session, user.id)
@@ -137,11 +155,15 @@ async def test_lock_for_contribution_moves_funds_from_balance_to_locked(db_sessi
 
 
 @pytest.mark.asyncio
-async def test_finalize_contribution_debit_insufficient_locked_returns_failure_dict(db_session):
+async def test_finalize_contribution_debit_insufficient_locked_returns_failure_dict(
+    db_session,
+):
     user = await _make_user(db_session)
     await WalletService.create_user_wallet(user, db_session)
 
-    result = await WalletService.finalize_contribution_debit(user.id, Decimal("1"), db_session)
+    result = await WalletService.finalize_contribution_debit(
+        user.id, Decimal("1"), db_session
+    )
 
     assert result == {"success": False, "error": "Insufficient locked funds"}
 
@@ -150,14 +172,18 @@ async def test_finalize_contribution_debit_insufficient_locked_returns_failure_d
 async def test_lock_then_finalize_round_trip_leaves_balances_consistent(db_session):
     user = await _make_user(db_session)
     await WalletService.deposit(
-        WalletDeposit(payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"),
+        WalletDeposit(
+            payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"
+        ),
         db_session,
         user,
         None,
     )
     await WalletService.lock_for_contribution(user.id, Decimal("1"), db_session)
 
-    result = await WalletService.finalize_contribution_debit(user.id, Decimal("1"), db_session)
+    result = await WalletService.finalize_contribution_debit(
+        user.id, Decimal("1"), db_session
+    )
 
     assert result == {"success": True, "finalized_amount": Decimal("1")}
     wallet = await _get_wallet(db_session, user.id)
@@ -171,7 +197,9 @@ async def test_lock_then_finalize_round_trip_leaves_balances_consistent(db_sessi
 async def test_lock_then_release_round_trip_restores_balance(db_session):
     user = await _make_user(db_session)
     await WalletService.deposit(
-        WalletDeposit(payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"),
+        WalletDeposit(
+            payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"
+        ),
         db_session,
         user,
         None,
@@ -187,10 +215,14 @@ async def test_lock_then_release_round_trip_restores_balance(db_session):
 
 
 @pytest.mark.asyncio
-async def test_release_locked_funds_insufficient_locked_returns_failure_dict(db_session):
+async def test_release_locked_funds_insufficient_locked_returns_failure_dict(
+    db_session,
+):
     user = await _make_user(db_session)
     await WalletService.deposit(
-        WalletDeposit(payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"),
+        WalletDeposit(
+            payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"
+        ),
         db_session,
         user,
         None,
@@ -214,7 +246,9 @@ async def test_get_effective_balance_missing_wallet_returns_zero(db_session):
 async def test_get_effective_balance_returns_stable_coin_balance(db_session):
     user = await _make_user(db_session)
     await WalletService.deposit(
-        WalletDeposit(payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"),
+        WalletDeposit(
+            payment_gateway="mock_success", local_amount=Decimal("1600"), currency="NGN"
+        ),
         db_session,
         user,
         None,
@@ -225,9 +259,13 @@ async def test_get_effective_balance_returns_stable_coin_balance(db_session):
 
 
 @pytest.mark.asyncio
-async def test_settle_payment_ledger_into_wallet_ledger_not_found_raises_404(db_session):
+async def test_settle_payment_ledger_into_wallet_ledger_not_found_raises_404(
+    db_session,
+):
     with pytest.raises(HTTPException) as exc_info:
-        await WalletService.settle_payment_ledger_into_wallet(str(uuid4()), db_session, None)
+        await WalletService.settle_payment_ledger_into_wallet(
+            str(uuid4()), db_session, None
+        )
     assert exc_info.value.status_code == 404
 
 
@@ -255,7 +293,9 @@ async def test_settle_payment_ledger_into_wallet_credits_balance(db_session):
 
     assert updated_wallet.stable_coin_balance == Decimal("2.5")
 
-    refreshed = await WalletService.get_wallet_ledger_record_by_id(str(ledger.id), db_session)
+    refreshed = await WalletService.get_wallet_ledger_record_by_id(
+        str(ledger.id), db_session
+    )
     assert refreshed.status == LedgerStatus.settled
 
 
@@ -279,7 +319,9 @@ async def test_settle_payment_ledger_into_wallet_already_settled_raises_400(db_s
     )
 
     with pytest.raises(HTTPException) as exc_info:
-        await WalletService.settle_payment_ledger_into_wallet(str(ledger.id), db_session, None)
+        await WalletService.settle_payment_ledger_into_wallet(
+            str(ledger.id), db_session, None
+        )
     assert exc_info.value.status_code == 400
 
 
@@ -293,12 +335,16 @@ async def test_wallet_detail_exposes_exact_balances_never_exponent_form(db_sessi
     assert body["local_balance"] == "0.00"
 
     await WalletService.deposit(
-        WalletDeposit(payment_gateway="mock_success", local_amount=Decimal("75000"), currency="NGN"),
+        WalletDeposit(
+            payment_gateway="mock_success",
+            local_amount=Decimal("75000"),
+            currency="NGN",
+        ),
         db_session,
         user,
         None,
     )
-    funded = (await WalletService.get_wallet_by_id(empty.id, db_session))
+    funded = await WalletService.get_wallet_by_id(empty.id, db_session)
     from src.domains.wallets.schemas import WalletDetail
 
     body = WalletDetail.model_validate(funded).model_dump(mode="json")
@@ -311,7 +357,11 @@ async def test_repeated_small_deposits_sum_exactly(db_session):
     user = await _make_user(db_session)
     for _ in range(3):
         await WalletService.deposit(
-            WalletDeposit(payment_gateway="mock_success", local_amount=Decimal("0.10"), currency="NGN"),
+            WalletDeposit(
+                payment_gateway="mock_success",
+                local_amount=Decimal("0.10"),
+                currency="NGN",
+            ),
             db_session,
             user,
             None,
