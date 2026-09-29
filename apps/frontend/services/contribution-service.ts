@@ -40,6 +40,20 @@ const ContributionService = {
     )
   },
 
+  /**
+   * Starts a contribution paid directly through Paystack (wallet not
+   * involved). Redirect the browser to `authorization_url`; the contribution
+   * completes server-side once Paystack confirms payment.
+   */
+  async initiatePaystack(payload: ContributionCreatePayload) {
+    return ApiService.post<{
+      message: string
+      contribution: ContributionDetail
+      reference: string
+      authorization_url: string
+    }>('/contributions/paystack/initiate', payload)
+  },
+
   async getGroupContributions(groupId: string) {
     return ApiService.get<ContributionDetail[]>(`/contributions/group/${groupId}`)
   },

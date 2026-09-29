@@ -4,7 +4,7 @@ import React, { useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Bell, ChevronDown, ArrowLeft, Menu, LogOut, User } from 'lucide-react'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -53,25 +53,9 @@ export default function Header({
 
   // Helper functions for user display
   const getFirstName = (name: string) => name.split(' ')[0];
-  const getFirstNameInitial = (name: string) => {
-    const firstName = getFirstName(name);
-    return firstName ? firstName[0].toUpperCase() : '';
-  };
-  
-  // Generate avatar color
-  const getAvatarColor = (name: string) => {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 65%, 55%)`;
-  };
   
   // User display data
   const actualUserName = user?.full_name || userName;
-  const avatarColor = getAvatarColor(actualUserName);
-  const firstNameInitial = getFirstNameInitial(actualUserName);
   const firstName = getFirstName(actualUserName);
   
   // Format notification date
@@ -207,11 +191,12 @@ export default function Header({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div className="flex items-center gap-2 cursor-pointer hover:bg-brand-paper active:bg-brand-ink/10 rounded-full sm:rounded-lg px-1 sm:px-2 py-1 transition-colors touch-manipulation">
-                <Avatar className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0">
-                  <AvatarFallback style={{ backgroundColor: avatarColor }} className="text-white">
-                    {firstNameInitial}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  name={actualUserName}
+                  src={user?.profile_picture_url}
+                  size="sm"
+                  className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0"
+                />
                 <div className="hidden sm:flex items-center gap-1 min-w-0">
                   <span className="text-sm font-medium text-brand-ink truncate max-w-[100px]">
                     {firstName}

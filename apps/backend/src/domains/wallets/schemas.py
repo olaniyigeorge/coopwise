@@ -1,8 +1,10 @@
 from decimal import Decimal
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
 from uuid import UUID
 from datetime import datetime
 from typing import Literal, Optional
+
+from src.shared.money import stable_to_local
 
 from src.domains.wallets.models import (
     LedgerStatus,
@@ -47,6 +49,11 @@ class WalletDetail(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @computed_field  # the balance in the wallet's own currency, for display
+    @property
+    def local_balance(self) -> Decimal:
+        return stable_to_local(self.stable_coin_balance)
+
 
 # ----------------- wallet_ledger -----------
 
@@ -73,11 +80,12 @@ class WalletLedgerCreate(BaseModel):
     wallet_id: UUID
     reference: str
     type: LedgerType
-    stable_amount: float
+    # Decimal, never float: these are converted to whole minor units on write.
+    stable_amount: Decimal
     stable_currency: StableCurrency = StableCurrency.usdc
-    local_amount: float
+    local_amount: Decimal
     local_currency: LocalCurrency
-    exchange_rate: float
+    exchange_rate: Decimal
     gateway: PaymentGateway = PaymentGateway.cashramp
     status: LedgerStatus = LedgerStatus.initiated
     note: Optional[str] = None

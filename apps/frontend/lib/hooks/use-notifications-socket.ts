@@ -20,11 +20,17 @@ export const useNotificationListener = () => {
       return;
     }
 
-    let socket: WebSocket;
+    let socket: WebSocket | undefined;
+    // connect() is async: if this effect is cleaned up (StrictMode, user or
+    // callback identity change) before it resolves, `socket` is still
+    // undefined and would never be closed — leaking a connection that then
+    // delivers (and toasts) every notification again.
+    let cancelled = false;
 
     const connect = async () => {
       try {
-        socket = await NotificationService.connectWebSocket(user.id, (data: NotificationDetail | string) => {
+        const opened = await NotificationService.connectWebSocket(user.id, (data: NotificationDetail | string) => {
+          if (cancelled) return;
           // Parse if it's still a string 
           let notificationData: NotificationDetail;
           if (typeof data === 'string') {
@@ -53,8 +59,16 @@ export const useNotificationListener = () => {
           toastFn(notificationData.title || "New Notification", {
             description: notificationData.message,
             duration: 5000,
+            // Same notification => same toast, never a stack of duplicates.
+            id: notificationData.id ? `notification-${notificationData.id}` : undefined,
           });
         });
+
+        if (cancelled) {
+          opened.close(1000);
+          return;
+        }
+        socket = opened;
 
         console.log(" Notification websocket connection established");
 
@@ -67,6 +81,7 @@ export const useNotificationListener = () => {
     connect();
 
     return () => {
+      cancelled = true;
       if (socket) {
         console.log("🔌 Closing WebSocket connection");
         socket.close(1000); // Normal closure

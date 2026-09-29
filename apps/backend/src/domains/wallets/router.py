@@ -8,7 +8,7 @@ from src.domains.users.service import UserService
 from src.domains.users.infra.sqlalchemy_user_repository import SqlAlchemyUserRepository
 from config import AppConfig as config
 from src.domains.notifications.service import NotificationService
-from src.domains.payments.service import COOPWISE_USD_NGN_RATE, PaymentService
+from src.domains.payments.service import PaymentService
 from src.domains.wallets.models import (
     LedgerStatus,
     LedgerType,
@@ -16,7 +16,7 @@ from src.domains.wallets.models import (
 )
 from src.domains.notifications.schemas import NotificationCreate
 from src.infra.db.dependencies import get_async_db_session
-from src.domains.wallets.service import WalletService
+from src.domains.wallets.service import MOCK_LOCAL_TO_STABLE_RATE, WalletService
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.wallets.schemas import (
     WalletDeposit,
@@ -73,7 +73,7 @@ async def initiate_deposit(
         )
         # deposit_payment = await PaymentService.init_pay_with_paystack(payment_payload)
         init_payment_response = await PaymentService.init_pay_with_paystack(
-            payment_payload
+            payment_payload, channels=None
         )
 
         if not init_payment_response["status"]:
@@ -87,10 +87,10 @@ async def initiate_deposit(
             type=LedgerType.deposit,
             local_amount=Decimal(deposit_data.local_amount),
             stable_amount=Decimal(deposit_data.local_amount)
-            * Decimal(COOPWISE_USD_NGN_RATE),
+            * MOCK_LOCAL_TO_STABLE_RATE,
             stable_currency=StableCurrency.usdc,
             local_currency=deposit_data.currency,
-            exchange_rate=COOPWISE_USD_NGN_RATE,
+            exchange_rate=MOCK_LOCAL_TO_STABLE_RATE,
             reference=str(tx_ref_uuid),
             status=LedgerStatus.initiated,
             gateway=payment_gateway,
@@ -131,10 +131,10 @@ async def initiate_deposit(
             type=LedgerType.deposit,
             local_amount=Decimal(deposit_data.local_amount),
             stable_amount=Decimal(deposit_data.local_amount)
-            * Decimal(COOPWISE_USD_NGN_RATE),
+            * MOCK_LOCAL_TO_STABLE_RATE,
             stable_currency=StableCurrency.usdc,
             local_currency=deposit_data.currency,
-            exchange_rate=COOPWISE_USD_NGN_RATE,
+            exchange_rate=MOCK_LOCAL_TO_STABLE_RATE,
             reference=str(tx_ref_uuid),
             status=LedgerStatus.initiated,
             gateway="cash",

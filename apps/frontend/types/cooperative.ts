@@ -38,6 +38,31 @@ export interface Cooperative {
   updated_at: string;
 }
 
+/** Public-safe summary shown before joining (GET /cooperatives/{id}/preview). */
+export interface CooperativePreview {
+  id: string;
+  name: string;
+  description: string | null;
+  cover_image: string | null;
+  status: CooperativeStatus;
+  coop_model: CoopModel;
+  created_at: string;
+  organizer: {
+    id: string;
+    username: string;
+    full_name: string;
+    profile_picture_url: string | null;
+  } | null;
+  member_count: number;
+  max_members: number | null;
+  requires_approval: boolean;
+  /** How a joiner is admitted. */
+  admission: "automatic" | "admin_approval" | "member_vote";
+  contribution_amount: number | null;
+  contribution_currency: string | null;
+  contribution_frequency: string | null;
+}
+
 export interface CreateCooperativePayload {
   name: string;
   description?: string;
@@ -380,4 +405,11 @@ export interface ActivityDetail {
   entity_id?: string | null;
   amount?: number | null;
   created_at: string;
+  /** Who did it — present on group activity feeds. */
+  actor?: {
+    id: string;
+    username: string;
+    full_name: string;
+    profile_picture_url: string | null;
+  } | null;
 }

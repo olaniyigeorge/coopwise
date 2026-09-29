@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 from src.domains.auth.schemas import AuthenticatedUser
 
 from src.domains.wallets.schemas import WalletLedgerCreate
-from src.domains.wallets.service import WalletService
+from src.domains.wallets.service import MOCK_LOCAL_TO_STABLE_RATE, WalletService
 from src.domains.wallets.models import LocalCurrency
 from config import AppConfig as config
 from src.domains.payments.schemas import ChargeResponse, PaystackPayload
@@ -16,7 +16,7 @@ from src.shared.utils.logger import logger
 
 # --------------------
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func
@@ -29,15 +29,25 @@ from src.domains.kyc.models import KYCVerification
 from src.infra.security.field_encryptor import FieldEncryptor
 
 
-COOPWISE_USD_NGN_RATE = 1 / 1500
+# One rate for the whole wallet: deposits, withdrawals and contributions must
+# all convert with the same constant or balances drift on a round trip.
+COOPWISE_USD_NGN_RATE = MOCK_LOCAL_TO_STABLE_RATE
 
 
 class PaymentService:
 
     @staticmethod
-    async def init_pay_with_paystack(payload: PaystackPayload) -> ChargeResponse | None:
+    async def init_pay_with_paystack(
+        payload: PaystackPayload,
+        channels: Optional[List[str]] = ("bank_transfer",),
+        extra_metadata: Optional[Dict[str, Any]] = None,
+    ) -> ChargeResponse | None:
         """
-        Make a payment through paystack
+        Make a payment through paystack.
+
+        `channels` defaults to bank transfer only (wallet deposits). Pass None
+        to let Paystack offer every channel enabled on the merchant dashboard
+        (card, bank, USSD, ...), e.g. for direct contribution payments.
         """
         # Simulate a payment request to Paystack
         logger.info(f"\n\n\n\nProcessing payment with Paystack: {payload}\n\n")
@@ -68,14 +78,16 @@ class PaymentService:
                 "amount": payload.amount,
                 "reference": payload.tx_ref,
                 "callback_url": f"{config.DOMAIN}/api/v1/payments/paystack/callback",
-                "channels": ["bank_transfer"],
                 "metadata": {
                     "currency": f"{payload.currency}",
                     "sideNote": getattr(
                         payload.meta, "note", "Payment on Coopwise through API v1"
                     ),
+                    **(extra_metadata or {}),
                 },
             }
+            if channels:
+                data["channels"] = list(channels)
             headers = {
                 "accept": "application/json",
                 "Authorization": f"Bearer {config.PAYSTACK_SECRET_KEY}",  # FLWSECK_TEST-SANDBOXDEMOKEY-X
@@ -465,7 +477,9 @@ class PayoutService:
         return Decimal(result.scalar_one())
 
     @staticmethod
-    async def check_payout_readiness(db: AsyncSession, group_id: UUID) -> Dict[str, Any]:
+    async def check_payout_readiness(
+        db: AsyncSession, group_id: UUID
+    ) -> Dict[str, Any]:
         group = await db.get(CoopCooperative, group_id)
         if not group:
             return {"is_ready": False, "error": "Group not found"}
@@ -517,9 +531,7 @@ class PayoutService:
         kyc_verification = kyc.scalars().first()
         banking_info = kyc_verification.banking_info if kyc_verification else None
         if not banking_info or not banking_info.provider_verified:
-            raise PayoutError(
-                "Recipient has not completed verified bank-account KYC"
-            )
+            raise PayoutError("Recipient has not completed verified bank-account KYC")
 
         round_number = await PayoutService.get_current_round(db, group_id)
 
@@ -565,7 +577,10 @@ class PayoutService:
 
     @staticmethod
     async def mark_payout_from_webhook(
-        db: AsyncSession, reference: str, success: bool, failure_reason: str | None = None
+        db: AsyncSession,
+        reference: str,
+        success: bool,
+        failure_reason: str | None = None,
     ) -> Optional[PayoutRecord]:
         result = await db.execute(
             select(PayoutRecord).where(PayoutRecord.provider_reference == reference)
@@ -574,7 +589,9 @@ class PayoutService:
         if not payout_record:
             return None
 
-        payout_record.status = PayoutStatus.completed if success else PayoutStatus.failed
+        payout_record.status = (
+            PayoutStatus.completed if success else PayoutStatus.failed
+        )
         if success:
             payout_record.completed_at = datetime.now()
         else:

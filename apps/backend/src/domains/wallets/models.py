@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Column,
     Numeric,
@@ -13,6 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from src.infra.db.database import Base
+from src.shared.money import from_kobo, from_micro
 import enum
 
 
@@ -39,16 +41,14 @@ class Wallet(Base):
         unique=True,
     )
 
-    # Balance denominated in stable coin (e.g. USDC). All internal debits/credits happen here.
-    stable_coin_balance = Column(
-        Numeric(precision=20, scale=8), default=0, nullable=False
-    )
+    # Balance denominated in stable coin (e.g. USDC), stored as WHOLE micro-units
+    # (1 stable coin = 1_000_000) so arithmetic and comparisons are exact.
+    # All internal debits/credits happen here. Read it as a Decimal through the
+    # `stable_coin_balance` property; write with src.shared.money.to_micro().
+    stable_coin_balance_micro = Column(BigInteger, default=0, nullable=False)
     # Funds set aside for an in-flight contribution (locked_for_contribution ->
-    # finalize_contribution_debit, or released back on failure). Referenced
-    # throughout wallets/service.py's lock/finalize/release trio.
-    stable_coin_locked = Column(
-        Numeric(precision=20, scale=8), default=0, nullable=False
-    )
+    # finalize_contribution_debit, or released back on failure). Same unit.
+    stable_coin_locked_micro = Column(BigInteger, default=0, nullable=False)
     # The user’s default “display” fiat currency. Converts on-the-fly per payment gateway used on trx.
     local_currency = Column(
         Enum(LocalCurrency), default=LocalCurrency.NGN, nullable=False
@@ -67,6 +67,15 @@ class Wallet(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+
+    @property
+    def stable_coin_balance(self):
+        """Available balance as an exact Decimal (6 places). Read-only."""
+        return from_micro(self.stable_coin_balance_micro)
+
+    @property
+    def stable_coin_locked(self):
+        return from_micro(self.stable_coin_locked_micro)
 
 
 # ----------------- wallet_ledger(tnx record) -----------
@@ -124,11 +133,13 @@ class WalletLedger(Base):  # TNX RECORD
     )
 
     type = Column(Enum(LedgerType), nullable=False)
-    stable_amount = Column(Numeric(precision=20, scale=8), nullable=False)
+    # Signed whole micro-units of the stable coin (debits are negative).
+    stable_amount_micro = Column(BigInteger, nullable=False)
     stable_currency = Column(
         Enum(StableCurrency), nullable=False, default=StableCurrency.usdc
     )
-    local_amount = Column(Numeric(precision=20, scale=2), nullable=False)
+    # Whole minor units of the local currency (kobo for NGN).
+    local_amount_minor = Column(BigInteger, nullable=False)
     local_currency = Column(Enum(LocalCurrency), nullable=False)
     exchange_rate = Column(
         Numeric(precision=20, scale=8), nullable=False
@@ -152,6 +163,14 @@ class WalletLedger(Base):  # TNX RECORD
         lazy="joined",
         uselist=False,
     )
+
+    @property
+    def stable_amount(self):
+        return from_micro(self.stable_amount_micro)
+
+    @property
+    def local_amount(self):
+        return from_kobo(self.local_amount_minor)
 
 
 # # Your existing reference = your internal reference (keep it)

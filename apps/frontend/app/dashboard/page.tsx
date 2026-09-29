@@ -66,7 +66,9 @@ export default function Dashboard() {
 
   // Derived Portfolio Values
   const userGroups = dashboardData.groups?.user_groups || []
-  const walletBalance = dashboardData.summary?.wallet?.stable_coin_balance ?? 0
+  // Both arrive as decimal strings from the API; convert once for display.
+  const walletBalance = Number(dashboardData.summary?.wallet?.stable_coin_balance ?? 0)
+  const walletLocalBalance = Number(dashboardData.summary?.wallet?.local_balance ?? 0)
   const activeGoalsCount = dashboardData.targets?.group_goals?.length || 0
   const pendingInvitations = dashboardData.cooperative_members?.filter(
     (m) => m.status === MembershipStatus.PENDING
@@ -80,9 +82,6 @@ export default function Dashboard() {
             <h1 className="font-display text-2xl font-bold text-brand-ink tracking-tight">
               Welcome back, {firstName}
             </h1>
-            <p className="text-sm text-brand-ink/55 mt-0.5">
-              Cross-cooperative portfolio & action hub
-            </p>
           </div>
           <div className="hidden md:flex items-center gap-2">
             <Button
@@ -117,6 +116,7 @@ export default function Dashboard() {
           totalCoordinated={dashboardData.summary?.your_savings || 0}
           activeGoalsCount={activeGoalsCount}
           walletBalance={walletBalance}
+          walletLocalBalance={walletLocalBalance}
         />
 
         {/* ── Main Content Grid ── */}

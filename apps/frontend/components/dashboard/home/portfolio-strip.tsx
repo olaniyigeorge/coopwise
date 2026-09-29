@@ -9,7 +9,10 @@ interface PortfolioStripProps {
   coopCount: number
   totalCoordinated: number
   activeGoalsCount: number
+  /** Stable-coin units (USDC). */
   walletBalance: number
+  /** The same balance in naira, converted server-side. */
+  walletLocalBalance: number
 }
 
 export default function PortfolioStrip({
@@ -17,6 +20,7 @@ export default function PortfolioStrip({
   totalCoordinated,
   activeGoalsCount,
   walletBalance,
+  walletLocalBalance,
 }: PortfolioStripProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -61,14 +65,11 @@ export default function PortfolioStrip({
         <div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-brand-ink/50 uppercase tracking-wide">Wallet Balance</span>
-            <span className="text-[10px] font-bold bg-brand-ink/10 text-brand-ink/70 px-1.5 py-0.5 rounded">
-              USDC
-            </span>
           </div>
           <p className="font-display text-lg font-bold text-brand-ink mt-1">
-            {Number(walletBalance || 0).toFixed(2)}
+            {formatCurrency(walletLocalBalance || 0, 2)}
           </p>
-          <p className="text-[11px] text-brand-ink/40">≈ {formatCurrency((walletBalance || 0) * 1600)}</p>
+          <p className="text-[11px] text-brand-ink/40">≈ {(walletBalance || 0).toFixed(2)} USDC</p>
         </div>
         <Link
           href="/dashboard/wallet/fund"

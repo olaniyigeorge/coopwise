@@ -6,7 +6,9 @@ from alembic import context
 
 from config import AppConfig
 from src.infra.db.database import Base
-from src.infra.db import all_models  # noqa: F401  (populates Base.metadata for autogenerate)
+
+# Side-effect import: registers every model on Base.metadata for autogenerate.
+from src.infra.db import all_models  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

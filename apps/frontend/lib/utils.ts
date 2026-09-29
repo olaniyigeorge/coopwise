@@ -9,12 +9,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Format a number as Nigerian Naira currency
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number, fractionDigits = 0): string {
   return new Intl.NumberFormat('en-NG', {
     style: 'currency',
     currency: 'NGN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(amount)
 }
 

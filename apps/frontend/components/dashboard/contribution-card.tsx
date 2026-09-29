@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { 
   CheckCircle, 
   Clock, 
@@ -110,12 +110,7 @@ export default function ContributionCard({
                   
                   {showUser && contribution.user && (
                     <div className="flex items-center gap-2 mt-2">
-                      <Avatar className="w-6 h-6">
-                        <AvatarImage src={contribution.user.avatar} />
-                        <AvatarFallback className="text-xs">
-                          {contribution.user.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar name={contribution.user.name} src={contribution.user.avatar} size="xs" />
                       <span className="text-xs text-gray-600">{contribution.user.name}</span>
                     </div>
                   )}

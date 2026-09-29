@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/dashboard/layout'
 import { MobileCard } from '@/components/dashboard/mobile-responsive-wrapper'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { 
@@ -185,10 +185,6 @@ export default function MessagesPage() {
     }
   }
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase()
-  }
-
   // Mobile: Show either contacts list or chat view
   if (isMobile) {
     return (
@@ -229,12 +225,7 @@ export default function MessagesPage() {
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <Avatar className="w-12 h-12">
-                            <AvatarImage src={contact.avatar} alt={contact.name} />
-                            <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                              {contact.type === 'group' ? <Users className="w-5 h-5" /> : getInitials(contact.name)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar name={contact.name} src={contact.avatar} size="lg" fallbackClassName="bg-primary/10 text-primary text-sm font-medium" fallback={contact.type === 'group' ? <Users className="w-5 h-5" /> : undefined} />
                           {contact.online && (
                             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
                           )}
@@ -287,12 +278,7 @@ export default function MessagesPage() {
                         >
                           ←
                         </Button>
-                        <Avatar className="w-10 h-10">
-                          <AvatarImage src={selectedContact.avatar} alt={selectedContact.name} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                            {selectedContact.type === 'group' ? <Users className="w-4 h-4" /> : getInitials(selectedContact.name)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar name={selectedContact.name} src={selectedContact.avatar} size="md" fallbackClassName="bg-primary/10 text-primary text-sm" fallback={selectedContact.type === 'group' ? <Users className="w-4 h-4" /> : undefined} />
                         <div>
                           <h3 className="font-medium text-gray-900">{selectedContact.name}</h3>
                           <p className="text-xs text-gray-500">
@@ -430,12 +416,7 @@ export default function MessagesPage() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={contact.avatar} alt={contact.name} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                          {contact.type === 'group' ? <Users className="w-5 h-5" /> : getInitials(contact.name)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar name={contact.name} src={contact.avatar} size="lg" fallbackClassName="bg-primary/10 text-primary text-sm font-medium" fallback={contact.type === 'group' ? <Users className="w-5 h-5" /> : undefined} />
                       {contact.online && (
                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
                       )}
@@ -482,12 +463,7 @@ export default function MessagesPage() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={selectedContact.avatar} alt={selectedContact.name} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                          {selectedContact.type === 'group' ? <Users className="w-4 h-4" /> : getInitials(selectedContact.name)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar name={selectedContact.name} src={selectedContact.avatar} size="md" fallbackClassName="bg-primary/10 text-primary text-sm" fallback={selectedContact.type === 'group' ? <Users className="w-4 h-4" /> : undefined} />
                       <div>
                         <h3 className="font-medium text-gray-900">{selectedContact.name}</h3>
                         <p className="text-sm text-gray-500">

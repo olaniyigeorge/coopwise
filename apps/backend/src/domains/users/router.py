@@ -9,7 +9,16 @@ from src.api.middlewares.dependencies import (
     get_current_admin_user,
 )
 from src.domains.auth.schemas import AuthenticatedUser
-from src.domains.users.schemas import AvatarUploadResponse, UserDetail, UserUpdate
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.domains.users.public_profile import get_public_profile
+from src.domains.users.schemas import (
+    AvatarUploadResponse,
+    PublicProfile,
+    UserDetail,
+    UserUpdate,
+)
+from src.infra.db.dependencies import get_async_db_session
 from src.domains.users.service import UserService
 from src.domains.users.dependencies import get_user_service
 from src.domains.users.exceptions import (
@@ -30,6 +39,19 @@ async def get_my_profile(
     """Fetch the authenticated user's own profile."""
     try:
         return await user_service.get_user_by_id(user.id)
+    except UserNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/{user_id}/public", response_model=PublicProfile)
+async def get_public_profile_route(
+    user_id: UUID,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    """Limited profile of any member, visible to any signed-in user."""
+    try:
+        return await get_public_profile(db, user_id)
     except UserNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

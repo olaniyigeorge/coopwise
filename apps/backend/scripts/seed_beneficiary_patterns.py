@@ -4,6 +4,9 @@ from config import AppConfig as config
 from sqlalchemy import select
 
 from src.infra.db.database import db_manager
+
+# Side-effect import: register every model so relationships (e.g. User) resolve.
+from src.infra.db import all_models  # noqa: F401
 from src.domains.cooperatives.models.seed import BENEFICIARY_PATTERN_SEED
 from src.domains.cooperatives.models.goals import CoopBeneficiaryPattern
 

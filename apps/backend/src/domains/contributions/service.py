@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 from typing import Optional, Dict, Any, List
 from decimal import Decimal
 from enum import Enum
@@ -15,6 +15,7 @@ from src.domains.contributions.models import Contribution, ContributionStatus
 
 from src.shared.utils.logger import logger
 from src.domains.wallets.service import WalletService, MOCK_LOCAL_TO_STABLE_RATE
+from src.shared.money import stable_to_local
 from src.domains.cooperatives.uow import UnitOfWork
 from src.domains.cooperatives.services.rule_services import FinancialRuleService
 from src.domains.cooperatives.exceptions import RuleNotFoundError
@@ -48,28 +49,15 @@ class ContributionService:
     """
 
     @staticmethod
-    async def process_manual_contribution(
+    async def _validate_contribution_request(
         contribution_data: ContributionCreate,
         user: AuthenticatedUser,
         db: AsyncSession,
-    ) -> ContributionDetail:
+    ) -> Decimal:
         """
-        Process a manual contribution initiated by the user.
-
-        Web2 flow (no blockchain — see project notes: Flow/Crossmint wallet
-        integration is deliberately deferred until after the Web2 path ships):
-        1. Validate membership in group (and goal, if one is targeted)
-        2. Check sufficient wallet balance
-        3. Lock funds in wallet (prevent double-spend)
-        4. Create contribution record (initiated status)
-        5. Finalize the wallet debit and mark completed
-        6. Handle rollback on failure
-
-        Security checks:
-        - User must be active group member
-        - Amount must be >= 0
-        - Wallet must have sufficient balance
-        - Idempotent: duplicate submissions use same contribution ID
+        Shared pre-flight checks for any user-initiated contribution (wallet
+        or Paystack): active membership, active group, goal belongs to the
+        group, positive amount. Returns the validated amount.
         """
         # Validate membership
         membership = (
@@ -121,6 +109,35 @@ class ContributionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Contribution amount must be greater than zero.",
             )
+        return amount
+
+    @staticmethod
+    async def process_manual_contribution(
+        contribution_data: ContributionCreate,
+        user: AuthenticatedUser,
+        db: AsyncSession,
+    ) -> ContributionDetail:
+        """
+        Process a manual contribution initiated by the user.
+
+        Web2 flow (no blockchain — see project notes: Flow/Crossmint wallet
+        integration is deliberately deferred until after the Web2 path ships):
+        1. Validate membership in group (and goal, if one is targeted)
+        2. Check sufficient wallet balance
+        3. Lock funds in wallet (prevent double-spend)
+        4. Create contribution record (initiated status)
+        5. Finalize the wallet debit and mark completed
+        6. Handle rollback on failure
+
+        Security checks:
+        - User must be active group member
+        - Amount must be >= 0
+        - Wallet must have sufficient balance
+        - Idempotent: duplicate submissions use same contribution ID
+        """
+        amount = await ContributionService._validate_contribution_request(
+            contribution_data, user, db
+        )
 
         # wallet.stable_coin_balance is denominated in stable-coin units, not
         # the contribution's local currency — convert before comparing/locking
@@ -138,7 +155,12 @@ class ContributionService:
             )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Insufficient wallet balance. Required: {required_amount}, Available: {wallet_balance}",
+                detail=(
+                    f"Insufficient wallet balance. You need "
+                    f"{contribution_data.currency or 'NGN'} {stable_to_local(required_amount):,.2f} "
+                    f"(including a 5% fee buffer) but have "
+                    f"{stable_to_local(wallet_balance):,.2f} available."
+                ),
             )
 
         # Lock funds in wallet (prevents double-spend)
@@ -193,17 +215,135 @@ class ContributionService:
             logger.error(
                 f"Unexpected error in process_manual_contribution: {e}", exc_info=True
             )
-            # Attempt cleanup
+            # Give the locked funds back, then ALWAYS fail the request: the
+            # old code only raised when this cleanup itself failed, so a
+            # successful cleanup fell off the end and the API reported
+            # "processed successfully" with no contribution.
             try:
                 await WalletService.release_locked_funds(
                     user_id=user.id, amount=stable_amount, db=db
                 )
-            except Exception as e:
+            except Exception:
                 logger.error(f"Failed to cleanup locked funds for user {user.id}")
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="An unexpected error occurred while processing your contribution.",
-                )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while processing your contribution.",
+            )
+
+    @staticmethod
+    async def initiate_paystack_contribution(
+        contribution_data: ContributionCreate,
+        user: AuthenticatedUser,
+        db: AsyncSession,
+    ) -> Dict[str, Any]:
+        """
+        Start a contribution paid directly through Paystack (no wallet funds).
+
+        Creates a `pending` Contribution whose `tx_id` is the Paystack
+        reference, then initializes the Paystack transaction. The contribution
+        is completed later by the webhook / callback via
+        `settle_paystack_contribution`.
+        """
+        from src.domains.payments.schemas import PaystackPayload
+        from src.domains.payments.service import PaymentService
+
+        amount = await ContributionService._validate_contribution_request(
+            contribution_data, user, db
+        )
+        currency = contribution_data.currency or "NGN"
+        reference = f"CW-CONTRIB-{uuid4().hex}"
+
+        contribution = Contribution(
+            group_id=contribution_data.group_id,
+            goal_id=contribution_data.goal_id,
+            user_id=user.id,
+            amount=amount,
+            currency=currency,
+            due_date=contribution_data.due_date,
+            note=f"Paystack contribution - {contribution_data.note or ''}",
+            status=ContributionStatus.pending,
+            tx_id=reference,
+        )
+        db.add(contribution)
+        await db.commit()
+        await db.refresh(contribution)
+
+        payload = PaystackPayload(
+            amount=int(amount * 100),  # Paystack expects the minor unit (kobo)
+            email=user.email,
+            currency=currency,
+            tx_ref=reference,
+            meta={"note": "Contribution on Coopwise"},
+        )
+        try:
+            response = await PaymentService.init_pay_with_paystack(
+                payload,
+                channels=None,
+                extra_metadata={
+                    "contribution_id": str(contribution.id),
+                    "group_id": str(contribution.group_id),
+                },
+            )
+            if not response or not response.get("status"):
+                raise ValueError((response or {}).get("message", "Paystack rejected"))
+        except Exception as e:
+            logger.error(
+                f"Paystack init failed for contribution {contribution.id}: {e}"
+            )
+            await ContributionService.mark_contribution_failed(
+                db, contribution.id, f"Paystack initialization failed: {e}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not start the payment. Please try again.",
+            )
+
+        return {
+            "contribution": contribution,
+            "reference": reference,
+            "authorization_url": response["data"]["authorization_url"],
+        }
+
+    @staticmethod
+    async def get_contribution_by_reference(
+        db: AsyncSession, reference: str
+    ) -> Optional[Contribution]:
+        result = await db.execute(
+            select(Contribution).where(Contribution.tx_id == reference)
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def settle_paystack_contribution(
+        db: AsyncSession, contribution: Contribution, paid_amount_minor: int
+    ) -> bool:
+        """
+        Complete a Paystack-paid contribution. Idempotent (webhook + callback
+        can both fire). `paid_amount_minor` is the amount Paystack reports as
+        actually paid; an underpayment is failed rather than credited.
+
+        Returns True if this call completed the contribution.
+        """
+        if contribution.status == ContributionStatus.completed:
+            return False
+
+        expected_minor = int(Decimal(str(contribution.amount)) * 100)
+        if paid_amount_minor < expected_minor:
+            await ContributionService.mark_contribution_failed(
+                db,
+                contribution.id,
+                f"Underpaid: expected {expected_minor}, got {paid_amount_minor}",
+            )
+            return False
+
+        await ContributionService.mark_contribution_success(
+            db=db,
+            contribution_id=contribution.id,
+            tx_hash=contribution.tx_id,
+            action_type=ContributionActionType.MANUAL_SUBMIT,
+            debit_wallet=False,
+        )
+        return True
 
     @staticmethod
     async def process_auto_contribution(
@@ -253,9 +393,9 @@ class ContributionService:
             # Financial rule holds contribution_amount/frequency — these
             # aren't flat fields on CoopCooperative itself.
             try:
-                financial_rule = await FinancialRuleService(
-                    UnitOfWork(db)
-                ).get_active(group_id)
+                financial_rule = await FinancialRuleService(UnitOfWork(db)).get_active(
+                    group_id
+                )
             except RuleNotFoundError:
                 logger.warning(
                     f"Auto-contribution skipped: no financial rule configured for group={group_id}"
@@ -274,7 +414,9 @@ class ContributionService:
             # wallet.stable_coin_balance is stable-coin-denominated — convert
             # the (local-currency) rule amount before comparing/locking, same
             # as process_manual_contribution.
-            stable_amount = financial_rule.contribution_amount * MOCK_LOCAL_TO_STABLE_RATE
+            stable_amount = (
+                financial_rule.contribution_amount * MOCK_LOCAL_TO_STABLE_RATE
+            )
 
             # Check wallet balance
             wallet_balance = await WalletService.get_effective_balance(user.id, db)
@@ -330,156 +472,6 @@ class ContributionService:
         except Exception as e:
             logger.error(f"Error in process_auto_contribution: {e}", exc_info=True)
             return None
-
-    @staticmethod
-    async def request_withdrawal(
-        group_id: UUID,
-        user: AuthenticatedUser,
-        amount: Decimal,
-        db: AsyncSession,
-        network: str = "flow",
-    ) -> Dict[str, Any]:
-        """
-        Request a withdrawal of funds from the group vault.
-
-        This could be before payout is scheduled or for emergency situations.
-
-        Security:
-        - User must be member
-        - Amount must not exceed user's balance in group
-        - Creates withdrawal record for manager approval
-        - Requires blockchain confirmation
-        """
-        # Validate membership
-        membership = (
-            await CooperativeMembershipService.get_membership_by_user_and_group(
-                user_id=user.id, group_id=group_id, db=db
-            )
-        )
-        if not membership or not membership.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not an active member of this group.",
-            )
-
-        # Get group
-        from src.domains.cooperatives.services.cooperative_service import (
-            CooperativeService,
-        )
-
-        group = await CooperativeService.get_coop_group_by_id(db, group_id)
-        if not group:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Group not found.",
-            )
-
-        # Validate amount
-        if amount <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Withdrawal amount must be positive.",
-            )
-
-        # Check user balance in group (query total contributions minus payouts)
-        # For now, simplified check
-        total_contributed = await db.execute(
-            select(Contribution).where(
-                and_(
-                    Contribution.user_id == user.id,
-                    Contribution.group_id == group_id,
-                    Contribution.status == ContributionStatus.completed,
-                )
-            )
-        )
-        total_amount = sum(c.amount for c in total_contributed.scalars().all())
-
-        if total_amount < amount:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Insufficient balance. Your total contribution: {total_amount}, Requested: {amount}",
-            )
-
-        # Submit withdrawal to contract (which handles priority/schedule)
-        group_address = str(group.id)  # TODO: Use blockchain_address
-        contract_result = await contract_service.submit_contribution(
-            group_address=group_address,
-            user_address=str(user.id),  # AuthenticatedUser carries no wallet_address today
-            amount=-amount,  # Negative = withdrawal
-            network=network,
-        )
-
-        return {
-            "success": contract_result.get("success"),
-            "tx_hash": contract_result.get("tx_hash"),
-            "amount": str(amount),
-            "group_id": str(group_id),
-            "status": "pending" if contract_result.get("success") else "failed",
-            "message": (
-                contract_result.get("error")
-                if not contract_result.get("success")
-                else "Withdrawal request submitted"
-            ),
-        }
-
-    @staticmethod
-    async def emergency_refund(
-        group_id: UUID, user: AuthenticatedUser, db: AsyncSession, network: str = "flow"
-    ) -> Dict[str, Any]:
-        """
-        Request emergency refund from group vault.
-
-        This is for special circumstances (group dissolution, user hardship, etc.)
-        Requires additional authorization/approval.
-        """
-        # Validate membership
-        membership = (
-            await CooperativeMembershipService.get_membership_by_user_and_group(
-                user_id=user.id, group_id=group_id, db=db
-            )
-        )
-        if not membership:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not a member of this group.",
-            )
-
-        # Get group
-        from src.domains.cooperatives.services.cooperative_service import (
-            CooperativeService,
-        )
-
-        group = await CooperativeService.get_coop_group_by_id(db, group_id)
-        if not group:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Group not found.",
-            )
-
-        # Call emergency refund on contract
-        group_address = str(group.id)  # TODO: Use blockchain_address
-        contract_result = await contract_service.emergency_refund(
-            group_address=group_address,
-            user_address=str(user.id),  # AuthenticatedUser carries no wallet_address today
-            network=network,
-        )
-
-        logger.warning(
-            f"EMERGENCY REFUND requested: user={user.id}, group={group_id}, "
-            f"success={contract_result.get('success')}"
-        )
-
-        return {
-            "success": contract_result.get("success"),
-            "tx_hash": contract_result.get("tx_hash"),
-            "refund_amount": str(contract_result.get("refund_amount", 0)),
-            "group_id": str(group_id),
-            "message": (
-                "Emergency refund initiated"
-                if contract_result.get("success")
-                else contract_result.get("error")
-            ),
-        }
 
     @staticmethod
     async def _is_contribution_due(
@@ -545,9 +537,13 @@ class ContributionService:
         contribution_id: UUID,
         tx_hash: str = None,
         action_type: ContributionActionType = ContributionActionType.MANUAL_SUBMIT,
+        debit_wallet: bool = True,
     ) -> Dict[str, Any]:
         """
         Mark a contribution as successfully completed.
+
+        `debit_wallet=False` is for contributions paid directly through a
+        gateway (Paystack): no wallet funds were locked, so none are finalized.
         """
         try:
             contribution = await db.get(Contribution, contribution_id)
@@ -565,11 +561,13 @@ class ContributionService:
             # Finalize wallet debit — contribution.amount is local-currency;
             # what's actually locked/held is stable-coin-denominated (see
             # process_manual_contribution / process_auto_contribution).
-            await WalletService.finalize_contribution_debit(
-                user_id=contribution.user_id,
-                amount=Decimal(str(contribution.amount)) * MOCK_LOCAL_TO_STABLE_RATE,
-                db=db,
-            )
+            if debit_wallet:
+                await WalletService.finalize_contribution_debit(
+                    user_id=contribution.user_id,
+                    amount=Decimal(str(contribution.amount))
+                    * MOCK_LOCAL_TO_STABLE_RATE,
+                    db=db,
+                )
 
             await ActivityService.log(
                 db,

@@ -25,7 +25,9 @@ def _payload(**overrides):
 async def test_init_pay_with_paystack_returns_gateway_body_verbatim():
     with patch(
         "src.domains.payments.service.requests.post",
-        return_value=_make_response({"status": True, "data": {"authorization_url": "https://x"}}),
+        return_value=_make_response(
+            {"status": True, "data": {"authorization_url": "https://x"}}
+        ),
     ):
         result = await PaymentService.init_pay_with_paystack(_payload())
 
@@ -61,7 +63,9 @@ async def test_init_pay_with_paystack_raises_500_on_network_error():
 async def test_verify_paystack_transaction_raises_400_on_gateway_failure():
     with patch(
         "src.domains.payments.service.requests.get",
-        return_value=_make_response({"status": False, "message": "Transaction not found"}),
+        return_value=_make_response(
+            {"status": False, "message": "Transaction not found"}
+        ),
     ):
         with pytest.raises(HTTPException) as exc_info:
             await PaymentService.verify_paystack_transaction("some-ref")
@@ -82,7 +86,9 @@ async def test_verify_paystack_transaction_happy_path():
 async def test_create_paystack_transfer_recipient_happy_path():
     with patch(
         "src.domains.payments.service.requests.post",
-        return_value=_make_response({"status": True, "data": {"recipient_code": "RCP_123"}}),
+        return_value=_make_response(
+            {"status": True, "data": {"recipient_code": "RCP_123"}}
+        ),
     ):
         code = await PaymentService.create_paystack_transfer_recipient(
             account_number="0123456789", bank_code="058", account_name="Test User"
@@ -119,11 +125,16 @@ async def test_initiate_paystack_transfer_happy_path():
 async def test_initiate_paystack_transfer_raises_502_on_gateway_failure():
     with patch(
         "src.domains.payments.service.requests.post",
-        return_value=_make_response({"status": False, "message": "Insufficient balance"}),
+        return_value=_make_response(
+            {"status": False, "message": "Insufficient balance"}
+        ),
     ):
         with pytest.raises(HTTPException) as exc_info:
             await PaymentService.initiate_paystack_transfer(
-                amount=100, recipient_code="RCP_123", reference="ref-abc", reason="payout"
+                amount=100,
+                recipient_code="RCP_123",
+                reference="ref-abc",
+                reason="payout",
             )
     assert exc_info.value.status_code == 502
 

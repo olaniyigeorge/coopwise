@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
 import CooperativeService from '@/services/cooperative-service'
+import CooperativePreviewCard from '@/components/dashboard/cooperative-preview'
+import type { CooperativePreview } from '@/types/cooperative'
 
 // Schema for invite code validation
 const inviteCodeSchema = z.object({
@@ -34,13 +36,6 @@ const inviteCodeSchema = z.object({
     message: "Invite code must be at least 6 characters.",
   }),
 })
-
-// Interface for cooperative preview data
-interface GroupData {
-  name: string;
-  description: string;
-  coopModel: string;
-}
 
 // Update the component props interface
 interface JoinGroupFormProps {
@@ -54,11 +49,9 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
   const [joining, setJoining] = useState(false)
   const [showGroupDetails, setShowGroupDetails] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [groupData, setGroupData] = useState<GroupData>({
-    name: "",
-    description: "",
-    coopModel: "",
-  })
+  const [preview, setPreview] = useState<CooperativePreview | null>(null)
+  // What the server actually did with the invite (active vs. queued).
+  const [joinedImmediately, setJoinedImmediately] = useState(true)
   const [currentInviteCode, setCurrentInviteCode] = useState("")
   
   const form = useForm<z.infer<typeof inviteCodeSchema>>({
@@ -96,17 +89,10 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
 
         // Get cooperative details
         try {
-          const cooperative = await CooperativeService.getCooperative(membership.group_id);
+          const cooperative = await CooperativeService.getCooperativePreview(membership.group_id);
 
           if (cooperative) {
-            // Format the data for display
-            setGroupData({
-              name: cooperative.name || "Unknown Cooperative",
-              description: cooperative.description || "No description available",
-              coopModel: cooperative.coop_model,
-            });
-
-            // Show the cooperative details modal
+            setPreview(cooperative);
             setShowGroupDetails(true);
           }
         } catch (error: any) {
@@ -154,7 +140,8 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
     
     try {
       // Call the API to accept the invite code
-      await CooperativeService.acceptInviteCode(currentInviteCode);
+      const membership = await CooperativeService.acceptInviteCode(currentInviteCode) as { status?: string };
+      setJoinedImmediately((membership?.status ?? 'active').toLowerCase() === 'active');
 
       // Close the group details modal and show success
       setShowGroupDetails(false);
@@ -164,8 +151,8 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
       
       // Notify user of success
       toast({
-        title: "Success",
-        description: "You have successfully joined the group!",
+        title: "Done",
+        description: "Your request has been recorded.",
         variant: "default",
       });
     } catch (error: any) {
@@ -261,28 +248,16 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
       
       {/* Group Details Modal */}
       <Dialog open={showGroupDetails} onOpenChange={setShowGroupDetails}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Cooperative Details</DialogTitle>
+            <DialogTitle>Join this cooperative?</DialogTitle>
+            <DialogDescription>
+              Review the details below before you confirm.
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Cooperative Name:</h3>
-              <p className="font-medium">{groupData.name}</p>
-            </div>
+          {preview && <CooperativePreviewCard preview={preview} />}
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Description:</h3>
-              <p>{groupData.description}</p>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Model:</h3>
-              <p className="capitalize">{groupData.coopModel}</p>
-            </div>
-          </div>
-          
           <DialogFooter className="flex flex-row space-x-2">
             <Button
               type="button"
@@ -319,24 +294,36 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
             </div>
           </div>
           
-          <DialogTitle className="text-xl">You&apos;ve joined {groupData.name}!</DialogTitle>
+          <DialogTitle className="text-xl">
+            {joinedImmediately ? `You've joined ${preview?.name ?? 'the group'}!` : 'Request sent'}
+          </DialogTitle>
           <DialogDescription className="text-center">
-            Your membership is pending approval from the group admin.<br />
-            Once approved, you can start saving with others.
+            {joinedImmediately ? (
+              <>You&apos;re in — you can start contributing right away.</>
+            ) : preview?.admission === 'member_vote' ? (
+              <>Members of {preview?.name} will vote on your request. You&apos;ll be notified of the result.</>
+            ) : (
+              <>An admin of {preview?.name} will review your request. You&apos;ll be notified of the result.</>
+            )}
           </DialogDescription>
           
-          <div className="bg-blue-50 p-3 rounded-md border border-blue-100 text-left my-4">
-            <h4 className="text-sm font-medium text-blue-800 flex items-center mb-2">
-              <Info className="h-4 w-4 mr-2" />
-              What happens next?
-            </h4>
-            <ul className="text-xs text-blue-800 space-y-2 list-disc ml-4">
-              <li>Your request will be reviewed by the group admin</li>
-              <li>Once approved, you&apos;ll see your payout position</li>
-              <li>You&apos;ll be notified when your membership is approved</li>
-              <li>View your membership status in &ldquo;My Groups&rdquo; section</li>
-            </ul>
-          </div>
+          {!joinedImmediately && (
+            <div className="bg-blue-50 p-3 rounded-md border border-blue-100 text-left my-4">
+              <h4 className="text-sm font-medium text-blue-800 flex items-center mb-2">
+                <Info className="h-4 w-4 mr-2" />
+                What happens next?
+              </h4>
+              <ul className="text-xs text-blue-800 space-y-2 list-disc ml-4">
+                <li>
+                  {preview?.admission === 'member_vote'
+                    ? 'Existing members vote on your request'
+                    : 'An admin reviews your request'}
+                </li>
+                <li>You can&apos;t contribute until you&apos;re admitted</li>
+                <li>You&apos;ll be notified as soon as there&apos;s a decision</li>
+              </ul>
+            </div>
+          )}
           
           <div className="mt-4 flex gap-2">
             <Button

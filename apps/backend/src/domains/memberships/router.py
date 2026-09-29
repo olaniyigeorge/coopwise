@@ -13,6 +13,10 @@ from src.domains.notifications.service import NotificationService
 from src.domains.users.service import UserService
 from src.domains.users.infra.sqlalchemy_user_repository import SqlAlchemyUserRepository
 from src.domains.auth.schemas import AuthenticatedUser
+from pydantic import BaseModel
+from src.domains.memberships import admission
+from src.domains.memberships.admission import ApplicationRead
+from src.domains.memberships.models.enums import MembershipStatus
 from src.domains.memberships.schemas import MembershipDetails
 from src.infra.db.dependencies import get_async_db_session
 from src.domains.memberships.service import CooperativeMembershipService
@@ -91,10 +95,15 @@ async def accept_invite(
     if not group_data:
         raise HTTPException(status_code=404, detail="Group not found.")
 
+    is_pending = membership.status == MembershipStatus.PENDING
     activity_data = ActivityCreate(
         user_id=user.id,
         type=ActivityType.joined_group.value,
-        description=f"{auth_user.full_name} accepted an invite to join the cooperative {group_data.name}",
+        description=(
+            f"{auth_user.full_name} applied to join the cooperative {group_data.name}"
+            if is_pending
+            else f"{auth_user.full_name} joined the cooperative {group_data.name}"
+        ),
         group_id=group_data.id,
         entity_id=str(group_data.id),
         amount=None,
@@ -104,8 +113,12 @@ async def accept_invite(
 
     noti_data = NotificationCreate(
         user_id=group_data.created_by,
-        title="Invited Request Accepted",
-        message=f"{auth_user.full_name} has accepted an invite to join the cooperative {group_data.name}.",
+        title="New join request" if is_pending else "New member",
+        message=(
+            f"{auth_user.full_name} applied to join {group_data.name} and is waiting for a decision."
+            if is_pending
+            else f"{auth_user.full_name} joined {group_data.name}."
+        ),
         event_type="group",
         type="info",
         entity_url=str(membership.id),
@@ -113,6 +126,69 @@ async def accept_invite(
     await NotificationService.create_and_push_notification_to_user(noti_data, db)
 
     return membership
+
+
+class ApplicationDecision(BaseModel):
+    approve: bool
+
+
+@router.get(
+    "/groups/{group_id}/applications",
+    response_model=List[ApplicationRead],
+    summary="Pending join applications for a cooperative",
+)
+async def list_group_applications(
+    group_id: UUID,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    return await admission.list_applications(db, user.id, group_id)
+
+
+@router.post(
+    "/applications/{membership_id}/decision",
+    response_model=ApplicationRead,
+    summary="Approve/reject an application (admin) or cast a vote (member vote)",
+)
+async def decide_application(
+    membership_id: UUID,
+    body: ApplicationDecision,
+    user: AuthenticatedUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    result = await admission.decide(db, user.id, membership_id, body.approve)
+
+    if result.status in ("active", "rejected"):
+        admitted = result.status == "active"
+        group = await CooperativeService.get_coop_group_by_id(db, result.group_id)
+        name = group.name if group else "the cooperative"
+        if admitted:
+            await ActivityService.log(
+                db,
+                ActivityCreate(
+                    user_id=result.applicant.id,
+                    type=ActivityType.joined_group,
+                    description=f"{result.applicant.full_name} was admitted to {name}",
+                    group_id=result.group_id,
+                    entity_id=str(result.group_id),
+                ),
+            )
+        await NotificationService.create_and_push_notification_to_user(
+            NotificationCreate(
+                user_id=result.applicant.id,
+                title="Welcome aboard" if admitted else "Application declined",
+                message=(
+                    f"You're now a member of {name}."
+                    if admitted
+                    else f"Your request to join {name} wasn't approved."
+                ),
+                event_type="group",
+                type="success" if admitted else "info",
+                entity_url=str(result.group_id),
+            ),
+            db,
+        )
+    return result
 
 
 @router.get("/", response_model=List[MembershipDetails])
