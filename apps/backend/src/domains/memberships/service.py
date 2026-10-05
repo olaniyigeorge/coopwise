@@ -128,51 +128,6 @@ class CooperativeMembershipService:
 
         return new_membership
 
-    # Confirms membership - Sets membership state to accepted
-    @staticmethod
-    async def confirm_membership(
-        option: str,
-        membership_id: int,
-        db: AsyncSession,
-        user: AuthenticatedUser,
-    ):
-        try:
-            # TODO: Prefetch group data
-            stmt = select(GroupMembership).where(GroupMembership.id == membership_id)
-            result = await db.execute(stmt)
-            membership = result.scalars().first()
-
-            # if membership:
-            stmt = select(CoopCooperative).where(
-                CoopCooperative.id == membership.group_id
-            )
-            group_result = await db.execute(stmt)
-            coop_group = group_result.scalars().first()
-
-            # check is user is the group creator or has a membership with elevated role
-            if coop_group.created_by != user.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You do not have permissions to confirm a membership",
-                )
-
-            if option == "accepted":
-                membership.status = "accepted"
-            if option == "rejected":
-                membership.status = "rejected"
-            if option == "pending":
-                membership.status = "pending"
-            if option == "cancelled":
-                membership.status = "cancelled"
-
-            await db.commit()
-            await db.refresh(membership)
-
-        except Exception as e:
-            logger.error(e)
-            raise e
-        return membership
-
     # Generate invite code
     @staticmethod
     async def generate_invite_code(
