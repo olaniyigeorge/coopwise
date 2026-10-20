@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { clientIpHeadersFrom } from "@/lib/server/backend";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...clientIpHeadersFrom(req),
           ...(existingToken && { Authorization: `Bearer ${existingToken}` }),
         },
         body: JSON.stringify(payload),
