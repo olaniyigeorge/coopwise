@@ -30,11 +30,14 @@ import CooperativeService from '@/services/cooperative-service'
 import CooperativePreviewCard from '@/components/dashboard/cooperative-preview'
 import type { CooperativePreview } from '@/types/cooperative'
 
-// Schema for invite code validation
+// Invite codes are 8 characters. Trim/uppercase so a pasted or hand-typed
+// code matches the stored one regardless of case.
 const inviteCodeSchema = z.object({
-  inviteCode: z.string().min(6, {
-    message: "Invite code must be at least 6 characters.",
-  }),
+  inviteCode: z
+    .string()
+    .trim()
+    .min(6, { message: "Enter the invite code you were given." })
+    .max(8, { message: "Invite codes are 8 characters." }),
 })
 
 // Update the component props interface
@@ -64,11 +67,12 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
   // Function to verify the invite code
   const onVerifyCode = useCallback(async (values: z.infer<typeof inviteCodeSchema>) => {
     setVerifying(true)
-    setCurrentInviteCode(values.inviteCode)
-    
+    const code = values.inviteCode.trim().toUpperCase()
+    setCurrentInviteCode(code)
+
     try {
       // Call the API to verify the invite code
-      const response = await CooperativeService.verifyInviteCode(values.inviteCode) as {
+      const response = await CooperativeService.verifyInviteCode(code) as {
         membership?: { group_id: string; status?: string }
       };
 
@@ -125,10 +129,10 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
   // Auto-verify code if passed via URL
   useEffect(() => {
     if (initialCode && initialCode.length >= 6) {
-      form.setValue('inviteCode', initialCode)
+      form.setValue('inviteCode', initialCode.trim().toUpperCase())
       // Delay verification slightly to ensure form is ready
       setTimeout(() => {
-        const values = { inviteCode: initialCode }
+        const values = { inviteCode: initialCode.trim().toUpperCase() }
         onVerifyCode(values)
       }, 500)
     }
@@ -177,40 +181,47 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
   return (
     <div>
       {/* Main Form */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="rounded-[24px] border border-content/[0.06] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] sm:p-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onVerifyCode)} className="space-y-6">
-            <div>
-              <div className="mb-6 space-y-3">
-                <p className="text-sm text-gray-600">
-                  Enter an invite code you received from a group admin or member to join their saving group
-                </p>
-                
-                <div className="bg-blue-50 p-3 rounded-md border border-blue-100">
-                  <h4 className="text-sm font-medium text-blue-800 flex items-center mb-2">
-                    <Info className="h-4 w-4 mr-2" />
-                    How to join a group
-                  </h4>
-                  <ol className="text-xs text-blue-800 space-y-1 list-decimal ml-4">
-                    <li>Paste the invite code you received</li>
-                    <li>Review the group details</li>
-                    <li>Confirm to join the group</li>
-                    <li>Wait for admin approval (if required)</li>
-                  </ol>
-                </div>
+          <form onSubmit={form.handleSubmit(onVerifyCode)} className="space-y-5">
+            <div className="space-y-4">
+              <p className="text-sm leading-relaxed text-content/55">
+                Enter an invite code you received from a group admin or member to
+                join their saving group.
+              </p>
+
+              <div className="rounded-2xl border border-content/10 bg-content/[0.02] p-3.5">
+                <h4 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-content/55">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#DFF0E4] text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
+                    <Info className="h-3.5 w-3.5" />
+                  </span>
+                  How to join
+                </h4>
+                <ol className="mt-2 list-decimal space-y-1 pl-9 text-xs leading-relaxed text-content/50">
+                  <li>Paste the invite code you received</li>
+                  <li>Review the group details</li>
+                  <li>Confirm to join the group</li>
+                  <li>Wait for approval (if the group requires it)</li>
+                </ol>
               </div>
-            
+
               <FormField
                 control={form.control}
                 name="inviteCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Invite code</FormLabel>
+                    <FormLabel className="text-[11px] font-semibold uppercase tracking-[0.16em] text-content/45">
+                      Invite code
+                    </FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="e.g. cpw-invite-11111111-1111-1111-1111-111111111111:0000000-0000-0000-0000-00000000000" 
-                        {...field} 
-                        className="text-base py-6"
+                      <Input
+                        placeholder="K7M2Q9XA"
+                        {...field}
+                        maxLength={8}
+                        autoCapitalize="characters"
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="h-14 rounded-2xl border-content/10 bg-content/[0.02] text-center font-display text-xl font-bold uppercase tracking-[0.3em] text-content placeholder:font-normal placeholder:tracking-[0.2em] placeholder:text-content/25 focus-visible:border-[#0E3B2E]/40 focus-visible:ring-2 focus-visible:ring-[#0E3B2E]/15 dark:focus-visible:border-[#7FBF9C]/40 dark:focus-visible:ring-[#7FBF9C]/20"
                       />
                     </FormControl>
                     <FormMessage />
@@ -218,29 +229,30 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
                 )}
               />
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full py-6" 
+
+            <Button
+              type="submit"
+              className="h-12 w-full rounded-full bg-[#0E3B2E] text-sm font-semibold text-white hover:bg-[#0A2E24] dark:bg-[#7FBF9C] dark:text-[#0B1712] dark:hover:bg-[#93CBAE]"
               disabled={verifying}
             >
               {verifying ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verifying...
+                  Verifying…
                 </>
-              ) : "Verify Code"}
+              ) : "Verify code"}
             </Button>
           </form>
         </Form>
-        
-        <div className="mt-8 pt-6 border-t">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-gray-600">
-              Do you need an invite code?
+
+        <div className="mt-6 border-t border-content/[0.06] pt-5">
+          <div className="rounded-2xl border border-content/10 bg-content/[0.02] p-4">
+            <p className="text-sm font-medium text-content/70">
+              Need an invite code?
             </p>
-            <p className="text-sm text-gray-600 mt-1">
-              Contact the admin or any member of the group you want to join and request an invite code
+            <p className="mt-1 text-sm leading-relaxed text-content/45">
+              Ask an admin or any member of the group you want to join. Codes are
+              8 characters and can be typed in any case.
             </p>
           </div>
         </div>
@@ -248,9 +260,11 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
       
       {/* Group Details Modal */}
       <Dialog open={showGroupDetails} onOpenChange={setShowGroupDetails}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90dvh] gap-5 overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Join this cooperative?</DialogTitle>
+            <DialogTitle className="font-display text-xl font-bold">
+              Join this cooperative?
+            </DialogTitle>
             <DialogDescription>
               Review the details below before you confirm.
             </DialogDescription>
@@ -258,12 +272,28 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
 
           {preview && <CooperativePreviewCard preview={preview} />}
 
-          <DialogFooter className="flex flex-row space-x-2">
+          <div className="rounded-2xl border border-content/10 bg-content/[0.02] p-4">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content/55">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#DFF0E4] text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
+                <Info className="h-3.5 w-3.5" />
+              </span>
+              What happens next
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-content/50">
+              {preview?.admission === 'member_vote'
+                ? 'Members of this cooperative vote on your request. You’ll be notified as soon as there’s a decision.'
+                : preview?.admission === 'admin_approval'
+                  ? 'An admin reviews your request. You’ll be notified as soon as there’s a decision.'
+                  : 'You’ll be admitted straight away and can start contributing immediately.'}
+            </p>
+          </div>
+
+          <DialogFooter className="flex-row gap-2 space-x-0 sm:space-x-0">
             <Button
               type="button"
               variant="outline"
               onClick={() => setShowGroupDetails(false)}
-              className="flex-1"
+              className="h-11 flex-1 rounded-full border-content/15 bg-transparent text-sm font-semibold text-content/70 hover:bg-content/[0.04] hover:text-content"
               disabled={joining}
             >
               Cancel
@@ -271,15 +301,15 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
             <Button
               type="button"
               onClick={onJoinGroup}
-              className="flex-1"
+              className="h-11 flex-1 rounded-full bg-[#0E3B2E] text-sm font-semibold text-white hover:bg-[#0A2E24] dark:bg-[#7FBF9C] dark:text-[#0B1712] dark:hover:bg-[#93CBAE]"
               disabled={joining}
             >
               {joining ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Joining...
+                  Joining…
                 </>
-              ) : "Join Group"}
+              ) : "Confirm and join"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -287,17 +317,17 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
       
       {/* Success Modal */}
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="sm:max-w-md text-center">
-          <div className="flex justify-center my-6">
-            <div className="rounded-full bg-green-100 p-3">
-              <CheckCircle2 className="h-12 w-12 text-green-600" />
+        <DialogContent className="gap-4 text-center sm:max-w-md">
+          <div className="mt-2 flex justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#DFF0E4] dark:bg-[#1C3A2C]">
+              <CheckCircle2 className="h-9 w-9 text-[#17603F] dark:text-[#B7E3C3]" strokeWidth={1.8} />
             </div>
           </div>
-          
-          <DialogTitle className="text-xl">
+
+          <DialogTitle className="font-display text-2xl font-bold">
             {joinedImmediately ? `You've joined ${preview?.name ?? 'the group'}!` : 'Request sent'}
           </DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogDescription className="text-center leading-relaxed">
             {joinedImmediately ? (
               <>You&apos;re in — you can start contributing right away.</>
             ) : preview?.admission === 'member_vote' ? (
@@ -306,14 +336,16 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
               <>An admin of {preview?.name} will review your request. You&apos;ll be notified of the result.</>
             )}
           </DialogDescription>
-          
+
           {!joinedImmediately && (
-            <div className="bg-blue-50 p-3 rounded-md border border-blue-100 text-left my-4">
-              <h4 className="text-sm font-medium text-blue-800 flex items-center mb-2">
-                <Info className="h-4 w-4 mr-2" />
-                What happens next?
+            <div className="rounded-2xl border border-content/10 bg-content/[0.02] p-4 text-left">
+              <h4 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content/55">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#DFF0E4] text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
+                  <Info className="h-3.5 w-3.5" />
+                </span>
+                What happens next
               </h4>
-              <ul className="text-xs text-blue-800 space-y-2 list-disc ml-4">
+              <ul className="mt-2 list-disc space-y-1.5 pl-9 text-xs leading-relaxed text-content/50">
                 <li>
                   {preview?.admission === 'member_vote'
                     ? 'Existing members vote on your request'
@@ -324,22 +356,22 @@ export default function JoinGroupForm({ initialCode }: JoinGroupFormProps) {
               </ul>
             </div>
           )}
-          
-          <div className="mt-4 flex gap-2">
+
+          <div className="mt-2 flex gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push('/dashboard/join-group')}
-              className="flex-1"
+              className="h-11 flex-1 rounded-full border-content/15 bg-transparent text-sm font-semibold text-content/70 hover:bg-content/[0.04] hover:text-content"
             >
-              Join Another
+              Join another
             </Button>
             <Button
               type="button"
               onClick={() => router.push('/dashboard/my-group')}
-              className="flex-1"
+              className="h-11 flex-1 rounded-full bg-[#0E3B2E] text-sm font-semibold text-white hover:bg-[#0A2E24] dark:bg-[#7FBF9C] dark:text-[#0B1712] dark:hover:bg-[#93CBAE]"
             >
-              My Groups
+              My groups
             </Button>
           </div>
         </DialogContent>

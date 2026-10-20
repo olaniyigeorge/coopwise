@@ -100,11 +100,11 @@ export interface VersionedRule {
 
 // --- Governance -------------------------------------------------------
 
-export type DecisionModel = // UNCONFIRMED enum values
-  | "admin_decides"
+export type DecisionModel =
+  | "admin_led"
   | "majority_vote"
-  | "supermajority_vote"
-  | "consensus";
+  | "consensus"
+  | "weighted_vote";
 
 export type RuleAmendmentApprovalType = // UNCONFIRMED enum values
   | "admin_only"
@@ -126,7 +126,7 @@ export type CreateGovernanceRulePayload = Omit<
 
 // --- Membership --------------------------------------------------------
 
-export type JoinType = "open" | "invite_only" | "approval_required"; // UNCONFIRMED
+export type JoinType = "open" | "invite_only" | "application_required";
 export type KycLevelRequired = "none" | "basic" | "full"; 
 export type RemovalPolicy = "admin" | "vote" | "auto_on_default"; 
 
@@ -147,13 +147,14 @@ export type CreateMembershipRulePayload = Omit<
 
 // --- Financial -----------------------------------------------------------
 
-export type ContributionFrequency = // UNCONFIRMED enum values
+export type ContributionFrequency =
   | "daily"
   | "weekly"
   | "biweekly"
-  | "monthly";
+  | "monthly"
+  | "custom";
 
-export type PenaltyType = "none" | "flat" | "percentage"; // UNCONFIRMED
+export type PenaltyType = "none" | "flat" | "pct";
 export type PayoutStrategy = "rotating" | "equal" | "priority";
 export type RotationOrder = "sequential" | "random";
 

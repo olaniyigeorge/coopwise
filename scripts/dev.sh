@@ -1,9 +1,8 @@
 #!/bin/bash
 set -e
-set -o pipefail   # NEW: without this, `celery ... | tee file` always "succeeds"
-                   # from bash's point of view even if celery itself crashed,
-                   # since tee is the last command in the pipe. That's how a
-                   # dead worker goes unnoticed.
+set -o pipefail   # without this, `celery ... | tee file` always "succeeds"
+                  # since tee is the last command in the pipe, so a dead
+                  # worker goes unnoticed.
 set -m
 
 # Colors
@@ -17,19 +16,54 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 BACKEND_DIR="$PROJECT_ROOT/apps/backend"
 FRONTEND_DIR="$PROJECT_ROOT/apps/frontend"
 
+# --- macOS: make Homebrew and the EDB Postgres tools visible ---
+# (a fresh terminal/script doesn't always have these on PATH)
+[ -d /opt/homebrew/bin ] && export PATH="/opt/homebrew/bin:$PATH"
+[ -d /Library/PostgreSQL/18/bin ] && export PATH="/Library/PostgreSQL/18/bin:$PATH"
+
+# --- Pick a Python >= 3.10 for the venv (system python3 on macOS is 3.9) ---
+if command -v python3.12 >/dev/null 2>&1; then
+  PYTHON_BIN="python3.12"
+elif command -v python3.11 >/dev/null 2>&1; then
+  PYTHON_BIN="python3.11"
+elif command -v python3.10 >/dev/null 2>&1; then
+  PYTHON_BIN="python3.10"
+else
+  PYTHON_BIN="python3"
+fi
+
 echo -e "${GREEN}Starting CoopWise dev environment...${NC}"
 
 # --- Start Postgres ---
 echo -e "${YELLOW}Starting PostgreSQL...${NC}"
-if ! pg_isready -q 2>/dev/null; then
-  pg_ctlcluster 16 main start
-  sleep 2
+if ! command -v pg_isready >/dev/null 2>&1; then
+  echo -e "${RED}pg_isready not found on PATH. Install PostgreSQL client tools or fix PATH.${NC}"
+  exit 1
+fi
+
+if ! pg_isready -q -h localhost -p 5432 2>/dev/null; then
+  if command -v pg_ctlcluster >/dev/null 2>&1; then
+    # Debian/Ubuntu
+    pg_ctlcluster 16 main start
+    sleep 2
+  else
+    echo -e "${RED}Postgres isn't running on :5432.${NC}"
+    echo "Start it first, e.g. (EDB install):"
+    echo "  sudo -u postgres /Library/PostgreSQL/18/bin/pg_ctl -D /Library/PostgreSQL/18/data start"
+    echo "or (Homebrew): brew services start postgresql@18"
+    exit 1
+  fi
 else
   echo "PostgreSQL already running."
 fi
 
 # --- Start Redis ---
 echo -e "${YELLOW}Starting Redis...${NC}"
+if ! command -v redis-cli >/dev/null 2>&1 || ! command -v redis-server >/dev/null 2>&1; then
+  echo -e "${RED}Redis not installed. Run: brew install redis${NC}"
+  exit 1
+fi
+
 if ! redis-cli ping &>/dev/null; then
   redis-server --daemonize yes --logfile /tmp/redis.log
   sleep 1
@@ -43,8 +77,13 @@ echo -e "${GREEN}Postgres and Redis are up.${NC}"
 echo -e "${YELLOW}Starting backend...${NC}"
 
 if [ ! -d "$BACKEND_DIR/venv" ]; then
-  echo "No venv found, creating one..."
-  python3 -m venv "$BACKEND_DIR/venv"
+  echo "No venv found, creating one with $PYTHON_BIN..."
+  "$PYTHON_BIN" -m venv "$BACKEND_DIR/venv"
+fi
+
+# Install deps if uvicorn is missing (covers a venv left half-built by a failed install)
+if [ ! -x "$BACKEND_DIR/venv/bin/uvicorn" ]; then
+  echo "Installing backend requirements..."
   "$BACKEND_DIR/venv/bin/pip" install -r "$BACKEND_DIR/requirements.txt"
 fi
 
@@ -61,8 +100,7 @@ BACKEND_PID=$!
 echo -e "${YELLOW}Starting Celery worker...${NC}"
 mkdir -p "$PROJECT_ROOT/logs"
 CELERY_LOG="$PROJECT_ROOT/logs/celery.log"
-: > "$CELERY_LOG"   # NEW: truncate so old runs don't mislead you into
-                     # thinking a stale log line is from this run
+: > "$CELERY_LOG"   # truncate so stale log lines don't mislead you
 
 # --- Notifications + default worker ---
 (
@@ -92,15 +130,13 @@ MEDIA_LOG="$PROJECT_ROOT/logs/media_worker.log"
 ) &
 MEDIA_WORKER_PID=$!
 
-# NEW: don't just assume the worker came up — prove it. This is the
-# single biggest source of "jobs silently don't run": the worker process
-# died on startup (import error, bad broker URL, etc.) and nothing in the
-# interleaved terminal output made that obvious.
+# Prove the worker came up instead of assuming it did.
+# FIXED: ping default_worker (the name actually used above), not auth_worker.
 echo -e "${YELLOW}Waiting for Celery worker to report ready...${NC}"
 WORKER_UP=0
 for i in $(seq 1 15); do
   if "$BACKEND_DIR/venv/bin/celery" -A src.infra.celery.app.celery_app \
-      inspect ping -d auth_worker@$(hostname) --timeout 1 &>/dev/null; then
+      inspect ping -d "default_worker@$(hostname)" --timeout 1 &>/dev/null; then
     WORKER_UP=1
     break
   fi
@@ -136,9 +172,12 @@ ${NC}"
 
 cleanup() {
   echo -e "\n${RED}Shutting down...${NC}"
-  kill -- -$BACKEND_PID 2>/dev/null
-  kill -- -$FRONTEND_PID 2>/dev/null
-  kill -- -$CELERY_PID 2>/dev/null
+  # FIXED: kill the PIDs that actually exist (was $CELERY_PID, never set).
+  # `|| true` so one failed kill doesn't abort cleanup under `set -e`.
+  kill -- -$BACKEND_PID 2>/dev/null || true
+  kill -- -$FRONTEND_PID 2>/dev/null || true
+  kill -- -$DEFAULT_WORKER_PID 2>/dev/null || true
+  kill -- -$MEDIA_WORKER_PID 2>/dev/null || true
   redis-cli shutdown 2>/dev/null || true
   echo -e "${GREEN}All services stopped. (Postgres left running)${NC}"
 }

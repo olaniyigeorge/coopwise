@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -19,19 +17,26 @@ import type {
   PayoutStrategy,
   RotationOrder,
 } from "@/types/cooperative";
+import {
+  WizardActions,
+  WizardButton,
+  WizardField,
+  WizardStepHeader,
+  fieldClassName,
+} from "@/components/cooperative/create/wizard-ui";
 
-// UNCONFIRMED enum values — swap once schema confirmed.
 const FREQUENCIES: { value: ContributionFrequency; label: string }[] = [
   { value: "daily", label: "Daily" },
   { value: "weekly", label: "Weekly" },
   { value: "biweekly", label: "Biweekly" },
   { value: "monthly", label: "Monthly" },
+  { value: "custom", label: "Custom schedule" },
 ];
 
 const PENALTY_TYPES: { value: PenaltyType; label: string }[] = [
   { value: "none", label: "None" },
   { value: "flat", label: "Flat amount" },
-  { value: "percentage", label: "Percentage" },
+  { value: "pct", label: "Percentage" },
 ];
 
 const PAYOUT_STRATEGIES: { value: PayoutStrategy; label: string }[] = [
@@ -131,38 +136,57 @@ export function FinancialRuleForm({ onContinue, onBack }: FinancialRuleFormProps
 
   if (!cooperativeId) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Create the cooperative in Step 1 first.
-      </p>
+      <div className="rounded-2xl border border-[#EAD9AC] bg-[#FBF3DE] p-4 text-sm text-[#6B4E12] dark:border-[#5A4A22] dark:bg-[#2E2818] dark:text-[#E8BC63]">
+        Create the cooperative in Step 2 first.
+      </div>
     );
   }
 
   if (loadingActive) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return (
+      <div className="space-y-6">
+        <WizardStepHeader
+          eyebrow="Step 5 · Financial"
+          title="Financial rule"
+          description="How much, how often, and what happens on payout or missed contribution."
+        />
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-11 animate-pulse rounded-2xl bg-content/5" />
+            <div className="h-11 animate-pulse rounded-2xl bg-content/5" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-11 animate-pulse rounded-2xl bg-content/5" />
+            <div className="h-11 animate-pulse rounded-2xl bg-content/5" />
+          </div>
+          <div className="h-11 animate-pulse rounded-2xl bg-content/5" />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">Financial rule</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {hasActive
+      <WizardStepHeader
+        eyebrow="Step 5 · Financial"
+        title="Financial rule"
+        description={
+          hasActive
             ? "This saves a new version — history is kept, nothing is overwritten."
-            : "How much, how often, and what happens on payout or missed contribution."}
-        </p>
-      </div>
+            : "How much, how often, and what happens on payout or missed contribution."
+        }
+      />
 
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Contribution frequency</Label>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <WizardField label="Contribution frequency">
             <Select
               value={draft.contribution_frequency}
               onValueChange={(v) =>
                 updateDraft({ contribution_frequency: v as ContributionFrequency })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className={`${fieldClassName} flex items-center justify-between`}>
                 <SelectValue placeholder="Select frequency" />
               </SelectTrigger>
               <SelectContent>
@@ -173,50 +197,49 @@ export function FinancialRuleForm({ onContinue, onBack }: FinancialRuleFormProps
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contribution-amount">Contribution amount</Label>
+          </WizardField>
+          <WizardField label="Contribution amount" htmlFor="contribution-amount">
             <Input
               id="contribution-amount"
               type="number"
               min={0}
               value={draft.contribution_amount ?? ""}
               onChange={(e) => updateDraft({ contribution_amount: Number(e.target.value) })}
+              className={fieldClassName}
             />
-          </div>
+          </WizardField>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="currency">Currency</Label>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <WizardField label="Currency" htmlFor="currency">
             <Input
               id="currency"
               value={draft.currency ?? ""}
               onChange={(e) => updateDraft({ currency: e.target.value.toUpperCase() })}
               placeholder="NGN"
               maxLength={3}
+              className={fieldClassName}
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="grace-period-days">Grace period (days)</Label>
+          </WizardField>
+          <WizardField label="Grace period (days)" htmlFor="grace-period-days">
             <Input
               id="grace-period-days"
               type="number"
               min={0}
               value={draft.grace_period_days ?? ""}
               onChange={(e) => updateDraft({ grace_period_days: Number(e.target.value) })}
+              className={fieldClassName}
             />
-          </div>
+          </WizardField>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Penalty type</Label>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <WizardField label="Penalty type">
             <Select
               value={draft.penalty_type}
               onValueChange={(v) => updateDraft({ penalty_type: v as PenaltyType })}
             >
-              <SelectTrigger>
+              <SelectTrigger className={`${fieldClassName} flex items-center justify-between`}>
                 <SelectValue placeholder="Select penalty type" />
               </SelectTrigger>
               <SelectContent>
@@ -227,30 +250,30 @@ export function FinancialRuleForm({ onContinue, onBack }: FinancialRuleFormProps
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </WizardField>
           {needsPenaltyValue && (
-            <div className="space-y-2">
-              <Label htmlFor="penalty-value">
-                Penalty value {draft.penalty_type === "percentage" ? "(%)" : ""}
-              </Label>
+            <WizardField
+              label={`Penalty value${draft.penalty_type === "pct" ? " (%)" : ""}`}
+              htmlFor="penalty-value"
+            >
               <Input
                 id="penalty-value"
                 type="number"
                 min={0}
                 value={draft.penalty_value ?? ""}
                 onChange={(e) => updateDraft({ penalty_value: Number(e.target.value) })}
+                className={fieldClassName}
               />
-            </div>
+            </WizardField>
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label>Payout strategy</Label>
+        <WizardField label="Payout strategy">
           <Select
             value={draft.payout_strategy}
             onValueChange={(v) => updateDraft({ payout_strategy: v as PayoutStrategy })}
           >
-            <SelectTrigger>
+            <SelectTrigger className={`${fieldClassName} flex items-center justify-between`}>
               <SelectValue placeholder="Select payout strategy" />
             </SelectTrigger>
             <SelectContent>
@@ -261,16 +284,15 @@ export function FinancialRuleForm({ onContinue, onBack }: FinancialRuleFormProps
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </WizardField>
 
         {needsRotationOrder && (
-          <div className="space-y-2">
-            <Label>Rotation Order </Label>
+          <WizardField label="Rotation order">
             <Select
               value={draft.rotation_order}
               onValueChange={(v) => updateDraft({ rotation_order: v as RotationOrder })}
             >
-              <SelectTrigger>
+              <SelectTrigger className={`${fieldClassName} flex items-center justify-between`}>
                 <SelectValue placeholder="Select rotation order" />
               </SelectTrigger>
               <SelectContent>
@@ -281,20 +303,20 @@ export function FinancialRuleForm({ onContinue, onBack }: FinancialRuleFormProps
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </WizardField>
         )}
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={onBack}>
+      <WizardActions>
+        <WizardButton variant="ghost" onClick={onBack}>
           Back
-        </Button>
-        <Button disabled={!canSubmit || submitting} onClick={handleSubmit}>
+        </WizardButton>
+        <WizardButton disabled={!canSubmit || submitting} onClick={handleSubmit}>
           {submitting ? "Saving…" : hasActive ? "Save new version" : "Save and continue"}
-        </Button>
-      </div>
+        </WizardButton>
+      </WizardActions>
     </div>
   );
 }

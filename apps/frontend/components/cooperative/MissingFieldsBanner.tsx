@@ -34,16 +34,16 @@ export function MissingFieldsBanner({
     <div
       role="alert"
       className={cn(
-        "rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-900",
-        "dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200",
+        "rounded-2xl border border-[#EAD9AC] bg-[#FBF3DE] p-4 text-[#6B4E12]",
+        "dark:border-[#5A4A22] dark:bg-[#2E2818] dark:text-[#E8BC63]",
         className
       )}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2.5">
         <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
         <div className="flex-1">
-          <p className="font-medium text-sm">{title}</p>
-          <ul className="mt-1 space-y-1">
+          <p className="text-sm font-semibold">{title}</p>
+          <ul className="mt-1.5 space-y-1.5">
             {missing.map((key) => {
               const label = getLabel ? getLabel(key) : key;
               return (
@@ -52,7 +52,7 @@ export function MissingFieldsBanner({
                     <button
                       type="button"
                       onClick={() => onFix(key)}
-                      className="underline underline-offset-2 hover:no-underline"
+                      className="rounded-full border border-[#8A6516]/20 bg-white px-3 py-1 text-[11px] font-semibold transition-colors hover:bg-[#8A6516]/5 dark:border-[#E8BC63]/25 dark:bg-transparent dark:hover:bg-[#E8BC63]/10"
                     >
                       {label} — fix
                     </button>

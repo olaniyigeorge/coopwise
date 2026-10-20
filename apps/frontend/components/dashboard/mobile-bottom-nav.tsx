@@ -64,7 +64,7 @@ export default function MobileBottomNav() {
   }
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 shadow-lg">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-content/10 z-40 shadow-lg">
       <div className="grid grid-cols-5 h-16">
         {navigationItems.map((item) => (
           <Link
@@ -75,7 +75,7 @@ export default function MobileBottomNav() {
               "min-h-[56px] py-1",
               isActive(item.href)
                 ? "text-primary"
-                : "text-gray-500 hover:text-gray-900 active:bg-gray-100"
+                : "text-content/55 hover:text-content active:bg-content/5"
             )}
           >
             <div className={cn(
@@ -100,7 +100,7 @@ export default function MobileBottomNav() {
       </div>
       
       {/* Safe area spacing for newer iOS devices */}
-      <div className="h-safe-bottom bg-white" />
+      <div className="h-safe-bottom bg-surface" />
     </nav>
   )
 } 

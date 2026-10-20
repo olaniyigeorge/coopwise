@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -15,12 +14,18 @@ import {
 import { useCooperativeCreationStore } from "@/stores/cooperative-creation-store";
 import RulesService from "@/services/rules-service";
 import type { DecisionModel, RuleAmendmentApprovalType } from "@/types/cooperative";
+import {
+  WizardActions,
+  WizardButton,
+  WizardField,
+  WizardStepHeader,
+  fieldClassName,
+} from "@/components/cooperative/create/wizard-ui";
 
-// UNCONFIRMED enum values (types/cooperative.ts) — swap once schema confirmed.
 const DECISION_MODELS: { value: DecisionModel; label: string }[] = [
-  { value: "admin_decides", label: "Admin decides" },
+  { value: "admin_led", label: "Admin decides" },
   { value: "majority_vote", label: "Majority vote" },
-  { value: "supermajority_vote", label: "Supermajority vote" },
+  { value: "weighted_vote", label: "Weighted vote (by contribution)" },
   { value: "consensus", label: "Consensus" },
 ];
 
@@ -107,35 +112,51 @@ export function GovernanceRuleForm({ onContinue, onBack }: GovernanceRuleFormPro
 
   if (!cooperativeId) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Create the cooperative in Step 1 first.
-      </p>
+      <div className="rounded-2xl border border-[#EAD9AC] bg-[#FBF3DE] p-4 text-sm text-[#6B4E12] dark:border-[#5A4A22] dark:bg-[#2E2818] dark:text-[#E8BC63]">
+        Create the cooperative in Step 2 first.
+      </div>
     );
   }
 
   if (loadingActive) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return (
+      <div className="space-y-6">
+        <WizardStepHeader
+          eyebrow="Step 3 · Governance"
+          title="Governance rule"
+          description="How decisions get made in this cooperative."
+        />
+        <div className="space-y-4">
+          <div className="h-11 animate-pulse rounded-2xl bg-content/5" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-11 animate-pulse rounded-2xl bg-content/5" />
+            <div className="h-11 animate-pulse rounded-2xl bg-content/5" />
+          </div>
+          <div className="h-[74px] animate-pulse rounded-2xl bg-content/5" />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">Governance rule</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {hasActive
+      <WizardStepHeader
+        eyebrow="Step 3 · Governance"
+        title="Governance rule"
+        description={
+          hasActive
             ? "This saves a new version — history is kept, nothing is overwritten."
-            : "How decisions get made in this cooperative."}
-        </p>
-      </div>
+            : "How decisions get made in this cooperative."
+        }
+      />
 
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>Decision model</Label>
+        <WizardField label="Decision model">
           <Select
             value={draft.decision_model}
             onValueChange={(v) => updateDraft({ decision_model: v as DecisionModel })}
           >
-            <SelectTrigger>
+            <SelectTrigger className={`${fieldClassName} flex items-center justify-between`}>
               <SelectValue placeholder="Select a decision model" />
             </SelectTrigger>
             <SelectContent>
@@ -146,11 +167,10 @@ export function GovernanceRuleForm({ onContinue, onBack }: GovernanceRuleFormPro
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </WizardField>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="quorum-pct">Quorum %</Label>
+          <WizardField label="Quorum %" htmlFor="quorum-pct">
             <Input
               id="quorum-pct"
               type="number"
@@ -158,10 +178,10 @@ export function GovernanceRuleForm({ onContinue, onBack }: GovernanceRuleFormPro
               max={100}
               value={draft.quorum_pct ?? ""}
               onChange={(e) => updateDraft({ quorum_pct: Number(e.target.value) })}
+              className={fieldClassName}
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="voting-threshold-pct">Voting threshold %</Label>
+          </WizardField>
+          <WizardField label="Voting threshold %" htmlFor="voting-threshold-pct">
             <Input
               id="voting-threshold-pct"
               type="number"
@@ -169,13 +189,22 @@ export function GovernanceRuleForm({ onContinue, onBack }: GovernanceRuleFormPro
               max={100}
               value={draft.voting_threshold_pct ?? ""}
               onChange={(e) => updateDraft({ voting_threshold_pct: Number(e.target.value) })}
+              className={fieldClassName}
             />
-          </div>
+          </WizardField>
         </div>
 
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <div>
-            <Label htmlFor="members-can-propose">Members can propose rule changes</Label>
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-content/10 bg-content/[0.02] p-4">
+          <div className="min-w-0">
+            <Label
+              htmlFor="members-can-propose"
+              className="text-sm font-medium text-content/80"
+            >
+              Members can propose rule changes
+            </Label>
+            <p className="mt-0.5 text-[11px] leading-snug text-content/40">
+              Anyone in the cooperative can open an amendment.
+            </p>
           </div>
           <Switch
             id="members-can-propose"
@@ -184,15 +213,14 @@ export function GovernanceRuleForm({ onContinue, onBack }: GovernanceRuleFormPro
           />
         </div>
 
-        <div className="space-y-2">
-          <Label>Rule amendment approval</Label>
+        <WizardField label="Rule amendment approval">
           <Select
             value={draft.rule_amendment_approval_type}
             onValueChange={(v) =>
               updateDraft({ rule_amendment_approval_type: v as RuleAmendmentApprovalType })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger className={`${fieldClassName} flex items-center justify-between`}>
               <SelectValue placeholder="How are amendments approved?" />
             </SelectTrigger>
             <SelectContent>
@@ -203,19 +231,19 @@ export function GovernanceRuleForm({ onContinue, onBack }: GovernanceRuleFormPro
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </WizardField>
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={onBack}>
+      <WizardActions>
+        <WizardButton variant="ghost" onClick={onBack}>
           Back
-        </Button>
-        <Button disabled={!canSubmit || submitting} onClick={handleSubmit}>
+        </WizardButton>
+        <WizardButton disabled={!canSubmit || submitting} onClick={handleSubmit}>
           {submitting ? "Saving…" : hasActive ? "Save new version" : "Save and continue"}
-        </Button>
-      </div>
+        </WizardButton>
+      </WizardActions>
     </div>
   );
 }

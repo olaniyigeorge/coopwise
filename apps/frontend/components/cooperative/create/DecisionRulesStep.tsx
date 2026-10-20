@@ -1,11 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -13,30 +10,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X, Plus } from "lucide-react";
 import { useCooperativeCreationStore } from "@/stores/cooperative-creation-store";
 import RulesService from "@/services/rules-service";
-import type { DecisionType, DecisionMechanism } from "@/types/cooperative";
+import type { DecisionMechanism, DecisionType } from "@/types/cooperative";
+import {
+  WizardActions,
+  WizardButton,
+  WizardStepHeader,
+  fieldClassName,
+} from "@/components/cooperative/create/wizard-ui";
+import { cn } from "@/lib/utils";
 
-const DECISION_TYPE_LABELS: Record<DecisionType, string> = {
-  payout_order: "Payout order",
-  dispute_resolution: "Dispute resolution",
-  exit_valuation: "Exit valuation",
-  rule_amendment: "Rule amendment",
-  new_member_approval: "New member approval",
-};
-
-const DECISION_TYPES = Object.keys(DECISION_TYPE_LABELS) as DecisionType[];
-
-const MECHANISM_OPTIONS: { value: DecisionMechanism; label: string }[] = [
-  { value: "admin", label: "Admin decides" },
-  { value: "vote", label: "Member vote" },
-  { value: "ai_suggested", label: "AI suggested" },
-  { value: "rotation", label: "Rotation" },
-  { value: "lottery", label: "Lottery" },
+const DECISION_TYPES: DecisionType[] = [
+  "payout_order",
+  "dispute_resolution",
+  "exit_valuation",
+  "rule_amendment",
+  "new_member_approval",
 ];
 
-type KVPair = { key: string; value: string };
+const DECISION_META: Record<
+  DecisionType,
+  { label: string; description: string; recommended: DecisionMechanism; options: DecisionMechanism[] }
+> = {
+  payout_order: {
+    label: "Who gets paid next",
+    description: "The order members receive the pot in.",
+    recommended: "rotation",
+    options: ["rotation", "lottery", "vote", "admin"],
+  },
+  dispute_resolution: {
+    label: "Settling disagreements",
+    description: "What happens when members don't agree.",
+    recommended: "admin",
+    options: ["admin", "vote"],
+  },
+  exit_valuation: {
+    label: "Leaving members' shares",
+    description: "How a member's share is valued when they exit.",
+    recommended: "vote",
+    options: ["vote", "admin"],
+  },
+  rule_amendment: {
+    label: "Changing the rules",
+    description: "How an amendment to the rules gets approved.",
+    recommended: "vote",
+    options: ["vote", "admin"],
+  },
+  new_member_approval: {
+    label: "Letting new members in",
+    description: "Who approves a join request.",
+    recommended: "vote",
+    options: ["admin", "vote", "lottery"],
+  },
+};
+
+const MECHANISM_META: Record<DecisionMechanism, { label: string; hint: string }> = {
+  admin: { label: "An admin decides", hint: "Fastest — one trusted person calls it." },
+  vote: { label: "Members vote", hint: "Everyone gets a say." },
+  rotation: { label: "Take turns", hint: "Follows the payout rotation." },
+  lottery: { label: "Random draw", hint: "Fair and unbiased." },
+  ai_suggested: { label: "CoopWise suggests", hint: "Get a recommendation, then confirm." },
+};
 
 interface DecisionRulesStepProps {
   onContinue: () => void;
@@ -49,205 +84,185 @@ export function DecisionRulesStep({ onContinue, onBack }: DecisionRulesStepProps
   const toggleDecisionType = useCooperativeCreationStore((s) => s.toggleDecisionType);
   const updateDecisionDraft = useCooperativeCreationStore((s) => s.updateDecisionDraft);
 
-  const [savingType, setSavingType] = useState<DecisionType | null>(null);
-  const [savedTypes, setSavedTypes] = useState<Set<DecisionType>>(new Set());
-  const [errorByType, setErrorByType] = useState<Partial<Record<DecisionType, string>>>({});
+  // Mechanisms already saved for this cooperative — used to prefill the
+  // toggles and to avoid writing a redundant new version on Continue.
+  const [activeMechanisms, setActiveMechanisms] = useState<
+    Partial<Record<DecisionType, DecisionMechanism>>
+  >({});
+  const [loadingActive, setLoadingActive] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Local, per-type key/value builder for escalation_path — dict[str, Any]
-  // on the backend with no fixed schema, so this isn&apos;t sourced from the
-  // shared store.
-  const [escalationPairs, setEscalationPairs] = useState<Record<DecisionType, KVPair[]>>(() =>
-    DECISION_TYPES.reduce((acc, t) => {
-      acc[t] = [];
-      return acc;
-    }, {} as Record<DecisionType, KVPair[]>)
-  );
-
-  function addPair(type: DecisionType) {
-    setEscalationPairs((prev) => ({
-      ...prev,
-      [type]: [...prev[type], { key: "", value: "" }],
-    }));
-  }
-
-  function updatePair(type: DecisionType, index: number, field: "key" | "value", val: string) {
-    setEscalationPairs((prev) => ({
-      ...prev,
-      [type]: prev[type].map((p, i) => (i === index ? { ...p, [field]: val } : p)),
-    }));
-  }
-
-  function removePair(type: DecisionType, index: number) {
-    setEscalationPairs((prev) => ({
-      ...prev,
-      [type]: prev[type].filter((_, i) => i !== index),
-    }));
-  }
-
-  function pairsToDict(pairs: KVPair[]): Record<string, string> | null {
-    const entries = pairs.filter((p) => p.key.trim() !== "");
-    if (entries.length === 0) return null;
-    return Object.fromEntries(entries.map((p) => [p.key.trim(), p.value]));
-  }
-
-  async function handleSaveType(type: DecisionType) {
+  useEffect(() => {
     if (!cooperativeId) return;
-    const values = decisionDrafts[type].values;
-    if (!values.mechanism?.trim()) {
-      setErrorByType((prev) => ({ ...prev, [type]: "Mechanism is required" }));
+    let cancelled = false;
+
+    Promise.allSettled(
+      DECISION_TYPES.map((type) =>
+        RulesService.getActiveDecisionRule(cooperativeId, type)
+      )
+    )
+      .then((results) => {
+        if (cancelled) return;
+        const saved: Partial<Record<DecisionType, DecisionMechanism>> = {};
+        results.forEach((result, idx) => {
+          if (result.status !== "fulfilled" || !result.value?.mechanism) return;
+          const type = DECISION_TYPES[idx];
+          saved[type] = result.value.mechanism;
+          toggleDecisionType(type, true);
+          updateDecisionDraft(type, { mechanism: result.value.mechanism });
+        });
+        setActiveMechanisms(saved);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingActive(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cooperativeId]);
+
+  function handleToggle(type: DecisionType, enabled: boolean) {
+    toggleDecisionType(type, enabled);
+    // Switching a rule on picks its recommended mechanism, so Continue is
+    // never blocked by an empty select the member didn't notice.
+    if (enabled && !decisionDrafts[type].values.mechanism) {
+      updateDecisionDraft(type, { mechanism: DECISION_META[type].recommended });
+    }
+  }
+
+  async function handleContinue() {
+    if (!cooperativeId) return;
+
+    const enabled = DECISION_TYPES.filter((type) => decisionDrafts[type].enabled);
+    const missing = enabled.filter((type) => !decisionDrafts[type].values.mechanism);
+    if (missing.length > 0) {
+      setError("Pick how each enabled situation is decided.");
       return;
     }
-    setSavingType(type);
-    setErrorByType((prev) => ({ ...prev, [type]: undefined as any }));
+
+    setSaving(true);
+    setError(null);
     try {
-      await RulesService.createDecisionRule(cooperativeId, {
-        decision_type: type,
-        // Cast is a stopgap — decisionDrafts[type].values.mechanism is still
-        // typed as plain `string` in the store. Send the store's type over
-        // to DecisionMechanism to remove this cast.
-        mechanism: values.mechanism.trim() as DecisionMechanism,
-        escalation_path: pairsToDict(escalationPairs[type]),
-      });
-      setSavedTypes((prev) => new Set(prev).add(type));
+      for (const type of enabled) {
+        const mechanism = decisionDrafts[type].values.mechanism as DecisionMechanism;
+        if (activeMechanisms[type] === mechanism) continue;
+        await RulesService.createDecisionRule(cooperativeId, {
+          decision_type: type,
+          mechanism,
+        });
+      }
+      onContinue();
     } catch (err) {
-      setErrorByType((prev) => ({
-        ...prev,
-        [type]: err instanceof Error ? err.message : "Failed to save",
-      }));
+      setError(err instanceof Error ? err.message : "Failed to save decision rules");
     } finally {
-      setSavingType(null);
+      setSaving(false);
     }
   }
 
   if (!cooperativeId) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Create the cooperative in Step 1 first.
-      </p>
+      <div className="rounded-2xl border border-[#EAD9AC] bg-[#FBF3DE] p-4 text-sm text-[#6B4E12] dark:border-[#5A4A22] dark:bg-[#2E2818] dark:text-[#E8BC63]">
+        Create the cooperative in Step 2 first.
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">Decision rules</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Optional — set as many or as few as you want now. None of these
-          block activation.
-        </p>
-      </div>
+      <WizardStepHeader
+        eyebrow="Step 6 · Decision rules"
+        title="Who decides what"
+        description="Optional. Turn on the situations you want settled now — the rest can be added later, and none of these block activation."
+      />
 
       <div className="space-y-3">
         {DECISION_TYPES.map((type) => {
+          const meta = DECISION_META[type];
           const draft = decisionDrafts[type];
-          const saved = savedTypes.has(type);
-          const pairs = escalationPairs[type];
+          const mechanism = draft.values.mechanism as DecisionMechanism | undefined;
           return (
-            <Card key={type} className="p-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor={`decision-${type}`} className="font-medium">
-                  {DECISION_TYPE_LABELS[type]}
-                  {saved && (
-                    <span className="ml-2 text-xs text-green-600 font-normal">Saved</span>
+            <div
+              key={type}
+              className={cn(
+                "rounded-2xl border p-4 transition-colors",
+                draft.enabled
+                  ? "border-[#0E3B2E]/25 bg-[#DFF0E4]/25 dark:border-[#7FBF9C]/25 dark:bg-[#1C3A2C]/25"
+                  : "border-content/10 bg-content/[0.02]"
+              )}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <Label
+                  htmlFor={`decision-${type}`}
+                  className="min-w-0 cursor-pointer"
+                >
+                  <span className="block text-sm font-semibold text-content">
+                    {meta.label}
+                  </span>
+                  <span className="mt-0.5 block text-xs leading-snug text-content/50">
+                    {meta.description}
+                  </span>
+                  {activeMechanisms[type] && (
+                    <span className="mt-1 block text-[11px] leading-snug text-content/40">
+                      Already saved — change how it&apos;s decided below.
+                    </span>
                   )}
                 </Label>
                 <Switch
                   id={`decision-${type}`}
                   checked={draft.enabled}
-                  onCheckedChange={(checked) => toggleDecisionType(type, checked)}
+                  disabled={loadingActive || !!activeMechanisms[type]}
+                  onCheckedChange={(checked) => handleToggle(type, checked)}
                 />
               </div>
 
               {draft.enabled && (
-                <div className="mt-4 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor={`${type}-mechanism`}>Mechanism</Label>
-                    <Select
-                      value={draft.values.mechanism ?? ""}
-                      onValueChange={(value) =>
-                        updateDecisionDraft(type, { mechanism: value as DecisionMechanism })
-                      }
+                <div className="mt-3 space-y-1.5">
+                  <Select
+                    value={mechanism ?? ""}
+                    onValueChange={(value) =>
+                      updateDecisionDraft(type, {
+                        mechanism: value as DecisionMechanism,
+                      })
+                    }
+                  >
+                    <SelectTrigger
+                      className={`${fieldClassName} flex items-center justify-between`}
                     >
-                      <SelectTrigger id={`${type}-mechanism`}>
-                        <SelectValue placeholder="Select a mechanism" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MECHANISM_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>Escalation path (optional)</Label>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => addPair(type)}
-                      >
-                        <Plus className="h-3.5 w-3.5 mr-1" />
-                        Add field
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Define any fields that fit this escalation path — e.g.
-                      &apos;trigger&apos; / &apos;3 missed payments&apos;, &apos;action&apos; / &apos;notify admin&apos;.
+                      <SelectValue placeholder="How is this decided?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {meta.options.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {MECHANISM_META[option].label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {mechanism && (
+                    <p className="px-1 text-[11px] leading-relaxed text-content/40">
+                      {MECHANISM_META[mechanism].hint}
                     </p>
-                    {pairs.map((pair, i) => (
-                      <div key={i} className="flex gap-2 items-center">
-                        <Input
-                          value={pair.key}
-                          onChange={(e) => updatePair(type, i, "key", e.target.value)}
-                          placeholder="Key (e.g. trigger)"
-                          className="w-1/3"
-                        />
-                        <Input
-                          value={pair.value}
-                          onChange={(e) => updatePair(type, i, "value", e.target.value)}
-                          placeholder="Value (e.g. notify admin)"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removePair(type, i)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {errorByType[type] && (
-                    <p className="text-sm text-destructive">{errorByType[type]}</p>
                   )}
-                  <div className="flex justify-end">
-                    <Button
-                      size="sm"
-                      disabled={savingType === type}
-                      onClick={() => handleSaveType(type)}
-                    >
-                      {savingType === type ? "Saving…" : saved ? "Save new version" : "Save"}
-                    </Button>
-                  </div>
                 </div>
               )}
-            </Card>
+            </div>
           );
         })}
       </div>
 
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={onBack}>
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+      <WizardActions>
+        <WizardButton variant="ghost" onClick={onBack}>
           Back
-        </Button>
-        <Button onClick={onContinue}>Continue</Button>
-      </div>
+        </WizardButton>
+        <WizardButton disabled={saving || loadingActive} onClick={handleContinue}>
+          {saving ? "Saving…" : "Continue"}
+        </WizardButton>
+      </WizardActions>
     </div>
   );
 }

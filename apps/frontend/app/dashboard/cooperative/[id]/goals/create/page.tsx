@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Target } from 'lucide-react'
+import { ArrowLeft, Check, Target } from 'lucide-react'
 
 import DashboardLayout from '@/components/dashboard/layout'
 import CooperativeService from '@/services/cooperative-service'
 import { Cooperative } from '@/types/cooperative'
+import { cn } from '@/lib/utils'
 import { useGoalCreationStore, type GoalWizardStepId } from '@/stores/goal-creation-store'
 import { GoalBasicsStep } from '@/components/cooperative/goal-create/GoalBasicsStep'
 import { GoalContractStep } from '@/components/cooperative/goal-create/GoalContractStep'
@@ -23,23 +24,50 @@ const STEP_LABELS: Record<GoalWizardStepId, string> = {
 function WizardProgress({ steps, current }: { steps: GoalWizardStepId[]; current: GoalWizardStepId }) {
   const currentIdx = steps.indexOf(current)
   return (
-    <ol className="flex flex-wrap gap-2 text-xs mb-6">
-      {steps.map((step, idx) => (
-        <li
-          key={step}
-          className={
-            idx === currentIdx
-              ? 'font-semibold text-neutral-900'
-              : idx < currentIdx
-              ? 'text-neutral-500'
-              : 'text-neutral-400'
-          }
-        >
-          {idx > 0 && <span className="mr-2">›</span>}
-          {STEP_LABELS[step]}
-        </li>
-      ))}
-    </ol>
+    <nav aria-label="Goal setup progress" className="mb-6 overflow-x-auto">
+      <ol className="flex min-w-max items-center gap-1.5">
+        {steps.map((step, idx) => {
+          const done = idx < currentIdx
+          const active = idx === currentIdx
+          return (
+            <li key={step} className="flex items-center gap-1.5">
+              {idx > 0 && (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "h-px w-4 sm:w-6",
+                    idx <= currentIdx
+                      ? "bg-[#0E3B2E]/25 dark:bg-[#7FBF9C]/25"
+                      : "bg-content/10"
+                  )}
+                />
+              )}
+              <span
+                aria-current={active ? 'step' : undefined}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full py-1.5 pl-1.5 pr-3 text-[11px] font-semibold transition-colors sm:text-xs",
+                  active && "bg-[#0E3B2E] text-white dark:bg-[#7FBF9C] dark:text-[#0B1712]",
+                  done && "text-content/55",
+                  !active && !done && "text-content/35"
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                    active && "bg-white/15 text-white dark:bg-[#0B1712]/10 dark:text-[#0B1712]",
+                    done && "bg-[#DFF0E4] text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]",
+                    !active && !done && "bg-content/[0.06] text-content/40"
+                  )}
+                >
+                  {done ? <Check className="h-3 w-3" strokeWidth={2.5} /> : idx + 1}
+                </span>
+                {STEP_LABELS[step]}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
   )
 }
 
@@ -86,35 +114,37 @@ export default function CreateGoalPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="mx-auto max-w-2xl space-y-5 pb-6">
+        <div>
           <button
             onClick={() => router.push(`/dashboard/cooperative/${cooperativeId}`)}
-            className="inline-flex items-center text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
+            className="inline-flex items-center text-sm font-medium text-content/50 transition-colors hover:text-content"
           >
-            <ArrowLeft className="w-4 h-4 mr-1.5" />
-            Back to Cooperative
+            <ArrowLeft className="mr-1.5 h-4 w-4" />
+            Back to cooperative
           </button>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-neutral-100 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <span className="text-xs uppercase tracking-wider text-neutral-400 font-semibold">
-              Creating Goal For
+        <div className="flex flex-col justify-between gap-4 rounded-[24px] border border-content/[0.06] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] sm:flex-row sm:items-center">
+          <div className="min-w-0">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-content/40">
+              Creating a goal for
             </span>
             {fetchingData ? (
-              <div className="h-6 w-40 bg-neutral-200 animate-pulse rounded mt-1" />
+              <div className="mt-1.5 h-7 w-40 animate-pulse rounded-lg bg-content/[0.06]" />
             ) : (
-              <h1 className="text-xl font-bold text-neutral-900">{cooperative?.name}</h1>
+              <h1 className="mt-1 truncate font-display text-2xl font-bold tracking-tight text-content">
+                {cooperative?.name}
+              </h1>
             )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-neutral-500 bg-neutral-50 px-3 py-1.5 rounded-lg border border-neutral-100">
-            <Target className="w-4 h-4 text-emerald-600" />
-            Cooperative Target Goal
+          <div className="flex shrink-0 items-center gap-2 rounded-full border border-content/10 bg-content/[0.02] px-3 py-1.5 text-[11px] font-semibold text-content/50">
+            <Target className="h-4 w-4 text-[#17603F] dark:text-[#7FBF9C]" />
+            Cooperative goal
           </div>
         </div>
 
-        <div className="p-6 sm:p-8 bg-white border border-neutral-100 shadow-sm rounded-2xl">
+        <div className="rounded-[24px] border border-content/[0.06] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] sm:p-6">
           <WizardProgress steps={steps} current={currentStep} />
 
           {currentStep === 'basics' && (

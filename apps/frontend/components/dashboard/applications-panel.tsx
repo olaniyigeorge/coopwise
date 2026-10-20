@@ -76,31 +76,35 @@ export default function ApplicationsPanel({
   if (apps.length === 0) return null
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 space-y-3">
+    <div className="mb-5 rounded-2xl border border-[#EAD9AC] bg-[#FBF3DE] p-4 dark:border-[#5A4A22] dark:bg-[#2E2818]">
       <div>
-        <h4 className="text-sm font-semibold text-neutral-900">
-          Join requests <span className="text-amber-700">({apps.length})</span>
+        <h4 className="font-display text-sm font-bold tracking-tight text-content">
+          Join requests{' '}
+          <span className="text-[#8A6516] dark:text-[#E8BC63]">({apps.length})</span>
         </h4>
-        <p className="text-xs text-neutral-500">{HOW[apps[0].mode]}</p>
+        <p className="mt-0.5 text-xs text-content/50">{HOW[apps[0].mode]}</p>
       </div>
 
-      <div className="space-y-2">
+      <div className="mt-3 space-y-2">
         {apps.map((app) => (
-          <div key={app.membership_id} className="flex items-center gap-3 rounded-lg bg-white border border-neutral-100 p-3">
+          <div
+            key={app.membership_id}
+            className="flex items-center gap-3 rounded-xl border border-content/[0.06] bg-surface p-3 dark:bg-white/[0.04]"
+          >
             <UserAvatar name={app.applicant.full_name} src={app.applicant.profile_picture_url} size="md" />
             <div className="min-w-0 flex-1">
               <Link
                 href={`/dashboard/users/${app.applicant.id}`}
-                className="block truncate text-sm font-medium text-neutral-900 hover:text-emerald-700 hover:underline"
+                className="block truncate text-sm font-semibold text-content transition-colors hover:text-[#1F7A54] hover:underline dark:hover:text-[#7FBF9C]"
               >
                 {app.applicant.full_name}
               </Link>
-              <p className="text-xs text-neutral-500">{progress(app)}</p>
+              <p className="text-xs text-content/50">{progress(app)}</p>
             </div>
             {app.can_decide && (
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex shrink-0 items-center gap-1.5">
                 {busy === app.membership_id ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+                  <Loader2 className="h-4 w-4 animate-spin text-content/40" />
                 ) : (
                   <>
                     <Button
@@ -110,8 +114,8 @@ export default function ApplicationsPanel({
                       aria-label={`Decline ${app.applicant.full_name}`}
                       className={
                         app.my_vote === false
-                          ? 'border-red-600 bg-red-600 text-white hover:bg-red-700 hover:text-white'
-                          : 'border-red-300 bg-white text-red-700 hover:bg-red-50 hover:text-red-800'
+                          ? 'border-[#B4451F] bg-[#B4451F] text-white hover:bg-[#9A3A1A] hover:text-white'
+                          : 'border-[#E4B4B4] bg-surface text-[#A24A4A] hover:bg-[#FDEDED] hover:text-[#8F2D2D] dark:border-[#5A2A2A] dark:bg-transparent dark:text-[#F0A9A9] dark:hover:bg-[#2E1717]'
                       }
                     >
                       <X className="mr-1 h-3.5 w-3.5" />
@@ -123,8 +127,8 @@ export default function ApplicationsPanel({
                       aria-label={`Approve ${app.applicant.full_name}`}
                       className={
                         app.my_vote === true
-                          ? 'bg-emerald-800 text-white hover:bg-emerald-900 hover:text-white ring-2 ring-emerald-300'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white'
+                          ? 'bg-[#0E3B2E] text-white ring-2 ring-[#7FBF9C] hover:bg-[#0A2E24] hover:text-white dark:bg-[#7FBF9C] dark:text-[#0B1712] dark:hover:bg-[#93CBAE]'
+                          : 'bg-[#1F7A54] text-white hover:bg-[#196546] hover:text-white'
                       }
                     >
                       <Check className="mr-1 h-3.5 w-3.5" />

@@ -86,6 +86,68 @@ body {
     max-width: calc(100vw - 2rem);
   }
 
+  /* ---- Dark-mode pass for older dashboard screens ----
+     A number of dashboard views still use Tailwind's fixed grays/whites,
+     which turn into dark-on-dark (or glaring white cards) when the theme
+     flips. Rather than rewrite every screen, remap those fixed utilities
+     to the theme tokens inside the dashboard shell only. Elements that
+     already declare their own dark: styles are left alone, as is the
+     switch thumb (it must stay white on the coloured track). */
+  .dark .dashboard-shell .bg-white:not([class*="dark:"]):not([data-state]) {
+    background-color: hsl(var(--surface));
+  }
+  .dark .dashboard-shell .bg-gray-50:not([class*="dark:"]) {
+    background-color: hsl(var(--content) / 0.03);
+  }
+  .dark .dashboard-shell .bg-gray-100:not([class*="dark:"]) {
+    background-color: hsl(var(--content) / 0.06);
+  }
+  .dark .dashboard-shell .bg-gray-200:not([class*="dark:"]) {
+    background-color: hsl(var(--content) / 0.09);
+  }
+  .dark .dashboard-shell .bg-neutral-50:not([class*="dark:"]) {
+    background-color: hsl(var(--content) / 0.03);
+  }
+  .dark .dashboard-shell .bg-neutral-100:not([class*="dark:"]) {
+    background-color: hsl(var(--content) / 0.06);
+  }
+  .dark .dashboard-shell .bg-neutral-200:not([class*="dark:"]) {
+    background-color: hsl(var(--content) / 0.09);
+  }
+  .dark .dashboard-shell .text-gray-900:not([class*="dark:"]),
+  .dark .dashboard-shell .text-gray-800:not([class*="dark:"]),
+  .dark .dashboard-shell .text-neutral-900:not([class*="dark:"]),
+  .dark .dashboard-shell .text-neutral-800:not([class*="dark:"]) {
+    color: hsl(var(--content));
+  }
+  .dark .dashboard-shell .text-gray-700:not([class*="dark:"]),
+  .dark .dashboard-shell .text-gray-600:not([class*="dark:"]),
+  .dark .dashboard-shell .text-neutral-700:not([class*="dark:"]),
+  .dark .dashboard-shell .text-neutral-600:not([class*="dark:"]) {
+    color: hsl(var(--content) / 0.72);
+  }
+  .dark .dashboard-shell .text-gray-500:not([class*="dark:"]),
+  .dark .dashboard-shell .text-gray-400:not([class*="dark:"]),
+  .dark .dashboard-shell .text-neutral-500:not([class*="dark:"]),
+  .dark .dashboard-shell .text-neutral-400:not([class*="dark:"]) {
+    color: hsl(var(--content) / 0.48);
+  }
+  .dark .dashboard-shell .border-gray-100:not([class*="dark:"]),
+  .dark .dashboard-shell .border-gray-200:not([class*="dark:"]),
+  .dark .dashboard-shell .border-neutral-100:not([class*="dark:"]),
+  .dark .dashboard-shell .border-neutral-200:not([class*="dark:"]) {
+    border-color: hsl(var(--content) / 0.1);
+  }
+  .dark .dashboard-shell .bg-blue-50:not([class*="dark:"]) {
+    background-color: rgb(37 62 96 / 0.35);
+  }
+  .dark .dashboard-shell .border-blue-100:not([class*="dark:"]) {
+    border-color: rgb(96 165 250 / 0.25);
+  }
+  .dark .dashboard-shell .text-blue-800:not([class*="dark:"]) {
+    color: rgb(191 219 254);
+  }
+
   /* Responsive Text Size Classes */
   .text-responsive-xs { @apply text-xs sm:text-sm; }
   .text-responsive-sm { @apply text-sm sm:text-base; }
@@ -140,6 +202,11 @@ body {
     --gold: 38 61% 45%; /* #B8892B ledger gold */
     --ink: 156 27% 7%; /* #0B1712 */
     --paper: 43 33% 94%; /* #F7F4EC */
+    /* Dashboard theme-aware surfaces: canvas = page, surface = card,
+       content = primary copy. The .dark block below flips all three. */
+    --canvas: 43 33% 94%;
+    --surface: 0 0% 100%;
+    --content: 156 27% 7%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -158,28 +225,32 @@ body {
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --card: 156 16% 13%;
+    --card-foreground: 45 25% 93%;
+    --popover: 156 16% 13%;
+    --popover-foreground: 45 25% 93%;
     --primary: 168 94% 20%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 156 12% 16%;
+    --muted-foreground: 45 12% 68%;
     --accent: 168 94% 20%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
+    --border: 156 10% 20%;
+    --input: 156 10% 20%;
     --ring: 168 94% 20%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    /* Dashboard dark palette — deep green-black, not pure black. */
+    --canvas: 156 20% 7%;
+    --surface: 156 16% 13%;
+    --content: 45 25% 93%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;

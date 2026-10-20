@@ -1,5 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
+import secrets
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -16,9 +17,16 @@ from src.domains.memberships.schemas import (
 from src.domains.memberships.admission import admit_or_queue
 from src.domains.memberships.models.enums import MembershipStatus
 from src.domains.memberships.models.group_membership import GroupMembership
+from src.domains.memberships.models.invitation import CoopInvitation
 from src.shared.utils.logger import logger
 from config import AppConfig as config
 from fastapi import HTTPException, status
+
+
+# Short, unambiguous invite alphabet — no 0/O or 1/I, so codes can be read
+# aloud or typed from a screenshot without confusion.
+_INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+_INVITE_CODE_LENGTH = 8
 
 
 class CooperativeMembershipService:
@@ -181,25 +189,99 @@ class CooperativeMembershipService:
         inviter_id: UUID,
     ) -> str:
         """
-        Generates a deterministic invite code for a group+inviter pair.
-        Format: COOPWISE_{inviter_id}:{group_id}
-        Authorization (accepted member check) is enforced by the caller.
+        Returns a short (8-character) invite code for this inviter + group.
+
+        Codes are stored on `coop_invitations` so a member can share the same
+        code more than once. Re-generating for the same pair reuses the code
+        instead of piling up new invitations.
         """
-        invite_code = config.INVITE_CODE_PREFIX + str(inviter_id) + ":" + str(group_id)
-        logger.info(
-            f"[InviteService] Generated invite code for group={group_id} by={inviter_id}"
+        existing = await db.execute(
+            select(CoopInvitation)
+            .where(
+                CoopInvitation.cooperative_id == group_id,
+                CoopInvitation.invited_by == inviter_id,
+                CoopInvitation.invite_code.is_not(None),
+            )
+            .order_by(CoopInvitation.created_at.desc())
         )
-        return invite_code
+        invitation = existing.scalars().first()
+        if (
+            invitation is not None
+            and invitation.invite_code
+            and len(invitation.invite_code) == _INVITE_CODE_LENGTH
+        ):
+            return invitation.invite_code
+
+        for _ in range(10):
+            code = "".join(
+                secrets.choice(_INVITE_ALPHABET) for _ in range(_INVITE_CODE_LENGTH)
+            )
+            clash = await db.execute(
+                select(CoopInvitation.id).where(CoopInvitation.invite_code == code)
+            )
+            if clash.scalars().first() is not None:
+                continue
+
+            invitation = CoopInvitation(
+                cooperative_id=group_id,
+                invited_by=inviter_id,
+                invite_code=code,
+            )
+            db.add(invitation)
+            await db.commit()
+            await db.refresh(invitation)
+            logger.info(
+                f"[InviteService] Generated invite code for group={group_id} by={inviter_id}"
+            )
+            return code
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not allocate an invite code. Please try again.",
+        )
+
+    @staticmethod
+    async def _resolve_invite_group_id(
+        db: AsyncSession, invite_code: str
+    ) -> UUID:
+        """Look up the cooperative behind an invite code.
+
+        Accepts the short stored codes and, for links shared before this
+        change, the old deterministic `{PREFIX}{inviter}:{group}` format.
+        """
+        code = (invite_code or "").strip()
+        prefix = config.INVITE_CODE_PREFIX
+        if prefix and code.startswith(prefix):
+            _, _, group_id = code[len(prefix) :].partition(":")
+            try:
+                return UUID(group_id)
+            except (ValueError, TypeError):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid invite code.",
+                )
+
+        result = await db.execute(
+            select(CoopInvitation).where(
+                CoopInvitation.invite_code == code.upper()
+            )
+        )
+        invitation = result.scalars().first()
+        if invitation is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invite code not found.",
+            )
+        return invitation.cooperative_id
 
     # Checkout group with invite code
     @staticmethod
     async def checkout_invite_code(
         db: AsyncSession, invite_code: str, user: AuthenticatedUser
     ):
-        invited_id__group_id = invite_code[len(config.INVITE_CODE_PREFIX) :]
-        inviter_id, group_id = invited_id__group_id.split(":")
-        group_id = UUID(group_id)
-        inviter_id = UUID(inviter_id)
+        group_id = await CooperativeMembershipService._resolve_invite_group_id(
+            db, invite_code
+        )
         try:
             stmt = select(GroupMembership).where(
                 GroupMembership.group_id == group_id,
@@ -237,10 +319,9 @@ class CooperativeMembershipService:
     async def accept_invite_code(
         db: AsyncSession, user: AuthenticatedUser, invite_code: str
     ) -> Optional[GroupMembership]:
-        invited_id__group_id = invite_code[len(config.INVITE_CODE_PREFIX) :]
-        inviter_id, group_id = invited_id__group_id.split(":")
-        group_id = UUID(group_id)
-        inviter_id = UUID(inviter_id)
+        group_id = await CooperativeMembershipService._resolve_invite_group_id(
+            db, invite_code
+        )
         try:
             stmt = select(GroupMembership).where(
                 GroupMembership.group_id == group_id,

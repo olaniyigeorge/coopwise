@@ -33,6 +33,21 @@ const GoalService = {
   async createOwnershipShare(goalId: string, payload: CreateOwnershipSharePayload) {
     return ApiService.post<OwnershipShare>(`/cooperatives/goals/${goalId}/ownership-shares`, payload);
   },
+  async updateOwnershipShare(
+    goalId: string,
+    shareId: string,
+    payload: Partial<CreateOwnershipSharePayload>
+  ) {
+    return ApiService.patch<OwnershipShare>(
+      `/cooperatives/goals/${goalId}/ownership-shares/${shareId}`,
+      payload
+    );
+  },
+  async deleteOwnershipShare(goalId: string, shareId: string) {
+    return ApiService.delete<void>(
+      `/cooperatives/goals/${goalId}/ownership-shares/${shareId}`
+    );
+  },
   async getOwnershipShares(goalId: string) {
     return ApiService.get<OwnershipShare[]>(`/cooperatives/goals/${goalId}/ownership-shares`);
   },

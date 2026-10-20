@@ -1,12 +1,10 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import GroupCard from './group-card'
 import EmptyGroupState from './empty-group-state'
 import { Pagination } from '@/components/ui/pagination'
 import type { Cooperative } from '@/types/cooperative'
-import { Loader2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 
 interface MyGroupsListProps {
   hasGroups: boolean | null
@@ -20,7 +18,7 @@ type TransformedGroup = {
   name: string
   description: string
   coopModel: string
-  badge: 'active' | 'pending'
+  badge: 'active' | 'pending' | 'draft' | 'paused' | 'archived' | 'completed' | 'deleted'
 }
 
 function transformMyGroup(cooperative: Cooperative): TransformedGroup {
@@ -29,45 +27,45 @@ function transformMyGroup(cooperative: Cooperative): TransformedGroup {
     name: cooperative.name,
     description: cooperative.description || '',
     coopModel: cooperative.coop_model,
-    badge: cooperative.status === 'active' ? 'active' : 'pending',
+    badge: cooperative.status,
   }
 }
 
-const LIMIT = 4
+const LIMIT = 6
 
-export default function MyGroupsList({ hasGroups, searchQuery, userGroups = [], isLoading = false }: MyGroupsListProps) {
-  const router = useRouter()
-  const [groups, setGroups] = useState<TransformedGroup[]>([])
-  const [localLoading, setLocalLoading] = useState(true)
+export default function MyGroupsList({
+  hasGroups,
+  searchQuery,
+  userGroups = [],
+  isLoading = false,
+}: MyGroupsListProps) {
   const [currentPage, setCurrentPage] = useState(1)
 
+  const groups = useMemo(() => userGroups.map(transformMyGroup), [userGroups])
+
+  const filteredGroups = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return groups
+    return groups.filter((group) => group.name.toLowerCase().includes(query))
+  }, [groups, searchQuery])
+
   useEffect(() => {
-    setLocalLoading(true)
-    try {
-      if (Array.isArray(userGroups) && userGroups.length > 0) {
-        setGroups(userGroups.map(transformMyGroup))
-      } else if (!isLoading) {
-        setGroups([])
-      }
-    } catch (err) {
-      console.error('Error processing groups:', err)
-      setGroups([])
-    } finally {
-      setLocalLoading(false)
-    }
-  }, [userGroups, isLoading])
+    setCurrentPage(1)
+  }, [searchQuery, userGroups])
 
-  const filteredGroups = groups.filter(g =>
-    g.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-  const totalPages = Math.ceil(filteredGroups.length / LIMIT)
-  const paginatedGroups = filteredGroups.slice((currentPage - 1) * LIMIT, currentPage * LIMIT)
+  const totalPages = Math.max(1, Math.ceil(filteredGroups.length / LIMIT))
+  const page = Math.min(currentPage, totalPages)
+  const paginatedGroups = filteredGroups.slice((page - 1) * LIMIT, page * LIMIT)
 
-  if (isLoading || localLoading) {
+  if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-12 text-gray-400 gap-2">
-        <Loader2 className="h-5 w-5 animate-spin" />
-        <span className="text-sm">Loading cooperatives...</span>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className="h-[186px] animate-pulse rounded-[22px] bg-content/[0.04]"
+          />
+        ))}
       </div>
     )
   }
@@ -76,16 +74,12 @@ export default function MyGroupsList({ hasGroups, searchQuery, userGroups = [], 
 
   if (filteredGroups.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 text-center">
-        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        </div>
-        <p className="text-sm font-medium text-gray-700">No cooperatives found</p>
-        <p className="text-xs text-gray-400 mt-1">
-          {searchQuery ? `No results for "${searchQuery}"` : "You don't have any cooperatives yet"}
+      <div className="rounded-[22px] border border-dashed border-content/10 px-6 py-12 text-center">
+        <p className="font-display text-base font-bold text-content">
+          No matches for “{searchQuery}”
+        </p>
+        <p className="mt-1.5 text-sm text-content/45">
+          Try a different cooperative name.
         </p>
       </div>
     )
@@ -93,8 +87,8 @@ export default function MyGroupsList({ hasGroups, searchQuery, userGroups = [], 
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {paginatedGroups.map(group => (
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {paginatedGroups.map((group) => (
           <GroupCard
             key={group.id}
             id={group.id}
@@ -102,8 +96,7 @@ export default function MyGroupsList({ hasGroups, searchQuery, userGroups = [], 
             description={group.description}
             coopModel={group.coopModel}
             badge={group.badge}
-            isMyGroup={true}
-            onViewDetails={() => router.push(`/dashboard/my-group/${group.id}`)}
+            isMyGroup
           />
         ))}
       </div>
@@ -112,7 +105,7 @@ export default function MyGroupsList({ hasGroups, searchQuery, userGroups = [], 
         <div className="flex justify-center pt-2">
           <Pagination
             totalPages={totalPages}
-            currentPage={currentPage}
+            currentPage={page}
             onPageChange={setCurrentPage}
           />
         </div>

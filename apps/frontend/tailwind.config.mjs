@@ -2,6 +2,7 @@ import animate from "tailwindcss-animate"
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -30,9 +31,14 @@ export default {
         sans: ['Inter', 'sans-serif'],
       },
       colors: {
-        'brand-paper': '#fbf9f3',
+        'brand-paper': '#F7F4EC',
         'brand-ink': '#0B1712',
         'brand-gold': '#B8892B',
+        // Theme-aware palette for dashboard surfaces and copy. Defined in
+        // globals.css so the same utility flips with the .dark class.
+        canvas: 'hsl(var(--canvas) / <alpha-value>)',
+        surface: 'hsl(var(--surface) / <alpha-value>)',
+        content: 'hsl(var(--content) / <alpha-value>)',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

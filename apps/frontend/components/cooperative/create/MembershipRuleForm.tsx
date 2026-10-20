@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -15,12 +14,18 @@ import {
 import { useCooperativeCreationStore } from "@/stores/cooperative-creation-store";
 import RulesService from "@/services/rules-service";
 import type { JoinType, KycLevelRequired, RemovalPolicy } from "@/types/cooperative";
+import {
+  WizardActions,
+  WizardButton,
+  WizardField,
+  WizardStepHeader,
+  fieldClassName,
+} from "@/components/cooperative/create/wizard-ui";
 
-// UNCONFIRMED enum values — swap once schema confirmed.
 const JOIN_TYPES: { value: JoinType; label: string }[] = [
   { value: "open", label: "Open — anyone can join" },
   { value: "invite_only", label: "Invite only" },
-  { value: "approval_required", label: "Requires approval" },
+  { value: "application_required", label: "Requires approval" },
 ];
 
 const KYC_LEVELS: { value: KycLevelRequired; label: string }[] = [
@@ -114,35 +119,51 @@ export function MembershipRuleForm({ onContinue, onBack }: MembershipRuleFormPro
 
   if (!cooperativeId) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Create the cooperative in Step 1 first.
-      </p>
+      <div className="rounded-2xl border border-[#EAD9AC] bg-[#FBF3DE] p-4 text-sm text-[#6B4E12] dark:border-[#5A4A22] dark:bg-[#2E2818] dark:text-[#E8BC63]">
+        Create the cooperative in Step 2 first.
+      </div>
     );
   }
 
   if (loadingActive) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return (
+      <div className="space-y-6">
+        <WizardStepHeader
+          eyebrow="Step 4 · Membership"
+          title="Membership rule"
+          description="Who can join, and how membership is managed."
+        />
+        <div className="space-y-4">
+          <div className="h-11 animate-pulse rounded-2xl bg-content/5" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-11 animate-pulse rounded-2xl bg-content/5" />
+            <div className="h-11 animate-pulse rounded-2xl bg-content/5" />
+          </div>
+          <div className="h-[74px] animate-pulse rounded-2xl bg-content/5" />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">Membership rule</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {hasActive
+      <WizardStepHeader
+        eyebrow="Step 4 · Membership"
+        title="Membership rule"
+        description={
+          hasActive
             ? "This saves a new version — history is kept, nothing is overwritten."
-            : "Who can join, and how membership is managed."}
-        </p>
-      </div>
+            : "Who can join, and how membership is managed."
+        }
+      />
 
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>Join type</Label>
+        <WizardField label="Join type">
           <Select
             value={draft.join_type}
             onValueChange={(v) => updateDraft({ join_type: v as JoinType })}
           >
-            <SelectTrigger>
+            <SelectTrigger className={`${fieldClassName} flex items-center justify-between`}>
               <SelectValue placeholder="How do people join?" />
             </SelectTrigger>
             <SelectContent>
@@ -153,21 +174,20 @@ export function MembershipRuleForm({ onContinue, onBack }: MembershipRuleFormPro
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </WizardField>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="min-members">Minimum members</Label>
+          <WizardField label="Minimum members" htmlFor="min-members">
             <Input
               id="min-members"
               type="number"
               min={1}
               value={draft.min_members ?? ""}
               onChange={(e) => updateDraft({ min_members: Number(e.target.value) })}
+              className={fieldClassName}
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="max-members">Maximum members (optional)</Label>
+          </WizardField>
+          <WizardField label="Maximum members" htmlFor="max-members" optional>
             <Input
               id="max-members"
               type="number"
@@ -176,12 +196,23 @@ export function MembershipRuleForm({ onContinue, onBack }: MembershipRuleFormPro
               onChange={(e) =>
                 updateDraft({ max_members: e.target.value ? Number(e.target.value) : null })
               }
+              className={fieldClassName}
             />
-          </div>
+          </WizardField>
         </div>
 
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <Label htmlFor="public-discovery">Discoverable publicly</Label>
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-content/10 bg-content/[0.02] p-4">
+          <div className="min-w-0">
+            <Label
+              htmlFor="public-discovery"
+              className="text-sm font-medium text-content/80"
+            >
+              Discoverable publicly
+            </Label>
+            <p className="mt-0.5 text-[11px] leading-snug text-content/40">
+              Let people find this cooperative when searching to join.
+            </p>
+          </div>
           <Switch
             id="public-discovery"
             checked={!!draft.public_discovery}
@@ -189,13 +220,12 @@ export function MembershipRuleForm({ onContinue, onBack }: MembershipRuleFormPro
           />
         </div>
 
-        <div className="space-y-2">
-          <Label>KYC level required</Label>
+        <WizardField label="KYC level required">
           <Select
             value={draft.kyc_level_required}
             onValueChange={(v) => updateDraft({ kyc_level_required: v as KycLevelRequired })}
           >
-            <SelectTrigger>
+            <SelectTrigger className={`${fieldClassName} flex items-center justify-between`}>
               <SelectValue placeholder="Select a KYC level" />
             </SelectTrigger>
             <SelectContent>
@@ -206,26 +236,29 @@ export function MembershipRuleForm({ onContinue, onBack }: MembershipRuleFormPro
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </WizardField>
 
-        <div className="space-y-2">
-          <Label htmlFor="exit-notice-days">Exit notice period (days)</Label>
+        <WizardField
+          label="Exit notice period"
+          htmlFor="exit-notice-days"
+          hint="How many days before a member can leave after giving notice."
+        >
           <Input
             id="exit-notice-days"
             type="number"
             min={0}
             value={draft.exit_notice_days ?? ""}
             onChange={(e) => updateDraft({ exit_notice_days: Number(e.target.value) })}
+            className={fieldClassName}
           />
-        </div>
+        </WizardField>
 
-        <div className="space-y-2">
-          <Label>Removal policy</Label>
+        <WizardField label="Removal policy">
           <Select
             value={draft.removal_policy}
             onValueChange={(v) => updateDraft({ removal_policy: v as RemovalPolicy })}
           >
-            <SelectTrigger>
+            <SelectTrigger className={`${fieldClassName} flex items-center justify-between`}>
               <SelectValue placeholder="How are members removed?" />
             </SelectTrigger>
             <SelectContent>
@@ -236,19 +269,19 @@ export function MembershipRuleForm({ onContinue, onBack }: MembershipRuleFormPro
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </WizardField>
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={onBack}>
+      <WizardActions>
+        <WizardButton variant="ghost" onClick={onBack}>
           Back
-        </Button>
-        <Button disabled={!canSubmit || submitting} onClick={handleSubmit}>
+        </WizardButton>
+        <WizardButton disabled={!canSubmit || submitting} onClick={handleSubmit}>
           {submitting ? "Saving…" : hasActive ? "Save new version" : "Save and continue"}
-        </Button>
-      </div>
+        </WizardButton>
+      </WizardActions>
     </div>
   );
 }

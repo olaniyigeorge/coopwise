@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import '@/styles/markdown.css'
 import { AppWrapper } from '@/components/app-wrapper'
+import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from "@/components/ui/toaster"
 import { PingBackend } from '@/components/keep_alive'
 
@@ -61,11 +62,18 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="font-sans" suppressHydrationWarning>
-        <AppWrapper>{children}</AppWrapper>
-        <Toaster />
-        <PingBackend />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AppWrapper>{children}</AppWrapper>
+          <Toaster />
+          <PingBackend />
+        </ThemeProvider>
       </body>
     </html>
   )

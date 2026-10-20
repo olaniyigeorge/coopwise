@@ -1,66 +1,65 @@
 'use client'
 
-import React from 'react'
-import Link from 'next/link'
-import { Sparkles, Bot, MessageSquare } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import AIInsightCard from '@/components/dashboard/ai-insight-card'
-import { AIInsightDetail } from '@/services/dashboard-service'
+import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { ArrowRight, Sparkles } from 'lucide-react'
 
-interface CoopCopilotProps {
-  insights?: AIInsightDetail[]
-}
+export default function CopilotPanel() {
+  const router = useRouter()
+  const [question, setQuestion] = useState('')
 
-export default function CoopCopilot({ insights = [] }: CoopCopilotProps) {
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    const trimmed = question.trim()
+    router.push(
+      trimmed
+        ? `/dashboard/ai-chat?q=${encodeURIComponent(trimmed)}`
+        : '/dashboard/ai-chat'
+    )
+  }
+
   return (
-    <div className="bg-white rounded-2xl border border-brand-ink/10 p-5 shadow-sm space-y-4">
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-primary" />
-        <h2 className="text-sm font-semibold text-brand-ink uppercase tracking-wider">Cooperative Copilot</h2>
-      </div>
+    <section className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#1C3F3B] via-[#173C4A] to-[#123A55] p-5 text-white shadow-[0_18px_40px_-24px_rgba(14,59,46,0.65)]">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-[#7FBF9C]/10 blur-2xl"
+      />
 
-      <div className="rounded-xl bg-brand-paper border border-brand-gold/15 p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
-            <Bot className="h-4 w-4 text-primary" />
-          </div>
-          <p className="text-xs text-brand-ink/75 leading-relaxed">
-            AI-driven cooperative advisor — analyze circle liquidity, contribution dynamics, and payout risks.
-          </p>
+      <div className="relative z-10">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-[#E8BC63]" />
+          <h2 className="font-display text-base font-bold tracking-tight">
+            Cooperative Copilot
+          </h2>
         </div>
-      </div>
 
-      <div className="space-y-1.5">
-        <p className="text-[11px] font-medium text-brand-ink/40 mb-1">Inquire about your groups:</p>
-        {[
-          'How can my group maintain 100% on-time payouts?',
-          'What is the optimal payout rotation for our savings target?',
-          'Explain collective trust score factors.',
-        ].map((q) => (
-          <div
-            key={q}
-            className="bg-brand-paper hover:bg-primary/5 rounded-lg px-3 py-2 text-xs text-brand-ink/65 cursor-pointer transition-colors border border-transparent hover:border-primary/15"
-          >
-            &ldquo;{q}&rdquo;
+        <p className="mt-3 max-w-sm text-xs leading-relaxed text-white/70">
+          An AI advisor that analyzes circle liquidity, contribution dynamics
+          and payout risks.
+        </p>
+
+        <form onSubmit={handleSubmit} className="mt-5">
+          <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] py-1.5 pl-4 pr-1.5 focus-within:border-white/30">
+            <label htmlFor="copilot-question" className="sr-only">
+              Ask the Cooperative Copilot
+            </label>
+            <input
+              id="copilot-question"
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              placeholder="Ask about your groups..."
+              className="min-w-0 flex-1 border-0 bg-transparent p-0 text-xs text-white placeholder:text-white/45 focus:outline-none focus:ring-0"
+            />
+            <button
+              type="submit"
+              aria-label="Ask Copilot"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E8BC63] text-[#243014] transition-colors hover:bg-[#DFB150]"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
-        ))}
+        </form>
       </div>
-
-      {insights.length > 0 && (
-        <div className="space-y-2.5 pt-2 border-t border-brand-ink/5">
-          <p className="text-[11px] font-semibold text-brand-ink/50 uppercase">Active Insights</p>
-          {insights.slice(0, 2).map((insight) => (
-            <AIInsightCard key={insight.id} insight={insight} />
-          ))}
-        </div>
-      )}
-
-      <Link href="/dashboard/ai-chat" className="block pt-2">
-        <Button size="sm" className="w-full gap-2 text-xs">
-          <MessageSquare className="h-3.5 w-3.5" />
-          Consult Copilot
-        </Button>
-      </Link>
-    </div>
+    </section>
   )
 }

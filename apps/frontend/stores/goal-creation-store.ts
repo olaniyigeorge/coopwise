@@ -43,6 +43,7 @@ interface GoalCreationState {
   addOwnershipRow: () => void;
   updateOwnershipRow: (rowId: string, patch: Partial<CreateOwnershipSharePayload>) => void;
   removeOwnershipRow: (rowId: string) => void;
+  clearOwnershipRows: () => void;
   ownershipTotalPct: () => number;
   goToStep: (step: GoalWizardStepId) => void;
   reset: () => void;
@@ -85,6 +86,7 @@ export const useGoalCreationStore = create<GoalCreationState>()(
           // Changing pattern invalidates whatever contract fields were drafted
           // for the previous pattern.
           contractDraft: {},
+          ownershipShares: [],
         })),
 
       updateContractDraft: (patch) =>
@@ -111,6 +113,8 @@ export const useGoalCreationStore = create<GoalCreationState>()(
         set((s) => ({
           ownershipShares: s.ownershipShares.filter((row) => row._rowId !== rowId),
         })),
+
+      clearOwnershipRows: () => set({ ownershipShares: [] }),
 
       ownershipTotalPct: () =>
         get().ownershipShares.reduce((sum, row) => sum + (row.share_pct ?? 0), 0),

@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCooperativeCreationStore } from "@/stores/cooperative-creation-store";
 import CooperativeService from "@/services/cooperative-service";
 import type { CoopModel } from "@/types/cooperative";
+import {
+  WizardActions,
+  WizardButton,
+  WizardField,
+  WizardStepHeader,
+  fieldClassName,
+} from "@/components/cooperative/create/wizard-ui";
 
 const COOP_MODEL_LABELS: Record<CoopModel, string> = {
   ajo: "Ajo",
@@ -58,56 +64,74 @@ export function CooperativeBasicsForm({ onContinue }: CooperativeBasicsFormProps
   if (cooperativeId) {
     return (
       <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold">Cooperative basics</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            &quot;{basicsDraft.name}&apos; has already been created — continue to set up its rules.
-          </p>
-        </div>
-        <div className="flex justify-end">
-          <Button onClick={onContinue}>Continue</Button>
-        </div>
+        <WizardStepHeader
+          eyebrow="Step 2 · Basics"
+          title="Cooperative basics"
+          description={
+            <>
+              &quot;{basicsDraft.name}&quot; has already been created — continue to
+              set up its rules.
+            </>
+          }
+        />
+        <WizardActions className="justify-end">
+          <WizardButton onClick={onContinue}>
+            Continue
+            <ArrowRight className="h-4 w-4" />
+          </WizardButton>
+        </WizardActions>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">Cooperative basics</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Type: {coopModel ? COOP_MODEL_LABELS[coopModel] : "—"}{" "}
-          <button
-            type="button"
-            className="underline underline-offset-2 text-xs"
-            onClick={() => useCooperativeCreationStore.getState().goToStep("type")}
-          >
-            change
-          </button>
-        </p>
-      </div>
+      <WizardStepHeader
+        eyebrow="Step 2 · Basics"
+        title="Cooperative basics"
+        description={
+          <>
+            Model:{" "}
+            <span className="font-semibold text-content/70">
+              {coopModel ? COOP_MODEL_LABELS[coopModel] : "—"}
+            </span>{" "}
+            <button
+              type="button"
+              className="text-xs font-semibold text-[#0E3B2E] underline decoration-[#0E3B2E]/30 underline-offset-2 hover:decoration-[#0E3B2E] dark:text-[#7FBF9C] dark:decoration-[#7FBF9C]/30 dark:hover:decoration-[#7FBF9C]"
+              onClick={() => useCooperativeCreationStore.getState().goToStep("type")}
+            >
+              change
+            </button>
+          </>
+        }
+      />
 
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="coop-name">Name</Label>
+        <WizardField label="Name" htmlFor="coop-name">
           <Input
             id="coop-name"
             value={basicsDraft.name ?? ""}
             onChange={(e) => updateBasicsDraft({ name: e.target.value })}
             placeholder="e.g. Lekki Traders Circle"
+            className={fieldClassName}
           />
-        </div>
+        </WizardField>
 
-        <div className="space-y-2">
-          <Label htmlFor="coop-description">Description</Label>
+        <WizardField
+          label="Description"
+          htmlFor="coop-description"
+          optional
+          hint="A line or two helps invitees know what they're joining."
+        >
           <Textarea
             id="coop-description"
             value={basicsDraft.description ?? ""}
             onChange={(e) => updateBasicsDraft({ description: e.target.value })}
             placeholder="What is this cooperative for?"
             rows={4}
+            className={`${fieldClassName} h-auto min-h-[112px] py-3`}
           />
-        </div>
+        </WizardField>
 
         {/* Cover image upload deferred: FLAGGED — unconfirmed whether
             POST /cooperatives accepts a cover_image_url at creation or
@@ -115,19 +139,19 @@ export function CooperativeBasicsForm({ onContinue }: CooperativeBasicsFormProps
             this once that&apos;s confirmed. */}
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="flex justify-between">
-        <Button
+      <WizardActions>
+        <WizardButton
           variant="ghost"
           onClick={() => useCooperativeCreationStore.getState().goToStep("type")}
         >
           Back
-        </Button>
-        <Button disabled={!canSubmit || submitting} onClick={handleSubmit}>
+        </WizardButton>
+        <WizardButton disabled={!canSubmit || submitting} onClick={handleSubmit}>
           {submitting ? "Creating…" : "Create cooperative"}
-        </Button>
-      </div>
+        </WizardButton>
+      </WizardActions>
     </div>
   );
 }

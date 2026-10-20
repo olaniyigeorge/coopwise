@@ -7,10 +7,20 @@ import JoinGroupContent from '@/components/dashboard/join-group-content'
 export default function JoinGroupPage() {
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-2">Join a Cooperative</h1>
-        <p className="text-gray-600 mb-6">Enter an invite code to join an existing cooperative</p>
-        <Suspense fallback={<div>Loading...</div>}>
+      <div className="mx-auto max-w-3xl space-y-5 pb-6">
+        <header>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-content/40">
+            Invite only
+          </p>
+          <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-content sm:text-4xl">
+            Join a cooperative
+          </h1>
+          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-content/50">
+            Enter the short code a member shared with you, review the group, and
+            confirm your place.
+          </p>
+        </header>
+        <Suspense fallback={<div className="text-sm text-content/40">Loading…</div>}>
           <JoinGroupContent />
         </Suspense>
       </div>

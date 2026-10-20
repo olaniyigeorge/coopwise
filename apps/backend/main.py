@@ -17,6 +17,7 @@ from src.infra.db.database import db_manager
 from src.shared.utils.logger import logger
 from src.api.routers import router_list
 from src.domains.cooperatives.exceptions import register_cooperative_exception_handlers
+from src.domains.cooperatives.bootstrap import seed_system_catalog
 
 from config import AppConfig as config, rate_limit_rules
 
@@ -41,6 +42,7 @@ async def lifespan(app: FastAPI):
             **engine_kwargs,
         )
         await db_manager.create_tables()
+        await seed_system_catalog()
 
         app.state.redis = await redis_manager.initialize(
             url=config.REDIS_URL,

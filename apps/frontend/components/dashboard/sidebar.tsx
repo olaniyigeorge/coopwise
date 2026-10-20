@@ -1,13 +1,24 @@
 "use client"
 
-import React, { useState } from 'react'
+import React from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Home, Users, MessageSquare, HelpCircle, Settings, LogOut, Sparkles, Trophy, Wallet, Banknote, X } from 'lucide-react'
-import { toast } from 'sonner'
-import useAuthStore from '@/stores/auth-store'
+import { usePathname } from 'next/navigation'
+import {
+  Home,
+  Users,
+  MessageSquare,
+  HelpCircle,
+  Settings,
+  Sparkles,
+  Trophy,
+  Wallet,
+  Banknote,
+  X,
+} from 'lucide-react'
 import useNotificationStore from '@/stores/notification-store'
+import { useDashboardChromeStore } from '@/stores/dashboard-chrome-store'
+import { cn } from '@/lib/utils'
 
 interface SidebarProps {
   isOpen?: boolean
@@ -17,20 +28,73 @@ interface SidebarProps {
 type NavItem = {
   name: string
   href: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
   badge?: number
+}
+
+function TrustScoreCard() {
+  const { trustScore } = useDashboardChromeStore()
+  const stars = Math.min(5, Math.max(1, Math.ceil(trustScore / 20)))
+
+  return (
+    <div className="mx-3 mt-4 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-white/70">Trust score</span>
+        <span className="text-sm font-semibold text-[#E8BC63]">
+          {trustScore}/100
+        </span>
+      </div>
+      <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-[#D9A648] to-[#F0CD82] transition-all duration-700"
+          style={{ width: `${Math.min(100, Math.max(0, trustScore))}%` }}
+        />
+      </div>
+      <div className="mt-2.5 flex items-center gap-1" aria-label={`${stars} of 5 trust stars`}>
+        {Array.from({ length: 5 }).map((_, idx) => (
+          <svg
+            key={idx}
+            viewBox="0 0 20 20"
+            className={cn(
+              'h-4 w-4',
+              idx < stars ? 'text-[#E8BC63]' : 'text-white/20'
+            )}
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M10 1.6l2.6 5.28 5.83.85-4.22 4.11 1 5.8L10 14.9l-5.21 2.74 1-5.8L1.57 7.73l5.83-.85L10 1.6z" />
+          </svg>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <Link href="/dashboard" onClick={onNavigate} className="flex items-center gap-3">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0E3B2E]">
+          <Image
+            src="/assets/icons/logo.svg"
+            alt=""
+            width={18}
+            height={24}
+            className="h-5 w-auto"
+          />
+        </span>
+      </span>
+      <span className="font-display text-lg font-semibold tracking-tight text-white">
+        CoopWise
+      </span>
+    </Link>
+  )
 }
 
 export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
-  const { logout } = useAuthStore()
   const { unreadCount } = useNotificationStore()
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-  // Flat list — no section headers, no nested dropdown.
-  // Create Circle / Join Group live on the Dashboard and My Group
-  // pages as primary actions, so they're intentionally not duplicated here.
   const navItems: NavItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'My Group', href: '/dashboard/my-group', icon: Users },
@@ -61,6 +125,9 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         pathname?.startsWith('/dashboard/my-group/')
       )
     }
+    if (path === '/dashboard/wallet/fund') {
+      return pathname?.startsWith('/dashboard/wallet')
+    }
     return pathname === path || pathname?.startsWith(`${path}/`)
   }
 
@@ -70,163 +137,79 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     }
   }
 
-  const handleLogout = async () => {
-    if (isLoggingOut) return
-
-    try {
-      setIsLoggingOut(true)
-      toast.info('Logging out...', {
-        description: 'Please wait while we securely log you out.'
-      })
-
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      if (onClose) {
-        onClose()
-      }
-
-      await logout()
-
-      toast.success('Logged out successfully', {
-        description: 'You have been securely logged out.'
-      })
-
-      router.replace('/signin')
-
-    } catch (error) {
-      console.error('Logout error:', error)
-      toast.error('Logout failed', {
-        description: 'Please try again.'
-      })
-    } finally {
-      setIsLoggingOut(false)
-    }
+  const renderNavItem = (item: NavItem) => {
+    const active = isActive(item.href)
+    return (
+      <li key={item.name}>
+        <Link
+          href={item.href}
+          onClick={handleLinkClick}
+          aria-current={active ? 'page' : undefined}
+          className={cn(
+            'flex items-center rounded-full px-4 py-2.5 text-sm font-medium transition-colors',
+            active
+              ? 'bg-white/10 text-white'
+              : 'text-white/70 hover:bg-white/5 hover:text-white'
+          )}
+        >
+          <item.icon
+            className="h-5 w-5 shrink-0"
+            strokeWidth={active ? 2.1 : 1.8}
+          />
+          <span className="ml-3">{item.name}</span>
+          {!!item.badge && (
+            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E8762B] px-1.5 text-[10px] font-semibold text-white">
+              {item.badge > 9 ? '9+' : item.badge}
+            </span>
+          )}
+        </Link>
+      </li>
+    )
   }
 
-  const renderNavItem = (item: NavItem) => (
-    <li key={item.name}>
-      <Link
-        href={item.href}
-        onClick={handleLinkClick}
-        className={`flex items-center px-4 py-3 transition-colors ${
-          isActive(item.href)
-            ? 'bg-white/10 text-white'
-            : 'text-white/75 hover:bg-white/5 hover:text-white'
-        }`}
-      >
-        <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
-          <item.icon className="w-5 h-5" />
-        </div>
-        <span className="ml-3 text-sm font-medium">{item.name}</span>
-        {!!item.badge && (
-          <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
-            {item.badge > 9 ? '9+' : item.badge}
-          </span>
-        )}
-      </Link>
-    </li>
-  )
+  const navContent = (
+    <>
+      <nav className="mt-5 flex-1 overflow-y-auto px-3">
+        <ul className="space-y-1">{navItems.map(renderNavItem)}</ul>
+      </nav>
 
-  const renderNav = () => (
-    <ul className="space-y-1">
-      {navItems.map(renderNavItem)}
-    </ul>
+      <div className="mt-2 border-t border-white/10 px-3 pb-4 pt-3">
+        <ul className="space-y-1">{utilityItems.map(renderNavItem)}</ul>
+      </div>
+    </>
   )
 
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex w-[208px] bg-brand-ink h-screen flex-col overflow-hidden fixed left-0 top-0">
-        <div className="p-4 flex items-center justify-center">
-          <Link href="/" className="flex gap-6 items-center">
-            <Image
-              src="/assets/icons/logo.svg"
-              alt="CoopWise Logo"
-              width={36}
-              height={36}
-            />
-            <span className="text-white font-display font-semibold -ml-2 text-lg">CoopWise</span>
-          </Link>
-        </div>
-
-        <nav className="flex-1 mt-2">
-          {renderNav()}
-        </nav>
-
-        {/* Utility + Logout, pinned to bottom */}
-        <div className="border-t border-white/10">
-          <ul className="space-y-1 py-2">
-            {utilityItems.map(renderNavItem)}
-          </ul>
-          <div className="p-4 border-t border-white/10">
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="flex items-center text-white/75 hover:text-white w-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-            >
-              <div className="w-6 h-6 flex items-center justify-center">
-                <LogOut className="w-5 h-5" />
-              </div>
-              <span className="ml-3 text-sm font-medium">
-                Logout
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
+      <aside className="fixed bottom-3 left-3 top-3 z-30 hidden w-[228px] flex-col overflow-hidden rounded-[28px] bg-[#173A2F] text-white shadow-[0_20px_50px_-20px_rgba(0,0,0,0.55)] lg:flex">
+        <div className="px-5 pb-1 pt-6">
+          <BrandMark />
+        </div>        <TrustScoreCard />
+        {navContent}
+      </aside>
 
       {/* Mobile Sidebar */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-brand-ink transform transition-transform duration-300 ease-in-out ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        <div className="flex flex-col h-full">
-          <div className="p-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <Image
-                src="/assets/icons/logo.svg"
-                alt="CoopWise Logo"
-                width={30}
-                height={30}
-              />
-              <span className="text-white font-display font-semibold ml-2 text-lg">CoopWise</span>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-white/75 hover:text-white p-1"
-              aria-label="Close menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* overflow-y-auto stays here only as a safety net for very short
-              viewport heights on mobile; with 6 nav items it won't engage
-              on any real device. */}
-          <nav className="flex-1 mt-2 overflow-y-auto">
-            {renderNav()}
-          </nav>
-
-          <div className="border-t border-white/10">
-            <ul className="space-y-1 py-2">
-              {utilityItems.map(renderNavItem)}
-            </ul>
-            <div className="p-4 border-t border-white/10">
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="flex items-center text-white/75 hover:text-white w-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-              >
-                <div className="w-6 h-6 flex items-center justify-center">
-                  <LogOut className="w-5 h-5" />
-                </div>
-                <span className="ml-3 text-sm font-medium">
-                  Logout
-                </span>
-              </button>
-            </div>
-          </div>
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex w-[264px] transform flex-col overflow-hidden rounded-r-[28px] bg-[#173A2F] text-white shadow-2xl transition-transform duration-300 ease-in-out lg:hidden',
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+        aria-hidden={!isOpen}
+      >
+        <div className="flex items-center justify-between px-5 pb-1 pt-5">
+          <BrandMark onNavigate={handleLinkClick} />
+          <button
+            onClick={onClose}
+            className="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
-      </div>
+        <TrustScoreCard />
+        {navContent}
+      </aside>
     </>
   )
 }

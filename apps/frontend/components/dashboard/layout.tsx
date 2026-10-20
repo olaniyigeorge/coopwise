@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Sidebar from './sidebar'
 import Header from './header'
 import MobileBottomNav from './mobile-bottom-nav'
@@ -57,6 +57,13 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { user } = useAuthStore()
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // The app shell scrolls inside the rounded card, not the window, so the
+  // browser can't restore this scroll position for us on navigation.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 })
+  }, [pathname])
   
   // Get header configuration based on current route
   const getHeaderConfig = () => {
@@ -68,6 +75,15 @@ export default function DashboardLayout({
         title: 'Cooperative Groups',
         showBackButton: true,
         backUrl: '/dashboard/my-group'
+      }
+    }
+
+    // The cooperative detail page draws its own hero and back control, so
+    // the shared header only carries the account/notification chrome.
+    if (path.startsWith('/dashboard/cooperative/')) {
+      return {
+        title: '',
+        showBackButton: false
       }
     }
 
@@ -103,6 +119,7 @@ export default function DashboardLayout({
       case '/dashboard/my-group':
       case '/dashboard/discover-groups':
       case '/dashboard/contributions':
+      case '/dashboard/notifications':
         return {
           title: '',
           subtitle: '',
@@ -160,6 +177,7 @@ export default function DashboardLayout({
   }
 
   const headerConfig = getHeaderConfig()
+  const isLandingPage = pathname === '/dashboard'
 
   const handleCloseSidebar = () => {
     if (sidebarOpen) {
@@ -168,11 +186,14 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-brand-paper" onClick={handleCloseSidebar}>
+    <div
+      className="h-[100dvh] overflow-hidden bg-[#1A1A1A] transition-colors dark:bg-[#070B09] lg:p-3"
+      onClick={handleCloseSidebar}
+    >
       {/* Mobile Backdrop Fade */}
       <AnimatePresence>
         {sidebarOpen && (
-          <motion.div 
+          <motion.div
             variants={backdropVariants}
             initial="initial"
             animate="animate"
@@ -184,28 +205,46 @@ export default function DashboardLayout({
           />
         )}
       </AnimatePresence>
-      
+
       {/* Sidebar Navigation */}
-      <Sidebar 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
-      
+
       {/* Main Container */}
-      <div className={cn(
-        "min-h-screen transition-all duration-300 ease-out",
-        "lg:ml-[208px]"
-      )}>
-        <Header 
-          {...headerConfig} 
-          onMenuClick={() => setSidebarOpen(true)}
-          showMobileMenu={true}
-          userName={user?.full_name || "User"}
-        />
-        
+      <div
+        ref={scrollRef}
+        className={cn(
+          "dashboard-shell h-full overflow-y-auto overflow-x-hidden overscroll-contain bg-canvas text-content transition-all duration-300 ease-out",
+          "lg:ml-[240px] lg:rounded-[28px]"
+        )}
+      >
+        {/* The landing page draws its own hero header; elsewhere the shared
+            header is used. On mobile the landing keeps the shared header for
+            menu/notifications, hiding it only where the desktop sidebar and
+            inline actions take over. */}
+        {isLandingPage ? (
+          <div className="lg:hidden">
+            <Header
+              {...headerConfig}
+              onMenuClick={() => setSidebarOpen(true)}
+              showMobileMenu={true}
+              userName={user?.full_name || "User"}
+            />
+          </div>
+        ) : (
+          <Header
+            {...headerConfig}
+            onMenuClick={() => setSidebarOpen(true)}
+            showMobileMenu={true}
+            userName={user?.full_name || "User"}
+          />
+        )}
+
         {/* Animated Page Route Content */}
         <AnimatePresence mode="wait">
-          <motion.main 
+          <motion.main
             key={pathname}
             variants={pageFadeUp}
             initial="initial"
@@ -222,13 +261,13 @@ export default function DashboardLayout({
           </motion.main>
         </AnimatePresence>
       </div>
-      
+
       {/* Mobile Bottom Navigation Bar */}
       <MobileBottomNav />
-      
+
       {/* Global Toast Notifications */}
-      <Toaster 
-        position="top-right" 
+      <Toaster
+        position="top-right"
         expand={false}
         richColors
         closeButton

@@ -20,6 +20,16 @@ class OwnershipShareRepository:
         await self._session.flush()
         return share
 
+    async def get_by_id(self, share_id: UUID | str) -> CoopOwnershipShare | None:
+        result = await self._session.execute(
+            select(CoopOwnershipShare).where(CoopOwnershipShare.id == share_id)
+        )
+        return result.scalars().first()
+
+    async def delete(self, share: CoopOwnershipShare) -> None:
+        await self._session.delete(share)
+        await self._session.flush()
+
     async def list_for_goal(self, goal_id: UUID | str) -> Sequence[CoopOwnershipShare]:
         goal_id = str(goal_id)
         result = await self._session.execute(

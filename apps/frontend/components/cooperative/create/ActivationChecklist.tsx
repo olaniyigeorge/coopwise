@@ -2,13 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useCooperativeCreationStore, type WizardStepId } from "@/stores/cooperative-creation-store";
 import CooperativeService from "@/services/cooperative-service";
 import RulesService from "@/services/rules-service";
 import { MissingFieldsBanner } from "@/components/cooperative/MissingFieldsBanner";
 import { getApiErrorDetail } from "@/lib/api-error";
+import { cn } from "@/lib/utils";
 import type { RequiredRuleType } from "@/types/cooperative";
+import {
+  WizardActions,
+  WizardButton,
+  WizardStepHeader,
+} from "@/components/cooperative/create/wizard-ui";
 
 const RULE_LABELS: Record<RequiredRuleType, string> = {
   governance: "Governance rule",
@@ -74,24 +79,31 @@ export function ActivationChecklist({ onActivated, onBack }: ActivationChecklist
 
   if (!cooperativeId) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Create the cooperative in Step 1 first.
-      </p>
+      <div className="rounded-2xl border border-[#EAD9AC] bg-[#FBF3DE] p-4 text-sm text-[#6B4E12] dark:border-[#5A4A22] dark:bg-[#2E2818] dark:text-[#E8BC63]">
+        Create the cooperative in Step 2 first.
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">Review & activate</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          &quot;{basicsDraft.name}&quot; — once activated, members can start
-          contributing under these rules.
-        </p>
-      </div>
+      <WizardStepHeader
+        eyebrow="Step 7 · Review"
+        title="Review & activate"
+        description={
+          <>
+            &quot;{basicsDraft.name}&quot; — once activated, members can start
+            contributing under these rules.
+          </>
+        }
+      />
 
       {checking ? (
-        <p className="text-sm text-muted-foreground">Checking setup…</p>
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <div key={idx} className="h-[68px] animate-pulse rounded-2xl bg-content/5" />
+          ))}
+        </div>
       ) : (
         <ul className="space-y-2">
           {(Object.keys(RULE_LABELS) as RequiredRuleType[]).map((type) => {
@@ -99,24 +111,45 @@ export function ActivationChecklist({ onActivated, onBack }: ActivationChecklist
             return (
               <li
                 key={type}
-                className="flex items-center justify-between rounded-md border p-3"
+                className={cn(
+                  "flex items-center justify-between gap-3 rounded-2xl border p-4",
+                  isMissing
+                    ? "border-[#EAD9AC] bg-[#FBF3DE] dark:border-[#5A4A22] dark:bg-[#2E2818]"
+                    : "border-[#CFE6D6] bg-[#EFF7F1] dark:border-[#2C4A39] dark:bg-[#17281F]"
+                )}
               >
-                <span className="flex items-center gap-2 text-sm">
-                  {isMissing ? (
-                    <XCircle className="h-4 w-4 text-destructive" />
-                  ) : (
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  )}
-                  {RULE_LABELS[type]}
+                <span className="flex min-w-0 items-center gap-3">
+                  <span
+                    className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                      isMissing
+                        ? "bg-white/70 text-[#A8491F] dark:bg-white/10 dark:text-[#E8BC63]"
+                        : "bg-white/70 text-[#17603F] dark:bg-white/10 dark:text-[#B7E3C3]"
+                    )}
+                  >
+                    {isMissing ? (
+                      <XCircle className="h-4 w-4" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4" />
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-content">
+                      {RULE_LABELS[type]}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] text-content/50">
+                      {isMissing ? "Needs setup before activation" : "Configured"}
+                    </span>
+                  </span>
                 </span>
                 {isMissing && (
-                  <button
-                    type="button"
-                    className="text-xs underline underline-offset-2"
+                  <WizardButton
+                    size="sm"
+                    variant="secondary"
                     onClick={() => goToStep(type as WizardStepId)}
                   >
                     Add it
-                  </button>
+                  </WizardButton>
                 )}
               </li>
             );
@@ -124,7 +157,9 @@ export function ActivationChecklist({ onActivated, onBack }: ActivationChecklist
         </ul>
       )}
 
-      {activateError && <p className="text-sm text-destructive">{activateError}</p>}
+      {activateError && (
+        <p className="text-sm text-red-600 dark:text-red-400">{activateError}</p>
+      )}
 
       {missing.length > 0 && !checking && (
         <MissingFieldsBanner
@@ -135,14 +170,17 @@ export function ActivationChecklist({ onActivated, onBack }: ActivationChecklist
         />
       )}
 
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={onBack}>
+      <WizardActions>
+        <WizardButton variant="ghost" onClick={onBack}>
           Back
-        </Button>
-        <Button disabled={checking || missing.length > 0 || activating} onClick={handleActivate}>
+        </WizardButton>
+        <WizardButton
+          disabled={checking || missing.length > 0 || activating}
+          onClick={handleActivate}
+        >
           {activating ? "Activating…" : "Activate cooperative"}
-        </Button>
-      </div>
+        </WizardButton>
+      </WizardActions>
     </div>
   );
 }

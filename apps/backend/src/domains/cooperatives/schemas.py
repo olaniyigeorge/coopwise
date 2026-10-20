@@ -143,6 +143,47 @@ class RuleRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class GovernanceRuleRead(RuleRead):
+    decision_model: DecisionModel
+    quorum_pct: float | None = None
+    voting_threshold_pct: float | None = None
+    members_can_propose_changes: bool = True
+    rule_amendment_approval_type: RuleAmendmentApprovalType | None = None
+    extra_rules: dict[str, Any] | None = None
+
+
+class MembershipRuleRead(RuleRead):
+    join_type: JoinType
+    min_members: int | None = None
+    max_members: int | None = None
+    public_discovery: bool = False
+    kyc_level_required: str | None = None
+    exit_notice_days: int | None = None
+    removal_policy: RemovalPolicy
+    extra_rules: dict[str, Any] | None = None
+
+
+class FinancialRuleRead(RuleRead):
+    contribution_frequency: ContributionFrequency
+    contribution_amount: float
+    currency: str
+    grace_period_days: int
+    penalty_type: PenaltyType
+    penalty_value: float | None = None
+    payment_rail_default: str
+    escrow_mode: EscrowMode
+    payout_strategy: PayoutStrategy
+    rotation_order: RotationOrder | None = None
+    extra_rules: dict[str, Any] | None = None
+
+
+class DecisionRuleRead(RuleRead):
+    decision_type: DecisionType
+    mechanism: DecisionMechanism
+    escalation_path: dict[str, Any] | None = None
+    extra_rules: dict[str, Any] | None = None
+
+
 class CooperativeFullRead(BaseModel):
     cooperative: CooperativeRead
     governance_rule: RuleRead | None
@@ -224,6 +265,15 @@ class OwnershipShareCreate(BaseModel):
     user_id: UUID
     share_pct: float = Field(gt=0, le=100)
     basis: OwnershipBasis
+    vested_at: date | None = None
+
+
+class OwnershipShareUpdate(BaseModel):
+    """Partial update for a share. Members can be added later, so a goal's
+    allocation stays editable after the goal is created."""
+
+    share_pct: float | None = Field(default=None, gt=0, le=100)
+    basis: OwnershipBasis | None = None
     vested_at: date | None = None
 
 

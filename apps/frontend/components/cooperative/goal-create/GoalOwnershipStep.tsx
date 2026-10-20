@@ -30,6 +30,7 @@ export function GoalOwnershipStep({ cooperativeId, onContinue, onBack }: GoalOwn
   const addOwnershipRow = useGoalCreationStore((s) => s.addOwnershipRow);
   const updateOwnershipRow = useGoalCreationStore((s) => s.updateOwnershipRow);
   const removeOwnershipRow = useGoalCreationStore((s) => s.removeOwnershipRow);
+  const clearOwnershipRows = useGoalCreationStore((s) => s.clearOwnershipRows);
   const ownershipTotalPct = useGoalCreationStore((s) => s.ownershipTotalPct);
 
   const [members, setMembers] = useState<CooperativeMember[]>([]);
@@ -92,7 +93,9 @@ export function GoalOwnershipStep({ cooperativeId, onContinue, onBack }: GoalOwn
       <div>
         <h2 className="text-xl font-semibold">Ownership shares</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Who owns how much of this goal — must add up to exactly 100%.
+          Who owns how much of this goal — must add up to exactly 100%. Not
+          everyone here yet? Skip and finish it from the cooperative&apos;s Goals
+          tab at any time.
         </p>
       </div>
 
@@ -111,7 +114,7 @@ export function GoalOwnershipStep({ cooperativeId, onContinue, onBack }: GoalOwn
                 <SelectContent>
                   {members.map((m) => (
                     <SelectItem key={m.user_id} value={m.user_id}>
-                      {m.user_id}
+                      {m.user?.full_name || m.user?.username || m.user_id}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -170,13 +173,28 @@ export function GoalOwnershipStep({ cooperativeId, onContinue, onBack }: GoalOwn
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="flex justify-between">
+      <div className="flex justify-between gap-2">
         <Button variant="ghost" onClick={onBack}>
           Back
         </Button>
-        <Button disabled={!canSubmit || submitting} onClick={handleSubmit}>
-          {submitting ? "Saving…" : "Save and continue"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            type="button"
+            disabled={submitting}
+            onClick={() => {
+              // Nothing was persisted; don't let the review step show these
+              // rows as if they had been.
+              clearOwnershipRows();
+              onContinue();
+            }}
+          >
+            Skip for now
+          </Button>
+          <Button disabled={!canSubmit || submitting} onClick={handleSubmit}>
+            {submitting ? "Saving…" : "Save and continue"}
+          </Button>
+        </div>
       </div>
     </div>
   );

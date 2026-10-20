@@ -15,6 +15,8 @@ import {
   Target,
   Plus,
   ArrowLeft,
+  ArrowRight,
+  Sparkles,
   Calendar,
   ShieldCheck,
   Clock,
@@ -31,7 +33,14 @@ import ContributionService, { GoalProgress } from '@/services/contribution-servi
 import { getDashboardData } from '@/services/dashboard-service'
 import { getApiErrorDetail } from '@/lib/api-error'
 import DashboardLayout from '@/components/dashboard/layout'
-import { Cooperative, CooperativeMember, Goal, ActivityDetail } from '@/types/cooperative'
+import { GoalOwnershipEditor } from '@/components/cooperative/goal-ownership-editor'
+import {
+  BeneficiaryPattern,
+  Cooperative,
+  CooperativeMember,
+  Goal,
+  ActivityDetail,
+} from '@/types/cooperative'
 import {
   Dialog,
   DialogContent,
@@ -111,6 +120,11 @@ export default function CooperativeDetailPage() {
       .catch(() => {})
   }, [isPending, id])
   const [goals, setGoals] = useState<Goal[]>([])
+  const [patterns, setPatterns] = useState<BeneficiaryPattern[]>([])
+  const [ownershipGoal, setOwnershipGoal] = useState<Goal | null>(null)
+  const sharedPatternId = patterns.find(
+    (pattern) => pattern.code === 'pooled_for_shared'
+  )?.id
   const [activities, setActivities] = useState<ActivityDetail[]>([])
   const [showAllActivity, setShowAllActivity] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -135,16 +149,18 @@ export default function CooperativeDetailPage() {
       try {
         setLoading(true)
         setError(null)
-        const [coopData, memberData, goalData, activityData, dashboardData] = await Promise.all([
+        const [coopData, memberData, goalData, activityData, dashboardData, patternData] = await Promise.all([
           CooperativeService.getCooperative(id),
           CooperativeService.getCooperativeMembers(id),
           GoalService.listGoals(id),
           CooperativeService.getCooperativeActivities(id),
           getDashboardData(),
+          GoalService.getBeneficiaryPatterns().catch(() => []),
         ])
         setCooperative(coopData)
         setMembers(memberData)
         setGoals(goalData)
+        setPatterns(patternData)
         setActivities(activityData)
         setWalletBalance(
           dashboardData?.summary?.wallet?.local_balance != null
@@ -297,13 +313,13 @@ export default function CooperativeDetailPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="max-w-6xl mx-auto space-y-6 animate-pulse">
-          <div className="h-6 w-32 bg-neutral-200 rounded" />
-          <div className="h-44 bg-neutral-200 rounded-2xl" />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="h-28 bg-neutral-200 rounded-xl" />
-            <div className="h-28 bg-neutral-200 rounded-xl" />
-            <div className="h-28 bg-neutral-200 rounded-xl" />
+        <div className="mx-auto max-w-6xl animate-pulse space-y-4">
+          <div className="h-10 w-40 rounded-full bg-content/5" />
+          <div className="h-56 rounded-[24px] bg-surface" />
+          <div className="h-14 rounded-full bg-content/5" />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="h-52 rounded-[24px] bg-surface lg:col-span-2" />
+            <div className="h-52 rounded-[24px] bg-surface" />
           </div>
         </div>
       </DashboardLayout>
@@ -313,15 +329,21 @@ export default function CooperativeDetailPage() {
   if (error || !cooperative) {
     return (
       <DashboardLayout>
-        <div className="max-w-2xl mx-auto py-12 text-center space-y-4">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-          <h2 className="text-xl font-bold text-neutral-900">Cooperative Not Found</h2>
-          <p className="text-sm text-neutral-500">{error || "The cooperative you are looking for does not exist or has been removed."}</p>
+        <div className="mx-auto max-w-2xl space-y-4 py-12 text-center">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FBE2D6] text-[#B4451F] dark:bg-[#3B2820] dark:text-[#F3B79E]">
+            <AlertCircle className="h-7 w-7" />
+          </span>
+          <h2 className="font-display text-2xl font-bold tracking-tight text-content">
+            Cooperative not found
+          </h2>
+          <p className="text-sm text-content/50">
+            {error || "The cooperative you are looking for does not exist or has been removed."}
+          </p>
           <button
             onClick={() => router.push('/dashboard')}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors"
+            className="inline-flex items-center gap-2 rounded-full bg-[#0E3B2E] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0A2E24]"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
           </button>
         </div>
@@ -342,27 +364,27 @@ export default function CooperativeDetailPage() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-6xl mx-auto space-y-6"
+        className="mx-auto max-w-6xl space-y-4 pb-6"
       >
-        {/* Navigation Breadcrumb */}
-        <motion.div variants={itemVariants} className="flex items-center justify-between">
+        {/* Back + primary actions */}
+        <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-between gap-3">
           <button
             onClick={() => router.back()}
-            className="inline-flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors"
+            className="inline-flex items-center gap-2 rounded-full px-2 py-1.5 text-sm font-medium text-content/55 transition-colors hover:text-content"
           >
-            <ArrowLeft className="w-4 h-4 mr-1.5" />
+            <ArrowLeft className="w-4 h-4" />
             Back
           </button>
 
-          <div className={isPending || wasRejected ? 'hidden' : 'flex items-center gap-2'}>
+          <div className={isPending || wasRejected ? 'hidden' : 'flex flex-wrap items-center gap-2.5'}>
             <motion.button
               variants={buttonHover}
               whileHover="hover"
               whileTap="tap"
               onClick={() => setShowContributeDialog(true)}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors"
+              className="inline-flex items-center gap-2 rounded-full bg-[#0E3B2E] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0A2E24]"
             >
-              <Wallet className="w-4 h-4 mr-1.5" />
+              <Wallet className="w-4 h-4" />
               Contribute
             </motion.button>
 
@@ -372,12 +394,12 @@ export default function CooperativeDetailPage() {
               whileTap="tap"
               onClick={generateInvite}
               disabled={isGeneratingInvite}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 hover:border-emerald-300 hover:text-emerald-700 rounded-xl shadow-sm transition-colors"
+              className="inline-flex items-center gap-2 rounded-full border border-content/10 bg-surface px-5 py-2.5 text-sm font-semibold text-content transition-colors hover:bg-content/[0.03] disabled:opacity-60"
             >
               {isGeneratingInvite ? (
-                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Share className="w-4 h-4 mr-1.5" />
+                <Share className="w-4 h-4" />
               )}
               Share invite
             </motion.button>
@@ -387,9 +409,9 @@ export default function CooperativeDetailPage() {
                 variants={buttonHover}
                 whileHover="hover"
                 whileTap="tap"
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors"
+                className="inline-flex items-center gap-2 rounded-full bg-[#1F7A54] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#196546]"
               >
-                <Plus className="w-4 h-4 mr-1.5" />
+                <Plus className="w-4 h-4" />
                 Create Goal
               </motion.button>
             </Link>
@@ -400,15 +422,17 @@ export default function CooperativeDetailPage() {
           <motion.div
             variants={itemVariants}
             className={`rounded-2xl border px-5 py-4 ${
-              wasRejected ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'
+              wasRejected
+                ? 'border-[#F3C6C6] bg-[#FDEDED] dark:border-[#5A2A2A] dark:bg-[#2E1717]'
+                : 'border-[#EAD9AC] bg-[#FBF3DE] dark:border-[#5A4A22] dark:bg-[#2E2818]'
             }`}
           >
-            <p className={`text-sm font-semibold ${wasRejected ? 'text-red-800' : 'text-amber-900'}`}>
+            <p className={`text-sm font-semibold ${wasRejected ? 'text-[#8F2D2D] dark:text-[#F0A9A9]' : 'text-[#7A5A14] dark:text-[#E8BC63]'}`}>
               {wasRejected
                 ? "Your request to join wasn't approved"
                 : 'Your request to join is waiting for a decision'}
             </p>
-            <p className={`mt-0.5 text-sm ${wasRejected ? 'text-red-700' : 'text-amber-800'}`}>
+            <p className={`mt-0.5 text-sm ${wasRejected ? 'text-[#A24A4A] dark:text-[#E3BDBD]' : 'text-[#8A6A28] dark:text-[#D8C08A]'}`}>
               {wasRejected
                 ? 'You can ask a member for a new invite if you think this was a mistake.'
                 : admission === 'member_vote'
@@ -418,89 +442,100 @@ export default function CooperativeDetailPage() {
           </motion.div>
         )}
 
-        {/* Cooperative Header Card */}
+        {/* Cooperative hero */}
         <motion.div
           variants={itemVariants}
-          className="p-6 sm:p-8 bg-white border border-neutral-100 shadow-sm rounded-2xl relative overflow-hidden"
+          className="relative overflow-hidden rounded-[24px] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] sm:p-7"
         >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-2xl">
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">{cooperative.name}</h1>
-                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full">
-                  {cooperative.status}
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 max-w-2xl">
+              <div className="flex items-start gap-3">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#DFF0E4] text-base font-bold text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
+                  {cooperative.name?.charAt(0)?.toUpperCase() || 'C'}
                 </span>
-                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-neutral-700 bg-neutral-100 border border-neutral-200 rounded-full">
-                  {cooperative.coop_model}
+                <div className="min-w-0">
+                  <h1 className="font-display text-2xl font-bold tracking-tight text-content sm:text-3xl">
+                    {cooperative.name}
+                  </h1>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-[#DFF0E4] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
+                      {cooperative.status}
+                    </span>
+                    <span className="rounded-full bg-content/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-content/60">
+                      {cooperative.coop_model}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="mt-4 text-sm leading-relaxed text-content/60">
+                {cooperative.description}
+              </p>
+
+              <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-content/50">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 text-content/35" />
+                  Created{' '}
+                  {new Date(cooperative.created_at).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-[#1F7A54] dark:text-[#7FBF9C]" />
+                  Verified cooperative
+                </span>
+                <span className="flex items-center gap-1.5 font-mono text-content/40">
+                  ID: {cooperative.id.slice(0, 8)}…
                 </span>
               </div>
-              <p className="text-sm text-neutral-600 leading-relaxed">{cooperative.description}</p>
             </div>
-          </div>
 
-          <div className="mt-6 pt-6 border-t border-neutral-100 flex flex-wrap items-center gap-6 text-xs text-neutral-500">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-neutral-400" />
-              Created {new Date(cooperative.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Verified Cooperative
-            </div>
-            <div className="flex items-center gap-1.5 font-mono">
-              ID: {cooperative.id.slice(0, 8)}...
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Dynamic Metric Cards */}
-        <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="p-5 bg-white border border-neutral-100 shadow-sm rounded-2xl flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-neutral-500">Total Members</p>
-              <h3 className="text-xl font-bold text-neutral-900 mt-0.5">
-                {activeMembers.length} Member{activeMembers.length === 1 ? '' : 's'}
-              </h3>
-            </div>
-          </div>
-
-          <div className="p-5 bg-white border border-neutral-100 shadow-sm rounded-2xl flex items-center gap-4">
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-              <Target className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-neutral-500">Goals</p>
-              <h3 className="text-xl font-bold text-neutral-900 mt-0.5">
-                {goals.length} {goals.length === 1 ? 'Goal' : 'Goals'}
-              </h3>
+            <div className="grid shrink-0 grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-[#DFF0E4] p-4 dark:bg-[#1C3A2C]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-[#17603F] dark:bg-white/10 dark:text-[#B7E3C3]">
+                  <Users className="h-4 w-4" />
+                </span>
+                <p className="mt-3 font-display text-2xl font-bold leading-none text-content">
+                  {activeMembers.length}
+                </p>
+                <p className="mt-1 text-[11px] font-medium text-content/55">
+                  Member{activeMembers.length === 1 ? '' : 's'}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-[#FBF1D0] p-4 dark:bg-[#3A3120]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-[#8A6516] dark:bg-white/10 dark:text-[#E8BC63]">
+                  <Target className="h-4 w-4" />
+                </span>
+                <p className="mt-3 font-display text-2xl font-bold leading-none text-content">
+                  {goals.length}
+                </p>
+                <p className="mt-1 text-[11px] font-medium text-content/55">
+                  Goal{goals.length === 1 ? '' : 's'}
+                </p>
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Animated Shared Layout Tabs */}
-        <motion.div variants={itemVariants} className="space-y-6">
-          <div className="flex border-b border-neutral-200">
+        {/* Section tabs */}
+        <motion.div variants={itemVariants} className="space-y-4">
+          <div className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-full bg-content/[0.04] p-1">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative px-5 py-3 text-sm font-medium transition-colors ${
-                    isActive ? 'text-emerald-700' : 'text-neutral-500 hover:text-neutral-800'
+                  aria-pressed={isActive}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-[#0E3B2E] text-white shadow-sm'
+                      : 'text-content/55 hover:text-content'
                   }`}
                 >
                   {tab.label}
-                  {isActive && (
-                    <motion.span
-                      layoutId="tab-underline"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                    />
-                  )}
                 </button>
               )
             })}
@@ -515,49 +550,68 @@ export default function CooperativeDetailPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+                className="grid grid-cols-1 gap-4 lg:grid-cols-3"
               >
-                {/* Main Section */}
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="p-6 bg-white border border-neutral-100 shadow-sm rounded-2xl space-y-4">
-                    <h3 className="text-base font-semibold text-neutral-900">About this Cooperative</h3>
-                    <p className="text-sm text-neutral-600 leading-relaxed">{cooperative.description}</p>
+                {/* Main section */}
+                <div className="space-y-4 lg:col-span-2">
+                  <div className="rounded-[24px] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] sm:p-6">
+                    <h3 className="font-display text-base font-bold tracking-tight text-content">
+                      About this cooperative
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-content/60">
+                      {cooperative.description}
+                    </p>
                   </div>
 
-                  <div className="p-6 bg-white border border-neutral-100 shadow-sm rounded-2xl space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-base font-semibold text-neutral-900">Cooperative Goals</h3>
+                  <div className="rounded-[24px] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] sm:p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <h3 className="font-display text-base font-bold tracking-tight text-content">
+                        Cooperative goals
+                      </h3>
                       <Link
                         href={`/dashboard/cooperative/${id}/goals/create`}
-                        className="text-xs font-semibold text-emerald-600 hover:text-emerald-700"
+                        className="text-xs font-semibold text-[#1F7A54] transition-colors hover:text-[#0E3B2E] dark:text-[#7FBF9C] dark:hover:text-[#B7E3C3]"
                       >
-                        + Add New Goal
+                        + Add new goal
                       </Link>
                     </div>
 
                     {goals.length === 0 ? (
-                      <div className="p-8 text-center border-2 border-dashed border-neutral-200 rounded-xl space-y-3">
-                        <Target className="w-10 h-10 text-neutral-300 mx-auto" />
-                        <div>
-                          <p className="text-sm font-medium text-neutral-800">No active goals configured</p>
-                          <p className="text-xs text-neutral-500 mt-0.5">Set target amounts and deadlines for your cooperative.</p>
-                        </div>
-                        <Link href={`/dashboard/cooperative/${id}/goals/create`}>
-                          <button className="mt-2 px-4 py-2 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors">
-                            Create Target Goal
-                          </button>
+                      <div className="mt-4 rounded-2xl border border-dashed border-content/10 p-8 text-center">
+                        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FBF1D0] text-[#8A6516] dark:bg-[#3A3120] dark:text-[#E8BC63]">
+                          <Target className="h-5 w-5" />
+                        </span>
+                        <p className="mt-3 text-sm font-semibold text-content">
+                          No active goals configured
+                        </p>
+                        <p className="mt-1 text-xs text-content/50">
+                          Set target amounts and deadlines for your cooperative.
+                        </p>
+                        <Link
+                          href={`/dashboard/cooperative/${id}/goals/create`}
+                          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#0E3B2E] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#0A2E24]"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Create target goal
                         </Link>
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="mt-4 space-y-2">
                         {goals.slice(0, 3).map((goal) => (
-                          <div key={goal.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
-                            <div>
-                              <p className="text-sm font-medium text-neutral-900">{goal.name}</p>
-                              <p className="text-xs text-neutral-500 capitalize">{goal.status}</p>
+                          <div
+                            key={goal.id}
+                            className="flex items-center justify-between gap-3 rounded-2xl bg-content/[0.03] p-3.5"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-content">
+                                {goal.name}
+                              </p>
+                              <p className="mt-0.5 text-[11px] capitalize text-content/45">
+                                {goal.status}
+                              </p>
                             </div>
                             {goal.target_amount != null && (
-                              <span className="text-xs font-semibold text-neutral-700">
+                              <span className="shrink-0 text-xs font-semibold text-content/70">
                                 {goal.currency} {goal.target_amount.toLocaleString()}
                               </span>
                             )}
@@ -568,23 +622,57 @@ export default function CooperativeDetailPage() {
                   </div>
                 </div>
 
-                {/* Sidebar Info Panel */}
-                <div className="space-y-6">
-                  <div className="p-6 bg-white border border-neutral-100 shadow-sm rounded-2xl space-y-4">
-                    <h3 className="text-base font-semibold text-neutral-900">Model Details</h3>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between py-2 border-b border-neutral-100">
-                        <span className="text-neutral-500">Savings Model</span>
-                        <span className="font-semibold text-neutral-900 uppercase">{cooperative.coop_model}</span>
+                {/* Side panel */}
+                <div className="space-y-4">
+                  <div className="rounded-[24px] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] sm:p-6">
+                    <h3 className="font-display text-base font-bold tracking-tight text-content">
+                      Model details
+                    </h3>
+                    <div className="mt-2 text-sm">
+                      <div className="flex justify-between gap-3 border-b border-content/[0.06] py-2.5">
+                        <span className="text-content/50">Savings model</span>
+                        <span className="font-semibold uppercase text-content">
+                          {cooperative.coop_model}
+                        </span>
                       </div>
-                      <div className="flex justify-between py-2 border-b border-neutral-100">
-                        <span className="text-neutral-500">Status</span>
-                        <span className="font-semibold text-emerald-600 uppercase">{cooperative.status}</span>
+                      <div className="flex justify-between gap-3 border-b border-content/[0.06] py-2.5">
+                        <span className="text-content/50">Status</span>
+                        <span className="font-semibold uppercase text-[#1F7A54] dark:text-[#7FBF9C]">
+                          {cooperative.status}
+                        </span>
                       </div>
-                      <div className="flex justify-between py-2">
-                        <span className="text-neutral-500">Last Updated</span>
-                        <span className="text-neutral-800">{new Date(cooperative.updated_at).toLocaleDateString()}</span>
+                      <div className="flex justify-between gap-3 py-2.5">
+                        <span className="text-content/50">Last updated</span>
+                        <span className="text-content/75">
+                          {new Date(cooperative.updated_at).toLocaleDateString()}
+                        </span>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#1C3F3B] via-[#173C4A] to-[#123A55] p-5 text-white shadow-[0_18px_40px_-24px_rgba(14,59,46,0.65)]">
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#7FBF9C]/10 blur-2xl"
+                    />
+                    <div className="relative z-10">
+                      <Sparkles className="h-4 w-4 text-[#E8BC63]" />
+                      <h3 className="mt-2 font-display text-base font-bold tracking-tight">
+                        Ask Copilot about this coop
+                      </h3>
+                      <p className="mt-2 text-xs leading-relaxed text-white/70">
+                        Understand contribution rhythm, liquidity and payout risk
+                        before the next round.
+                      </p>
+                      <Link
+                        href={`/dashboard/ai-chat?q=${encodeURIComponent(
+                          `Tell me about ${cooperative.name}`
+                        )}`}
+                        className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/15"
+                      >
+                        Open Copilot
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -598,59 +686,89 @@ export default function CooperativeDetailPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="space-y-4"
+                className="space-y-3"
               >
                 {goals.length === 0 ? (
-                  <div className="p-8 bg-white border border-neutral-100 shadow-sm rounded-2xl text-center space-y-4">
-                    <Target className="w-12 h-12 text-emerald-600 mx-auto" />
-                    <div>
-                      <h3 className="text-lg font-bold text-neutral-900">Cooperative Savings Goals</h3>
-                      <p className="text-sm text-neutral-500 max-w-md mx-auto mt-1">
-                        Track targets, monthly payouts, and group milestones in one centralized view.
-                      </p>
-                    </div>
-                    <Link href={`/dashboard/cooperative/${id}/goals/create`}>
-                      <button className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors">
-                        <Plus className="w-4 h-4 mr-1.5" />
-                        Create First Goal
-                      </button>
+                  <div className="rounded-[24px] bg-surface p-8 text-center shadow-[0_1px_2px_rgba(11,23,18,0.04)]">
+                    <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#DFF0E4] text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
+                      <Target className="h-6 w-6" />
+                    </span>
+                    <h3 className="mt-4 font-display text-lg font-bold tracking-tight text-content">
+                      Cooperative savings goals
+                    </h3>
+                    <p className="mx-auto mt-1 max-w-md text-sm text-content/50">
+                      Track targets, monthly payouts, and group milestones in one
+                      centralized view.
+                    </p>
+                    <Link
+                      href={`/dashboard/cooperative/${id}/goals/create`}
+                      className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#0E3B2E] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0A2E24]"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Create first goal
                     </Link>
                   </div>
                 ) : (
                   goals.map((goal) => (
-                    <div key={goal.id} className="p-5 bg-white border border-neutral-100 shadow-sm rounded-2xl">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="text-sm font-semibold text-neutral-900">{goal.name}</h4>
+                    <div
+                      key={goal.id}
+                      className="rounded-[24px] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)]"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-semibold text-content">
+                            {goal.name}
+                          </h4>
                           {goal.description && (
-                            <p className="text-xs text-neutral-500 mt-1">{goal.description}</p>
+                            <p className="mt-1 text-xs leading-relaxed text-content/50">
+                              {goal.description}
+                            </p>
                           )}
                         </div>
-                        <span className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200 capitalize">
+                        <span className="shrink-0 rounded-full bg-[#DFF0E4] px-2.5 py-1 text-[11px] font-semibold capitalize text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
                           {goal.status}
                         </span>
                       </div>
                       {goal.target_amount != null && (
-                        <p className="text-xs text-neutral-600 mt-3">
-                          Target: <span className="font-semibold">{goal.currency} {goal.target_amount.toLocaleString()}</span>
-                          {goal.target_date && ` · Due ${new Date(goal.target_date).toLocaleDateString()}`}
+                        <p className="mt-3 text-xs text-content/55">
+                          Target:{' '}
+                          <span className="font-semibold text-content/80">
+                            {goal.currency} {goal.target_amount.toLocaleString()}
+                          </span>
+                          {goal.target_date &&
+                            ` · Due ${new Date(goal.target_date).toLocaleDateString()}`}
                         </p>
                       )}
                       {goalProgress[goal.id] && (
                         <div className="mt-3 space-y-1.5">
-                          <div className="h-2 w-full bg-neutral-100 rounded-full overflow-hidden">
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-content/[0.06]">
                             <div
-                              className="h-full bg-emerald-500 rounded-full transition-all"
+                              className="h-full rounded-full bg-gradient-to-r from-[#1F7A54] to-[#7FBF9C] transition-all"
                               style={{ width: `${goalProgress[goal.id].percent_complete ?? 0}%` }}
                             />
                           </div>
-                          <p className="text-xs text-neutral-500">
-                            {goalProgress[goal.id].currency} {goalProgress[goal.id].contributed_amount.toLocaleString()} raised
-                            {goalProgress[goal.id].percent_complete != null && ` · ${goalProgress[goal.id].percent_complete}% funded`}
-                            {' · '}{goalProgress[goal.id].contributor_count} contributor{goalProgress[goal.id].contributor_count === 1 ? '' : 's'}
+                          <p className="text-xs text-content/50">
+                            {goalProgress[goal.id].currency}{' '}
+                            {goalProgress[goal.id].contributed_amount.toLocaleString()} raised
+                            {goalProgress[goal.id].percent_complete != null &&
+                              ` · ${goalProgress[goal.id].percent_complete}% funded`}
+                            {' · '}
+                            {goalProgress[goal.id].contributor_count} contributor
+                            {goalProgress[goal.id].contributor_count === 1 ? '' : 's'}
                           </p>
                         </div>
                       )}
+                      {sharedPatternId &&
+                        goal.beneficiary_pattern_id === sharedPatternId && (
+                          <button
+                            type="button"
+                            onClick={() => setOwnershipGoal(goal)}
+                            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-content/10 px-3 py-1.5 text-[11px] font-semibold text-content/60 transition-colors hover:border-content/20 hover:bg-content/[0.03] hover:text-content"
+                          >
+                            <Users className="h-3.5 w-3.5" />
+                            Manage ownership
+                          </button>
+                        )}
                     </div>
                   ))
                 )}
@@ -664,47 +782,56 @@ export default function CooperativeDetailPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="p-6 bg-white border border-neutral-100 shadow-sm rounded-2xl space-y-4"
+                className="rounded-[24px] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] sm:p-6"
               >
                 <ApplicationsPanel groupId={id} onAdmitted={refreshAfterContribution} />
-                <h3 className="text-base font-semibold text-neutral-900">Member Roster</h3>
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="font-display text-base font-bold tracking-tight text-content">
+                    Member roster
+                  </h3>
+                  <span className="rounded-full bg-content/5 px-2.5 py-1 text-[11px] font-semibold text-content/55">
+                    {activeMembers.length} member{activeMembers.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+
                 {activeMembers.length === 0 ? (
-                  <p className="text-sm text-neutral-500">No members yet.</p>
+                  <p className="mt-3 text-sm text-content/50">No members yet.</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="mt-3 space-y-2">
                     {activeMembers.map((member) => {
                       const displayName = member.user?.full_name || member.user?.username || 'Unknown member'
                       return (
-                      <div
-                        key={member.id}
-                        className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-100"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <UserAvatar name={displayName} src={member.user?.profile_picture_url} size="md" />
-                          {member.user?.id ? (
-                            <Link
-                              href={`/dashboard/users/${member.user.id}`}
-                              className="text-sm font-medium text-neutral-900 truncate hover:text-emerald-700 hover:underline"
-                            >
-                              {displayName}
-                            </Link>
-                          ) : (
-                            <p className="text-sm font-medium text-neutral-900 truncate">{displayName}</p>
-                          )}
+                        <div
+                          key={member.id}
+                          className="flex items-center justify-between gap-3 rounded-2xl bg-content/[0.03] p-3.5"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <UserAvatar name={displayName} src={member.user?.profile_picture_url} size="md" />
+                            {member.user?.id ? (
+                              <Link
+                                href={`/dashboard/users/${member.user.id}`}
+                                className="truncate text-sm font-semibold text-content transition-colors hover:text-[#1F7A54] hover:underline dark:hover:text-[#7FBF9C]"
+                              >
+                                {displayName}
+                              </Link>
+                            ) : (
+                              <p className="truncate text-sm font-semibold text-content">{displayName}</p>
+                            )}
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            {member.role && (
+                              <span className="rounded-full bg-[#F1E1B7] px-2.5 py-1 text-[11px] font-semibold capitalize text-[#8A6516] dark:bg-[#3A3120] dark:text-[#E8BC63]">
+                                {member.role}
+                              </span>
+                            )}
+                            {member.status && (
+                              <span className="rounded-full bg-content/5 px-2.5 py-1 text-[11px] font-semibold capitalize text-content/60">
+                                {member.status}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {member.role && (
-                            <span className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200 capitalize">
-                              {member.role}
-                            </span>
-                          )}
-                          {member.status && (
-                            <span className="px-2.5 py-1 text-xs font-semibold text-neutral-600 bg-neutral-100 rounded-full border border-neutral-200 capitalize">
-                              {member.status}
-                            </span>
-                          )}
-                        </div>
-                      </div>
                       )
                     })}
                   </div>
@@ -719,18 +846,20 @@ export default function CooperativeDetailPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="p-6 bg-white border border-neutral-100 shadow-sm rounded-2xl"
+                className="rounded-[24px] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] sm:p-6"
               >
                 {activities.length === 0 ? (
-                  <div className="text-center space-y-3 py-6">
-                    <Clock className="w-10 h-10 text-neutral-300 mx-auto" />
-                    <p className="text-sm font-medium text-neutral-700">No recent activity recorded</p>
-                    <p className="text-xs text-neutral-500">Contributions and goal creations will show up here.</p>
+                  <div className="space-y-3 py-6 text-center">
+                    <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FBE2D6] text-[#B4451F] dark:bg-[#3B2820] dark:text-[#F3B79E]">
+                      <Clock className="h-5 w-5" />
+                    </span>
+                    <p className="text-sm font-semibold text-content">No recent activity recorded</p>
+                    <p className="text-xs text-content/50">Contributions and goal creations will show up here.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {(showAllActivity ? activities : activities.slice(0, ACTIVITY_VISIBLE_LIMIT)).map((activity) => (
-                      <div key={activity.id} className="flex items-start justify-between gap-3 border-b border-neutral-100 pb-3 last:border-b-0 last:pb-0">
+                      <div key={activity.id} className="flex items-start justify-between gap-3 border-b border-content/[0.06] pb-3 last:border-b-0 last:pb-0">
                         {activity.actor && (
                           <Link href={`/dashboard/users/${activity.actor.id}`} className="shrink-0" aria-label={`View ${activity.actor.full_name}'s profile`}>
                             <UserAvatar
@@ -740,13 +869,13 @@ export default function CooperativeDetailPage() {
                             />
                           </Link>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-neutral-800">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-content/75">
                             {activity.actor ? (
                               <>
                                 <Link
                                   href={`/dashboard/users/${activity.actor.id}`}
-                                  className="font-semibold text-neutral-900 hover:text-emerald-700 hover:underline"
+                                  className="font-semibold text-content transition-colors hover:text-[#1F7A54] hover:underline dark:hover:text-[#7FBF9C]"
                                 >
                                   {activity.actor.full_name}
                                 </Link>{' '}
@@ -756,12 +885,12 @@ export default function CooperativeDetailPage() {
                               activity.description
                             )}
                           </p>
-                          <p className="text-xs text-neutral-400 mt-0.5">
+                          <p className="mt-0.5 text-xs text-content/40">
                             {new Date(activity.created_at).toLocaleString()}
                           </p>
                         </div>
                         {activity.amount != null && (
-                          <span className="text-xs font-semibold text-neutral-700">
+                          <span className="shrink-0 text-xs font-semibold text-content/70">
                             {activity.amount.toLocaleString()}
                           </span>
                         )}
@@ -771,7 +900,7 @@ export default function CooperativeDetailPage() {
                       <button
                         type="button"
                         onClick={() => setShowAllActivity((v) => !v)}
-                        className="w-full pt-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                        className="w-full pt-1 text-xs font-semibold text-[#1F7A54] transition-colors hover:text-[#0E3B2E] dark:text-[#7FBF9C] dark:hover:text-[#B7E3C3]"
                       >
                         {showAllActivity
                           ? 'Show less'
@@ -797,10 +926,10 @@ export default function CooperativeDetailPage() {
           </DialogHeader>
           <div className="flex items-center space-x-2 mt-4">
             <div className="grid flex-1 min-w-0 gap-2">
-              <label className="text-xs font-medium text-gray-500">
+              <label className="text-xs font-medium text-content/50">
                 Shareable Invite Link
               </label>
-              <div className="flex w-full min-w-0 items-center border rounded-md p-2 bg-gray-50">
+              <div className="flex w-full min-w-0 items-center rounded-lg border border-content/10 bg-content/5 p-2">
                 <span className="text-sm font-medium flex-1 min-w-0 truncate">
                   {typeof window !== "undefined" ? window.location.origin : ""}/dashboard/join-group?code={inviteCode}
                 </span>
@@ -822,9 +951,9 @@ export default function CooperativeDetailPage() {
             <DialogDescription>
               Pay from your CoopWise wallet balance, or directly with Paystack
               {walletBalance != null && (
-                <span className="flex items-center justify-between mt-1 text-xs text-neutral-500">
-                  <span>Available balance: <span className="font-semibold text-neutral-700">{formatCurrency(walletBalance, 2)}</span></span>
-                  <Link href="/dashboard/wallet/fund" className="font-semibold text-emerald-700 hover:text-emerald-800">
+                <span className="mt-1 flex items-center justify-between text-xs text-content/50">
+                  <span>Available balance: <span className="font-semibold text-content/75">{formatCurrency(walletBalance, 2)}</span></span>
+                  <Link href="/dashboard/wallet/fund" className="font-semibold text-[#1F7A54] hover:text-[#0E3B2E] dark:text-[#7FBF9C] dark:hover:text-[#B7E3C3]">
                     Fund wallet
                   </Link>
                 </span>
@@ -880,7 +1009,7 @@ export default function CooperativeDetailPage() {
             <Button
               type="button"
               variant="outline"
-              className="w-full border-emerald-600 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+              className="w-full border-[#1F7A54] text-[#1F7A54] hover:bg-[#1F7A54]/5 hover:text-[#0E3B2E] dark:border-[#7FBF9C] dark:text-[#7FBF9C] dark:hover:bg-[#7FBF9C]/10 dark:hover:text-[#B7E3C3]"
               disabled={isContributing}
               onClick={handlePaystackContribute}
             >
@@ -889,6 +1018,19 @@ export default function CooperativeDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {ownershipGoal && (
+        <GoalOwnershipEditor
+          cooperativeId={id}
+          goalId={ownershipGoal.id}
+          goalName={ownershipGoal.name}
+          open={!!ownershipGoal}
+          onOpenChange={(open) => {
+            if (!open) setOwnershipGoal(null)
+          }}
+          onSaved={() => toast.success("Ownership shares updated")}
+        />
+      )}
     </DashboardLayout>
   )
 }

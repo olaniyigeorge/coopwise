@@ -40,13 +40,13 @@ function Fact({
   hint?: string
 }) {
   return (
-    <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-3">
-      <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+    <div className="rounded-2xl border border-content/10 bg-content/[0.02] p-3">
+      <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-content/45">
         <Icon className="h-3.5 w-3.5" />
         {label}
       </div>
-      <p className="mt-1 text-sm font-semibold text-neutral-900">{value}</p>
-      {hint && <p className="text-xs text-neutral-500">{hint}</p>}
+      <p className="mt-1 text-sm font-semibold text-content">{value}</p>
+      {hint && <p className="mt-0.5 text-xs text-content/40">{hint}</p>}
     </div>
   )
 }
@@ -73,36 +73,36 @@ export default function CooperativePreviewCard({ preview }: { preview: Cooperati
   return (
     <div className="space-y-4">
       {/* Header: cover + identity */}
-      <div className="overflow-hidden rounded-2xl border border-neutral-100">
-        <div className="relative h-24 bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700">
+      <div className="overflow-hidden rounded-[20px] border border-content/10">
+        <div className="relative h-24 bg-gradient-to-br from-[#0E3B2E] via-[#17603F] to-[#1F7A54]">
           {preview.cover_image && (
             <Image src={preview.cover_image} alt="" fill className="object-cover" />
           )}
         </div>
         <div className="px-4 pb-4">
           <div className="relative z-10 -mt-7 flex items-end gap-3">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-emerald-100 text-xl font-bold text-emerald-700 shadow-sm">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-4 border-surface bg-[#DFF0E4] font-display text-xl font-bold text-[#17603F] shadow-sm dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
               {preview.name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 pb-0.5">
-              <h3 className="truncate text-base font-semibold text-neutral-900">{preview.name}</h3>
-              <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+              <h3 className="truncate font-display text-base font-bold text-content">{preview.name}</h3>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 {modelLabel && (
-                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                  <span className="rounded-full border border-[#0E3B2E]/15 bg-[#DFF0E4] px-2 py-0.5 text-[11px] font-semibold text-[#17603F] dark:border-[#7FBF9C]/25 dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
                     {modelLabel}
                   </span>
                 )}
                 {preview.status !== 'active' && (
-                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium capitalize text-amber-700">
+                  <span className="rounded-full border border-[#EAD9AC] bg-[#FBF3DE] px-2 py-0.5 text-[11px] font-semibold capitalize text-[#6B4E12] dark:border-[#5A4A22] dark:bg-[#2E2818] dark:text-[#E8BC63]">
                     {preview.status}
                   </span>
                 )}
               </div>
             </div>
           </div>
-          <p className="mt-3 text-sm leading-relaxed text-neutral-700">
+          <p className="mt-3 text-sm leading-relaxed text-content/70">
             {preview.description?.trim() || (
-              <span className="text-neutral-400">The organiser hasn&apos;t added a description yet.</span>
+              <span className="text-content/35">The organiser hasn&apos;t added a description yet.</span>
             )}
           </p>
         </div>
@@ -142,18 +142,18 @@ export default function CooperativePreviewCard({ preview }: { preview: Cooperati
 
       {/* Organiser */}
       {preview.organizer && (
-        <div className="flex items-center gap-3 rounded-xl border border-neutral-100 p-3">
+        <div className="flex items-center gap-3 rounded-2xl border border-content/10 p-3">
           <UserAvatar
             name={preview.organizer.full_name}
             src={preview.organizer.profile_picture_url}
             size="md"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-neutral-500">Organised by</p>
+            <p className="text-xs text-content/45">Organised by</p>
             <Link
               href={`/dashboard/users/${preview.organizer.id}`}
               target="_blank"
-              className="block truncate text-sm font-semibold text-neutral-900 hover:text-emerald-700 hover:underline"
+              className="block truncate text-sm font-semibold text-content hover:text-[#17603F] hover:underline dark:hover:text-[#7FBF9C]"
             >
               {preview.organizer.full_name}
             </Link>

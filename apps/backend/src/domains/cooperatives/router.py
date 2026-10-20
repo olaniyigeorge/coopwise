@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,7 +37,9 @@ from src.domains.cooperatives.schemas import (
     CooperativeRead,
     CooperativeUpdate,
     DecisionRuleCreate,
+    DecisionRuleRead,
     FinancialRuleCreate,
+    FinancialRuleRead,
     GoalCategoryCreate,
     GoalCategoryRead,
     GoalContractCreate,
@@ -46,11 +48,13 @@ from src.domains.cooperatives.schemas import (
     GoalRead,
     GoalUpdate,
     GovernanceRuleCreate,
+    GovernanceRuleRead,
     GroupMemberRead,
     MembershipRuleCreate,
+    MembershipRuleRead,
     OwnershipShareCreate,
     OwnershipShareRead,
-    RuleRead,
+    OwnershipShareUpdate,
 )
 from src.domains.cooperatives.services.beneficiary_pattern_service import (
     BeneficiaryPatternService,
@@ -189,7 +193,7 @@ async def activate_cooperative(
 
 @router.post(
     "/{cooperative_id}/rules/governance",
-    response_model=RuleRead,
+    response_model=GovernanceRuleRead,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_governance_rule(
@@ -202,7 +206,7 @@ async def create_governance_rule(
     return await service.create(rule, acting_user_id=user.id)
 
 
-@router.get("/{cooperative_id}/rules/governance/active", response_model=RuleRead)
+@router.get("/{cooperative_id}/rules/governance/active", response_model=GovernanceRuleRead)
 async def get_active_governance_rule(
     cooperative_id: UUID,
     service: GovernanceRuleService = Depends(get_governance_rule_service),
@@ -212,7 +216,7 @@ async def get_active_governance_rule(
 
 @router.post(
     "/{cooperative_id}/rules/membership",
-    response_model=RuleRead,
+    response_model=MembershipRuleRead,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_membership_rule(
@@ -225,7 +229,7 @@ async def create_membership_rule(
     return await service.create(rule, acting_user_id=user.id)
 
 
-@router.get("/{cooperative_id}/rules/membership/active", response_model=RuleRead)
+@router.get("/{cooperative_id}/rules/membership/active", response_model=MembershipRuleRead)
 async def get_active_membership_rule(
     cooperative_id: UUID,
     service: MembershipRuleService = Depends(get_membership_rule_service),
@@ -235,7 +239,7 @@ async def get_active_membership_rule(
 
 @router.post(
     "/{cooperative_id}/rules/financial",
-    response_model=RuleRead,
+    response_model=FinancialRuleRead,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_financial_rule(
@@ -248,7 +252,7 @@ async def create_financial_rule(
     return await service.create(rule, acting_user_id=user.id)
 
 
-@router.get("/{cooperative_id}/rules/financial/active", response_model=RuleRead)
+@router.get("/{cooperative_id}/rules/financial/active", response_model=FinancialRuleRead)
 async def get_active_financial_rule(
     cooperative_id: UUID,
     service: FinancialRuleService = Depends(get_financial_rule_service),
@@ -258,7 +262,7 @@ async def get_active_financial_rule(
 
 @router.post(
     "/{cooperative_id}/rules/decision",
-    response_model=RuleRead,
+    response_model=DecisionRuleRead,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_decision_rule(
@@ -271,7 +275,9 @@ async def create_decision_rule(
     return await service.create(rule, acting_user_id=user.id)
 
 
-@router.get("/{cooperative_id}/rules/decision/active", response_model=RuleRead)
+@router.get(
+    "/{cooperative_id}/rules/decision/active", response_model=DecisionRuleRead
+)
 async def get_active_decision_rule(
     cooperative_id: UUID,
     decision_type: str,
@@ -352,7 +358,7 @@ async def create_goal_contract(
 async def add_ownership_share(
     goal_id: UUID,
     data: OwnershipShareCreate,
-    user: AuthenticatedUser = Depends(get_current_user),
+    _user: AuthenticatedUser = Depends(get_current_user),
     service: OwnershipShareService = Depends(get_ownership_share_service),
 ):
     share = CoopOwnershipShare(goal_id=goal_id, **data.model_dump())
@@ -367,6 +373,39 @@ async def list_ownership_shares(
     service: OwnershipShareService = Depends(get_ownership_share_service),
 ):
     return await service.list_for_goal(goal_id)
+
+
+@router.patch(
+    "/goals/{goal_id}/ownership-shares/{share_id}",
+    response_model=OwnershipShareRead,
+)
+async def update_ownership_share(
+    goal_id: UUID,
+    share_id: UUID,
+    data: OwnershipShareUpdate,
+    _user: AuthenticatedUser = Depends(get_current_user),
+    service: OwnershipShareService = Depends(get_ownership_share_service),
+):
+    share = await service.update(goal_id, share_id, data)
+    if share is None:
+        raise HTTPException(status_code=404, detail="Ownership share not found")
+    return share
+
+
+@router.delete(
+    "/goals/{goal_id}/ownership-shares/{share_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_ownership_share(
+    goal_id: UUID,
+    share_id: UUID,
+    _user: AuthenticatedUser = Depends(get_current_user),
+    service: OwnershipShareService = Depends(get_ownership_share_service),
+):
+    removed = await service.remove(goal_id, share_id)
+    if not removed:
+        raise HTTPException(status_code=404, detail="Ownership share not found")
+    return None
 
 
 # --- Catalog ---

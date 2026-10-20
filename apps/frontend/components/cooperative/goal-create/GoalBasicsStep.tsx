@@ -33,22 +33,34 @@ export function GoalBasicsStep({ cooperativeId, onContinue }: GoalBasicsStepProp
   const [categories, setCategories] = useState<GoalCategory[]>([]);
   const [patterns, setPatterns] = useState<BeneficiaryPattern[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setLoadingCatalog(true);
+    setCatalogError(null);
     Promise.all([
-      GoalService.getGoalCategories().catch(() => []),
-      GoalService.getBeneficiaryPatterns().catch(() => []),
+      GoalService.getGoalCategories().catch(() => [] as GoalCategory[]),
+      GoalService.getBeneficiaryPatterns().catch(() => [] as BeneficiaryPattern[]),
     ]).then(([cats, pats]) => {
       if (cancelled) return;
       setCategories(cats);
       setPatterns(pats);
-      updateBasicsDraft({
-        goal_category_id: basicsDraft.goal_category_id || cats[0]?.id,
-      });
+      if (cats.length === 0 || pats.length === 0) {
+        // Surfacing this matters: an empty catalog silently disables the
+        // submit button, which looks like a broken form.
+        setCatalogError(
+          "Couldn't load the goal catalog. Categories or beneficiary patterns may be missing — try again, or contact support if it persists."
+        );
+      }
+      if (cats.length > 0) {
+        updateBasicsDraft({
+          goal_category_id: basicsDraft.goal_category_id || cats[0].id,
+        });
+      }
       if (!selectedPatternCode && pats[0]) {
         selectPattern(pats[0].code, pats[0].id);
       }
@@ -59,7 +71,7 @@ export function GoalBasicsStep({ cooperativeId, onContinue }: GoalBasicsStepProp
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reloadKey]);
 
   const canSubmit =
     !!basicsDraft.name?.trim() &&
@@ -89,6 +101,30 @@ export function GoalBasicsStep({ cooperativeId, onContinue }: GoalBasicsStepProp
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (!goalId && catalogError && !loadingCatalog) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold">Goal basics</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            What is this goal for, how much, and by when.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-[#5A4A22] dark:bg-[#2E2818] dark:text-[#E8BC63]">
+          <p>{catalogError}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 border-amber-400 text-amber-900 hover:bg-amber-100 dark:border-[#5A4A22] dark:text-[#E8BC63] dark:hover:bg-[#3A3120]"
+            onClick={() => setReloadKey((k) => k + 1)}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   // Goal already created in an earlier pass of this draft — basics is a
@@ -188,7 +224,7 @@ export function GoalBasicsStep({ cooperativeId, onContinue }: GoalBasicsStepProp
         <div className="space-y-2">
           <Label>Goal category</Label>
           <Select
-            value={basicsDraft.goal_category_id}
+            value={basicsDraft.goal_category_id ?? ""}
             onValueChange={(v) => updateBasicsDraft({ goal_category_id: v })}
           >
             <SelectTrigger>
