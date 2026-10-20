@@ -6,6 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 import time
 from src.shared.utils.logger import logger
+from src.api.middlewares.dependencies import rate_limit_identity
 
 
 class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
@@ -78,6 +79,14 @@ class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
                 self._script_sha = await r.script_load(self.LUA_SCRIPT)
 
     def _get_client_id(self, request: Request) -> str:
+        # Authenticated members get their own bucket. Without this, every
+        # request proxied by the Next.js server shares one egress IP (and
+        # therefore one bucket) across all users — the cause of the 429s
+        # that appeared on ordinary dashboard pages.
+        identity = rate_limit_identity(request.headers.get("authorization"))
+        if identity:
+            return identity
+
         # TODO: Render's XFF handling isn't documented as strictly append-only for
         # all plan tiers — don't trust client-supplied values for a security
         # control. Revisit if/when Render ships a dedicated client-IP header
@@ -87,7 +96,7 @@ class DistributedTokenBucketMiddleware(BaseHTTPMiddleware):
             if xff
             else (request.client.host if request.client else "unknown")
         )
-        return client_ip
+        return f"ip:{client_ip}"
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         r = getattr(request.app.state, "redis", None)
