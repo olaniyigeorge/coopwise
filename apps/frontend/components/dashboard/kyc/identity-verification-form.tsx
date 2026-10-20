@@ -3,10 +3,7 @@
 import React, { useRef } from 'react'
 import { UploadCloud, X } from 'lucide-react'
 import { ID_DOCUMENT_TYPE_OPTIONS, type KYCIdentityVerificationInput } from '@/types/kyc'
-
-const inputClass =
-  'w-full rounded-xl border border-brand-ink/15 bg-white px-3.5 py-2.5 text-sm text-brand-ink placeholder:text-brand-ink/35 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary'
-const labelClass = 'block text-xs font-medium text-brand-ink/60 mb-1.5'
+import { kycInputClass as inputClass, kycLabelClass as labelClass } from './field-styles'
 
 interface Props {
   value: KYCIdentityVerificationInput
@@ -39,26 +36,28 @@ function FileDropField({
         onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
       />
       {file ? (
-        <div className="flex items-center justify-between rounded-xl border border-brand-ink/15 bg-white px-3.5 py-2.5">
-          <span className="text-sm text-brand-ink/80 truncate">{file.name}</span>
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-content/15 bg-canvas/60 px-3.5 py-2.5">
+          <span className="truncate text-sm text-content/80">{file.name}</span>
           <button
             type="button"
             onClick={() => onSelect(null)}
-            className="text-brand-ink/40 hover:text-red-600 shrink-0 ml-2"
+            className="flex h-7 w-7 min-h-0 min-w-0 shrink-0 items-center justify-center rounded-full text-content/40 transition-colors hover:bg-red-600/10 hover:text-red-600"
             aria-label={`Remove ${label}`}
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
       ) : (
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="w-full flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-brand-ink/20 bg-brand-paper/50 px-3.5 py-6 text-center hover:border-primary/40 transition-colors"
+          className="group flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-content/20 bg-canvas/40 px-3.5 py-6 text-center transition-colors hover:border-[#0E3B2E]/40 hover:bg-canvas/70 dark:hover:border-[#7FBF9C]/40"
         >
-          <UploadCloud className="w-5 h-5 text-brand-ink/40" />
-          <span className="text-xs font-medium text-brand-ink/60">Tap to upload</span>
-          <span className="text-[11px] text-brand-ink/35">{hint}</span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-content/40 transition-colors group-hover:text-[#0E3B2E] dark:group-hover:text-[#7FBF9C]">
+            <UploadCloud className="h-4 w-4" />
+          </span>
+          <span className="text-xs font-semibold text-content/65">Tap to upload</span>
+          <span className="text-[11px] text-content/40">{hint}</span>
         </button>
       )}
     </div>
