@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
+import { clientIpHeadersFrom } from "@/lib/server/backend"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://coopwise.onrender.com"
-const ACCESS_COOKIE = "auth_token" 
+const ACCESS_COOKIE = "auth_token"
 const REFRESH_COOKIE = "refresh_token"
 
 export async function POST(request: NextRequest) {
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
 
     const backendRes = await fetch(`${API_URL}/api/v1/auth/otp/verify`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...clientIpHeadersFrom(request) },
       body: JSON.stringify(body),
     })
 
