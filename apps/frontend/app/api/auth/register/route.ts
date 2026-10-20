@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { clientIpHeadersFrom } from '@/lib/server/backend'
 
 
 // API base URL
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...clientIpHeadersFrom(request),
         },
         body: JSON.stringify(data),
       })
