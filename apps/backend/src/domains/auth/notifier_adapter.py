@@ -24,7 +24,7 @@ class NotificationServiceAuthNotifier:
             message="Welcome to Coopwise",
             event_type="general_alert",
             type="info",
-            entity_url=None,
+            entity_url="/dashboard",
         )
         await NotificationService.create_and_push_notification_to_user(
             noti_data, self._db
