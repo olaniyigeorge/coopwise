@@ -31,7 +31,7 @@ class NotificationServiceAuthNotifier:
             message="Your account is ready. Let's get saving.",
             event_type="general_alert",
             type="info",
-            entity_url=None,
+            entity_url="/dashboard",
         )
         await NotificationService.create_and_push_notification_to_user(
             noti_data, self._db
