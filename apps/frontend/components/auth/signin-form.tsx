@@ -2,23 +2,29 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
-import { Loader2, Mail, Phone } from "lucide-react"
-
+import {
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  Mail,
+  Phone,
+} from "lucide-react"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form"
+import { AuthDivider, AuthShell, authFieldClass } from "@/components/auth/auth-shell"
 import { auth, getFirebaseErrorMessage } from "@/helpers/firebase"
 import { passwordSignInSchema, passwordSignInFormValues } from "@/helpers/validators/auth.schemas"
 import useAuthStore from "@/stores/auth-store"
-import { requestOtp, signInWithFirebase, signInWithPassword } from "@/services/auth-service"
+import { signInWithFirebase, signInWithPassword } from "@/services/auth-service"
 
-console.error(requestOtp)
 type IdentifierMode = "email" | "phone"
 
 // Phone auth (SMS OTP) isn't wired up yet — no SMS provider configured.
@@ -34,6 +40,7 @@ const SignInPage = () => {
   const [mode, setMode] = useState<IdentifierMode>("email")
   const [rootError, setRootError] = useState<string | null>(null)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [showPhoneDisabledNotice, setShowPhoneDisabledNotice] = useState(false)
 
   const form = useForm<passwordSignInFormValues>({
@@ -69,136 +76,172 @@ const SignInPage = () => {
   }
 
   return (
-    <div className="auth_bg relative min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-brand-paper rounded-2xl border border-brand-gold/20 shadow-xl p-6 space-y-4">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-12 h-12 rounded-full bg-brand-gold/10 border border-brand-gold flex items-center justify-center overflow-hidden">
-            <Link href="/">
-              <Image
-                src="/images/coopwise-logo.svg"
-                alt="CoopWise"
-                width={28}
-                height={28}
-                className="object-contain"
-              />
-            </Link>
-          </div>
-          <div className="text-center space-y-1">
-            <h1 className="font-display text-xl text-brand-ink">Welcome back</h1>
-            <p className="text-sm text-brand-secondary">Sign in to your CoopWise account</p>
-          </div>
+    <AuthShell
+      eyebrow="Welcome back"
+      title="Sign in to CoopWise"
+      subtitle="Pick up where your cooperative left off."
+      footer={
+        <>
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="font-semibold text-brand-teal hover:underline">
+            Create one
+          </Link>
+        </>
+      }
+    >
+      <div className="space-y-5">
+        {/* Email / phone selector */}
+        <div className="grid grid-cols-2 gap-1 rounded-full border border-brand-ink/10 bg-brand-ink/[0.035] p-1">
+          {(["email", "phone"] as const).map((m) => {
+            const disabled = m === "phone" && !isPhoneAuthEnabled
+            const active = mode === m
+            return (
+              <button
+                key={m}
+                type="button"
+                tabIndex={disabled ? -1 : 0}
+                aria-pressed={active}
+                onClick={() => {
+                  if (disabled) {
+                    setShowPhoneDisabledNotice(true)
+                    return
+                  }
+                  setMode(m)
+                  setShowPhoneDisabledNotice(false)
+                  form.setValue("identifier", "")
+                  form.clearErrors("identifier")
+                }}
+                className={`flex min-h-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
+                  active
+                    ? "bg-white text-brand-ink shadow-sm"
+                    : "text-brand-ink/45 hover:text-brand-ink/70"
+                } ${disabled ? "cursor-not-allowed opacity-45" : ""}`}
+              >
+                {m === "email" ? <Mail className="h-3.5 w-3.5" /> : <Phone className="h-3.5 w-3.5" />}
+                {m === "email" ? "Email" : "Phone"}
+              </button>
+            )
+          })}
         </div>
 
-        {/* Email / password block */}
-        <div>
-          <div className="flex text-sm">
-            {(["email", "phone"] as const).map((m) => {
-              const disabled = m === "phone" && !isPhoneAuthEnabled
-              return (
-                <button
-                  key={m}
-                  type="button"
-                  tabIndex={disabled ? -1 : 0}
-                  onClick={() => {
-                    if (disabled) {
-                      setShowPhoneDisabledNotice(true)
-                      return
-                    }
-                    setMode(m)
-                    setShowPhoneDisabledNotice(false)
-                    form.setValue("identifier", "")
-                    form.clearErrors("identifier")
-                  }}
-                  className={`flex-1 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors
-                    ${mode === m
-                      ? "border-brand-teal text-brand-teal font-medium"
-                      : "border-brand-gold/20 text-brand-secondary"
-                    }
-                    ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  {m === "email" ? <Mail className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
-                  {m === "email" ? "Email" : "Phone"}
-                </button>
-              )
-            })}
-          </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
-              <FormField
-                control={form.control}
-                name="identifier"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="identifier"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-ink/35">
+                        {mode === "email" ? (
+                          <Mail className="h-4 w-4" />
+                        ) : (
+                          <Phone className="h-4 w-4" />
+                        )}
+                      </span>
                       <Input
                         type={mode === "email" ? "email" : "tel"}
                         placeholder={mode === "email" ? "you@example.com" : "+234 800 000 0000"}
                         autoComplete={mode === "email" ? "email" : "tel"}
+                        className={`${authFieldClass} pl-10`}
                         {...field}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink/50">
+                      Password
+                    </span>
+                    <Link
+                      href="/forgot-password"
+                      className="text-[11px] font-semibold text-brand-teal hover:underline"
+                    >
+                      Forgot?
+                    </Link>
+                  </div>
+                  <FormControl>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-ink/35">
+                        <Lock className="h-4 w-4" />
+                      </span>
                       <Input
-                        type="password"
-                        placeholder="Password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter your password"
                         autoComplete="current-password"
+                        className={`${authFieldClass} pl-10 pr-11`}
                         {...field}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        tabIndex={-1}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="absolute right-2 top-1/2 flex h-8 w-8 min-h-0 min-w-0 -translate-y-1/2 items-center justify-center rounded-full text-brand-ink/40 transition-colors hover:bg-brand-ink/[0.05] hover:text-brand-ink/70"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              {rootError && <p className="text-sm text-red-500">{rootError}</p>}
+            {rootError && (
+              <div className="flex items-start gap-2 rounded-xl border border-red-600/20 bg-red-600/[0.06] px-3 py-2.5 text-xs leading-relaxed text-red-700">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>{rootError}</span>
+              </div>
+            )}
 
-              <Button
-                type="submit"
-                disabled={form.formState.isSubmitting}
-                className="w-full h-11 rounded-xl bg-brand-ink hover:bg-brand-ink/90"
-              >
-                {form.formState.isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign in"}
-              </Button>
-            </form>
-          </Form>
-        </div>
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              className="h-11 w-full rounded-xl bg-[#0E3B2E] text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0A2E24]"
+            >
+              {form.formState.isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Sign in"
+              )}
+            </Button>
+          </form>
+        </Form>
 
         {showPhoneDisabledNotice && (
-          <p className="text-xs text-center text-brand-secondary bg-brand-gold/10 rounded-lg py-2 px-3">
-            Phone sign-in isn&apos;t available yet. Please continue with email or Google below.
+          <p className="rounded-xl border border-brand-gold/20 bg-brand-gold/10 px-3 py-2 text-center text-xs leading-relaxed text-brand-ink/60">
+            Phone sign-in isn&apos;t available yet. Continue with email or Google.
           </p>
         )}
 
-        <div className="flex items-center gap-1 text-xs text-brand-secondary">
-          <div className="h-px flex-1 tally-divider" />
-          or
-          <div className="h-px flex-1 tally-divider" />
-        </div>
+        <AuthDivider />
 
         <button
+          type="button"
           onClick={handleGoogleSignIn}
           disabled={isGoogleLoading}
-          className={`w-full h-11 rounded-xl font-semibold text-sm flex items-center justify-center gap-2.5 transition-all duration-200 touch-manipulation
-            ${isGoogleLoading
-              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "bg-white border border-brand-gold/20 hover:bg-brand-paper text-brand-ink shadow-sm active:scale-[0.99]"
-            }`}
+          className={`flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border text-sm font-semibold transition-all duration-200 touch-manipulation ${
+            isGoogleLoading
+              ? "cursor-not-allowed border-brand-ink/10 bg-brand-ink/[0.03] text-brand-ink/35"
+              : "border-brand-ink/15 bg-white text-brand-ink shadow-sm hover:border-brand-teal/40 hover:bg-white active:scale-[0.99]"
+          }`}
         >
           {isGoogleLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <>
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.85A11 11 0 0 0 12 23z" />
                 <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.05H2.18a11 11 0 0 0 0 9.9l3.66-2.85z" />
@@ -208,15 +251,8 @@ const SignInPage = () => {
             </>
           )}
         </button>
-
-        <div className="text-center text-sm mb-3 text-brand-secondary">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-brand-teal font-medium">
-            Sign up
-          </Link>
-        </div>
       </div>
-    </div>
+    </AuthShell>
   )
 }
 
