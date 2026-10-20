@@ -2,10 +2,7 @@
 
 import React from 'react'
 import type { KYCContactInfoInput } from '@/types/kyc'
-
-const inputClass =
-  'w-full rounded-xl border border-brand-ink/15 bg-white px-3.5 py-2.5 text-sm text-brand-ink placeholder:text-brand-ink/35 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary'
-const labelClass = 'block text-xs font-medium text-brand-ink/60 mb-1.5'
+import { kycInputClass as inputClass, kycLabelClass as labelClass } from './field-styles'
 
 interface Props {
   value: KYCContactInfoInput
@@ -66,9 +63,9 @@ export default function ContactAddressForm({ value, onChange }: Props) {
         </div>
       </div>
 
-      <div className="pt-2 border-t border-brand-ink/10">
-        <p className="text-xs font-medium text-brand-ink/50 uppercase tracking-wide mb-4 mt-4">
-          Next of kin <span className="normal-case font-normal text-brand-ink/35">(optional)</span>
+      <div className="pt-2 border-t border-content/10">
+        <p className="text-xs font-medium text-content/50 uppercase tracking-wide mb-4 mt-4">
+          Next of kin <span className="normal-case font-normal text-content/35">(optional)</span>
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
