@@ -69,6 +69,31 @@ def _authenticated_user_from_payload(payload: dict) -> AuthenticatedUser:
     )
 
 
+def rate_limit_identity(authorization: Optional[str]) -> Optional[str]:
+    """Stable per-user key for the token-bucket rate limiter.
+
+    The Next.js server proxies API calls, so every member's request reaches
+    the backend from the same egress IP. Keying buckets purely by IP makes
+    all users share one bucket and triggers 429s on ordinary dashboard loads.
+    A *verified* token yields a per-user key; anything else falls back to IP
+    limiting, so fabricated tokens cannot mint fresh buckets.
+    """
+    if not authorization:
+        return None
+
+    scheme, token = get_authorization_scheme_param(authorization)
+    if scheme.lower() != "bearer" or not token:
+        return None
+
+    try:
+        payload = _decode_platform_token(token)
+    except (TokenExpiredError, InvalidTokenError):
+        return None
+
+    user_id = payload.get("id")
+    return f"user:{user_id}" if user_id else None
+
+
 async def get_current_user(
     credentials: Annotated[
         Optional[HTTPAuthorizationCredentials],
