@@ -164,7 +164,7 @@ async def initiate_deposit(
         message=f"You have attempted a deposit of {deposit_data.currency} {deposit_data.local_amount} into your Coopwise wallet through {payment_gateway}",
         event_type="transaction",
         type="info",
-        entity_url=f"tx_ref-{tx_ref_uuid}",
+        entity_url="/dashboard/wallet/fund",
     )
     await NotificationService.create_and_push_notification_to_user(noti_data, db)
 
