@@ -2,134 +2,165 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { AlertCircle, ArrowRight, CheckCircle2, Loader2, Mail } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-import { CheckCircle } from "lucide-react"
+import { AuthShell, authFieldClass, authLabelClass } from "@/components/auth/auth-shell"
 
 interface ForgotPasswordFormProps {
-  emailOnly?: boolean;
+  emailOnly?: boolean
 }
 
 export default function ForgotPasswordForm({ emailOnly = false }: ForgotPasswordFormProps) {
+  const router = useRouter()
   const [email, setEmail] = useState("")
   const [error, setError] = useState("")
   const [isCodeSent, setIsCodeSent] = useState(false)
+  const [isSending, setIsSending] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Simple validation
+    setError("")
+
     if (!email.trim()) {
-      setError(`Please enter your ${emailOnly ? 'email address' : 'phone number or email'}`)
+      setError(`Please enter your ${emailOnly ? "email address" : "phone number or email"}`)
       return
     }
-    
-    // Email validation if emailOnly is true
-    if (emailOnly && !email.includes('@')) {
+
+    if (emailOnly && !email.includes("@")) {
       setError("Please enter a valid email address")
       return
     }
-    
-    // Simulate code sending process
-    setIsCodeSent(true)
-    
-    // Handle forgot password logic here
-    console.log({ email })
+
+    setIsSending(true)
+    try {
+      // Backend reset endpoint lands here. Until it does, surface the
+      // confirmation state so the flow is still walkable end to end.
+      await Promise.resolve()
+      setIsCodeSent(true)
+    } finally {
+      setIsSending(false)
+    }
   }
 
   const isFormFilled = email.trim() !== ""
+  const nextHref = emailOnly ? "/reset-password" : "/reset-password-code"
 
   if (isCodeSent) {
     return (
-      <div className="p-8 w-full">
-        <div className="flex flex-col items-center justify-center mb-6">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-8 h-8 text-primary" />
+      <AuthShell
+        eyebrow="Check your inbox"
+        title={emailOnly ? "Reset link sent" : "Verification code sent"}
+        subtitle={`We sent ${emailOnly ? "a reset link" : "a verification code"} to ${email}.`}
+        backHref="/signin"
+        backLabel="Back to sign in"
+        footer={
+          <button
+            type="button"
+            onClick={() => setIsCodeSent(false)}
+            className="min-h-0 min-w-0 text-xs font-semibold text-brand-teal hover:underline"
+          >
+            Didn&apos;t receive it? Try again
+          </button>
+        }
+      >
+        <div className="space-y-5">
+          <div className="flex flex-col items-center rounded-2xl border border-brand-gold/20 bg-brand-gold/[0.07] px-5 py-7 text-center">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-teal shadow-sm">
+              <CheckCircle2 className="h-7 w-7" strokeWidth={1.8} />
+            </span>
+            <p className="mt-3 text-sm leading-relaxed text-brand-ink/60">
+              {emailOnly
+                ? "Open the link in your inbox and follow the steps to choose a new password."
+                : "Enter the code on the next screen to verify it's really you."}
+            </p>
           </div>
-          <h2 className="text-xl font-semibold text-center text-gray-900">Password Reset Link Sent</h2>
-          <p className="text-sm text-center text-gray-600 mt-2">
-            A password reset link has been sent to <strong>{email}</strong>
-            <br />Check your inbox and follow the instructions to reset your password
-          </p>
-        </div>
 
-        <Button 
-          type="button" 
-          onClick={() => window.location.href = emailOnly ? "/reset-password" : "/reset-password-code"}
-          className="w-full"
-        >
-          Continue
-        </Button>
-        
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
-            Didn&apos;t receive the email? <button onClick={() => setIsCodeSent(false)} className="text-primary hover:text-primary/90 font-medium">Try again</button>
-          </p>
+          <Button
+            type="button"
+            onClick={() => router.push(nextHref)}
+            className="h-11 w-full rounded-xl bg-[#0E3B2E] text-sm font-semibold text-white hover:bg-[#0A2E24]"
+          >
+            {emailOnly ? "Continue to new password" : "Enter verification code"}
+            <ArrowRight className="h-4 w-4" />
+          </Button>
         </div>
-      </div>
+      </AuthShell>
     )
   }
 
   return (
-    <div className="p-8 w-full">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-center text-gray-900">Reset Your Password</h2>
-        <p className="text-sm text-center text-gray-600 mt-2">
-          {emailOnly 
-            ? "Enter your email address to receive a password reset link." 
-            : "Enter the email address or phone number associated with your account."}
-          <br />
-          {emailOnly 
-            ? "We'll send you a link to create a new password." 
-            : "We'll send you a link to reset your password."}
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-            {emailOnly ? "Email Address" : "Email or Phone Number"}
+    <AuthShell
+      eyebrow="Account recovery"
+      title="Reset your password"
+      subtitle={
+        emailOnly
+          ? "Enter the email on your account and we'll send a reset link."
+          : "Enter the email or phone number on your account and we'll send a code."
+      }
+      backHref="/signin"
+      backLabel="Back to sign in"
+      footer={
+        <>
+          Remembered it?{" "}
+          <Link href="/signin" className="font-semibold text-brand-teal hover:underline">
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <Label htmlFor="email" className={authLabelClass}>
+            {emailOnly ? "Email address" : "Email or phone number"}
           </Label>
           <div className="relative">
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-ink/35" />
             <Input
               id="email"
               type={emailOnly ? "email" : "text"}
-              placeholder={emailOnly ? "Enter your email address" : "Enter your email or phone number"}
+              placeholder={emailOnly ? "you@example.com" : "Email or phone number"}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
                 setError("")
               }}
+              autoComplete="email"
               required
-              className={`w-full ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'}`}
+              aria-invalid={Boolean(error)}
+              className={`${authFieldClass} pl-10 ${error ? "border-red-600/50" : ""}`}
             />
-            {error && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M8 0C3.584 0 0 3.584 0 8C0 12.416 3.584 16 8 16C12.416 16 16 12.416 16 8C16 3.584 12.416 0 8 0ZM8.8 12H7.2V10.4H8.8V12ZM8.8 8.8H7.2V4H8.8V8.8Z" fill="#E11D48"/>
-                </svg>
-              </div>
-            )}
           </div>
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          {error && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-red-700">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              {error}
+            </p>
+          )}
         </div>
 
-        <Button 
-          type="submit" 
-          disabled={!isFormFilled}
-          className="w-full"
+        <Button
+          type="submit"
+          disabled={!isFormFilled || isSending}
+          className="h-11 w-full rounded-xl bg-[#0E3B2E] text-sm font-semibold text-white hover:bg-[#0A2E24] disabled:bg-brand-ink/20 disabled:text-brand-ink/35"
         >
-          Reset Password
+          {isSending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              Send {emailOnly ? "reset link" : "verification code"}
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
         </Button>
-      </form>
 
-      <div className="text-center mt-6 pt-6 border-t border-gray-200">
-        <p className="text-sm text-gray-600">
-          Remember your password? <Link href="/login" className="text-primary hover:text-primary/90 font-medium">Sign in</Link>
+        <p className="text-center text-[11px] leading-relaxed text-brand-ink/40">
+          For your security, reset links expire shortly after they&apos;re sent.
         </p>
-      </div>
-    </div>
+      </form>
+    </AuthShell>
   )
-} 
+}
