@@ -8,10 +8,7 @@ import {
   INCOME_CURRENCY_OPTIONS,
   type KYCPersonalInfoInput,
 } from '@/types/kyc'
-
-const inputClass =
-  'w-full rounded-xl border border-brand-ink/15 bg-white px-3.5 py-2.5 text-sm text-brand-ink placeholder:text-brand-ink/35 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary'
-const labelClass = 'block text-xs font-medium text-brand-ink/60 mb-1.5'
+import { kycInputClass as inputClass, kycLabelClass as labelClass } from './field-styles'
 
 interface Props {
   value: KYCPersonalInfoInput
