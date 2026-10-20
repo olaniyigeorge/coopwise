@@ -189,3 +189,7 @@ celerybeat-schedule-wal
 # Local-only backend dev (do not commit)
 backend/coopwise_dev.db
 backend/app/core/local_redis.py
+
+# Redis persistence snapshots (written by the local Redis container)
+dump.rdb
+*.rdb
