@@ -11,6 +11,7 @@ import {
   CheckCheck,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   Info,
   Loader2,
   LogOut,
@@ -32,6 +33,7 @@ import { cn } from '@/lib/utils'
 import useAuthStore from '@/stores/auth-store'
 import { useNotificationListener } from '@/lib/hooks/use-notifications-socket'
 import useNotificationStore, { NotificationDetail } from '@/stores/notification-store'
+import { getNotificationHref } from '@/lib/notification-link'
 
 
 interface HeaderProps {
@@ -241,19 +243,20 @@ export default function Header({
                     {notifications.slice(0, 6).map((notification) => {
                       const { Icon, className: iconClassName } =
                         notificationVisual(notification.type)
+                      const href = getNotificationHref(notification)
                       return (
                         <DropdownMenuItem
                           key={notification.id}
                           asChild
-                          className="p-0 focus:bg-transparent"
+                          className="p-0 focus:bg-transparent data-[highlighted]:bg-transparent"
                         >
                           <Link
-                            href={`/dashboard/notifications#${notification.id}`}
+                            href={href}
                             onClick={() =>
                               !notification.is_read &&
                               handleMarkAsRead(notification.id)
                             }
-                            className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-content/[0.05] focus:bg-content/[0.05] focus:outline-none"
+                            className="group flex w-full items-start gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left transition-colors hover:border-content/10 hover:bg-content/[0.06] focus-visible:border-content/15 focus-visible:bg-content/[0.06] focus-visible:outline-none"
                           >
                             <span
                               className={cn(
@@ -286,6 +289,10 @@ export default function Header({
                               <span className="mt-0.5 line-clamp-2 block text-xs leading-relaxed text-content/50">
                                 {notification.message}
                               </span>
+                            </span>
+
+                            <span className="mt-2 flex h-6 w-6 shrink-0 items-center justify-center self-center rounded-full bg-content/[0.06] text-content/40 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                              <ChevronRight className="h-3.5 w-3.5" />
                             </span>
                           </Link>
                         </DropdownMenuItem>
