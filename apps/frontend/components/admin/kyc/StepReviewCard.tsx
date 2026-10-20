@@ -5,6 +5,8 @@ import Image from "next/image";
 import { StatusBadge } from "./StatusBadge";
 import { RejectDialog } from "./RejectDialog";
 import { Button } from "@/components/ui/button";
+import { Check, ExternalLink, Loader2, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type StepStatus = "not_started" | "submitted" | "approved" | "rejected";
 
@@ -95,12 +97,27 @@ interface StepReviewCardProps {
   disabled?: boolean;
 }
 
-function Field({ label, value }: { label: string; value: string | null | undefined }) {
+const ACCENT: Record<StepStatus, string> = {
+  not_started: "bg-content/15",
+  submitted: "bg-[#B8892B]",
+  approved: "bg-[#17603F] dark:bg-[#7FBF9C]",
+  rejected: "bg-red-500",
+};
+
+function Field({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | null | undefined;
+}) {
   if (!value) return null;
   return (
-    <div>
-      <dt className="text-xs text-brand-secondary">{label}</dt>
-      <dd className="text-sm text-brand-ink">{value}</dd>
+    <div className="min-w-0">
+      <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-content/35">
+        {label}
+      </dt>
+      <dd className="mt-0.5 break-words text-sm text-content/85">{value}</dd>
     </div>
   );
 }
@@ -114,12 +131,42 @@ function formatDate(iso: string | null) {
   });
 }
 
+function DocumentThumb({
+  src,
+  alt,
+}: {
+  src: string;
+  alt: string;
+}) {
+  return (
+    <a
+      href={src}
+      target="_blank"
+      rel="noreferrer"
+      className="group relative block overflow-hidden rounded-xl border border-content/10 bg-canvas"
+    >
+      <Image
+        src={src}
+        alt={alt}
+        width={320}
+        height={200}
+        className="h-32 w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+        unoptimized
+      />
+      <span className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/60 to-transparent px-2.5 pb-1.5 pt-6 text-[10px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+        {alt}
+        <ExternalLink className="h-3 w-3" />
+      </span>
+    </a>
+  );
+}
+
 // Each step's own body — no shared "document_url" concept, since only
 // identity verification actually has documents.
 function StepBody({ record }: { record: StepRecord }) {
   if (!record.data) {
     return (
-      <div className="flex h-20 items-center justify-center rounded-md border border-dashed border-brand-ink/15 text-sm text-brand-secondary">
+      <div className="flex h-20 items-center justify-center rounded-xl border border-dashed border-content/15 text-xs text-content/35">
         Not submitted yet
       </div>
     );
@@ -129,7 +176,7 @@ function StepBody({ record }: { record: StepRecord }) {
     case "personal_info": {
       const d = record.data;
       return (
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <dl className="grid grid-cols-2 gap-x-5 gap-y-3.5 sm:grid-cols-3">
           <Field label="Date of birth" value={d.date_of_birth} />
           <Field label="Gender" value={d.gender} />
           <Field label="Nationality" value={d.nationality} />
@@ -147,7 +194,7 @@ function StepBody({ record }: { record: StepRecord }) {
     case "contact_info": {
       const d = record.data;
       return (
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <dl className="grid grid-cols-2 gap-x-5 gap-y-3.5 sm:grid-cols-3">
           <Field
             label="Address"
             value={`${d.residential_address}, ${d.city}, ${d.state}`}
@@ -166,38 +213,13 @@ function StepBody({ record }: { record: StepRecord }) {
         <div>
           <div className="grid grid-cols-2 gap-3">
             {d.document_image_url && (
-              <a
-                href={d.document_image_url}
-                target="_blank"
-                rel="noreferrer"
-                className="block overflow-hidden rounded-md border border-brand-ink/10"
-              >
-                <Image
-                  src={d.document_image_url}
-                  alt="Identity document"
-                  width={320}
-                  height={200}
-                  className="h-32 w-full object-cover"
-                  unoptimized
-                />
-              </a>
+              <DocumentThumb
+                src={d.document_image_url}
+                alt="Identity document"
+              />
             )}
             {d.selfie_image_url && (
-              <a
-                href={d.selfie_image_url}
-                target="_blank"
-                rel="noreferrer"
-                className="block overflow-hidden rounded-md border border-brand-ink/10"
-              >
-                <Image
-                  src={d.selfie_image_url}
-                  alt="Selfie"
-                  width={320}
-                  height={200}
-                  className="h-32 w-full object-cover"
-                  unoptimized
-                />
-              </a>
+              <DocumentThumb src={d.selfie_image_url} alt="Selfie" />
             )}
           </div>
           {d.video_url && (
@@ -205,12 +227,13 @@ function StepBody({ record }: { record: StepRecord }) {
               href={d.video_url}
               target="_blank"
               rel="noreferrer"
-              className="mt-2 inline-block text-sm text-brand-teal hover:underline"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#0E3B2E] hover:underline dark:text-[#7FBF9C]"
             >
-              View liveness video →
+              View liveness video
+              <ExternalLink className="h-3 w-3" />
             </a>
           )}
-          <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3.5 sm:grid-cols-3">
             <Field label="Document type" value={d.document_type} />
             <Field
               label="Liveness check"
@@ -218,8 +241,8 @@ function StepBody({ record }: { record: StepRecord }) {
                 d.liveness_check_passed === null
                   ? null
                   : d.liveness_check_passed
-                  ? `Passed (${d.liveness_score ?? "—"}%)`
-                  : `Failed (${d.liveness_score ?? "—"}%)`
+                    ? `Passed (${d.liveness_score ?? "—"}%)`
+                    : `Failed (${d.liveness_score ?? "—"}%)`
               }
             />
             <Field
@@ -238,7 +261,7 @@ function StepBody({ record }: { record: StepRecord }) {
     case "banking_info": {
       const d = record.data;
       return (
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <dl className="grid grid-cols-2 gap-x-5 gap-y-3.5 sm:grid-cols-3">
           <Field label="Bank" value={d.bank_name} />
           <Field label="Account" value={`•••• ${d.account_number_last4}`} />
           <Field label="Account name" value={d.account_name} />
@@ -275,60 +298,73 @@ export function StepReviewCard({
   const submittedLabel = formatDate(record.submitted_at);
 
   return (
-    <div className="rounded-lg border border-brand-ink/10 bg-white/50 p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="font-display text-base text-brand-ink">
-            {record.label}
-          </h3>
-          {submittedLabel && (
-            <p className="mt-0.5 text-xs text-brand-secondary">
-              Submitted {submittedLabel}
-            </p>
-          )}
+    <div className="relative overflow-hidden rounded-2xl border border-content/10 bg-surface shadow-[0_1px_2px_rgba(11,23,18,0.04)]">
+      <span
+        aria-hidden="true"
+        className={cn("absolute inset-y-0 left-0 w-1", ACCENT[record.status])}
+      />
+
+      <div className="p-5 pl-6 sm:p-6 sm:pl-7">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-display text-base font-bold tracking-tight text-content">
+              {record.label}
+            </h3>
+            {submittedLabel && (
+              <p className="mt-0.5 text-[11px] text-content/40">
+                Submitted {submittedLabel}
+              </p>
+            )}
+          </div>
+          <StatusBadge status={record.status} />
         </div>
-        <StatusBadge status={record.status} />
+
+        <div className="tally-divider my-4 text-content/35" />
+
+        <StepBody record={record} />
+
+        {record.status === "rejected" && record.rejection_reason && (
+          <p className="mt-3 flex items-start gap-2 rounded-xl border border-red-500/15 bg-red-500/[0.06] px-3 py-2 text-xs leading-relaxed text-red-600 dark:text-red-400">
+            <X className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            {record.rejection_reason}
+          </p>
+        )}
+
+        {isReviewable && (
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              disabled={disabled || approving}
+              onClick={async () => {
+                setApproving(true);
+                try {
+                  await onApprove();
+                } finally {
+                  setApproving(false);
+                }
+              }}
+              className="h-9 gap-1.5 rounded-xl bg-[#0E3B2E] px-4 text-xs font-semibold text-white hover:bg-[#0B1712] dark:bg-[#7FBF9C] dark:text-[#0B1712] dark:hover:bg-[#9ACFAC]"
+            >
+              {approving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Check className="h-3.5 w-3.5" />
+              )}
+              {approving ? "Approving…" : "Approve step"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={disabled || approving}
+              onClick={() => setRejectOpen(true)}
+              className="h-9 gap-1.5 rounded-xl border-red-600/25 px-4 text-xs font-semibold text-red-600 hover:bg-red-500/[0.06] hover:text-red-600 dark:text-red-400"
+            >
+              <X className="h-3.5 w-3.5" />
+              Reject step
+            </Button>
+          </div>
+        )}
       </div>
-
-      <div className="tally-divider my-4 text-brand-ink" />
-
-      <StepBody record={record} />
-
-      {record.status === "rejected" && record.rejection_reason && (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {record.rejection_reason}
-        </p>
-      )}
-
-      {isReviewable && (
-        <div className="mt-4 flex gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={disabled || approving}
-            onClick={async () => {
-              setApproving(true);
-              try {
-                await onApprove();
-              } finally {
-                setApproving(false);
-              }
-            }}
-            className="bg-brand-ink hover:bg-brand-ink/90 text-white"
-          >
-            {approving ? "Approving…" : "Approve step"}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={disabled}
-            onClick={() => setRejectOpen(true)}
-            className="border-red-700/40 text-red-700 hover:bg-red-50 hover:text-red-600"
-          >
-            Reject step
-          </Button>
-        </div>
-      )}
 
       <RejectDialog
         open={rejectOpen}
