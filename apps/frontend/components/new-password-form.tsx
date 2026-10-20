@@ -1,158 +1,190 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { AlertCircle, Check, Loader2, Lock } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, CheckCircle } from "lucide-react"
+import { AuthShell, authFieldClass, authLabelClass } from "@/components/auth/auth-shell"
+
+const REQUIREMENTS = [
+  { key: "length", label: "At least 8 characters", test: (v: string) => v.length >= 8 },
+  { key: "upper", label: "One uppercase letter", test: (v: string) => /[A-Z]/.test(v) },
+  { key: "lower", label: "One lowercase letter", test: (v: string) => /[a-z]/.test(v) },
+] as const
 
 export default function NewPasswordForm() {
+  const router = useRouter()
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
 
-  const validatePassword = (pass: string) => {
-    // Password must be at least 8 characters with capital and lowercase letters
-    const hasMinLength = pass.length >= 8
-    const hasUppercase = /[A-Z]/.test(pass)
-    const hasLowercase = /[a-z]/.test(pass)
-    
-    return hasMinLength && hasUppercase && hasLowercase
-  }
+  const meetsRequirements = REQUIREMENTS.every((r) => r.test(password))
+  const passwordsMatch = password.length > 0 && password === confirmPassword
+  const isFormFilled = password.trim() !== "" && confirmPassword.trim() !== ""
+
+  useEffect(() => {
+    if (!success) return
+    const timeout = setTimeout(() => router.push("/signin"), 2200)
+    return () => clearTimeout(timeout)
+  }, [success, router])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validate password format
-    if (!validatePassword(password)) {
-      setError("Password must be at least 8 characters, with one capital letter and one lowercase letter")
-      return
-    }
-    
-    // Check if passwords match
-    if (password !== confirmPassword) {
-      setError("Passwords do not match")
-      return
-    }
-    
-    // Handle password reset logic here
-    console.log({ password, confirmPassword })
-    
-    // Show success message
-    setSuccess(true)
-    
-    // Redirect to login after 2 seconds
-    setTimeout(() => {
-      window.location.href = "/login"
-    }, 2000)
-  }
+    setError("")
 
-  const isFormFilled = password.trim() !== "" && confirmPassword.trim() !== ""
+    if (!meetsRequirements) {
+      setError("Your password must be at least 8 characters with one uppercase and one lowercase letter.")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError("Those passwords don't match.")
+      return
+    }
+
+    // Backend reset submission goes here.
+    setSuccess(true)
+  }
 
   if (success) {
     return (
-      <div className="p-8 w-full">
-        <div className="flex flex-col items-center justify-center mb-6">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-8 h-8 text-primary" />
+      <AuthShell
+        eyebrow="All set"
+        title="Password updated"
+        subtitle="Your new password is saved. Taking you back to sign in…"
+        footer={
+          <Link href="/signin" className="font-semibold text-brand-teal hover:underline">
+            Go to sign in now
+          </Link>
+        }
+      >
+        <div className="flex flex-col items-center rounded-2xl border border-brand-gold/20 bg-brand-gold/[0.07] px-5 py-8 text-center">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-brand-teal shadow-sm">
+            <Check className="h-8 w-8" strokeWidth={2.2} />
+          </span>
+          <div className="mt-4 flex items-center gap-2 text-xs text-brand-ink/45">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Redirecting to sign in
           </div>
-          <h2 className="text-xl font-semibold text-center text-gray-900">Password Reset Successful</h2>
-          <p className="text-sm text-center text-gray-600 mt-2">
-            Your password has been reset successfully.
-            <br />Redirecting to login page...
-          </p>
         </div>
-      </div>
+      </AuthShell>
     )
   }
 
   return (
-    <div className="p-8 w-full">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-center text-gray-900">Create New Password</h2>
-        <p className="text-sm text-center text-gray-600 mt-2">
-          Set a strong password to secure your account.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm font-medium text-gray-700">New Password</Label>
+    <AuthShell
+      eyebrow="Account recovery"
+      title="Choose a new password"
+      subtitle="Make it something you'll remember — and hard for anyone else to guess."
+      backHref="/signin"
+      backLabel="Back to sign in"
+      footer={
+        <>
+          Remembered it?{" "}
+          <Link href="/signin" className="font-semibold text-brand-teal hover:underline">
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <Label htmlFor="password" className={authLabelClass}>
+            New password
+          </Label>
           <div className="relative">
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-ink/35" />
             <Input
               id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter your new password"
+              type="password"
+              placeholder="Enter a new password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value)
                 setError("")
               }}
+              autoComplete="new-password"
               required
-              className={`w-full ${error && !validatePassword(password) ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'} pr-10`}
+              className={`${authFieldClass} pl-10`}
             />
-            <button 
-              type="button" 
-              onClick={() => setShowPassword(!showPassword)} 
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              tabIndex={-1}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
           </div>
-          <div className="text-xs text-gray-500 mt-1">
-            <p>Password must be at least 8 characters, with one capital letter and one lowercase letter.</p>
-          </div>
+
+          <ul className="mt-3 space-y-1.5">
+            {REQUIREMENTS.map((requirement) => {
+              const met = requirement.test(password)
+              return (
+                <li
+                  key={requirement.key}
+                  className={`flex items-center gap-2 text-[11px] transition-colors ${
+                    met ? "text-brand-teal" : "text-brand-ink/40"
+                  }`}
+                >
+                  <span
+                    className={`flex h-4 w-4 items-center justify-center rounded-full border ${
+                      met
+                        ? "border-brand-teal bg-brand-teal text-white"
+                        : "border-brand-ink/20"
+                    }`}
+                  >
+                    {met && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
+                  </span>
+                  {requirement.label}
+                </li>
+              )
+            })}
+          </ul>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirm New Password</Label>
+        <div>
+          <Label htmlFor="confirmPassword" className={authLabelClass}>
+            Confirm new password
+          </Label>
           <div className="relative">
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-ink/35" />
             <Input
               id="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder="Confirm your new password"
+              type="password"
+              placeholder="Repeat your new password"
               value={confirmPassword}
               onChange={(e) => {
                 setConfirmPassword(e.target.value)
                 setError("")
               }}
+              autoComplete="new-password"
               required
-              className={`w-full ${error && (password !== confirmPassword) ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'} pr-10`}
+              className={`${authFieldClass} pl-10 ${
+                confirmPassword.length > 0 && !passwordsMatch ? "border-red-600/50" : ""
+              }`}
             />
-            <button 
-              type="button" 
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              tabIndex={-1}
-              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-            >
-              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
           </div>
+          {passwordsMatch && (
+            <p className="mt-2 flex items-center gap-1.5 text-[11px] text-brand-teal">
+              <Check className="h-3.5 w-3.5" />
+              Passwords match
+            </p>
+          )}
         </div>
 
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {error && (
+          <div className="flex items-start gap-2 rounded-xl border border-red-600/20 bg-red-600/[0.06] px-3 py-2.5 text-xs leading-relaxed text-red-700">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
-        <Button 
-          type="submit" 
-          disabled={!isFormFilled}
-          className="w-full"
+        <Button
+          type="submit"
+          disabled={!isFormFilled || !meetsRequirements || !passwordsMatch}
+          className="h-11 w-full rounded-xl bg-[#0E3B2E] text-sm font-semibold text-white hover:bg-[#0A2E24] disabled:bg-brand-ink/20 disabled:text-brand-ink/35"
         >
-          Reset Password
+          Save new password
         </Button>
       </form>
-
-      <div className="text-center mt-6 pt-6 border-t border-gray-200">
-        <p className="text-sm text-gray-600">
-          Remember your password? <Link href="/login" className="text-primary hover:text-primary/90 font-medium">Sign in</Link>
-        </p>
-      </div>
-    </div>
+    </AuthShell>
   )
-} 
+}
