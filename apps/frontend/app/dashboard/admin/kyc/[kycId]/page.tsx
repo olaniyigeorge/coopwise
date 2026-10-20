@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { StatusBadge } from "@/components/admin/kyc/StatusBadge";
@@ -14,7 +14,15 @@ import {
   finalizeVerified,
   finalizeRejected,
 } from "@/services/kyc-service";
-import { ChevronLeft } from "lucide-react";
+import {
+  AlertCircle,
+  BadgeCheck,
+  ChevronLeft,
+  Loader2,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // ---- Types matching the actual KYCAdminDetailResponse payload ----
 // (the old KycSubmissionDetail/KycStep types in @/types/kyc-admin
@@ -208,6 +216,38 @@ type MutationKey =
   | { kind: "finalize-verify" }
   | { kind: "finalize-reject" };
 
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return (
+    parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")
+  ).toUpperCase();
+}
+
+function formatDateTime(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function SummaryRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-xs">
+      <dt className="text-content/40">{label}</dt>
+      <dd className="text-right font-medium text-content/80">{value}</dd>
+    </div>
+  );
+}
+
 export default function KycAdminDetailPage() {
   const { kycId } = useParams<{ kycId: string }>();
 
@@ -324,15 +364,25 @@ export default function KycAdminDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="h-8 w-48 animate-pulse rounded bg-brand-ink/[0.06]" />
-        <div className="mt-6 space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-40 animate-pulse rounded-lg bg-brand-ink/[0.04]"
-            />
-          ))}
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="h-4 w-32 animate-pulse rounded bg-content/[0.05]" />
+        <div className="mt-5 flex items-center gap-3.5">
+          <div className="h-12 w-12 animate-pulse rounded-full bg-content/[0.06]" />
+          <div className="space-y-2">
+            <div className="h-6 w-48 animate-pulse rounded bg-content/[0.06]" />
+            <div className="h-3 w-32 animate-pulse rounded bg-content/[0.05]" />
+          </div>
+        </div>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-44 animate-pulse rounded-2xl bg-content/[0.04]"
+              />
+            ))}
+          </div>
+          <div className="h-64 animate-pulse rounded-2xl bg-content/[0.04]" />
         </div>
       </div>
     );
@@ -340,13 +390,28 @@ export default function KycAdminDetailPage() {
 
   if (loadError && !submission) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-          {loadError}
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-600 dark:text-red-400">
+          <span className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            {loadError}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 rounded-lg border-red-500/25 text-red-600 hover:bg-red-500/[0.06] dark:text-red-400"
+            onClick={load}
+          >
+            Retry
+          </Button>
         </div>
-        <Button variant="outline" className="mt-4" onClick={load}>
-          Retry
-        </Button>
+        <Link
+          href="/dashboard/admin/kyc"
+          className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-content/45 hover:text-content"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+          Back to all submissions
+        </Link>
       </div>
     );
   }
@@ -354,6 +419,8 @@ export default function KycAdminDetailPage() {
   if (!submission) return null;
 
   const steps = deriveSteps(submission);
+  const approvedCount = steps.filter((s) => s.status === "approved").length;
+  const progress = Math.round((approvedCount / steps.length) * 100);
   const allStepsApproved = steps.every((s) => s.status === "approved");
   const isFinalized =
     submission.status === "verified" || submission.status === "rejected";
@@ -369,102 +436,238 @@ export default function KycAdminDetailPage() {
     .at(-1)?.reason;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
         href="/dashboard/admin/kyc"
-        className="text-sm text-brand-secondary flex items-center hover:text-brand-teal"
+        className="inline-flex items-center gap-1 text-xs font-semibold text-content/45 transition-colors hover:text-content"
       >
-        <ChevronLeft />
-        <>All submissions</> 
+        <ChevronLeft className="h-3.5 w-3.5" />
+        All submissions
       </Link>
 
-      <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl text-brand-ink">
-            {displayName}
-          </h1>
-          {submission.user_email && (
-            <p className="mt-0.5 text-sm text-brand-secondary">
-              {submission.user_email}
+      {/* ── Header ── */}
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3.5">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0E3B2E]/[0.07] font-display text-base font-bold text-[#0E3B2E] dark:bg-[#7FBF9C]/12 dark:text-[#7FBF9C]">
+            {initials(displayName)}
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#B8892B]">
+              KYC submission
             </p>
-          )}
+            <h1 className="truncate font-display text-2xl font-bold tracking-tight text-content">
+              {displayName}
+            </h1>
+            {submission.user_email && (
+              <p className="truncate text-xs text-content/40">
+                {submission.user_email}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {refreshing && (
-            <span className="text-xs text-brand-secondary">Refreshing…</span>
-          )}
+
+        <div className="flex flex-col items-end gap-1.5">
           <StatusBadge status={submission.status} />
+          <span className="flex items-center gap-1 text-[10px] uppercase tracking-[0.12em] text-content/30">
+            {refreshing ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Updating
+              </>
+            ) : (
+              <>Ref #{submission.kyc_id.slice(0, 8)}</>
+            )}
+          </span>
         </div>
       </div>
 
-      {typeof nameMatchScore === "number" && (
-        <p className="mt-2 text-xs text-brand-secondary">
-          Name match confidence:{" "}
-          <span className="font-medium text-brand-ink">
-            {Math.round(nameMatchScore)}%
-          </span>
-        </p>
-      )}
-
-      <div className="tally-divider my-6 text-brand-ink" />
+      <div className="tally-divider my-6 text-content/40" />
 
       {actionError && (
-        <div className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div
+          role="alert"
+          className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3.5 py-2.5 text-sm text-red-600 dark:text-red-400"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           {actionError}
         </div>
       )}
 
-      <div className="space-y-4">
-        {steps.map((record) => (
-          <StepReviewCard
-            key={record.step}
-            record={record}
-            disabled={isFinalized || record.status === "not_started" || isMutating}
-            onApprove={() => handleApprove(record.step)}
-            onReject={(reason) => handleReject(record.step, reason)}
-          />
-        ))}
-      </div>
-
-      {submission.status === "rejected" && submissionRejectionReason && (
-        <div className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-          <span className="font-medium">Finalized as rejected:</span>{" "}
-          {submissionRejectionReason}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        {/* ── Steps ── */}
+        <div className="space-y-4">
+          {steps.map((record) => (
+            <StepReviewCard
+              key={record.step}
+              record={record}
+              disabled={
+                isFinalized || record.status === "not_started" || isMutating
+              }
+              onApprove={() => handleApprove(record.step)}
+              onReject={(reason) => handleReject(record.step, reason)}
+            />
+          ))}
         </div>
-      )}
 
-      {!isFinalized && (
-        <>
-          <div className="tally-divider my-6 text-brand-ink" />
-          <div className="rounded-lg border border-brand-gold/30 bg-brand-gold/[0.06] p-5">
-            <h2 className="font-display text-base text-brand-ink">
-              Finalize submission
+        {/* ── Sticky summary ── */}
+        <aside className="space-y-4 lg:sticky lg:top-6">
+          <div className="rounded-2xl border border-content/10 bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)]">
+            <h2 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-content/40">
+              Review progress
             </h2>
-            <p className="mt-1 text-sm text-brand-secondary">
-              {allStepsApproved
-                ? "All steps are approved. Verifying grants full account access."
-                : "All steps must be approved before this submission can be verified. You can still reject outright."}
-            </p>
-            <div className="mt-4 flex gap-2">
-              <Button
-                disabled={!allStepsApproved || isMutating}
-                onClick={handleFinalizeVerify}
-                className="bg-brand-teal hover:bg-brand-teal/90 text-white"
-              >
-                {pending?.kind === "finalize-verify" ? "Verifying…" : "Finalize as verified"}
-              </Button>
-              <Button
-                variant="outline"
-                disabled={isMutating}
-                onClick={() => setFinalizeRejectOpen(true)}
-                className="border-red-700/40 text-red-700 hover:bg-red-50"
-              >
-                Reject submission
-              </Button>
+            <div className="mt-3 flex items-end justify-between">
+              <p className="font-display text-3xl font-bold leading-none tracking-tight text-content tabular-nums">
+                {approvedCount}
+                <span className="text-base font-medium text-content/25">
+                  /{steps.length}
+                </span>
+              </p>
+              <p className="pb-0.5 text-[11px] text-content/40">
+                steps approved
+              </p>
             </div>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-content/10">
+              <div
+                className="h-full rounded-full bg-[#0E3B2E] transition-[width] duration-500 dark:bg-[#7FBF9C]"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+
+            <dl className="mt-4 space-y-2 border-t border-content/[0.07] pt-4">
+              <SummaryRow
+                label="Status"
+                value={<StatusBadge status={submission.status} />}
+              />
+              {typeof nameMatchScore === "number" && (
+                <SummaryRow
+                  label="Name match"
+                  value={`${Math.round(nameMatchScore)}%`}
+                />
+              )}
+              <SummaryRow
+                label="Latest submission"
+                value={formatDateTime(
+                  steps
+                    .map((s) => s.submitted_at)
+                    .filter((d): d is string => Boolean(d))
+                    .sort()
+                    .at(-1) ?? null
+                )}
+              />
+            </dl>
           </div>
-        </>
-      )}
+
+          {!isFinalized ? (
+            <div className="rounded-2xl border border-[#B8892B]/30 bg-[#B8892B]/[0.05] p-5">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-[#B8892B]" />
+                <h2 className="font-display text-sm font-bold text-content">
+                  Final decision
+                </h2>
+              </div>
+              <p className="mt-1.5 text-xs leading-relaxed text-content/50">
+                {allStepsApproved
+                  ? "All steps are approved. Verifying grants full account access."
+                  : "All steps must be approved before this submission can be verified. You can still reject outright."}
+              </p>
+              <div className="mt-4 space-y-2">
+                <Button
+                  disabled={!allStepsApproved || isMutating}
+                  onClick={handleFinalizeVerify}
+                  className="h-10 w-full gap-1.5 rounded-xl bg-[#0E3B2E] text-sm font-semibold text-white hover:bg-[#0B1712] disabled:opacity-40 dark:bg-[#7FBF9C] dark:text-[#0B1712] dark:hover:bg-[#9ACFAC]"
+                >
+                  {pending?.kind === "finalize-verify" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <BadgeCheck className="h-4 w-4" />
+                  )}
+                  {pending?.kind === "finalize-verify"
+                    ? "Verifying…"
+                    : "Verify member"}
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={isMutating}
+                  onClick={() => setFinalizeRejectOpen(true)}
+                  className="h-10 w-full gap-1.5 rounded-xl border-red-600/25 text-xs font-semibold text-red-600 hover:bg-red-500/[0.06] hover:text-red-600 dark:text-red-400"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Reject submission
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "rounded-2xl border p-5",
+                submission.status === "verified"
+                  ? "border-[#0E3B2E]/20 bg-[#DFF0E4]/50 dark:border-[#7FBF9C]/20 dark:bg-[#7FBF9C]/[0.06]"
+                  : "border-red-500/20 bg-red-500/[0.05]"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                {submission.status === "verified" ? (
+                  <BadgeCheck className="h-4 w-4 text-[#17603F] dark:text-[#B7E3C3]" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                )}
+                <h2 className="font-display text-sm font-bold text-content">
+                  {submission.status === "verified"
+                    ? "Submission verified"
+                    : "Submission rejected"}
+                </h2>
+              </div>
+              <p className="mt-1.5 text-xs leading-relaxed text-content/50">
+                {submission.status === "verified"
+                  ? "This member has full access. No further action is needed."
+                  : "The applicant can amend their details and restart verification."}
+              </p>
+              {submission.status === "rejected" &&
+                submissionRejectionReason && (
+                  <p className="mt-3 rounded-lg border border-red-500/15 bg-surface/60 px-3 py-2 text-[11px] leading-relaxed text-red-600 dark:text-red-400">
+                    {submissionRejectionReason}
+                  </p>
+                )}
+            </div>
+          )}
+
+          {submission.audit_log.length > 0 && (
+            <div className="rounded-2xl border border-content/10 bg-surface p-5">
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-content/40">
+                Review activity
+              </h2>
+              <ul className="mt-3 space-y-3">
+                {submission.audit_log
+                  .slice(-5)
+                  .reverse()
+                  .map((entry) => (
+                    <li key={entry.id} className="flex gap-2.5">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#B8892B]/60" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold capitalize text-content/75">
+                          {entry.action.replaceAll("_", " ")}
+                        </p>
+                        {entry.step && (
+                          <p className="text-[10px] text-content/35">
+                            {entry.step.replaceAll("_", " ")}
+                          </p>
+                        )}
+                        {entry.reason && (
+                          <p className="mt-0.5 text-[10px] leading-relaxed text-content/40">
+                            “{entry.reason}”
+                          </p>
+                        )}
+                        <p className="mt-0.5 text-[10px] tabular-nums text-content/30">
+                          {formatDateTime(entry.created_at)}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
+        </aside>
+      </div>
 
       <RejectDialog
         open={finalizeRejectOpen}
