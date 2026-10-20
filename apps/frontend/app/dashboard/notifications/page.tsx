@@ -16,6 +16,7 @@ import DashboardLayout from '@/components/dashboard/layout'
 import useNotificationStore, {
   type NotificationDetail,
 } from '@/stores/notification-store'
+import { getNotificationLink } from '@/lib/notification-link'
 import { cn } from '@/lib/utils'
 
 type Filter = 'all' | 'unread'
@@ -196,6 +197,7 @@ export default function NotificationsPage() {
                 const { Icon, className: iconClassName } = notificationVisual(
                   notification.type
                 )
+                const link = getNotificationLink(notification)
                 return (
                   <li
                     key={notification.id}
@@ -242,29 +244,25 @@ export default function NotificationsPage() {
                           {notification.message}
                         </p>
 
-                        {(notification.entity_url || !notification.is_read) && (
-                          <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                            {!notification.is_read && (
-                              <button
-                                type="button"
-                                onClick={() => handleMarkAsRead(notification.id)}
-                                className="inline-flex h-7 min-h-0 min-w-0 items-center gap-1.5 rounded-full border border-content/15 px-2.5 text-[11px] font-semibold text-content/60 transition-colors hover:bg-content/[0.04] hover:text-content"
-                              >
-                                <CheckCheck className="h-3 w-3" />
-                                Mark as read
-                              </button>
-                            )}
-                            {notification.entity_url && (
-                              <Link
-                                href={notification.entity_url}
-                                className="inline-flex h-7 min-h-0 min-w-0 items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold text-[#0E3B2E] transition-colors hover:bg-content/[0.04] dark:text-[#7FBF9C]"
-                              >
-                                View details
-                                <ArrowRight className="h-3 w-3" />
-                              </Link>
-                            )}
-                          </div>
-                        )}
+                        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                          {!notification.is_read && (
+                            <button
+                              type="button"
+                              onClick={() => handleMarkAsRead(notification.id)}
+                              className="inline-flex h-7 min-h-0 min-w-0 items-center gap-1.5 rounded-full border border-content/15 px-2.5 text-[11px] font-semibold text-content/60 transition-colors hover:bg-content/[0.04] hover:text-content"
+                            >
+                              <CheckCheck className="h-3 w-3" />
+                              Mark as read
+                            </button>
+                          )}
+                          <Link
+                            href={link.href}
+                            className="inline-flex h-7 min-h-0 min-w-0 items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold text-[#0E3B2E] transition-colors hover:bg-content/[0.04] dark:text-[#7FBF9C]"
+                          >
+                            {link.label}
+                            <ArrowRight className="h-3 w-3" />
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </li>
