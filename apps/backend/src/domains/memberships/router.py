@@ -121,7 +121,7 @@ async def accept_invite(
         ),
         event_type="group",
         type="info",
-        entity_url=str(membership.id),
+        entity_url=f"/dashboard/cooperative/{group_data.id}",
     )
     await NotificationService.create_and_push_notification_to_user(noti_data, db)
 
@@ -184,7 +184,7 @@ async def decide_application(
                 ),
                 event_type="group",
                 type="success" if admitted else "info",
-                entity_url=str(result.group_id),
+                entity_url=f"/dashboard/cooperative/{result.group_id}",
             ),
             db,
         )
