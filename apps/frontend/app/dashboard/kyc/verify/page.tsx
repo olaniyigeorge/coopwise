@@ -31,6 +31,7 @@ import PersonalProfileForm from '@/components/dashboard/kyc/personal-profile-for
 import ContactAddressForm from '@/components/dashboard/kyc/contact-address-form'
 import IdentityVerificationForm from '@/components/dashboard/kyc/identity-verification-form'
 import BankingInfoForm from '@/components/dashboard/kyc/banking-info-form'
+import { getApiErrorDetail } from '@/lib/api-error'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -99,6 +100,26 @@ function KYCVerifyContent() {
 
   const handleNext = async () => {
     setError(null)
+
+    // Banking submits the resolved name, so don't send a half-confirmed
+    // account: the backend would reject it with an opaque resolution error.
+    if (stageIndex === 3) {
+      if (!banking.bank_code) {
+        setError('Choose your bank from the list.')
+        return
+      }
+      if (banking.account_number.length !== 10) {
+        setError('Enter your 10-digit account number.')
+        return
+      }
+      if (!banking.account_name) {
+        setError(
+          "We haven't confirmed this account yet. Wait for the name check, or double-check the bank and account number."
+        )
+        return
+      }
+    }
+
     setSubmitting(true)
     try {
       if (stageIndex === 0) await submitPersonalInfo(personal)
@@ -118,11 +139,29 @@ function KYCVerifyContent() {
         goToStage(stageIndex + 1)
       }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Something went wrong submitting this stage. Try again.'
-      )
+      const detail = getApiErrorDetail(err)
+      const reason =
+        detail && typeof detail === 'object'
+          ? (detail as { reason?: string }).reason
+          : undefined
+      const message = typeof detail === 'string' ? detail : detail?.message
+
+      if (stageIndex === 3 && reason === 'name_mismatch') {
+        setError(
+          "The account name doesn't match the legal name on your ID. Use a bank account registered in your own name."
+        )
+      } else if (stageIndex === 3 && reason === 'resolution_failed') {
+        setError(
+          "We couldn't resolve that account. Check the bank and the 10-digit account number, then try again."
+        )
+      } else {
+        setError(
+          message ||
+            (err instanceof Error
+              ? err.message
+              : 'Something went wrong submitting this stage. Try again.')
+        )
+      }
     } finally {
       setSubmitting(false)
     }
