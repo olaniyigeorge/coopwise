@@ -21,6 +21,33 @@ import ApiService from "@/services/api-service"
 const ADMIN_BASE = "/kyc/admin"
 const BASE = "/kyc"
 
+export interface BankOption {
+  name: string
+  code: string
+}
+
+export interface BankResolution {
+  bank_code: string
+  account_number: string
+  account_name: string
+}
+
+
+export async function getBanks(): Promise<BankOption[]> {
+  return ApiService.get<BankOption[]>(`${BASE}/banks`)
+}
+
+
+export async function resolveBankAccount(
+  bank_code: string,
+  account_number: string
+): Promise<BankResolution> {
+  return ApiService.post<BankResolution>(`${BASE}/banks/resolve`, {
+    bank_code,
+    account_number,
+  })
+}
+
 
 export async function startKYC() {
   return ApiService.post(
