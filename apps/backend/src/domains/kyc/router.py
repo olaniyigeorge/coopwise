@@ -54,6 +54,9 @@ from src.domains.kyc.schemas import (
     PersonalInfoRequest,
     ContactInfoRequest,
     BankingInfoRequest,
+    BankOption,
+    BankResolveRequest,
+    BankResolveResponse,
     RejectStepRequest,
     FinalizeRejectRequest,
     KYCStatusResponse,
@@ -64,7 +67,13 @@ from src.domains.kyc.schemas import (
 
 # --- adjust these to your actual DI/auth wiring (mirrors your auth domain pattern) ---
 
-from src.domains.kyc.dependencies import get_kyc_audit_service, get_kyc_service
+from src.domains.kyc.dependencies import (
+    get_bank_verification_provider,
+    get_kyc_audit_service,
+    get_kyc_service,
+)
+from src.domains.kyc.infra.bank_verification_provider import BankDirectoryError
+from src.domains.kyc.ports import BankVerificationProviderPort
 
 
 router = APIRouter(prefix="/api/v1/kyc", tags=["KYC"])
@@ -345,6 +354,69 @@ async def submit_identity(
     )
 
     return response
+
+
+@router.get(
+    "/banks",
+    response_model=list[BankOption],
+    dependencies=[
+        Depends(rate_limit(limit=30, window_seconds=3600, scope="kyc:bank-list"))
+    ],
+)
+async def list_banks(
+    _user=Depends(get_current_user),
+    provider: BankVerificationProviderPort = Depends(get_bank_verification_provider),
+):
+    """Bank directory for the banking step — members pick a bank by name."""
+    try:
+        banks = await provider.list_banks()
+    except BankDirectoryError:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={
+                "message": "Could not load the bank list. Please try again.",
+                "reason": "bank_list_unavailable",
+            },
+        )
+    return banks
+
+
+@router.post(
+    "/banks/resolve",
+    response_model=BankResolveResponse,
+    dependencies=[
+        Depends(rate_limit(limit=30, window_seconds=3600, scope="kyc:bank-resolve"))
+    ],
+)
+async def resolve_bank_account(
+    payload: BankResolveRequest,
+    _user=Depends(get_current_user),
+    provider: BankVerificationProviderPort = Depends(get_bank_verification_provider),
+):
+    """
+    Resolve a NUBAN account to its registered name so the member sees (and
+    submits) the real name instead of typing it from memory.
+    """
+    result = await provider.resolve_account_name(
+        payload.bank_code, payload.account_number
+    )
+    if not result.success or not result.resolved_account_name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": (
+                    "We couldn't resolve that account. Check the bank and the "
+                    "10-digit account number."
+                ),
+                "reason": "resolution_failed",
+            },
+        )
+
+    return BankResolveResponse(
+        bank_code=payload.bank_code,
+        account_number=payload.account_number,
+        account_name=result.resolved_account_name,
+    )
 
 
 @router.post(
