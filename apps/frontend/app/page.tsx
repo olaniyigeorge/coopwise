@@ -11,11 +11,11 @@ import ScrollToTop from '@/components/homepage/scroll-to-top'
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-brand-paper">
       <Navbar />
       <Hero />
       <Features />
-      <div id="coming-soon">
+      <div id="coming-soon" className="scroll-mt-24">
         <ComingSoon />
       </div>
       <HowItWorks />

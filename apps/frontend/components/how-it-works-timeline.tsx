@@ -61,95 +61,59 @@ export default function HowItWorksTimeline() {
       phonePosition: "left"
     }
   ]
-  return (
-    <>
-      {/* Mobile version */}
-      <div className="md:hidden relative">
-        <div className="absolute left-4 top-0 bottom-0 flex flex-col items-center">
-          <div className="absolute top-0 bottom-0 w-0.5 bg-brand-ink/10"></div>
-          {steps.map((_, index) => (
-            <div
-              key={index}
-              className="absolute w-4 h-4 rounded-full border-2 border-brand-gold bg-brand-paper z-10 flex items-center justify-center"
-              style={{ top: `${(100 / (steps.length - 1)) * index}%` }}
-            >
-              <div className="w-2 h-2 rounded-full bg-primary"></div>
-            </div>
-          ))}
-        </div>
 
-        <div className="space-y-16 relative">
-          {steps.map((step, index) => (
-            <div key={index} className="flex items-start pl-10">
-              <div className="w-full">
-                <h3 className="text-lg font-bold text-brand-ink mb-2 font-display">{step.title}</h3>
-                <div className="space-y-2 mb-4">
-                  {step.bullets?.map((bullet, idx) => (
-                    <BulletPoint key={idx}>{typeof bullet === 'string' ? bullet : String(bullet)}</BulletPoint>
-                  ))}
-                </div>
-                <div className="flex justify-center w-full">
-                  <div className="relative w-40 h-80">
-                    <Image src={step.phoneImage} alt={`Step: ${step.title}`} fill className="object-contain" />
+  return (
+    <div className="relative">
+      {/* Timeline rail */}
+      <div
+        aria-hidden
+        className="absolute bottom-10 left-[19px] top-8 w-px bg-gradient-to-b from-brand-gold/50 via-brand-ink/10 to-transparent"
+      />
+
+      <ol className="space-y-5 md:space-y-6">
+        {steps.map((step, index) => (
+          <li key={index} className="relative pl-12 md:pl-16">
+            {/* Node */}
+            <span
+              aria-hidden
+              className="absolute left-0 top-7 flex h-10 w-10 items-center justify-center rounded-full border border-brand-gold/40 bg-white shadow-[0_10px_22px_-14px_rgba(11,23,18,0.6)]"
+            >
+              <span className="h-2.5 w-2.5 rounded-full bg-[#0E3B2E] ring-4 ring-[#0E3B2E]/[0.08]" />
+            </span>
+
+            <div className="group rounded-2xl border border-brand-ink/10 bg-brand-paper/70 p-6 transition-all duration-300 hover:border-brand-gold/40 hover:bg-brand-paper hover:shadow-[0_30px_60px_-45px_rgba(11,23,18,0.5)] md:p-8">
+              <div
+                className={`flex flex-col items-center gap-6 md:flex-row md:gap-10 ${
+                  step.phonePosition === "left" ? "md:flex-row-reverse" : ""
+                }`}
+              >
+                <div className="w-full min-w-0 flex-1">
+                  <h3 className="mb-3 font-display text-xl font-bold leading-snug text-brand-ink md:text-2xl">
+                    {step.title}
+                  </h3>
+                  <div className="space-y-2.5">
+                    {step.bullets?.map((bullet, idx) => (
+                      <BulletPoint key={idx}>
+                        {typeof bullet === 'string' ? bullet : String(bullet)}
+                      </BulletPoint>
+                    ))}
                   </div>
+                </div>
+
+                <div className="relative h-72 w-36 shrink-0 md:h-80 md:w-40">
+                  <Image
+                    src={step.phoneImage}
+                    alt={`Step: ${step.title}`}
+                    fill
+                    sizes="(max-width: 768px) 144px, 160px"
+                    className="object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                  />
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Desktop version */}
-      <div className="hidden md:block relative">
-        <div className="absolute left-16 top-0 bottom-0 flex flex-col items-center">
-          <div className="absolute top-0 bottom-0 w-0.5 bg-brand-ink/10"></div>
-          {steps.map((_, index) => (
-            <div
-              key={index}
-              className="absolute w-6 h-6 rounded-full border-2 border-brand-gold bg-brand-paper z-10 flex items-center justify-center"
-              style={{ top: `${(100 / (steps.length - 1)) * index}%` }}
-            >
-              <div className="w-3 h-3 rounded-full bg-primary"></div>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-[calc(100vh/8)] relative">
-          {steps.map((step, index) => (
-            <div key={index} className="flex justify-center items-center space-x-20">
-              {step.phonePosition === 'left' ? (
-                <>
-                  <div className="relative w-48 h-96">
-                    <Image src={step.phoneImage} alt={`Step: ${step.title}`} fill className="object-contain" />
-                  </div>
-                  <div className="max-w-md">
-                    <h3 className="text-xl font-bold text-brand-ink mb-4 font-display">{step.title}</h3>
-                    <div className="space-y-2">
-                      {step.bullets?.map((bullet, idx) => (
-                        <BulletPoint key={idx}>{typeof bullet === 'string' ? bullet : String(bullet)}</BulletPoint>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="max-w-md">
-                    <h3 className="text-xl font-bold text-brand-ink mb-4 font-display">{step.title}</h3>
-                    <div className="space-y-2">
-                      {step.bullets?.map((bullet, idx) => (
-                        <BulletPoint key={idx}>{typeof bullet === 'string' ? bullet : String(bullet)}</BulletPoint>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="relative w-48 h-96">
-                    <Image src={step.phoneImage} alt={`Step: ${step.title}`} fill className="object-contain" />
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
+          </li>
+        ))}
+      </ol>
+    </div>
   )
 }
