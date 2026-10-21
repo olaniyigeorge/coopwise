@@ -32,6 +32,15 @@ export interface GoalProgress {
   contributor_count: number
 }
 
+export interface GroupContributionSummary {
+  group_id: string
+  /** Completed contributions only — goal-specific and general combined. */
+  total_contributed: number
+  contribution_count: number
+  contributor_count: number
+  currency: string
+}
+
 const ContributionService = {
   async contribute(payload: ContributionCreatePayload) {
     return ApiService.post<{ message: string; contribution: ContributionDetail }>(
@@ -56,6 +65,13 @@ const ContributionService = {
 
   async getGroupContributions(groupId: string) {
     return ApiService.get<ContributionDetail[]>(`/contributions/group/${groupId}`)
+  },
+
+  /** Completed totals for the whole group — general and goal contributions. */
+  async getGroupContributionSummary(groupId: string) {
+    return ApiService.get<GroupContributionSummary>(
+      `/contributions/group/${groupId}/summary`
+    )
   },
 
   async getGoalProgress(goalId: string) {
