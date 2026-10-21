@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Lock, ShieldCheck, Users } from "lucide-react"
+import { ArrowLeft, Lock, Target, Users } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -19,19 +19,19 @@ export const authLabelClass =
 
 const TRUST_POINTS = [
   {
-    icon: Users,
-    title: "Built for cooperatives",
-    body: "Contributions, payouts and member records in one shared ledger.",
+    icon: Target,
+    title: "Goals you can point at",
+    body: "Rent, stock, land, a business. Every contribution moves something real forward — and every member can see it.",
   },
   {
-    icon: ShieldCheck,
-    title: "Verified membership",
-    body: "Identity checks keep every seat in the circle accountable.",
+    icon: Users,
+    title: "Governance, not guesswork",
+    body: "Membership, shares and votes live on the record, so ownership is explicit from day one.",
   },
   {
     icon: Lock,
     title: "Your money stays yours",
-    body: "No pooled custody. Payments move directly to your cooperative.",
+    body: "No pooled custody. Contributions and payouts move directly to your cooperative's account.",
   },
 ]
 
@@ -94,19 +94,22 @@ export function AuthShell({
           </Link>
 
           <p className="mt-10 text-[11px] font-semibold uppercase tracking-[0.24em] text-brand-gold">
-            The cooperative ledger
+            Capital, pooled with purpose
           </p>
           <h2 className="mt-3 max-w-md font-display text-4xl font-bold leading-[1.08] tracking-tight text-brand-paper">
-            Save together.
+            Pool what you have.
             <br />
-            Record everything.
+            Fund what you plan.
+            <br />
+            Own what you build.
           </h2>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/55">
-            A transparent home for your circle&apos;s money — contributions,
-            rotations and payouts, all in one place.
+            Ajo, esusu, chamas — the trust is already there. CoopWise gives your
+            circle the infrastructure to become an economic entity: a shared
+            ledger, agreed rules, and a record of what you own together.
           </p>
 
-          <div className="mt-10 max-w-sm space-y-5">
+          <div className="mt-8 max-w-sm space-y-5">
             {TRUST_POINTS.map(({ icon: Icon, title: pointTitle, body }) => (
               <div key={pointTitle} className="flex items-start gap-3.5">
                 <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-[#E8BC63]">
@@ -124,7 +127,7 @@ export function AuthShell({
             ))}
           </div>
 
-          <div className="mt-10 h-px w-40 tally-divider text-brand-gold/60" />
+          <div className="mt-8 h-px w-40 tally-divider text-brand-gold/60" />
           <p className="mt-4 text-[11px] text-white/35">
             CoopWise © {new Date().getFullYear()} · Built for Nigerian
             cooperatives
