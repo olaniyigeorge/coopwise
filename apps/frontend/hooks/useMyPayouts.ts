@@ -17,9 +17,8 @@ export interface MyPayout {
   currency: string;
   transferred_at: string | null;
   status: PayoutStatus;
-  /** Flow transaction ID of the TriggerRotation.cdc tx */
+  /** Reference for the settled transfer, when one exists */
   tx_id: string;
-  /** Flowscan link — shows encrypted payload on-chain */
   explorer_url: string;
 }
 
