@@ -11,7 +11,7 @@ export interface UserProfile {
   role: string
   firebase_uid: string | null
 
-  // Crossmint / Web3 identity — read-only, provisioned server-side
+  // Wallet identity — read-only, provisioned server-side
   crossmint_user_id: string | null
   flow_address: string | null
   wallet_provider: string | null
