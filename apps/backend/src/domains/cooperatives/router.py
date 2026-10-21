@@ -4,7 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domains.cooperatives.exceptions import CooperativeNotFoundError
+from src.domains.cooperatives.exceptions import (
+    CooperativeNotFoundError,
+    IllegalStatusTransitionError,
+    NotAuthorizedError,
+)
 from src.domains.cooperatives.preview import get_cooperative_preview
 from src.api.middlewares.dependencies import get_current_user
 from src.domains.auth.schemas import AuthenticatedUser
@@ -185,7 +189,18 @@ async def activate_cooperative(
     user: AuthenticatedUser = Depends(get_current_user),
     service: CooperativeService = Depends(get_cooperative_service),
 ):
-    return await service.activate(cooperative_id, user.id)
+    try:
+        return await service.activate(cooperative_id, user.id)
+    except NotAuthorizedError:
+        raise HTTPException(
+            status_code=403,
+            detail="Only the creator or an admin of this cooperative can activate it.",
+        )
+    except IllegalStatusTransitionError:
+        raise HTTPException(
+            status_code=400,
+            detail="Only a pending cooperative can be activated.",
+        )
 
 
 # --- Rules ---
