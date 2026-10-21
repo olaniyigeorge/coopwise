@@ -545,9 +545,7 @@ class PayoutService:
             getattr(decision, "mechanism", None) if decision else None
         )
 
-        if mechanism == "lottery" or (
-            strategy == "rotating" and rotation == "random"
-        ):
+        if mechanism == "lottery" or (strategy == "rotating" and rotation == "random"):
             return random.choice(candidates)
 
         if strategy == "priority":
@@ -572,7 +570,9 @@ class PayoutService:
         if not user_ids:
             return {}
         rows = await db.execute(
-            select(Contribution.user_id, func.coalesce(func.sum(Contribution.amount), 0))
+            select(
+                Contribution.user_id, func.coalesce(func.sum(Contribution.amount), 0)
+            )
             .where(
                 Contribution.group_id == group_id,
                 Contribution.user_id.in_(user_ids),
@@ -628,24 +628,16 @@ class PayoutService:
                 return []
 
         strategy = PayoutService._enum_value(getattr(rule, "payout_strategy", None))
-        currency = (
-            PayoutService._enum_value(getattr(rule, "currency", None)) or "NGN"
-        )
+        currency = PayoutService._enum_value(getattr(rule, "currency", None)) or "NGN"
         try:
             if strategy == "equal":
                 return await PayoutService._execute_equal_split(
                     db, group_id, currency=currency
                 )
-            return [
-                await PayoutService.execute_payout(
-                    db, group_id, currency=currency
-                )
-            ]
+            return [await PayoutService.execute_payout(db, group_id, currency=currency)]
         except PayoutError:
             if automatic:
-                logger.info(
-                    "Automatic payout skipped for group %s", group_id
-                )
+                logger.info("Automatic payout skipped for group %s", group_id)
                 return []
             raise
 
@@ -675,9 +667,7 @@ class PayoutService:
         paid: List[PayoutRecord] = []
         allocated = Decimal(0)
         for index, member in enumerate(members):
-            member_share = (
-                amount - allocated if index == len(members) - 1 else share
-            )
+            member_share = amount - allocated if index == len(members) - 1 else share
             allocated += member_share
             try:
                 paid.append(
@@ -697,9 +687,7 @@ class PayoutService:
                     exc,
                 )
         if not paid:
-            raise PayoutError(
-                "No member has completed verified bank-account KYC"
-            )
+            raise PayoutError("No member has completed verified bank-account KYC")
         return paid
 
     @staticmethod
@@ -757,8 +745,8 @@ class PayoutService:
             )
             role = PayoutService._enum_value(membership.role)
             is_admin = role == "admin"
-            is_my_turn = (
-                strategy == "equal" or (recipient is not None and recipient.user_id == user_id)
+            is_my_turn = strategy == "equal" or (
+                recipient is not None and recipient.user_id == user_id
             )
             names = {}
             if recipient is not None:
@@ -780,9 +768,13 @@ class PayoutService:
                     "strategy": strategy,
                     "trigger": "automatic" if automatic else "admin",
                     "is_my_turn": is_my_turn,
-                    "next_recipient_name": names.get(recipient.user_id) if recipient else None,
+                    "next_recipient_name": (
+                        names.get(recipient.user_id) if recipient else None
+                    ),
                     "payable_amount": float(payable) if show_amount else None,
-                    "currency": PayoutService._enum_value(getattr(rule, "currency", None))
+                    "currency": PayoutService._enum_value(
+                        getattr(rule, "currency", None)
+                    )
                     or "NGN",
                     "round_number": await PayoutService.get_current_round(db, group.id),
                     "funded": funded,

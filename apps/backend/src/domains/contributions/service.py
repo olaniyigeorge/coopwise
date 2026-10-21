@@ -939,9 +939,9 @@ class ContributionService:
         )
         invite_counts = await ContributionService._count_by(
             db,
-            select(CoopInvitation.cooperative_id, func.count(CoopInvitation.id)).group_by(
-                CoopInvitation.cooperative_id
-            ),
+            select(
+                CoopInvitation.cooperative_id, func.count(CoopInvitation.id)
+            ).group_by(CoopInvitation.cooperative_id),
         )
 
         cooperatives = (
@@ -969,7 +969,9 @@ class ContributionService:
             if score <= 0:
                 continue
             status_label = (
-                status_value.value if hasattr(status_value, "value") else str(status_value)
+                status_value.value
+                if hasattr(status_value, "value")
+                else str(status_value)
             )
             ranked_circles.append(
                 {
@@ -1001,7 +1003,10 @@ class ContributionService:
             top_circles.append(row)
 
         member_activity = await ContributionService._count_by(
-            db, select(ActivityLog.user_id, func.count(ActivityLog.id)).group_by(ActivityLog.user_id)
+            db,
+            select(ActivityLog.user_id, func.count(ActivityLog.id)).group_by(
+                ActivityLog.user_id
+            ),
         )
         member_contributions = await ContributionService._count_by(
             db,
@@ -1011,7 +1016,9 @@ class ContributionService:
         )
         member_goals = await ContributionService._count_by(
             db,
-            select(CoopGoal.created_by, func.count(CoopGoal.id)).group_by(CoopGoal.created_by),
+            select(CoopGoal.created_by, func.count(CoopGoal.id)).group_by(
+                CoopGoal.created_by
+            ),
         )
         member_goals_done = await ContributionService._count_by(
             db,

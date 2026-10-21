@@ -71,8 +71,11 @@ export default function BankingInfoForm({ value, onChange }: Props) {
   const valueRef = useRef(value)
   const onChangeRef = useRef(onChange)
   const requestId = useRef(0)
-  valueRef.current = value
-  onChangeRef.current = onChange
+
+  useEffect(() => {
+    valueRef.current = value
+    onChangeRef.current = onChange
+  }, [value, onChange])
 
   const loadBanks = useCallback(async () => {
     setBanksLoading(true)
@@ -174,6 +177,7 @@ export default function BankingInfoForm({ value, onChange }: Props) {
               type="button"
               role="combobox"
               aria-expanded={bankPickerOpen}
+              aria-controls="kyc-bank-list"
               aria-label="Select your bank"
               disabled={banksLoading || !!banksError}
               className={cn(
@@ -197,7 +201,7 @@ export default function BankingInfoForm({ value, onChange }: Props) {
           >
             <Command>
               <CommandInput placeholder="Search banks…" />
-              <CommandList>
+              <CommandList id="kyc-bank-list">
                 <CommandEmpty>No bank found.</CommandEmpty>
                 <CommandGroup>
                   {banks.map((bank) => (
