@@ -40,9 +40,9 @@ export default function Mission() {
             <p>
               CoopWise exists to fix that layer, not replace the tradition underneath it. Every
               contribution logged. Every payout traceable. And longer-term, we&apos;re building toward
-              something the DeFi world has talked about for years but rarely delivered in a real
+              something rarely delivered in a real
               <span className="bg-brand-gold/15 text-brand-gold px-1 rounded">African context: a trust layer that lets value built inside one cooperative move into
-              others — without asking a single member to understand what a blockchain is to
+              others — without asking a single member to learn new technology to
               benefit from it.</span>
             </p>
           </div>
