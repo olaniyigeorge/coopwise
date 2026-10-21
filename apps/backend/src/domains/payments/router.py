@@ -14,7 +14,12 @@ from src.shared.security.webhook_signing import (
 from src.infra.cache.redis_client import get_redis
 from src.api.middlewares.dependencies import get_current_user
 from src.domains.auth.schemas import AuthenticatedUser
-from src.domains.payments.schemas import PaystackPayload, PayoutRecordRead
+from src.domains.payments.schemas import (
+    MyPayoutRead,
+    PaystackPayload,
+    PayoutRecordRead,
+    UpcomingPayoutRead,
+)
 from src.domains.contributions.service import ContributionService
 from src.domains.memberships.models.enums import MembershipRole
 from src.domains.memberships.service import CooperativeMembershipService
@@ -166,9 +171,33 @@ async def paystack_callback(
     )
 
 
+@router.get(
+    "/payouts/me",
+    response_model=list[MyPayoutRead],
+    summary="Get the current user's fiat payout history",
+)
+async def get_my_payout_history(
+    db: AsyncSession = Depends(get_async_db_session),
+    user: AuthenticatedUser = Depends(get_current_user),
+):
+    return await PayoutService.list_for_user(db=db, user_id=user.id)
+
+
+@router.get(
+    "/payouts/upcoming",
+    response_model=list[UpcomingPayoutRead],
+    summary="Payout turns for the cooperatives the current user belongs to",
+)
+async def get_my_upcoming_payouts(
+    db: AsyncSession = Depends(get_async_db_session),
+    user: AuthenticatedUser = Depends(get_current_user),
+):
+    return await PayoutService.list_upcoming_for_user(db=db, user_id=user.id)
+
+
 @router.post(
     "/payouts/{group_id}/execute",
-    response_model=PayoutRecordRead,
+    response_model=list[PayoutRecordRead],
     summary="Execute the next fiat payout for a group",
 )
 async def execute_group_payout(
@@ -190,7 +219,9 @@ async def execute_group_payout(
         )
 
     try:
-        return await PayoutService.execute_payout(db=db, group_id=group_id)
+        return await PayoutService.dispatch_payout(
+            db=db, group_id=group_id, automatic=False
+        )
     except PayoutError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -213,18 +244,6 @@ async def get_group_payout_history(
             status_code=403, detail="You are not an active member of this group."
         )
     return await PayoutService.get_payout_history(db=db, group_id=group_id)
-
-
-@router.get(
-    "/payouts/me",
-    response_model=list[PayoutRecordRead],
-    summary="Get the current user's fiat payout history",
-)
-async def get_my_payout_history(
-    db: AsyncSession = Depends(get_async_db_session),
-    user: AuthenticatedUser = Depends(get_current_user),
-):
-    return await PayoutService.get_payouts_for_user(db=db, user_id=user.id)
 
 
 # @router.get("/cashramp/account-info", summary="Get merchant account information")
