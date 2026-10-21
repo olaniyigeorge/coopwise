@@ -1,0 +1,23 @@
+name: Keepalive
+description: Ping the hosted API so the Render service and database stay warm
+
+on:
+  schedule:
+    # UTC. GitHub may delay scheduled runs by a few minutes under load.
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Render keepalive
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Hit keepalive
+        env:
+          KEEPALIVE_URL: https://coopwise-qhgd.onrender.com/keepalive
+        run: |
+          curl --fail-with-body --show-error --silent --max-time 60 \
+            --retry 2 --retry-delay 5 --retry-all-errors \
+            "$KEEPALIVE_URL"
+          echo
