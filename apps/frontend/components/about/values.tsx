@@ -17,7 +17,7 @@ const values = [
   {
     icon: HandCoins,
     title: "No New Habits Required",
-    description: "Members should never need to learn Web3, crypto, or new jargon to benefit from what's running underneath.",
+    description: "Members should never need to learn new financial jargon or tooling to benefit from what's running underneath.",
   },
   {
     icon: Layers,
