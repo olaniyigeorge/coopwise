@@ -70,6 +70,29 @@ export function computeOnTimeStreak(
 /**
  * Pure function computing trust standing based cleanly on user_id attributable signals.
  */
+export function describeTrustScore(score: number): {
+  tier: TrustTier
+  tierLabel: string
+  tallyMarks: number
+} {
+  const totalScore = Math.min(Math.max(Math.round(score), 10), 100)
+
+  if (totalScore >= 85) {
+    return { tier: 'EXEMPLAR', tierLabel: 'Exemplar Pillar', tallyMarks: 4 }
+  }
+  if (totalScore >= 65) {
+    return { tier: 'ANCHOR', tierLabel: 'Anchor Trustee', tallyMarks: 3 }
+  }
+  if (totalScore >= 40) {
+    return {
+      tier: 'ESTABLISHED',
+      tierLabel: 'Established Contributor',
+      tallyMarks: 2,
+    }
+  }
+  return { tier: 'FOUNDATIONAL', tierLabel: 'Foundational Member', tallyMarks: 1 }
+}
+
 export function computeTrustStanding(inputs: {
   userId: string
   createdAt?: string
@@ -117,23 +140,7 @@ export function computeTrustStanding(inputs: {
   totalScore = Math.min(Math.max(totalScore, 10), 100)
 
   // Determine Tier
-  let tier: TrustTier = 'FOUNDATIONAL'
-  let tierLabel = 'Foundational Member'
-  let tallyMarks = 1
-
-  if (totalScore >= 85) {
-    tier = 'EXEMPLAR'
-    tierLabel = 'Exemplar Pillar'
-    tallyMarks = 4
-  } else if (totalScore >= 65) {
-    tier = 'ANCHOR'
-    tierLabel = 'Anchor Trustee'
-    tallyMarks = 3
-  } else if (totalScore >= 40) {
-    tier = 'ESTABLISHED'
-    tierLabel = 'Established Contributor'
-    tallyMarks = 2
-  }
+  const { tier, tierLabel, tallyMarks } = describeTrustScore(totalScore)
 
   const signals: TrustSignal[] = [
     {
