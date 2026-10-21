@@ -12,7 +12,9 @@ import ScrollToTop from '@/components/homepage/scroll-to-top'
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-brand-paper">
-      <Navbar />
+      {/* The hero paints its own background to the top of the page, so the
+          header floats over it instead of leaving a bare strip above it. */}
+      <Navbar reserveSpace={false} />
       <Hero />
       <Features />
       <div id="coming-soon" className="scroll-mt-24">
