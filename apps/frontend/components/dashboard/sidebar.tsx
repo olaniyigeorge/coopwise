@@ -72,7 +72,7 @@ function TrustScoreCard() {
 
 function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <Link href="/dashboard" onClick={onNavigate} className="flex items-center gap-3">
+    <Link href="/" onClick={onNavigate} className="flex items-center gap-3">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0E3B2E]">
           <Image
