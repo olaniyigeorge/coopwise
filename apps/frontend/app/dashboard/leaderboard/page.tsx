@@ -16,7 +16,11 @@ import {
 } from "lucide-react";
 
 import DashboardLayout from "@/components/dashboard/layout";
-import { useLeaderboard, LeaderboardCircle } from "@/hooks/useLeaderboard";
+import {
+  useLeaderboard,
+  LeaderboardCircle,
+  LeaderboardMember,
+} from "@/hooks/useLeaderboard";
 import CooperativeService from "@/services/cooperative-service";
 import type { Cooperative } from "@/types/cooperative";
 import { cn } from "@/lib/utils";
@@ -81,6 +85,51 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
+function scoreBreakdown(circle: LeaderboardCircle) {
+  const parts = [
+    `${circle.member_count} member${circle.member_count === 1 ? "" : "s"}`,
+  ];
+  if (circle.contribution_count > 0) {
+    parts.push(
+      `${circle.contribution_count} contribution${circle.contribution_count === 1 ? "" : "s"}`
+    );
+  }
+  if (circle.goals_completed > 0) {
+    parts.push(
+      `${circle.goals_completed} goal${circle.goals_completed === 1 ? "" : "s"} done`
+    );
+  } else if (circle.goal_count > 0) {
+    parts.push(`${circle.goal_count} goal${circle.goal_count === 1 ? "" : "s"}`);
+  }
+  if (circle.join_requests > 0) {
+    parts.push(
+      `${circle.join_requests} join request${circle.join_requests === 1 ? "" : "s"}`
+    );
+  }
+  if (circle.invite_count > 0) {
+    parts.push(`${circle.invite_count} invite${circle.invite_count === 1 ? "" : "s"}`);
+  }
+  return parts.join(" · ");
+}
+
+function memberBreakdown(member: LeaderboardMember) {
+  const parts: string[] = [];
+  if (member.activity_count > 0) parts.push(`${member.activity_count} actions`);
+  if (member.contribution_count > 0) {
+    parts.push(
+      `${member.contribution_count} contribution${member.contribution_count === 1 ? "" : "s"}`
+    );
+  }
+  if (member.goals_completed > 0) {
+    parts.push(`${member.goals_completed} goals done`);
+  } else if (member.goals_created > 0) {
+    parts.push(`${member.goals_created} goals`);
+  }
+  if (member.join_requests > 0) parts.push(`${member.join_requests} joins`);
+  if (member.invite_count > 0) parts.push(`${member.invite_count} invites`);
+  return parts.join(" · ") || "Active member";
+}
+
 function CircleRow({
   rank,
   circle,
@@ -113,23 +162,15 @@ function CircleRow({
             </span>
           </div>
           <p className="mt-0.5 text-[11px] text-content/45">
-            {circle.member_count} member{circle.member_count === 1 ? "" : "s"}
-            {circle.contributor_count > 0 && (
-              <>
-                {" "}
-                · {circle.contributor_count} contributing
-              </>
-            )}
+            {scoreBreakdown(circle)}
           </p>
         </div>
 
         <div className="shrink-0 text-right">
           <p className="text-sm font-bold tabular-nums text-content">
-            {circle.contribution_count.toLocaleString()}
+            {(circle.score ?? 0).toLocaleString()}
           </p>
-          <p className="text-[10px] text-content/40">
-            contribution{circle.contribution_count === 1 ? "" : "s"}
-          </p>
+          <p className="text-[10px] text-content/40">score</p>
         </div>
       </Link>
     </li>
@@ -197,7 +238,7 @@ export default function LeaderboardPage() {
               Leaderboard
             </h1>
             <p className="mt-1 text-sm text-content/50">
-              Cooperatives ranked by contribution activity.
+              Cooperatives and members ranked by what they actually do.
             </p>
           </div>
           <button
@@ -215,8 +256,8 @@ export default function LeaderboardPage() {
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#1F7A54] dark:text-[#7FBF9C]" />
           <p className="text-sm leading-relaxed text-[#17603F] dark:text-[#B7E3C3]">
             <strong className="font-semibold">Activity, not wallet size.</strong>{" "}
-            Ranks count completed contributions — never amounts or member
-            details.
+            Scores add up actions, contributions, goals finished, join
+            requests, and invite links. Amounts stay off the board.
           </p>
         </div>
 
@@ -264,8 +305,9 @@ export default function LeaderboardPage() {
                     #{rank} · {circle.name}
                   </p>
                   <p className="mt-1 text-xs text-white/55">
+                    Score {(circle.score ?? 0).toLocaleString()} ·{" "}
                     {circle.contribution_count} contribution
-                    {circle.contribution_count === 1 ? "" : "s"} recorded
+                    {circle.contribution_count === 1 ? "" : "s"}
                   </p>
                 </div>
                 <Link
@@ -287,7 +329,7 @@ export default function LeaderboardPage() {
               Top cooperatives
             </h2>
             <span className="text-[11px] font-medium text-content/40">
-              by contributions
+              by activity score
             </span>
           </div>
 
@@ -312,7 +354,7 @@ export default function LeaderboardPage() {
                 <Trophy className="h-5 w-5" />
               </span>
               <p className="mt-3 font-display text-base font-bold text-content">
-                No contributions recorded yet
+                No activity recorded yet
               </p>
               <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-content/50">
                 The board fills up as cooperatives start pooling money. Start
@@ -342,8 +384,52 @@ export default function LeaderboardPage() {
           )}
         </div>
 
+        <div className="overflow-hidden rounded-[24px] bg-surface shadow-[0_1px_2px_rgba(11,23,18,0.04)]">
+          <div className="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
+            <h2 className="font-display text-base font-bold tracking-tight text-content">
+              Member activity
+            </h2>
+            <span className="text-[11px] font-medium text-content/40">
+              same score
+            </span>
+          </div>
+          {!error && isLoading && <RankSkeleton />}
+          {!error && !isLoading && (data?.top_members?.length ?? 0) === 0 && (
+            <p className="border-t border-content/[0.06] px-5 py-8 text-center text-sm text-content/50">
+              Members show up here once they contribute, finish a goal, request
+              to join, or share an invite.
+            </p>
+          )}
+          {!error && !isLoading && (data?.top_members?.length ?? 0) > 0 && (
+            <ul>
+              {(data?.top_members ?? []).map((member, index) => (
+                <li
+                  key={member.user_id}
+                  className="flex items-center gap-3 border-t border-content/[0.06] px-4 py-3.5 first:border-t-0 sm:px-5"
+                >
+                  <RankBadge rank={index + 1} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-content">
+                      {member.name}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-content/45">
+                      {memberBreakdown(member)}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-bold tabular-nums text-content">
+                      {member.score.toLocaleString()}
+                    </p>
+                    <p className="text-[10px] text-content/40">score</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <p className="text-center text-[11px] text-content/35">
-          Rankings update as contributions are recorded.
+          Rankings update as people contribute, finish goals, and invite others.
         </p>
       </div>
     </DashboardLayout>
