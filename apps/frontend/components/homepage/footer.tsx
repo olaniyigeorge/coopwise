@@ -45,7 +45,7 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3 text-sm">
               <li><Link href="/how-it-works" className="text-white/55 transition-colors hover:text-[#E8BC63]">How It Works</Link></li>
-              <li><Link href="/#coming-soon" className="text-white/55 transition-colors hover:text-[#E8BC63]">On-Chain Roadmap</Link></li>
+              <li><Link href="/#coming-soon" className="text-white/55 transition-colors hover:text-[#E8BC63]">Roadmap</Link></li>
               <li><Link href="/signup" className="text-white/55 transition-colors hover:text-[#E8BC63]">Start a Circle</Link></li>
             </ul>
           </div>
