@@ -3,7 +3,8 @@ import uvicorn
 from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from sqlalchemy import text
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import sqlalchemy
@@ -116,6 +117,33 @@ async def home(request: Request):
 @app.get("/ping")
 async def ping():
     return {"message": "Pong"}
+
+
+@app.get("/keepalive")
+async def keepalive():
+    """
+    Public liveness check for an external timer.
+
+    Runs a real query so a hosted Postgres project (Supabase) sees activity,
+    and the HTTP response keeps this API process from idling out.
+    """
+    if db_manager.engine is None:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "down", "database": "unavailable"},
+        )
+
+    try:
+        async with db_manager.engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
+    except Exception:
+        logger.error("Keepalive database check failed")
+        return JSONResponse(
+            status_code=503,
+            content={"status": "down", "database": "error"},
+        )
+
+    return {"status": "ok", "database": "ok"}
 
 
 if __name__ == "__main__":
