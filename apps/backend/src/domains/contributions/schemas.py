@@ -49,6 +49,39 @@ class GoalProgress(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class GroupContributionSummary(BaseModel):
+    group_id: UUID
+    total_contributed: float
+    contribution_count: int
+    contributor_count: int
+    currency: str = "NGN"
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LeaderboardCircle(BaseModel):
+    group_id: UUID
+    name: str
+    status: str
+    member_count: int
+    contribution_count: int
+    contributor_count: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LeaderboardPlatformStats(BaseModel):
+    total_circles: int
+    active_circles: int
+    total_members: int
+    total_contributions: int
+
+
+class LeaderboardResponse(BaseModel):
+    platform_stats: LeaderboardPlatformStats
+    top_circles: list[LeaderboardCircle]
+
+
 class CircleHistoryEntry(BaseModel):
     # From Contribution
     contribution_id: UUID
