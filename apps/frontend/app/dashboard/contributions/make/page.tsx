@@ -1,232 +1,296 @@
 "use client"
 
-import React, { useState, Suspense } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DashboardLayout from '@/components/dashboard/layout'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, CreditCard, ArrowRightLeft, Loader2 } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { ArrowLeft, CreditCard, Loader2, Wallet } from 'lucide-react'
+import { toast } from 'sonner'
+import CooperativeService from '@/services/cooperative-service'
+import ContributionService from '@/services/contribution-service'
+import { getDashboardData } from '@/services/dashboard-service'
+import { getApiErrorDetail } from '@/lib/api-error'
+import { formatCurrency } from '@/lib/utils'
+import type { Cooperative } from '@/types/cooperative'
 
-// Loading component for suspense fallback
 function LoadingFallback() {
   return (
     <DashboardLayout>
-      <div className="max-w-md mx-auto space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded mb-4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
-        </div>
+      <div className="mx-auto max-w-lg animate-pulse space-y-4">
+        <div className="h-8 w-24 rounded-full bg-content/5" />
+        <div className="h-16 rounded-2xl bg-content/5" />
+        <div className="h-80 rounded-[24px] bg-surface" />
       </div>
     </DashboardLayout>
   )
 }
 
-// Component that uses search params
+function errorMessage(err: unknown, fallback: string) {
+  const detail = getApiErrorDetail(err)
+  if (typeof detail === 'string' && detail) return detail
+  if (detail && typeof detail === 'object' && typeof detail.message === 'string') {
+    return detail.message
+  }
+  if (err instanceof Error && err.message) return err.message
+  return fallback
+}
+
 function MakeContributionContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const groupId = searchParams.get('groupId')
-  const amount = searchParams.get('amount') || '100000'
-  
-  const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'card'>('transfer')
-  const [pin, setPin] = useState(['', '', '', ''])
-  const [isVerifying, setIsVerifying] = useState(false)
-  const [showPinVerification, setShowPinVerification] = useState(false)
+  const presetGroupId = searchParams.get('groupId') ?? ''
+  const presetAmount = searchParams.get('amount') ?? ''
 
-  const handlePinChange = (index: number, value: string) => {
-    if (value.length <= 1 && /^\d*$/.test(value)) {
-      const newPin = [...pin]
-      newPin[index] = value
-      setPin(newPin)
-      
-      // Auto-focus next input
-      if (value && index < 3) {
-        const nextInput = document.getElementById(`pin-${index + 1}`)
-        nextInput?.focus()
+  const [cooperatives, setCooperatives] = useState<Cooperative[]>([])
+  const [groupId, setGroupId] = useState(presetGroupId)
+  const [amount, setAmount] = useState(presetAmount)
+  const [walletBalance, setWalletBalance] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [paying, setPaying] = useState<'wallet' | 'paystack' | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      CooperativeService.listMyCooperatives().catch(() => [] as Cooperative[]),
+      getDashboardData().catch(() => null),
+    ]).then(([groups, dashboard]) => {
+      if (cancelled) return
+      const list = Array.isArray(groups) ? groups : []
+      setCooperatives(list)
+      setGroupId((current) => {
+        if (current && list.some((group) => group.id === current)) return current
+        const active = list.find((group) => group.status === 'active')
+        return active?.id ?? ''
+      })
+      const balance = dashboard?.summary?.wallet?.local_balance
+      setWalletBalance(balance != null ? Number(balance) : null)
+      setLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const selected = cooperatives.find((group) => group.id === groupId) ?? null
+  const canPay = selected?.status === 'active'
+  const parsedAmount = Number(amount)
+  const amountIsValid = Number.isFinite(parsedAmount) && parsedAmount > 0
+  const busy = paying !== null
+
+  const payFromWallet = async () => {
+    if (!selected || !canPay) {
+      toast.error('Choose an active cooperative.')
+      return
+    }
+    if (!amountIsValid) {
+      toast.error('Enter a valid contribution amount.')
+      return
+    }
+    try {
+      setPaying('wallet')
+      await ContributionService.contribute({
+        group_id: selected.id,
+        amount: parsedAmount,
+      })
+      toast.success('Contribution successful!')
+      router.push(`/dashboard/cooperative/${selected.id}`)
+    } catch (err) {
+      const message = errorMessage(err, 'Failed to process contribution.')
+      if (message.toLowerCase().includes('insufficient')) {
+        toast.error(message, {
+          description: 'Fund your wallet with Paystack to continue.',
+          action: {
+            label: 'Fund wallet',
+            onClick: () => router.push('/dashboard/wallet/fund'),
+          },
+        })
+      } else {
+        toast.error(message)
       }
+      setPaying(null)
     }
   }
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !pin[index] && index > 0) {
-      const prevInput = document.getElementById(`pin-${index - 1}`)
-      prevInput?.focus()
+  const payWithPaystack = async () => {
+    if (!selected || !canPay) {
+      toast.error('Choose an active cooperative.')
+      return
+    }
+    if (!parsedAmount || parsedAmount < 100) {
+      toast.error('Enter an amount of at least ₦100.')
+      return
+    }
+    try {
+      setPaying('paystack')
+      const res = await ContributionService.initiatePaystack({
+        group_id: selected.id,
+        amount: parsedAmount,
+      })
+      window.location.href = res.authorization_url
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not start payment.'))
+      setPaying(null)
     }
   }
-
-  const handleContinue = () => {
-    if (paymentMethod === 'card') {
-      setShowPinVerification(true)
-    } else {
-      // For transfer, go directly to transfer page
-      router.push(`/dashboard/contributions/make/transfer?groupId=${groupId}&amount=${amount}`)
-    }
-  }
-
-  const handlePinVerification = async () => {
-    if (pin.join('').length === 4) {
-      setIsVerifying(true)
-      
-      // Simulate verification delay
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      setIsVerifying(false)
-      
-      // Navigate to card payment
-      router.push(`/dashboard/contributions/make/card?groupId=${groupId}&amount=${amount}`)
-    }
-  }
-
-  const isPinComplete = pin.join('').length === 4
 
   return (
     <DashboardLayout>
-      <div className="max-w-md mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
+      <div className="mx-auto max-w-lg space-y-4 pb-8">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-2 rounded-full px-2 py-1.5 text-sm font-medium text-content/55 transition-colors hover:text-content"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-content/45">
+            Contributions
+          </p>
+          <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-content sm:text-3xl">
+            Make a contribution
+          </h1>
+          <p className="mt-1.5 text-sm text-content/55">
+            Choose a cooperative, enter an amount, and pay from your wallet or with Paystack.
+          </p>
         </div>
 
-        {/* Main Card */}
-        <Card className="w-full">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-xl font-semibold">Make Contribution</CardTitle>
-            <p className="text-sm text-gray-600">
-              Get helpful suggestions based on your saving habits
-            </p>
-          </CardHeader>
+        <div className="rounded-[24px] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] sm:p-6">
+          {loading ? (
+            <div className="space-y-3">
+              <div className="h-11 animate-pulse rounded-xl bg-content/5" />
+              <div className="h-14 animate-pulse rounded-xl bg-content/5" />
+              <div className="h-14 animate-pulse rounded-xl bg-content/5" />
+            </div>
+          ) : cooperatives.length === 0 ? (
+            <div className="space-y-3 py-4 text-center">
+              <p className="text-sm font-semibold text-content">You are not in a cooperative yet</p>
+              <p className="text-sm text-content/50">
+                Join or create one before you can contribute.
+              </p>
+              <Link
+                href="/dashboard"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-[#0E3B2E] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0A2E24]"
+              >
+                Go to dashboard
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-content/45">
+                  Cooperative
+                </Label>
+                <Select value={groupId || undefined} onValueChange={setGroupId}>
+                  <SelectTrigger className="h-11 rounded-xl border-content/15">
+                    <SelectValue placeholder="Choose a cooperative" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cooperatives.map((group) => (
+                      <SelectItem key={group.id} value={group.id}>
+                        {group.name}
+                        {group.status !== 'active' ? ` · ${group.status}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selected && !canPay && (
+                  <p className="text-[11px] text-[#8A6516] dark:text-[#E8BC63]">
+                    Contributions open once this cooperative is active.
+                  </p>
+                )}
+              </div>
 
-          <CardContent className="space-y-6">
-            {!showPinVerification ? (
-              <>
-                {/* Payment Method Selection */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-gray-900">Make Contribution</h3>
-                  
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium text-gray-700">
-                      Select Payment Option
-                    </Label>
-                    
-                    <RadioGroup
-                      value={paymentMethod}
-                      onValueChange={(value) => setPaymentMethod(value as 'transfer' | 'card')}
-                      className="space-y-3"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <RadioGroupItem value="transfer" id="transfer" />
-                        <Label htmlFor="transfer" className="flex items-center gap-2 cursor-pointer">
-                          <ArrowRightLeft className="w-4 h-4 text-gray-600" />
-                          Transfer
-                        </Label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-3">
-                        <RadioGroupItem value="card" id="card" />
-                        <Label htmlFor="card" className="flex items-center gap-2 cursor-pointer">
-                          <CreditCard className="w-4 h-4 text-gray-600" />
-                          Card
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                </div>
-
-                {/* Amount Display */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Amount</span>
-                    <span className="text-lg font-semibold text-gray-900">
-                      ₦{parseInt(amount).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Continue Button */}
-                <Button 
-                  onClick={handleContinue}
-                  className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+              <div className="space-y-2">
+                <Label
+                  htmlFor="contribution-amount"
+                  className="text-[11px] font-semibold uppercase tracking-[0.14em] text-content/45"
                 >
-                  Continue
-                </Button>
-              </>
-            ) : (
-              <>
-                {/* PIN Verification */}
-                <div className="space-y-6">
-                  <div className="text-center">
-                    <h3 className="font-medium text-gray-900 mb-2">Make Contribution</h3>
-                    <Label className="text-sm font-medium text-gray-700">
-                      Select Payment Option
-                    </Label>
-                  </div>
-
-                  {/* Selected Payment Method Display */}
-                  <div className="flex justify-center">
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="card" id="card-selected" checked disabled />
-                      <Label htmlFor="card-selected" className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-gray-600" />
-                        Card
-                      </Label>
-                    </div>
-                  </div>
-
-                  {/* PIN Input */}
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <Label className="text-sm text-gray-700">
-                        Enter your 4-digit card pin to confirm this payment
-                      </Label>
-                    </div>
-                    
-                    <div className="flex justify-center gap-3">
-                      {pin.map((digit, index) => (
-                        <Input
-                          key={index}
-                          id={`pin-${index}`}
-                          type="password"
-                          maxLength={1}
-                          value={digit}
-                          onChange={(e) => handlePinChange(index, e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(index, e)}
-                          className="w-12 h-12 text-center font-medium text-lg border-2 focus:border-teal-500"
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Confirm Button */}
-                  <Button 
-                    onClick={handlePinVerification}
-                    disabled={!isPinComplete || isVerifying}
-                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-                  >
-                    {isVerifying ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      'Confirm Payment'
-                    )}
-                  </Button>
+                  Amount
+                </Label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-display text-lg font-bold text-content/35">
+                    ₦
+                  </span>
+                  <Input
+                    id="contribution-amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="h-14 rounded-xl border-content/15 bg-content/[0.03] pl-10 pr-4 font-display text-2xl font-bold tracking-tight md:text-2xl [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
                 </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-content/10 bg-content/[0.03] px-3.5 py-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0E3B2E]/[0.08] text-[#0E3B2E] dark:bg-[#7FBF9C]/10 dark:text-[#7FBF9C]">
+                    <Wallet className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-content/45">Wallet balance</p>
+                    <p className="truncate text-sm font-semibold tabular-nums">
+                      {walletBalance != null ? formatCurrency(walletBalance, 2) : '—'}
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/dashboard/wallet/fund"
+                  className="shrink-0 rounded-full border border-content/15 px-3 py-1.5 text-xs font-semibold text-content/70 transition-colors hover:bg-content/[0.05] hover:text-content"
+                >
+                  Fund
+                </Link>
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={payFromWallet}
+                  disabled={busy || !canPay}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0E3B2E] text-sm font-semibold text-white transition-colors hover:bg-[#0A2E24] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {paying === 'wallet' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Wallet className="h-4 w-4" />
+                  )}
+                  Pay from wallet
+                </button>
+                <button
+                  type="button"
+                  onClick={payWithPaystack}
+                  disabled={busy || !canPay}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#1F7A54]/40 bg-transparent text-sm font-semibold text-[#1F7A54] transition-colors hover:border-[#1F7A54]/60 hover:bg-[#1F7A54]/5 hover:text-[#0E3B2E] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#7FBF9C]/40 dark:text-[#7FBF9C] dark:hover:bg-[#7FBF9C]/10 dark:hover:text-[#B7E3C3]"
+                >
+                  {paying === 'paystack' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CreditCard className="h-4 w-4" />
+                  )}
+                  Pay with Paystack
+                </button>
+                <p className="text-center text-[11px] text-content/40">
+                  Card, bank transfer or USSD
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   )
@@ -238,4 +302,4 @@ export default function MakeContributionPage() {
       <MakeContributionContent />
     </Suspense>
   )
-} 
+}
