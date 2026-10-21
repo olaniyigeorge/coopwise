@@ -37,6 +37,7 @@ import RulesService from '@/services/rules-service'
 import {
   computeTrustStanding,
   deriveTrustInputsFromDashboard,
+  describeTrustScore,
 } from '@/services/trust-service'
 import type { FinancialRule, Cooperative } from '@/types/cooperative'
 import CooperativeService from '@/services/cooperative-service'
@@ -66,8 +67,15 @@ export default function Dashboard() {
   const { user, isAuthenticated, logout } = useAuthStore()
   const unreadCount = useNotificationStore((state) => state.unreadCount)
   const setTrust = useDashboardChromeStore((state) => state.setTrust)
+  // Last confirmed score from a previous visit — shown until this page's own
+  // payload arrives so the badge never flips through a placeholder value.
+  const storedTrustScore = useDashboardChromeStore((state) => state.trustScore)
+  const storedTenureMonths = useDashboardChromeStore(
+    (state) => state.tenureMonths
+  )
 
   const [loading, setLoading] = useState(true)
+  const [dashboardReady, setDashboardReady] = useState(false)
   const [dashboardData, setDashboardData] = useState<DashboardData>(defDashData)
   const [kycVerified, setKycVerified] = useState<boolean | undefined>(undefined)
   const [rulesByCoop, setRulesByCoop] = useState<
@@ -99,6 +107,7 @@ export default function Dashboard() {
         try {
           const data = await getDashboardData()
           setDashboardData(data)
+          setDashboardReady(true)
         } catch (error) {
           console.error('Error fetching dashboard data:', error)
         } finally {
@@ -170,7 +179,15 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, router, loading])
 
-  const trustInputs = deriveTrustInputsFromDashboard(dashboardData)
+  // The dashboard payload can omit the groups section; the separate
+  // /cooperatives/me fetch fills the gap. Trust counts the fuller of the two.
+  const trustInputs = {
+    ...deriveTrustInputsFromDashboard(dashboardData),
+    activeCoopCount: Math.max(
+      dashboardData.groups?.user_groups?.length ?? 0,
+      myCooperatives.length
+    ),
+  }
   const trustStanding = computeTrustStanding(trustInputs)
 
   const memberSince =
@@ -178,9 +195,24 @@ export default function Dashboard() {
     (typeof user?.created_at === 'string' ? user.created_at : undefined)
   const tenureMonths = monthsSince(memberSince)
 
+  // Wait for every input the score depends on before committing it, so it
+  // settles once instead of ticking up as each request lands.
+  const trustReady = dashboardReady && !coopsLoading
+
   useEffect(() => {
+    // Only commit a score once the real payload is in; writing the placeholder
+    // computed from defDashData is what made the badge jump during loading.
+    if (!trustReady) return
     setTrust(trustStanding.score, tenureMonths)
-  }, [trustStanding.score, tenureMonths, setTrust])
+  }, [trustReady, trustStanding.score, tenureMonths, setTrust])
+
+  // Until this page has its own data, keep showing the last confirmed score
+  // rather than a value derived from the empty placeholder payload.
+  const displayTrustScore = trustReady ? trustStanding.score : storedTrustScore
+  const displayTenureMonths = trustReady ? tenureMonths : storedTenureMonths
+  const displayTierLabel = trustReady
+    ? trustStanding.tierLabel
+    : describeTrustScore(storedTrustScore).tierLabel
 
   if (!isAuthenticated && !loading) return null
 
@@ -214,8 +246,8 @@ export default function Dashboard() {
               Welcome back, {firstName}
             </h1>
             <p className="mt-1.5 text-sm text-content/50">
-              {trustStanding.tierLabel} · {tenureMonths}{' '}
-              {tenureMonths === 1 ? 'month' : 'months'} in the network
+              {displayTierLabel} · {displayTenureMonths}{' '}
+              {displayTenureMonths === 1 ? 'month' : 'months'} in the network
             </p>
           </div>
 
@@ -290,7 +322,7 @@ export default function Dashboard() {
           localBalance={walletLocalBalance}
           stableBalance={walletBalance}
           localCurrency={walletCurrency}
-          trustScore={trustStanding.score}
+          trustScore={displayTrustScore}
           kycVerified={kycVerified}
           activeGoalsCount={activeGoalsCount}
           seatsTaken={userGroups.length}
