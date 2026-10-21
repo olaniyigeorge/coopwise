@@ -443,10 +443,20 @@ export default function CooperativeDetailPage() {
   // contributions; the goal-progress sum is the fallback while it loads (or
   // for applicants, who can't call it yet).
   const goalContributedTotal = Object.values(goalProgress).reduce(
-    (sum, progress) => sum + (progress.contributed_amount ?? 0),
+    (sum, progress) => sum + (Number(progress.contributed_amount) || 0),
     0
   )
-  const groupContributed = groupSummary?.total_contributed ?? goalContributedTotal
+  // The group summary is the source of truth: it includes general
+  // contributions as well as goal-specific ones. Goal progress is only a
+  // fallback when that request has not succeeded yet.
+  const summaryTotal = groupSummary
+    ? Number(groupSummary.total_contributed)
+    : Number.NaN
+  const groupContributed = Number.isFinite(summaryTotal)
+    ? summaryTotal
+    : goalContributedTotal
+  const contributionCount = Number(groupSummary?.contribution_count) || 0
+  const contributorCount = Number(groupSummary?.contributor_count) || 0
   const goalTargetTotal = goals.reduce(
     (sum, goal) => sum + (goal.target_amount ?? 0),
     0
@@ -685,11 +695,11 @@ export default function CooperativeDetailPage() {
                     {formatCurrency(groupContributed)}
                   </p>
                   <p className="mt-1.5 truncate text-[11px] text-white/50">
-                    {groupSummary && groupSummary.contribution_count > 0
-                      ? `${groupSummary.contributor_count} contributor${
-                          groupSummary.contributor_count === 1 ? '' : 's'
-                        } · ${groupSummary.contribution_count} contribution${
-                          groupSummary.contribution_count === 1 ? '' : 's'
+                    {contributionCount > 0
+                      ? `${contributorCount} contributor${
+                          contributorCount === 1 ? '' : 's'
+                        } · ${contributionCount} contribution${
+                          contributionCount === 1 ? '' : 's'
                         }`
                       : goalContributedTotal > 0
                         ? 'Raised across group goals'
