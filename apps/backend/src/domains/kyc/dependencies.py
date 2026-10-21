@@ -15,7 +15,9 @@ from src.domains.kyc.service import KYCService
 from src.domains.kyc.audit_service import KYCAuditService
 from src.domains.kyc.infra.bank_verification_provider import (
     MockBankVerificationProvider,
+    PaystackBankVerificationProvider,
 )
+from src.domains.kyc.ports import BankVerificationProviderPort
 from src.domains.kyc.infra.identity_provider import MockIdentityVerificationProvider
 from src.domains.kyc.infra.user_kyc_flag import UserKYCFlager
 from src.domains.kyc.repositories import (
@@ -23,6 +25,21 @@ from src.domains.kyc.repositories import (
     SQLAlchemyKYCRepository,
 )
 from src.domains.kyc.infra.notifier_adapter import NotificationServiceKYCNotifier
+
+
+def get_bank_verification_provider() -> BankVerificationProviderPort:
+    """
+    Real Paystack resolution whenever a secret key is configured; the mock
+    stays as an explicit local/test fallback instead of silently pretending
+    an account was verified in production.
+    """
+    secret_key = getattr(config, "PAYSTACK_SECRET_KEY", "")
+    if secret_key:
+        return PaystackBankVerificationProvider(secret_key)
+    logging.getLogger(__name__).warning(
+        "PAYSTACK_SECRET_KEY is not set — falling back to mock bank verification"
+    )
+    return MockBankVerificationProvider()
 
 
 def get_kyc_service(
@@ -35,7 +52,7 @@ def get_kyc_service(
         encryptor=FieldEncryptor(config.SECRET_ENCRYPTION_KEY),
         notifier=NotificationServiceKYCNotifier(),
         identity_provider=MockIdentityVerificationProvider(),
-        bank_provider=MockBankVerificationProvider(),
+        bank_provider=get_bank_verification_provider(),
         storage=CloudinaryStorage(),
         user_flag_port=UserKYCFlager(db),
     )
@@ -77,7 +94,7 @@ async def build_kyc_service():
             audit_repository=SQLAlchemyKYCAuditRepository(session),
             encryptor=FieldEncryptor(config.SECRET_ENCRYPTION_KEY),
             identity_provider=MockIdentityVerificationProvider(),
-            bank_provider=MockBankVerificationProvider(),
+            bank_provider=get_bank_verification_provider(),
             storage=CloudinaryStorage(),
             user_flag_port=UserKYCFlager(session),
             notifier=NotificationServiceKYCNotifier(),
