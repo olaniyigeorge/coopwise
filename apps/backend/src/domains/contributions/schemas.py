@@ -66,6 +66,26 @@ class LeaderboardCircle(BaseModel):
     member_count: int
     contribution_count: int
     contributor_count: int
+    score: int = 0
+    activity_count: int = 0
+    goal_count: int = 0
+    goals_completed: int = 0
+    join_requests: int = 0
+    invite_count: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LeaderboardMember(BaseModel):
+    user_id: UUID
+    name: str
+    score: int
+    activity_count: int
+    contribution_count: int
+    goals_created: int
+    goals_completed: int
+    join_requests: int
+    invite_count: int
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -80,6 +100,7 @@ class LeaderboardPlatformStats(BaseModel):
 class LeaderboardResponse(BaseModel):
     platform_stats: LeaderboardPlatformStats
     top_circles: list[LeaderboardCircle]
+    top_members: list[LeaderboardMember] = []
 
 
 class CircleHistoryEntry(BaseModel):
