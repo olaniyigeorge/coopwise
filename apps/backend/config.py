@@ -25,6 +25,10 @@ class GlobalConfig(BaseSettings):
     PAYSTACK_PUBLIC_KEY: str
     REDIS_URL: str
     GEMINI_API_KEY: str
+    # AI assistant. Token stays in the environment; never ship it to the browser.
+    ANTHROPIC_BASE_URL: str = "https://agentrouter.org"
+    ANTHROPIC_AUTH_TOKEN: str = ""
+    ANTHROPIC_MODEL: str = "deepseek-v4-flash"
     RATE_LIMIT_RULES_PATH: str
     CROSSMINT_SERVER_API_KEY: str
     CROSSMINT_SERVER_SIGNER_ADDRESS: str
