@@ -1,201 +1,303 @@
 "use client";
 
-import React from "react";
-import DashboardLayout from "@/components/dashboard/layout";
-import { useLeaderboard, LeaderboardCircle } from "@/hooks/useLeaderboard";
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
+  ArrowRight,
+  CheckCircle2,
+  Crown,
+  Medal,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
   Trophy,
   Users,
-  Repeat2,
-  CheckCircle2,
-  RefreshCw,
-  ExternalLink,
-  ShieldCheck,
 } from "lucide-react";
-import Link from "next/link";
 
-// ─── Platform stat card
+import DashboardLayout from "@/components/dashboard/layout";
+import { useLeaderboard, LeaderboardCircle } from "@/hooks/useLeaderboard";
+import CooperativeService from "@/services/cooperative-service";
+import type { Cooperative } from "@/types/cooperative";
+import { cn } from "@/lib/utils";
 
-interface StatCardProps {
+/* ────────────────────────── Stats ────────────────────────── */
+
+function StatCard({
+  label,
+  value,
+  hint,
+  icon,
+}: {
   label: string;
   value: number | undefined;
+  hint: string;
   icon: React.ReactNode;
-}
-
-function StatCard({ label, value, icon }: StatCardProps) {
+}) {
   return (
-    <div className="rounded-xl border border-border bg-white px-4 py-4 flex items-center gap-3">
-      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+    <div className="rounded-2xl bg-surface p-4 shadow-[0_1px_2px_rgba(11,23,18,0.04)]">
+      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#DFF0E4] text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
         {icon}
-      </div>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        {value === undefined ? (
-          <div className="h-6 w-16 bg-muted rounded animate-pulse mt-0.5" />
-        ) : (
-          <p className="text-xl font-bold text-foreground">
-            {value.toLocaleString()}
-          </p>
-        )}
-      </div>
+      </span>
+      {value === undefined ? (
+        <div className="mt-3 h-7 w-16 animate-pulse rounded-md bg-content/5" />
+      ) : (
+        <p className="mt-3 font-display text-2xl font-bold leading-none tracking-tight text-content">
+          {value.toLocaleString()}
+        </p>
+      )}
+      <p className="mt-1.5 text-[11px] font-medium text-content/55">{label}</p>
+      <p className="mt-0.5 text-[10px] text-content/35">{hint}</p>
     </div>
   );
 }
 
-// ─── Circle rank card─
-
-interface CircleRankCardProps {
-  rank: number;
-  circle: LeaderboardCircle;
-}
+/* ─────────────────────── Ranked row ─────────────────────── */
 
 const RANK_STYLES: Record<number, string> = {
-  1: "bg-amber-400 text-white",
-  2: "bg-slate-400 text-white",
-  3: "bg-orange-400 text-white",
+  1: "bg-[#B8892B] text-white",
+  2: "bg-[#8C9AA6] text-white",
+  3: "bg-[#B4713D] text-white",
 };
 
-function CircleRankCard({ rank, circle }: CircleRankCardProps) {
-  const badgeClass =
-    RANK_STYLES[rank] ?? "bg-muted text-muted-foreground";
-
-  return (
-    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-      {/* Rank badge */}
+function RankBadge({ rank }: { rank: number }) {
+  if (rank <= 3) {
+    const Icon = rank === 1 ? Crown : Medal;
+    return (
       <span
-        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${badgeClass}`}
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+          RANK_STYLES[rank]
+        )}
       >
-        {rank <= 3 ? ["🥇", "🥈", "🥉"][rank - 1] : rank}
+        <Icon className="h-4 w-4" />
       </span>
+    );
+  }
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-content/[0.05] text-xs font-bold tabular-nums text-content/55">
+      {rank}
+    </span>
+  );
+}
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate">
-          {circle.name}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {circle.member_count} member{circle.member_count !== 1 ? "s" : ""} ·
-          Round {circle.current_round}
-        </p>
-      </div>
-
-      {/* Contribution count */}
-      <div className="text-right shrink-0">
-        <p className="text-sm font-bold text-foreground">
-          {circle.total_contributions.toLocaleString()}
-        </p>
-        <p className="text-[10px] text-muted-foreground">contributions</p>
-      </div>
-
-      {/* Flowscan link */}
-      <a
-        href={`https://${
-          process.env.NEXT_PUBLIC_FLOW_NETWORK === "mainnet" ? "" : "testnet."
-        }flowscan.io/search?q=circle_${circle.chain_circle_id}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
-        title="View on Flowscan"
+function CircleRow({
+  rank,
+  circle,
+  isMine,
+}: {
+  rank: number;
+  circle: LeaderboardCircle;
+  isMine: boolean;
+}) {
+  return (
+    <li className="border-t border-content/[0.06] first:border-t-0">
+      <Link
+        href={`/dashboard/cooperative/${circle.group_id}`}
+        className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-content/[0.02] sm:px-5"
       >
-        <ExternalLink className="w-3.5 h-3.5" />
-      </a>
-    </div>
+        <RankBadge rank={rank} />
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className="truncate text-sm font-semibold text-content">
+              {circle.name}
+            </p>
+            {isMine && (
+              <span className="rounded-full bg-[#DFF0E4] px-2 py-0.5 text-[10px] font-semibold text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
+                Your coop
+              </span>
+            )}
+            <span className="rounded-full bg-content/5 px-2 py-0.5 text-[10px] font-semibold capitalize text-content/50">
+              {circle.status}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[11px] text-content/45">
+            {circle.member_count} member{circle.member_count === 1 ? "" : "s"}
+            {circle.contributor_count > 0 && (
+              <>
+                {" "}
+                · {circle.contributor_count} contributing
+              </>
+            )}
+          </p>
+        </div>
+
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-bold tabular-nums text-content">
+            {circle.contribution_count.toLocaleString()}
+          </p>
+          <p className="text-[10px] text-content/40">
+            contribution{circle.contribution_count === 1 ? "" : "s"}
+          </p>
+        </div>
+      </Link>
+    </li>
   );
 }
 
 function RankSkeleton() {
   return (
-    <ul className="divide-y divide-border">
+    <ul>
       {Array.from({ length: 5 }).map((_, i) => (
-        <li key={i} className="flex items-center gap-3 px-4 py-3.5">
-          <div className="w-7 h-7 rounded-full bg-muted animate-pulse shrink-0" />
+        <li key={i} className="flex items-center gap-3 border-t border-content/[0.06] px-5 py-3.5 first:border-t-0">
+          <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-content/5" />
           <div className="flex-1 space-y-1.5">
-            <div className="h-3.5 bg-muted rounded animate-pulse w-1/2" />
-            <div className="h-3 bg-muted rounded animate-pulse w-1/3" />
+            <div className="h-3.5 w-1/2 animate-pulse rounded bg-content/5" />
+            <div className="h-3 w-1/3 animate-pulse rounded bg-content/5" />
           </div>
-          <div className="h-5 w-10 bg-muted rounded animate-pulse" />
+          <div className="h-5 w-10 animate-pulse rounded bg-content/5" />
         </li>
       ))}
     </ul>
   );
 }
 
-// ─── Page───
+/* ─────────────────────────── Page ─────────────────────────── */
 
 export default function LeaderboardPage() {
   const { data, isLoading, error, refetch } = useLeaderboard();
+  const [myCoops, setMyCoops] = useState<Cooperative[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    CooperativeService.listMyCooperatives()
+      .then((groups) => {
+        if (!cancelled) setMyCoops(groups ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const myIds = useMemo(
+    () => new Set(myCoops.map((coop) => coop.id)),
+    [myCoops]
+  );
+
+  const myRanked = useMemo(() => {
+    if (!data) return [] as { rank: number; circle: LeaderboardCircle }[];
+    return data.top_circles
+      .map((circle, index) => ({ rank: index + 1, circle }))
+      .filter((entry) => myIds.has(entry.circle.group_id));
+  }, [data, myIds]);
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div className="mx-auto max-w-3xl space-y-5 pb-10">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Trophy className="w-6 h-6 text-amber-500" />
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#B8892B]">
+              Community
+            </p>
+            <h1 className="mt-1.5 flex items-center gap-2 font-display text-2xl font-bold tracking-tight text-content sm:text-3xl">
+              <Trophy className="h-6 w-6 text-[#B8892B]" />
               Leaderboard
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Most active circles by number of contributions — no amounts shown.
+            <p className="mt-1 text-sm text-content/50">
+              Cooperatives ranked by contribution activity.
             </p>
           </div>
           <button
+            type="button"
             onClick={refetch}
-            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            title="Refresh"
+            aria-label="Refresh leaderboard"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-content/10 text-content/55 transition-colors hover:bg-content/[0.03] hover:text-content"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </button>
         </div>
 
-        {/* Privacy banner */}
-        <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 flex items-start gap-2.5 text-sm text-emerald-800">
-          <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-emerald-600" />
-          <p>
-            <strong>No money figures here.</strong> All ranks are based on
-            contribution counts only. Amounts are encrypted on-chain by Zama FHE
-            and are never visible to anyone — including CoopWise.
+        {/* What this measures */}
+        <div className="flex items-start gap-3 rounded-2xl border border-[#1F7A54]/15 bg-[#DFF0E4]/60 px-4 py-3.5 dark:border-[#7FBF9C]/20 dark:bg-[#17352A]">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#1F7A54] dark:text-[#7FBF9C]" />
+          <p className="text-sm leading-relaxed text-[#17603F] dark:text-[#B7E3C3]">
+            <strong className="font-semibold">Activity, not wallet size.</strong>{" "}
+            Ranks count completed contributions — never amounts or member
+            details.
           </p>
         </div>
 
-        {/* Platform stats grid */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Platform stats */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
-            label="Active circles"
+            label="Cooperatives"
             value={data?.platform_stats.total_circles}
-            icon={<Repeat2 className="w-5 h-5" />}
+            hint="on CoopWise"
+            icon={<Users className="h-4 w-4" />}
+          />
+          <StatCard
+            label="Active now"
+            value={data?.platform_stats.active_circles}
+            hint="accepting contributions"
+            icon={<Sparkles className="h-4 w-4" />}
           />
           <StatCard
             label="Members"
             value={data?.platform_stats.total_members}
-            icon={<Users className="w-5 h-5" />}
+            hint="active memberships"
+            icon={<Users className="h-4 w-4" />}
           />
           <StatCard
-            label="Contributions made"
+            label="Contributions"
             value={data?.platform_stats.total_contributions}
-            icon={<CheckCircle2 className="w-5 h-5" />}
-          />
-          <StatCard
-            label="Circles completed"
-            value={data?.platform_stats.completed_circles}
-            icon={<Trophy className="w-5 h-5" />}
+            hint="completed on platform"
+            icon={<CheckCircle2 className="h-4 w-4" />}
           />
         </div>
 
-        {/* Top circles */}
-        <div className="rounded-xl border border-border bg-white overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-muted/40">
-            <h2 className="text-sm font-semibold text-foreground">
-              Top circles by activity
+        {/* Your standing — only when one of your coops made the board */}
+        {myRanked.length > 0 && (
+          <div className="rounded-[24px] bg-[#0E3B2E] p-5 text-white shadow-[0_18px_40px_-28px_rgba(14,59,46,0.7)]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
+              Your standing
+            </p>
+            {myRanked.slice(0, 1).map(({ rank, circle }) => (
+              <div
+                key={circle.group_id}
+                className="mt-2 flex flex-wrap items-end justify-between gap-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-display text-xl font-bold tracking-tight">
+                    #{rank} · {circle.name}
+                  </p>
+                  <p className="mt-1 text-xs text-white/55">
+                    {circle.contribution_count} contribution
+                    {circle.contribution_count === 1 ? "" : "s"} recorded
+                  </p>
+                </div>
+                <Link
+                  href={`/dashboard/cooperative/${circle.group_id}`}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/15"
+                >
+                  Open cooperative
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Ranking */}
+        <div className="overflow-hidden rounded-[24px] bg-surface shadow-[0_1px_2px_rgba(11,23,18,0.04)]">
+          <div className="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
+            <h2 className="font-display text-base font-bold tracking-tight text-content">
+              Top cooperatives
             </h2>
+            <span className="text-[11px] font-medium text-content/40">
+              by contributions
+            </span>
           </div>
 
           {error && (
-            <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+            <div className="border-t border-content/[0.06] px-5 py-8 text-center text-sm text-content/55">
               {error}
               <button
+                type="button"
                 onClick={refetch}
-                className="ml-2 underline text-primary"
+                className="ml-2 font-semibold text-[#1F7A54] underline underline-offset-2 dark:text-[#7FBF9C]"
               >
                 Retry
               </button>
@@ -205,44 +307,43 @@ export default function LeaderboardPage() {
           {!error && isLoading && <RankSkeleton />}
 
           {!error && !isLoading && data?.top_circles.length === 0 && (
-            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-              No circles yet — be the first to{" "}
+            <div className="border-t border-content/[0.06] px-5 py-10 text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FBF1D0] text-[#8A6516] dark:bg-[#3A3120] dark:text-[#E8BC63]">
+                <Trophy className="h-5 w-5" />
+              </span>
+              <p className="mt-3 font-display text-base font-bold text-content">
+                No contributions recorded yet
+              </p>
+              <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-content/50">
+                The board fills up as cooperatives start pooling money. Start
+                yours and set the pace.
+              </p>
               <Link
-                href="/dashboard/create-circle"
-                className="text-primary underline"
+                href="/dashboard/create-cooperative"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#0E3B2E] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#0A2E24] dark:bg-[#7FBF9C] dark:text-[#0B1712] dark:hover:bg-[#93CBAE]"
               >
-                start one
+                <Plus className="h-3.5 w-3.5" />
+                Create a cooperative
               </Link>
-              !
             </div>
           )}
 
           {!error && !isLoading && data && data.top_circles.length > 0 && (
             <ul>
-              {data.top_circles.map((circle, idx) => (
-                <li key={circle.chain_circle_id}>
-                  <CircleRankCard rank={idx + 1} circle={circle} />
-                </li>
+              {data.top_circles.map((circle, index) => (
+                <CircleRow
+                  key={circle.group_id}
+                  rank={index + 1}
+                  circle={circle}
+                  isMine={myIds.has(circle.group_id)}
+                />
               ))}
             </ul>
           )}
         </div>
 
-        {/* Footer disclaimer */}
-        <p className="text-[11px] text-center text-muted-foreground">
-          Powered by Flow blockchain · Amounts encrypted by Zama FHE ·{" "}
-          <a
-            href={
-              process.env.NEXT_PUBLIC_FLOW_NETWORK === "mainnet"
-                ? "https://flowscan.io"
-                : "https://testnet.flowscan.io"
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-foreground"
-          >
-            Verify any transaction on Flowscan
-          </a>
+        <p className="text-center text-[11px] text-content/35">
+          Rankings update as contributions are recorded.
         </p>
       </div>
     </DashboardLayout>
