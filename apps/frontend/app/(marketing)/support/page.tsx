@@ -159,8 +159,8 @@ export default function SupportPage() {
           <p>
             We&apos;re a small, early-stage team, and we&apos;d rather say that plainly than borrow language
             (deposit insurance, &quot;bank-level&quot; guarantees) that doesn&apos;t reflect where we are today.
-            As the roadmap below shows, we&apos;re building toward on-chain, independently auditable
-            escrow — that&apos;s the direction, not a promise about right now.
+            As the roadmap below shows, independently auditable escrow is where we&apos;re
+            headed — that&apos;s the direction, not a promise about right now.
           </p>
         </div>
       )
