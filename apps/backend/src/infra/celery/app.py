@@ -2,6 +2,7 @@ import logging
 import sys
 from pathlib import Path
 
+from celery.schedules import crontab
 from celery.signals import worker_process_init
 from celery import Celery
 from celery.signals import (
@@ -32,6 +33,7 @@ celery_app = Celery(
         "src.domains.kyc.tasks",
         "src.domains.users.tasks",
         "src.infra.celery.tasks.otp_tasks",
+        "src.domains.payments.tasks",
     ],
 )
 
@@ -134,6 +136,12 @@ celery_app.conf.update(
     # logger setup path, which is why we hook after_setup_logger /
     # after_setup_task_logger below instead of relying on this alone.
     worker_hijack_root_logger=False,
+    beat_schedule={
+        "payouts-sweep-hourly": {
+            "task": "payments.sweep_due_payouts",
+            "schedule": crontab(minute=0),
+        },
+    },
 )
 
 
