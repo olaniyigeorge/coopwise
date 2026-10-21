@@ -114,6 +114,29 @@ class BankingInfoRequest(BaseModel):
         return v
 
 
+class BankOption(BaseModel):
+    name: str
+    code: str
+
+
+class BankResolveRequest(BaseModel):
+    bank_code: str = Field(..., min_length=2, max_length=10)
+    account_number: str = Field(..., min_length=10, max_length=10)
+
+    @field_validator("account_number")
+    @classmethod
+    def digits_only(cls, v: str) -> str:
+        if not v.isdigit():
+            raise ValueError("account_number must be numeric")
+        return v
+
+
+class BankResolveResponse(BaseModel):
+    bank_code: str
+    account_number: str
+    account_name: str
+
+
 # IdentityInfo isn't a JSON body — it's multipart with files.
 # Fields are declared directly on the router endpoint via Form(...)/File(...).
 
