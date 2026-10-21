@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import select
+
 from src.domains.memberships.models.enums import MembershipRole, MembershipStatus
 from src.domains.memberships.models.group_membership import GroupMembership
 from src.shared.utils.logger import logger
@@ -149,6 +151,23 @@ class CooperativeService:
             )
         if acting_user_id is None:
             raise NotAuthorizedError()
+
+        # Activation is a governance action: only the creator or an active
+        # admin of this cooperative may take it live.
+        actor_uuid = UUID(str(acting_user_id))
+        if cooperative.created_by != actor_uuid:
+            admin_membership = (
+                await self._uow.session.execute(
+                    select(GroupMembership.id).where(
+                        GroupMembership.group_id == cooperative.id,
+                        GroupMembership.user_id == actor_uuid,
+                        GroupMembership.status == MembershipStatus.ACTIVE,
+                        GroupMembership.role == MembershipRole.admin,
+                    )
+                )
+            ).scalars().first()
+            if admin_membership is None:
+                raise NotAuthorizedError()
 
         cooperative.status = CooperativeStatus.ACTIVE
         await self._uow.commit()
