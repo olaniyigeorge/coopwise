@@ -3,22 +3,22 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-// ─── Types─
+// ─── Types
 
 export interface PlatformStats {
   total_circles: number;
+  active_circles: number;
   total_members: number;
   total_contributions: number;
-  completed_circles: number;
-  /** NOTE: No monetary figures — counts only */
 }
 
 export interface LeaderboardCircle {
+  group_id: string;
   name: string;
-  chain_circle_id: number;
-  total_contributions: number;
+  status: string;
   member_count: number;
-  current_round: number;
+  contribution_count: number;
+  contributor_count: number;
 }
 
 export interface LeaderboardData {
@@ -33,11 +33,10 @@ interface UseLeaderboardResult {
   refetch: () => void;
 }
 
-// ─── Hook──
+// ─── Hook
 
 /**
- * Fetches the public leaderboard — circle activity counts only.
- * No authentication required (public endpoint).
+ * Fetches the activity leaderboard — contribution counts only.
  * No amounts are ever returned from this endpoint.
  */
 export function useLeaderboard(): UseLeaderboardResult {
