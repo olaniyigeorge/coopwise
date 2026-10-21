@@ -1,14 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { backendFetch, forwardResponse } from "@/lib/server/backend"
 
-export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("Authorization");
-
-  if (!authHeader) {
-    return NextResponse.json(
-      { detail: "Authentication required" },
-      { status: 401 }
-    );
-  }
-
-  return NextResponse.json([]);
+export async function GET() {
+  const response = await backendFetch("/api/v1/payments/payouts/me")
+  return forwardResponse(response)
 }
