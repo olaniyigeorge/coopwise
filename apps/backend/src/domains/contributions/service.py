@@ -6,6 +6,7 @@ from enum import Enum
 from src.domains.cooperatives.models.enums import (
     ContributionFrequency,
     CooperativeStatus,
+    GoalStatus,
 )
 from src.domains.cooperatives.models.cooperative import CoopCooperative
 from src.domains.memberships.models.group_membership import GroupMembership
@@ -13,7 +14,7 @@ from src.domains.memberships.models.enums import MembershipStatus
 from fastapi import HTTPException, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import case, select, and_, func
 from src.domains.contributions.schemas import ContributionCreate, ContributionDetail
 from src.domains.memberships.service import CooperativeMembershipService
 from src.domains.auth.schemas import AuthenticatedUser
@@ -25,10 +26,12 @@ from src.shared.money import stable_to_local
 from src.domains.cooperatives.uow import UnitOfWork
 from src.domains.cooperatives.services.rule_services import FinancialRuleService
 from src.domains.cooperatives.exceptions import RuleNotFoundError
-from src.domains.cooperatives.models.goals import CoopGoal
+from src.domains.cooperatives.models.goals import CoopGoal, CoopGoalParticipant
 from src.domains.analytics.service import ActivityService
 from src.domains.analytics.schemas import ActivityCreate
-from src.domains.analytics.models import ActivityType
+from src.domains.analytics.models import ActivityLog, ActivityType
+from src.domains.memberships.models.invitation import CoopInvitation
+from src.domains.users.models import User
 
 
 class ContributionActionType(Enum):
@@ -592,6 +595,18 @@ class ContributionService:
                 f"action={action_type.value}, tx={tx_hash}"
             )
 
+            try:
+                from src.domains.payments.service import PayoutService
+
+                await PayoutService.dispatch_payout(
+                    db, contribution.group_id, automatic=True
+                )
+            except Exception:
+                logger.exception(
+                    "Automatic payout did not run for group %s",
+                    contribution.group_id,
+                )
+
             return {
                 "message": "Contribution marked as completed successfully.",
                 "contribution_id": str(contribution_id),
@@ -829,77 +844,256 @@ class ContributionService:
 
         return {
             "group_id": group_id,
-            "total_contributed": float(total_contributed),
-            "contribution_count": contribution_count,
-            "contributor_count": contributor_count,
+            "total_contributed": float(total_contributed or 0),
+            "contribution_count": int(contribution_count or 0),
+            "contributor_count": int(contributor_count or 0),
             "currency": "NGN",
         }
+
+    @staticmethod
+    def _activity_score(
+        activity: int,
+        contributions: int,
+        goals: int,
+        goals_completed: int,
+        join_requests: int,
+        invites: int,
+    ) -> int:
+        """
+        Points, not naira. Contributions and finished goals weigh more than
+        a single click, but wallet size never enters the rank.
+        """
+        return (
+            2 * activity
+            + 5 * contributions
+            + 4 * goals
+            + 8 * goals_completed
+            + 3 * join_requests
+            + 3 * invites
+        )
+
+    @staticmethod
+    async def _count_by(db: AsyncSession, statement) -> Dict[Any, int]:
+        rows = (await db.execute(statement)).all()
+        return {row[0]: int(row[1] or 0) for row in rows}
 
     @staticmethod
     async def get_platform_leaderboard(
         db: AsyncSession, limit: int = 10
     ) -> Dict[str, Any]:
         """
-        Rank cooperatives by contribution activity for the public leaderboard.
+        Rank cooperatives and members by activity.
 
-        Counts only — no amounts or member identities leave this endpoint, so
-        it is safe to serve without a session.
+        Counts only — contribution amounts stay off this endpoint. Member
+        names are included because the board is a people ranking.
         """
-        contribution_counts = (
-            select(
-                Contribution.group_id.label("group_id"),
-                func.count(Contribution.id).label("contribution_count"),
-                func.count(func.distinct(Contribution.user_id)).label(
-                    "contributor_count"
-                ),
+        contribution_rows = (
+            await db.execute(
+                select(
+                    Contribution.group_id,
+                    func.count(Contribution.id),
+                    func.count(func.distinct(Contribution.user_id)),
+                )
+                .where(Contribution.status == ContributionStatus.completed)
+                .group_by(Contribution.group_id)
             )
-            .where(Contribution.status == ContributionStatus.completed)
-            .group_by(Contribution.group_id)
-            .subquery()
-        )
-        member_counts = (
-            select(
-                GroupMembership.group_id.label("group_id"),
-                func.count(GroupMembership.id).label("member_count"),
-            )
+        ).all()
+        contribution_counts = {row[0]: int(row[1] or 0) for row in contribution_rows}
+        contributor_counts = {row[0]: int(row[2] or 0) for row in contribution_rows}
+        member_counts = await ContributionService._count_by(
+            db,
+            select(GroupMembership.group_id, func.count(GroupMembership.id))
             .where(GroupMembership.status == MembershipStatus.ACTIVE)
-            .group_by(GroupMembership.group_id)
-            .subquery()
+            .group_by(GroupMembership.group_id),
+        )
+        activity_counts = await ContributionService._count_by(
+            db,
+            select(ActivityLog.group_id, func.count(ActivityLog.id))
+            .where(ActivityLog.group_id.is_not(None))
+            .group_by(ActivityLog.group_id),
+        )
+        goal_rows = (
+            await db.execute(
+                select(
+                    CoopGoal.cooperative_id,
+                    func.count(CoopGoal.id),
+                    func.coalesce(
+                        func.sum(
+                            case(
+                                (CoopGoal.status == GoalStatus.COMPLETED, 1),
+                                else_=0,
+                            )
+                        ),
+                        0,
+                    ),
+                ).group_by(CoopGoal.cooperative_id)
+            )
+        ).all()
+        goal_counts = {row[0]: int(row[1] or 0) for row in goal_rows}
+        goals_completed_counts = {row[0]: int(row[2] or 0) for row in goal_rows}
+        join_counts = await ContributionService._count_by(
+            db,
+            select(GroupMembership.group_id, func.count(GroupMembership.id))
+            .where(GroupMembership.status == MembershipStatus.PENDING)
+            .group_by(GroupMembership.group_id),
+        )
+        invite_counts = await ContributionService._count_by(
+            db,
+            select(CoopInvitation.cooperative_id, func.count(CoopInvitation.id)).group_by(
+                CoopInvitation.cooperative_id
+            ),
         )
 
-        contribution_count = func.coalesce(contribution_counts.c.contribution_count, 0)
-        member_count = func.coalesce(member_counts.c.member_count, 0)
-
-        rows = (
+        cooperatives = (
             await db.execute(
                 select(
                     CoopCooperative.id,
                     CoopCooperative.name,
                     CoopCooperative.status,
-                    member_count,
-                    contribution_count,
-                    func.coalesce(contribution_counts.c.contributor_count, 0),
-                )
-                .outerjoin(
-                    contribution_counts,
-                    contribution_counts.c.group_id == CoopCooperative.id,
-                )
-                .outerjoin(
-                    member_counts,
-                    member_counts.c.group_id == CoopCooperative.id,
-                )
-                .where(
-                    CoopCooperative.status != CooperativeStatus.DELETED,
-                    contribution_count > 0,
-                )
-                .order_by(
-                    contribution_count.desc(),
-                    member_count.desc(),
-                    CoopCooperative.created_at.asc(),
-                )
-                .limit(limit)
+                    CoopCooperative.created_at,
+                ).where(CoopCooperative.status != CooperativeStatus.DELETED)
             )
         ).all()
+
+        ranked_circles = []
+        for coop_id, name, status_value, created_at in cooperatives:
+            activity = activity_counts.get(coop_id, 0)
+            contributions = contribution_counts.get(coop_id, 0)
+            goals = goal_counts.get(coop_id, 0)
+            goals_done = goals_completed_counts.get(coop_id, 0)
+            joins = join_counts.get(coop_id, 0)
+            invites = invite_counts.get(coop_id, 0)
+            score = ContributionService._activity_score(
+                activity, contributions, goals, goals_done, joins, invites
+            )
+            if score <= 0:
+                continue
+            status_label = (
+                status_value.value if hasattr(status_value, "value") else str(status_value)
+            )
+            ranked_circles.append(
+                {
+                    "group_id": coop_id,
+                    "name": name,
+                    "status": status_label,
+                    "member_count": member_counts.get(coop_id, 0),
+                    "contribution_count": contributions,
+                    "contributor_count": contributor_counts.get(coop_id, 0),
+                    "score": score,
+                    "activity_count": activity,
+                    "goal_count": goals,
+                    "goals_completed": goals_done,
+                    "join_requests": joins,
+                    "invite_count": invites,
+                    "_created_at": created_at,
+                }
+            )
+        ranked_circles.sort(
+            key=lambda row: (
+                -row["score"],
+                -row["member_count"],
+                row["_created_at"].isoformat() if row["_created_at"] else "",
+            )
+        )
+        top_circles = []
+        for row in ranked_circles[:limit]:
+            row.pop("_created_at", None)
+            top_circles.append(row)
+
+        member_activity = await ContributionService._count_by(
+            db, select(ActivityLog.user_id, func.count(ActivityLog.id)).group_by(ActivityLog.user_id)
+        )
+        member_contributions = await ContributionService._count_by(
+            db,
+            select(Contribution.user_id, func.count(Contribution.id))
+            .where(Contribution.status == ContributionStatus.completed)
+            .group_by(Contribution.user_id),
+        )
+        member_goals = await ContributionService._count_by(
+            db,
+            select(CoopGoal.created_by, func.count(CoopGoal.id)).group_by(CoopGoal.created_by),
+        )
+        member_goals_done = await ContributionService._count_by(
+            db,
+            select(GroupMembership.user_id, func.count(func.distinct(CoopGoal.id)))
+            .join(
+                CoopGoalParticipant,
+                CoopGoalParticipant.membership_id == GroupMembership.id,
+            )
+            .join(CoopGoal, CoopGoal.id == CoopGoalParticipant.goal_id)
+            .where(CoopGoal.status == GoalStatus.COMPLETED)
+            .group_by(GroupMembership.user_id),
+        )
+        member_joins = await ContributionService._count_by(
+            db,
+            select(GroupMembership.user_id, func.count(GroupMembership.id))
+            .where(
+                GroupMembership.status.in_(
+                    [
+                        MembershipStatus.PENDING,
+                        MembershipStatus.REJECTED,
+                        MembershipStatus.ACTIVE,
+                    ]
+                )
+            )
+            .group_by(GroupMembership.user_id),
+        )
+        member_invites = await ContributionService._count_by(
+            db,
+            select(CoopInvitation.invited_by, func.count(CoopInvitation.id)).group_by(
+                CoopInvitation.invited_by
+            ),
+        )
+        member_ids = (
+            set(member_activity)
+            | set(member_contributions)
+            | set(member_goals)
+            | set(member_goals_done)
+            | set(member_joins)
+            | set(member_invites)
+        )
+        names: Dict[Any, str] = {}
+        if member_ids:
+            name_rows = (
+                await db.execute(
+                    select(User.id, User.full_name).where(User.id.in_(member_ids))
+                )
+            ).all()
+            names = {row[0]: row[1] for row in name_rows}
+
+        ranked_members = []
+        for user_id in member_ids:
+            name = (names.get(user_id) or "").strip()
+            if not name:
+                continue
+            activity = member_activity.get(user_id, 0)
+            contributions = member_contributions.get(user_id, 0)
+            goals = member_goals.get(user_id, 0)
+            goals_done = member_goals_done.get(user_id, 0)
+            joins = member_joins.get(user_id, 0)
+            invites = member_invites.get(user_id, 0)
+            score = ContributionService._activity_score(
+                activity, contributions, goals, goals_done, joins, invites
+            )
+            if score <= 0:
+                continue
+            ranked_members.append(
+                {
+                    "user_id": user_id,
+                    "name": name,
+                    "score": score,
+                    "activity_count": activity,
+                    "contribution_count": contributions,
+                    "goals_created": goals,
+                    "goals_completed": goals_done,
+                    "join_requests": joins,
+                    "invite_count": invites,
+                }
+            )
+        ranked_members.sort(
+            key=lambda row: (-row["score"], -row["contribution_count"], row["name"])
+        )
+        top_members = ranked_members[:limit]
 
         total_circles = (
             await db.execute(
@@ -937,17 +1131,8 @@ class ContributionService:
                 "total_members": total_members,
                 "total_contributions": total_contributions,
             },
-            "top_circles": [
-                {
-                    "group_id": row[0],
-                    "name": row[1],
-                    "status": str(row[2]),
-                    "member_count": int(row[3]),
-                    "contribution_count": int(row[4]),
-                    "contributor_count": int(row[5]),
-                }
-                for row in rows
-            ],
+            "top_circles": top_circles,
+            "top_members": top_members,
         }
 
     @staticmethod
