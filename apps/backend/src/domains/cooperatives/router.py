@@ -221,7 +221,9 @@ async def create_governance_rule(
     return await service.create(rule, acting_user_id=user.id)
 
 
-@router.get("/{cooperative_id}/rules/governance/active", response_model=GovernanceRuleRead)
+@router.get(
+    "/{cooperative_id}/rules/governance/active", response_model=GovernanceRuleRead
+)
 async def get_active_governance_rule(
     cooperative_id: UUID,
     service: GovernanceRuleService = Depends(get_governance_rule_service),
@@ -244,7 +246,9 @@ async def create_membership_rule(
     return await service.create(rule, acting_user_id=user.id)
 
 
-@router.get("/{cooperative_id}/rules/membership/active", response_model=MembershipRuleRead)
+@router.get(
+    "/{cooperative_id}/rules/membership/active", response_model=MembershipRuleRead
+)
 async def get_active_membership_rule(
     cooperative_id: UUID,
     service: MembershipRuleService = Depends(get_membership_rule_service),
@@ -267,7 +271,9 @@ async def create_financial_rule(
     return await service.create(rule, acting_user_id=user.id)
 
 
-@router.get("/{cooperative_id}/rules/financial/active", response_model=FinancialRuleRead)
+@router.get(
+    "/{cooperative_id}/rules/financial/active", response_model=FinancialRuleRead
+)
 async def get_active_financial_rule(
     cooperative_id: UUID,
     service: FinancialRuleService = Depends(get_financial_rule_service),
@@ -290,9 +296,7 @@ async def create_decision_rule(
     return await service.create(rule, acting_user_id=user.id)
 
 
-@router.get(
-    "/{cooperative_id}/rules/decision/active", response_model=DecisionRuleRead
-)
+@router.get("/{cooperative_id}/rules/decision/active", response_model=DecisionRuleRead)
 async def get_active_decision_rule(
     cooperative_id: UUID,
     decision_type: str,

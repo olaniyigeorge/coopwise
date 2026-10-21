@@ -67,6 +67,11 @@ export function useBreakpoint(breakpoints: BreakpointConfig = defaultBreakpoints
   }
 }
 
+/** Boolean used by the sidebar. True below the `md` breakpoint (768px). */
+export function useIsMobile() {
+  return useBreakpoint().isMobile
+}
+
 export function useMobile() {
   const { isMobile, isSmallScreen, currentBreakpoint, windowSize } = useBreakpoint()
   

@@ -372,13 +372,10 @@ export default function ProfileSetupPage() {
       
       // Prepare the exact format expected by the API
       const updateData = {
-        id: user.id,
-        resource_owner_id: user.id,
         username: user.username,
         email: user.email,
         full_name: user.full_name,
         phone_number: user.phone_number,
-        role: user.role || "user",
         target_savings_amount: targetAmount ? parseFloat(targetAmount) : 0,
         savings_purpose: purpose || "",
         income_range: incomeRange === "below_50K" ? "below_50K" : 
@@ -388,10 +385,6 @@ export default function ProfileSetupPage() {
                      incomeRange === "range_350k_500k" ? "range_350k_500k" :
                      incomeRange === "above_50k" ? "above_50k" : "below_50K",
         saving_frequency: savingFrequency || "daily",
-        is_email_verified: user.is_email_verified !== undefined ? user.is_email_verified : false,
-        is_phone_verified: user.is_phone_verified !== undefined ? user.is_phone_verified : false,
-        created_at: user.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString()
       }
       
       console.log(`Updating user profile for user ID: ${user.id}`, updateData)

@@ -4,9 +4,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.co
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const notificationId = params.id
+  const { id: notificationId } = await params
 
   try {
     const body = await req.json()

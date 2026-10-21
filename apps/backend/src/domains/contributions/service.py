@@ -867,9 +867,7 @@ class ContributionService:
             .subquery()
         )
 
-        contribution_count = func.coalesce(
-            contribution_counts.c.contribution_count, 0
-        )
+        contribution_count = func.coalesce(contribution_counts.c.contribution_count, 0)
         member_count = func.coalesce(member_counts.c.member_count, 0)
 
         rows = (

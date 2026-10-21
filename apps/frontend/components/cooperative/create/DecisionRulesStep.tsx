@@ -152,6 +152,7 @@ export function DecisionRulesStep({ onContinue, onBack }: DecisionRulesStepProps
         await RulesService.createDecisionRule(cooperativeId, {
           decision_type: type,
           mechanism,
+          escalation_path: null,
         });
       }
       onContinue();

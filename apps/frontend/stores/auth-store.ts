@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import AuthService from '@/services/auth-service';
-import UserService from '@/services/user-service';
+import UserService, { type UpdateUserPayload } from '@/services/user-service';
 import CookieService from '@/services/cookie-service';
 
 export interface User {
@@ -45,7 +45,7 @@ interface AuthState {
   setIsAuthenticated: (isAuthenticated: boolean) => void;
   setUser: (user: User | null) => void;
   updateUser: (userData: Partial<User>) => void;
-  updateUserProfile: (data: Partial<User>) => Promise<User>;
+  updateUserProfile: (data: UpdateUserPayload) => Promise<User>;
   refreshUserData: () => Promise<void>;
   clearError: () => void;
   setLoading: (isLoading: boolean) => void;
@@ -170,7 +170,7 @@ const useAuthStore = create<AuthState>()(
 
         set({ isLoading: true, error: null });
         try {
-          const updatedUser = await UserService.updateUser(currentUser.id, profileData);
+          const updatedUser = await UserService.updateProfile(currentUser.id, profileData);
           const merged = { ...currentUser, ...updatedUser };
           set({ user: merged, isLoading: false });
           CookieService.setUser(merged);
@@ -189,7 +189,7 @@ const useAuthStore = create<AuthState>()(
 
         set({ isLoading: true });
         try {
-          const userData = await UserService.getUserById(currentUser.id);
+          const userData = await UserService.getProfile();
           set({ user: userData, isLoading: false });
         } catch (error) {
           console.error('Failed to refresh user data:', error);

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthService, { LoginCredentials, RegisterData } from '@/services/auth-service';
-import UserService from '@/services/user-service';
+import UserService, { type UpdateUserPayload } from '@/services/user-service';
 import { toast } from '@/components/ui/use-toast';
 
 // Define types
@@ -26,12 +26,9 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   clearError: () => void;
-  updateUserProfile: (data: any) => Promise<void>;
+  updateUserProfile: (data: UpdateUserPayload) => Promise<void>;
   refreshUserData: () => Promise<void>;
 }
-
-// Configuration - set to false for production
-const ENABLE_MOCK_FALLBACK = process.env.NEXT_PUBLIC_ENABLE_MOCK_FALLBACK === 'true' || false;
 
 // Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       // Get fresh user data from API
-      const userData = await UserService.getUserById(user.id);
+      const userData = await UserService.getProfile();
       setUser(userData);
       console.log("User data refreshed from API");
     } catch (error) {
@@ -216,7 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Update user profile using API
-  const updateUserProfile = async (profileData: any) => {
+  const updateUserProfile = async (profileData: UpdateUserPayload) => {
     if (!user || !isAuthenticated) {
       toast({
         title: "Error",
@@ -229,7 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       // Call the API to update user profile
-      const updatedUser = await UserService.updateUser(user.id, profileData);
+      const updatedUser = await UserService.updateProfile(user.id, profileData);
       
       // Update the local user state
       setUser(prevUser => {
@@ -243,34 +240,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (err: any) {
       console.error("Profile update error:", err);
-      
-      // Check if we should try the mock fallback
-      if (ENABLE_MOCK_FALLBACK) {
-        try {
-          console.log("Using mock update as fallback...");
-          
-          // Use mock update as fallback
-          const mockUpdatedUser = await UserService.mockUpdateUser(user.id, profileData) as User;
-          
-          // Update the local user state with mock data
-          setUser(prevUser => {
-            if (!prevUser) return mockUpdatedUser;
-            return { ...prevUser, ...mockUpdatedUser };
-          });
-          
-          toast({
-            title: "Profile Updated (Offline Mode)",
-            description: "Your profile has been updated in offline mode",
-          });
-          
-          // We don't throw an error here since we've handled it with the mock
-          return;
-        } catch (mockErr) {
-          console.error("Even mock update failed:", mockErr);
-          // If mock fails too, continue to the error handling below
-        }
-      }
-      
+
       // Extract error message
       let errorMessage = 'Failed to update your profile. Please try again.';
       if (err.response?.data?.detail) {

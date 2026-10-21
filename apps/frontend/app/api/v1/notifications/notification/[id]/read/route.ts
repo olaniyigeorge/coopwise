@@ -5,10 +5,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://coopwise.onrender.co
 
 export async function PATCH(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params;
+    const { id } = await context.params;
     
     // Forward auth header
     const authHeader = request.headers.get('Authorization');

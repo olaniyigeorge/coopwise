@@ -241,9 +241,7 @@ class CooperativeMembershipService:
         )
 
     @staticmethod
-    async def _resolve_invite_group_id(
-        db: AsyncSession, invite_code: str
-    ) -> UUID:
+    async def _resolve_invite_group_id(db: AsyncSession, invite_code: str) -> UUID:
         """Look up the cooperative behind an invite code.
 
         Accepts the short stored codes and, for links shared before this
@@ -262,9 +260,7 @@ class CooperativeMembershipService:
                 )
 
         result = await db.execute(
-            select(CoopInvitation).where(
-                CoopInvitation.invite_code == code.upper()
-            )
+            select(CoopInvitation).where(CoopInvitation.invite_code == code.upper())
         )
         invitation = result.scalars().first()
         if invitation is None:

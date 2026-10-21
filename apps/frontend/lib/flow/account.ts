@@ -24,13 +24,13 @@ export async function generatePasskeyForUser(
 ): Promise<{ credentialId: string; publicKeyHex: string }> {
   const credential = (await navigator.credentials.create({
     publicKey: {
-      challenge,
+      challenge: asBufferSource(challenge),
       rp: {
         name: "CoopWise",
         id: window.location.hostname,
       },
       user: {
-        id: new TextEncoder().encode(email),
+        id: asBufferSource(new TextEncoder().encode(email)),
         name: email,
         displayName: email,
       },
@@ -69,7 +69,7 @@ export async function signWithPasskey(
 ): Promise<{ signature: string; authenticatorData: string }> {
   const assertion = (await navigator.credentials.get({
     publicKey: {
-      challenge,
+      challenge: asBufferSource(challenge),
       allowCredentials: [
         {
           type: "public-key",
@@ -108,6 +108,14 @@ export async function isPlatformAuthenticatorAvailable(): Promise<boolean> {
 //
 // Internal helpers
 //
+
+/** Copies bytes into a standalone ArrayBuffer that DOM `BufferSource` accepts. */
+function asBufferSource(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength
+  ) as ArrayBuffer;
+}
 
 /**
  * Extracts the raw P-256 public key bytes (65 bytes: 0x04 || x || y)

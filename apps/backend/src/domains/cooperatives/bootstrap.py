@@ -48,7 +48,9 @@ async def seed_system_catalog() -> None:
         # Two instances booting at once can both see the empty table. The
         # loser of that race rolls back and keeps serving; the winner's rows
         # are already there, so this is not worth failing startup over.
-        logger.warning("System catalog seed lost a race with another instance; skipping")
+        logger.warning(
+            "System catalog seed lost a race with another instance; skipping"
+        )
         return
 
     if added_patterns or added_categories:

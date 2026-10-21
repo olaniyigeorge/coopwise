@@ -157,15 +157,19 @@ class CooperativeService:
         actor_uuid = UUID(str(acting_user_id))
         if cooperative.created_by != actor_uuid:
             admin_membership = (
-                await self._uow.session.execute(
-                    select(GroupMembership.id).where(
-                        GroupMembership.group_id == cooperative.id,
-                        GroupMembership.user_id == actor_uuid,
-                        GroupMembership.status == MembershipStatus.ACTIVE,
-                        GroupMembership.role == MembershipRole.admin,
+                (
+                    await self._uow.session.execute(
+                        select(GroupMembership.id).where(
+                            GroupMembership.group_id == cooperative.id,
+                            GroupMembership.user_id == actor_uuid,
+                            GroupMembership.status == MembershipStatus.ACTIVE,
+                            GroupMembership.role == MembershipRole.admin,
+                        )
                     )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             if admin_membership is None:
                 raise NotAuthorizedError()
 

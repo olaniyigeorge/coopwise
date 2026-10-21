@@ -29,7 +29,7 @@ export default function AIInsightsPage() {
   const [activeFilter, setActiveFilter] = useState<DifficultyLevel | 'all'>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const allInsights = useMemo(() => getUserInsights('1'), [])
+  const allInsights = useMemo(() => getUserInsights(), [])
 
   const filteredInsights = useMemo(() => {
     return filterInsights(allInsights, {

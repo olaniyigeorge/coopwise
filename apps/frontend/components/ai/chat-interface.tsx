@@ -292,7 +292,6 @@ export default function AIChatInterface() {
                           <div className="whitespace-pre-wrap text-sm">{message.content}</div>
                         ) : (
                           <div className="text-sm ai-message-content">
-                            {/* @ts-expect-error - React-markdown has TypeScript issues with Next.js */}
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                               {message.content}
                             </ReactMarkdown>
