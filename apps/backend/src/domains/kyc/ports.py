@@ -91,6 +91,8 @@ class IdentityVerificationProviderPort(Protocol):
 
 
 class BankVerificationProviderPort(Protocol):
+    async def list_banks(self) -> list[dict]: ...
+
     async def resolve_account_name(
         self, bank_code: str, account_number: str
     ) -> BankAccountVerificationResult: ...
