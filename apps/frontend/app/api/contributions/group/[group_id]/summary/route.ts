@@ -1,0 +1,12 @@
+import { backendFetch, forwardResponse } from "@/lib/server/backend"
+
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ group_id: string }> }
+) {
+  const { group_id } = await params
+  const response = await backendFetch(
+    `/api/v1/contributions/group/${group_id}/summary`
+  )
+  return forwardResponse(response)
+}
