@@ -16,9 +16,9 @@ import {
   Banknote,
   X,
 } from 'lucide-react'
-import useNotificationStore from '@/stores/notification-store'
 import { useDashboardChromeStore } from '@/stores/dashboard-chrome-store'
 import { cn } from '@/lib/utils'
+import ComingSoonWrapper from '@/components/ui/coming-soon-wrapper'
 
 interface SidebarProps {
   isOpen?: boolean
@@ -30,6 +30,7 @@ type NavItem = {
   href: string
   icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
   badge?: number
+  comingSoon?: boolean
 }
 
 function TrustScoreCard() {
@@ -93,7 +94,6 @@ function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
 
 export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
-  const { unreadCount } = useNotificationStore()
 
   const navItems: NavItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -106,7 +106,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       name: 'Messages',
       href: '/dashboard/messages',
       icon: MessageSquare,
-      badge: unreadCount > 0 ? unreadCount : undefined,
+      comingSoon: true,
     },
   ]
 
@@ -138,30 +138,57 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   }
 
   const renderNavItem = (item: NavItem) => {
-    const active = isActive(item.href)
+    const active = !item.comingSoon && isActive(item.href)
+    const className = cn(
+      'flex w-full items-center rounded-full px-4 py-2.5 text-left text-sm font-medium transition-colors',
+      active
+        ? 'bg-white/10 text-white'
+        : 'text-white/70 hover:bg-white/5 hover:text-white'
+    )
+    const inner = (
+      <>
+        <item.icon
+          className="h-5 w-5 shrink-0"
+          strokeWidth={active ? 2.1 : 1.8}
+        />
+        <span className="ml-3">{item.name}</span>
+        {item.comingSoon && (
+          <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/70">
+            Soon
+          </span>
+        )}
+        {!!item.badge && (
+          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E8762B] px-1.5 text-[10px] font-semibold text-white">
+            {item.badge > 9 ? '9+' : item.badge}
+          </span>
+        )}
+      </>
+    )
+
+    if (item.comingSoon) {
+      return (
+        <li key={item.name}>
+          <ComingSoonWrapper
+            title="Messages are coming soon"
+            description="Group messages are still being built. You’ll be able to talk with your cooperative here."
+          >
+            <button type="button" className={className}>
+              {inner}
+            </button>
+          </ComingSoonWrapper>
+        </li>
+      )
+    }
+
     return (
       <li key={item.name}>
         <Link
           href={item.href}
           onClick={handleLinkClick}
           aria-current={active ? 'page' : undefined}
-          className={cn(
-            'flex items-center rounded-full px-4 py-2.5 text-sm font-medium transition-colors',
-            active
-              ? 'bg-white/10 text-white'
-              : 'text-white/70 hover:bg-white/5 hover:text-white'
-          )}
+          className={className}
         >
-          <item.icon
-            className="h-5 w-5 shrink-0"
-            strokeWidth={active ? 2.1 : 1.8}
-          />
-          <span className="ml-3">{item.name}</span>
-          {!!item.badge && (
-            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E8762B] px-1.5 text-[10px] font-semibold text-white">
-              {item.badge > 9 ? '9+' : item.badge}
-            </span>
-          )}
+          {inner}
         </Link>
       </li>
     )
