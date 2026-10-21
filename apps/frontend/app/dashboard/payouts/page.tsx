@@ -8,7 +8,6 @@ import {
   Clock,
   AlertCircle,
   Loader2,
-  ExternalLink,
   RefreshCw,
   Lock,
 } from "lucide-react";
@@ -195,19 +194,6 @@ export default function PayoutsPage() {
                     Transferred on {formatDate(payout.transferred_at)}
                   </p>
                 )}
-
-                {/* On-chain verify link */}
-                {payout.explorer_url && (
-                  <a
-                    href={payout.explorer_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    Verify on-chain (encrypted)
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
               </li>
             ))}
           </ul>
@@ -215,8 +201,7 @@ export default function PayoutsPage() {
 
         {/* Footer */}
         <p className="text-[11px] text-center text-muted-foreground">
-          Amounts encrypted on-chain by Zama FHE · Stored encrypted in Postgres
-          (AES-256) · Visible only to you
+          Payout amounts are visible only to you and stored encrypted at rest.
         </p>
       </div>
     </DashboardLayout>
