@@ -127,11 +127,18 @@ const useAuthStore = create<AuthState>()(
           try {
             localStorage.removeItem('auth-storage');
             localStorage.removeItem('notifications-storage');
+            // Don't leak one member's trust standing into the next session.
+            localStorage.removeItem('coopwise-dashboard-chrome');
           } catch {}
         }
       },
 
-      clearAuthLocal: () => set({ user: null, isAuthenticated: false }),
+      clearAuthLocal: () => {
+        set({ user: null, isAuthenticated: false });
+        try {
+          localStorage.removeItem('coopwise-dashboard-chrome');
+        } catch {}
+      },
 
       setUser: (user: User | null) => {
         const current = get().user || ({} as User);
