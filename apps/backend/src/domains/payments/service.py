@@ -1,5 +1,6 @@
+import random
 import secrets
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
 import requests
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -448,33 +449,348 @@ class PayoutService:
         )
         counts_by_user = dict(payout_counts.all())
 
-        return min(members, key=lambda m: counts_by_user.get(m.user_id, 0))
+        return await PayoutService._select_next_recipient(
+            db, group_id, members, counts_by_user
+        )
 
     @staticmethod
     async def get_payable_amount(db: AsyncSession, group_id: UUID) -> Decimal:
-        last_payout = await db.execute(
-            select(PayoutRecord.completed_at)
-            .where(
-                PayoutRecord.group_id == group_id,
-                PayoutRecord.status == PayoutStatus.completed,
+        """
+        Cooperative wallet: completed contributions add to it, and payouts
+        that are pending, transferring, or completed take from it.
+        A failed payout is not subtracted, so that money stays in the coop.
+        """
+        contributed = await db.execute(
+            select(func.coalesce(func.sum(Contribution.amount), 0)).where(
+                Contribution.group_id == group_id,
+                Contribution.status == ContributionStatus.completed,
             )
-            .order_by(PayoutRecord.completed_at.desc())
-            .limit(1)
         )
-        since = last_payout.scalar_one_or_none()
-        if since is None:
-            group = await db.get(CoopCooperative, group_id)
-            since = group.created_at if group else None
-
-        query = select(func.coalesce(func.sum(Contribution.amount), 0)).where(
-            Contribution.group_id == group_id,
-            Contribution.status == ContributionStatus.completed,
+        paid_out = await db.execute(
+            select(func.coalesce(func.sum(PayoutRecord.amount), 0)).where(
+                PayoutRecord.group_id == group_id,
+                PayoutRecord.status.in_(
+                    [
+                        PayoutStatus.pending,
+                        PayoutStatus.processing,
+                        PayoutStatus.completed,
+                    ]
+                ),
+            )
         )
-        if since is not None:
-            query = query.where(Contribution.fulfilled_at > since)
+        balance = Decimal(contributed.scalar_one()) - Decimal(paid_out.scalar_one())
+        return balance if balance > 0 else Decimal(0)
 
-        result = await db.execute(query)
-        return Decimal(result.scalar_one())
+    @staticmethod
+    def _enum_value(value) -> str | None:
+        if value is None:
+            return None
+        return value.value if hasattr(value, "value") else str(value)
+
+    @staticmethod
+    async def _financial_rule(db: AsyncSession, group_id: UUID):
+        from src.domains.cooperatives.exceptions import RuleNotFoundError
+        from src.domains.cooperatives.services.rule_services import FinancialRuleService
+        from src.domains.cooperatives.uow import UnitOfWork
+
+        try:
+            return await FinancialRuleService(UnitOfWork(db)).get_active(group_id)
+        except RuleNotFoundError:
+            return None
+
+    @staticmethod
+    async def _payout_decision(db: AsyncSession, group_id: UUID):
+        from src.domains.cooperatives.exceptions import RuleNotFoundError
+        from src.domains.cooperatives.services.rule_services import DecisionRuleService
+        from src.domains.cooperatives.uow import UnitOfWork
+
+        try:
+            return await DecisionRuleService(UnitOfWork(db)).get_active(
+                group_id, "payout_order"
+            )
+        except RuleNotFoundError:
+            return None
+
+    @staticmethod
+    def _allows_automatic(rule, decision) -> bool:
+        """Rotation and lottery pay themselves. Admin, vote, and AI wait for a trigger."""
+        if rule is None:
+            return False
+        mechanism = PayoutService._enum_value(
+            getattr(decision, "mechanism", None) if decision else None
+        )
+        if mechanism in ("admin", "vote", "ai_suggested"):
+            return False
+        return True
+
+    @staticmethod
+    async def _select_next_recipient(
+        db: AsyncSession,
+        group_id: UUID,
+        members: List[GroupMembership],
+        counts_by_user: Dict[Any, int],
+    ) -> GroupMembership:
+        rule = await PayoutService._financial_rule(db, group_id)
+        decision = await PayoutService._payout_decision(db, group_id)
+        min_count = min(counts_by_user.get(member.user_id, 0) for member in members)
+        candidates = [
+            member
+            for member in members
+            if counts_by_user.get(member.user_id, 0) == min_count
+        ]
+
+        strategy = PayoutService._enum_value(getattr(rule, "payout_strategy", None))
+        rotation = PayoutService._enum_value(getattr(rule, "rotation_order", None))
+        mechanism = PayoutService._enum_value(
+            getattr(decision, "mechanism", None) if decision else None
+        )
+
+        if mechanism == "lottery" or (
+            strategy == "rotating" and rotation == "random"
+        ):
+            return random.choice(candidates)
+
+        if strategy == "priority":
+            totals = await PayoutService._contribution_totals(
+                db, group_id, [member.user_id for member in candidates]
+            )
+            order = {member.user_id: index for index, member in enumerate(candidates)}
+            return max(
+                candidates,
+                key=lambda member: (
+                    totals.get(member.user_id, Decimal(0)),
+                    -order[member.user_id],
+                ),
+            )
+
+        return candidates[0]
+
+    @staticmethod
+    async def _contribution_totals(
+        db: AsyncSession, group_id: UUID, user_ids: List[UUID]
+    ) -> Dict[UUID, Decimal]:
+        if not user_ids:
+            return {}
+        rows = await db.execute(
+            select(Contribution.user_id, func.coalesce(func.sum(Contribution.amount), 0))
+            .where(
+                Contribution.group_id == group_id,
+                Contribution.user_id.in_(user_ids),
+                Contribution.status == ContributionStatus.completed,
+            )
+            .group_by(Contribution.user_id)
+        )
+        return {user_id: Decimal(total) for user_id, total in rows.all()}
+
+    @staticmethod
+    async def _has_inflight(db: AsyncSession, group_id: UUID) -> bool:
+        inflight = await db.execute(
+            select(func.count(PayoutRecord.id)).where(
+                PayoutRecord.group_id == group_id,
+                PayoutRecord.status.in_(
+                    [PayoutStatus.pending, PayoutStatus.processing]
+                ),
+            )
+        )
+        return inflight.scalar_one() > 0
+
+    @staticmethod
+    async def _round_is_funded(db: AsyncSession, group_id: UUID, rule, members) -> bool:
+        if rule is None or not members:
+            return False
+        target = Decimal(str(rule.contribution_amount or 0)) * len(members)
+        if target <= 0:
+            return False
+        available = await PayoutService.get_payable_amount(db, group_id)
+        return available >= target
+
+    @staticmethod
+    async def dispatch_payout(
+        db: AsyncSession, group_id: UUID, *, automatic: bool
+    ) -> List[PayoutRecord]:
+        """
+        Pay the next turn, or every member an equal share, using the
+        cooperative's financial rule and payout-order decision.
+
+        Automatic runs only for rotation and lottery (or when no decision
+        rule overrides them) and only once the round's contributions are in.
+        Admin, vote, and AI-suggested payouts wait for an explicit trigger.
+        """
+        rule = await PayoutService._financial_rule(db, group_id)
+        decision = await PayoutService._payout_decision(db, group_id)
+        if automatic:
+            if not PayoutService._allows_automatic(rule, decision):
+                return []
+            if await PayoutService._has_inflight(db, group_id):
+                return []
+            members = await PayoutService._active_members_in_join_order(db, group_id)
+            if not await PayoutService._round_is_funded(db, group_id, rule, members):
+                return []
+
+        strategy = PayoutService._enum_value(getattr(rule, "payout_strategy", None))
+        currency = (
+            PayoutService._enum_value(getattr(rule, "currency", None)) or "NGN"
+        )
+        try:
+            if strategy == "equal":
+                return await PayoutService._execute_equal_split(
+                    db, group_id, currency=currency
+                )
+            return [
+                await PayoutService.execute_payout(
+                    db, group_id, currency=currency
+                )
+            ]
+        except PayoutError:
+            if automatic:
+                logger.info(
+                    "Automatic payout skipped for group %s", group_id
+                )
+                return []
+            raise
+
+    @staticmethod
+    async def _execute_equal_split(
+        db: AsyncSession, group_id: UUID, currency: str = "NGN"
+    ) -> List[PayoutRecord]:
+        group = await db.get(CoopCooperative, group_id)
+        if not group:
+            raise PayoutError("Group not found")
+        if group.status != "active":
+            raise PayoutError("Group is not active")
+
+        members = await PayoutService._active_members_in_join_order(db, group_id)
+        if len(members) < 2:
+            raise PayoutError("Minimum 2 active members required for payouts")
+
+        amount = await PayoutService.get_payable_amount(db, group_id)
+        if amount <= 0:
+            raise PayoutError("No funds available to pay out")
+
+        share = (amount / len(members)).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+        if share <= 0:
+            raise PayoutError("No funds available to pay out")
+
+        round_number = await PayoutService.get_current_round(db, group_id)
+        paid: List[PayoutRecord] = []
+        allocated = Decimal(0)
+        for index, member in enumerate(members):
+            member_share = (
+                amount - allocated if index == len(members) - 1 else share
+            )
+            allocated += member_share
+            try:
+                paid.append(
+                    await PayoutService._disburse(
+                        db,
+                        group,
+                        member.user_id,
+                        member_share,
+                        round_number,
+                        currency,
+                    )
+                )
+            except PayoutError as exc:
+                logger.info(
+                    "Skipping equal-split payout for user %s: %s",
+                    member.user_id,
+                    exc,
+                )
+        if not paid:
+            raise PayoutError(
+                "No member has completed verified bank-account KYC"
+            )
+        return paid
+
+    @staticmethod
+    async def list_for_user(db: AsyncSession, user_id: UUID, limit: int = 20):
+        rows = await db.execute(
+            select(PayoutRecord, CoopCooperative.name)
+            .join(CoopCooperative, CoopCooperative.id == PayoutRecord.group_id)
+            .where(PayoutRecord.user_id == user_id)
+            .order_by(PayoutRecord.created_at.desc())
+            .limit(limit)
+        )
+        return [
+            {
+                "id": record.id,
+                "group_id": record.group_id,
+                "group_name": name,
+                "round_number": record.round_number,
+                "amount": record.amount,
+                "currency": record.currency,
+                "status": record.status,
+                "failure_reason": record.failure_reason,
+                "created_at": record.created_at,
+                "completed_at": record.completed_at,
+            }
+            for record, name in rows.all()
+        ]
+
+    @staticmethod
+    async def list_upcoming_for_user(db: AsyncSession, user_id: UUID):
+        from src.domains.users.models import User
+
+        memberships = await db.execute(
+            select(GroupMembership, CoopCooperative)
+            .join(CoopCooperative, CoopCooperative.id == GroupMembership.group_id)
+            .where(
+                GroupMembership.user_id == user_id,
+                GroupMembership.status == "active",
+                CoopCooperative.status == "active",
+            )
+            .order_by(CoopCooperative.name.asc())
+        )
+        items = []
+        for membership, group in memberships.all():
+            rule = await PayoutService._financial_rule(db, group.id)
+            decision = await PayoutService._payout_decision(db, group.id)
+            members = await PayoutService._active_members_in_join_order(db, group.id)
+            recipient = await PayoutService.get_next_recipient(db, group.id)
+            payable = await PayoutService.get_payable_amount(db, group.id)
+            inflight = await PayoutService._has_inflight(db, group.id)
+            automatic = PayoutService._allows_automatic(rule, decision)
+            funded = await PayoutService._round_is_funded(db, group.id, rule, members)
+            strategy = (
+                PayoutService._enum_value(getattr(rule, "payout_strategy", None))
+                or "rotating"
+            )
+            role = PayoutService._enum_value(membership.role)
+            is_admin = role == "admin"
+            is_my_turn = (
+                strategy == "equal" or (recipient is not None and recipient.user_id == user_id)
+            )
+            names = {}
+            if recipient is not None:
+                user = await db.get(User, recipient.user_id)
+                if user is not None:
+                    names[recipient.user_id] = user.full_name
+            show_amount = is_admin or is_my_turn
+            can_trigger = (
+                is_admin
+                and not inflight
+                and payable > 0
+                and len(members) >= 2
+                and (not automatic or funded)
+            )
+            items.append(
+                {
+                    "group_id": group.id,
+                    "group_name": group.name,
+                    "strategy": strategy,
+                    "trigger": "automatic" if automatic else "admin",
+                    "is_my_turn": is_my_turn,
+                    "next_recipient_name": names.get(recipient.user_id) if recipient else None,
+                    "payable_amount": float(payable) if show_amount else None,
+                    "currency": PayoutService._enum_value(getattr(rule, "currency", None))
+                    or "NGN",
+                    "round_number": await PayoutService.get_current_round(db, group.id),
+                    "funded": funded,
+                    "inflight": inflight,
+                    "can_trigger": can_trigger,
+                }
+            )
+        return items
 
     @staticmethod
     async def check_payout_readiness(
@@ -525,19 +841,31 @@ class PayoutService:
         if amount <= 0:
             raise PayoutError("No funds available to pay out")
 
+        round_number = await PayoutService.get_current_round(db, group_id)
+        return await PayoutService._disburse(
+            db, group, recipient.user_id, amount, round_number, currency
+        )
+
+    @staticmethod
+    async def _disburse(
+        db: AsyncSession,
+        group: CoopCooperative,
+        user_id: UUID,
+        amount: Decimal,
+        round_number: int,
+        currency: str,
+    ) -> PayoutRecord:
         kyc = await db.execute(
-            select(KYCVerification).where(KYCVerification.user_id == recipient.user_id)
+            select(KYCVerification).where(KYCVerification.user_id == user_id)
         )
         kyc_verification = kyc.scalars().first()
         banking_info = kyc_verification.banking_info if kyc_verification else None
         if not banking_info or not banking_info.provider_verified:
             raise PayoutError("Recipient has not completed verified bank-account KYC")
 
-        round_number = await PayoutService.get_current_round(db, group_id)
-
         payout_record = PayoutRecord(
-            group_id=group_id,
-            user_id=recipient.user_id,
+            group_id=group.id,
+            user_id=user_id,
             round_number=round_number,
             amount=amount,
             currency=currency,
