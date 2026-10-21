@@ -19,11 +19,30 @@ export interface LeaderboardCircle {
   member_count: number;
   contribution_count: number;
   contributor_count: number;
+  score: number;
+  activity_count: number;
+  goal_count: number;
+  goals_completed: number;
+  join_requests: number;
+  invite_count: number;
+}
+
+export interface LeaderboardMember {
+  user_id: string;
+  name: string;
+  score: number;
+  activity_count: number;
+  contribution_count: number;
+  goals_created: number;
+  goals_completed: number;
+  join_requests: number;
+  invite_count: number;
 }
 
 export interface LeaderboardData {
   platform_stats: PlatformStats;
   top_circles: LeaderboardCircle[];
+  top_members: LeaderboardMember[];
 }
 
 interface UseLeaderboardResult {
@@ -36,8 +55,8 @@ interface UseLeaderboardResult {
 // ─── Hook
 
 /**
- * Fetches the activity leaderboard — contribution counts only.
- * No amounts are ever returned from this endpoint.
+ * Activity leaderboard. Scores use counts (activity, contributions, goals,
+ * join requests, invites). Amounts are never returned.
  */
 export function useLeaderboard(): UseLeaderboardResult {
   const [data, setData] = useState<LeaderboardData | null>(null);
