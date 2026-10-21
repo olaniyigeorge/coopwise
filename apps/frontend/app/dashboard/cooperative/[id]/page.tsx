@@ -26,10 +26,14 @@ import {
   Check,
   Loader2,
   Wallet,
+  CreditCard,
 } from 'lucide-react'
 import CooperativeService from '@/services/cooperative-service'
 import GoalService from '@/services/goal-service'
-import ContributionService, { GoalProgress } from '@/services/contribution-service'
+import ContributionService, {
+  GoalProgress,
+  GroupContributionSummary,
+} from '@/services/contribution-service'
 import { getDashboardData } from '@/services/dashboard-service'
 import { getApiErrorDetail } from '@/lib/api-error'
 import DashboardLayout from '@/components/dashboard/layout'
@@ -87,6 +91,24 @@ const itemVariants: Variants = {
 // Keep the activity feed short; the rest is one click away.
 const ACTIVITY_VISIBLE_LIMIT = 8
 
+// A cooperative is only "verified" once it has been activated. Until then the
+// badge must not claim otherwise — a pending group is exactly that.
+const COOP_STATUS_STYLES: Record<string, string> = {
+  active:
+    'bg-[#DFF0E4] text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]',
+  pending:
+    'bg-[#FBF1D0] text-[#8A6516] dark:bg-[#3A3120] dark:text-[#E8BC63]',
+  paused:
+    'bg-[#FBF1D0] text-[#8A6516] dark:bg-[#3A3120] dark:text-[#E8BC63]',
+  draft: 'bg-content/5 text-content/55',
+  archived: 'bg-content/5 text-content/45',
+}
+
+function statusLabel(status?: string | null) {
+  if (!status) return 'Unknown'
+  return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
 const buttonHover: Variants = {
   hover: {
     scale: 1.03,
@@ -142,6 +164,8 @@ export default function CooperativeDetailPage() {
   const [isContributing, setIsContributing] = useState(false)
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [goalProgress, setGoalProgress] = useState<Record<string, GoalProgress>>({})
+  const [groupSummary, setGroupSummary] = useState<GroupContributionSummary | null>(null)
+  const [activating, setActivating] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -196,17 +220,42 @@ export default function CooperativeDetailPage() {
     })
   }, [goals])
 
+  // Group-wide contributed total. Applicants can't see it yet (the endpoint
+  // requires active membership), so a failure just leaves the fallback in use.
+  useEffect(() => {
+    if (!id) return
+    ContributionService.getGroupContributionSummary(id)
+      .then(setGroupSummary)
+      .catch(() => setGroupSummary(null))
+  }, [id])
+
   const refreshAfterContribution = async () => {
-    const [activityData, memberData] = await Promise.all([
+    const [activityData, memberData, summary] = await Promise.all([
       CooperativeService.getCooperativeActivities(id),
       CooperativeService.getCooperativeMembers(id),
+      ContributionService.getGroupContributionSummary(id).catch(() => null),
     ])
     setActivities(activityData)
     setMembers(memberData)
-    if (contributeGoalId !== "none") {
-      const progress = await ContributionService.getGoalProgress(contributeGoalId)
-      setGoalProgress((prev) => ({ ...prev, [contributeGoalId]: progress }))
-    }
+    if (summary) setGroupSummary(summary)
+
+    // Refresh every goal, not just the selected one: a Paystack return
+    // remounts this page (selected goal resets) but the goal tiles must still
+    // reflect the new contribution.
+    const progressResults = await Promise.all(
+      goals.map((goal) =>
+        ContributionService.getGoalProgress(goal.id)
+          .then((progress) => [goal.id, progress] as const)
+          .catch(() => null)
+      )
+    )
+    setGoalProgress((prev) => {
+      const next = { ...prev }
+      for (const entry of progressResults) {
+        if (entry) next[entry[0]] = entry[1]
+      }
+      return next
+    })
   }
 
   // Paystack sends the member back here (via the backend callback) with the
@@ -310,6 +359,24 @@ export default function CooperativeDetailPage() {
     }
   }
 
+  const handleActivate = async () => {
+    if (activating) return
+    setActivating(true)
+    try {
+      const updated = await CooperativeService.activateCooperative(id)
+      setCooperative(updated)
+      toast.success('Cooperative activated', {
+        description: 'Members can now contribute and invite others.',
+      })
+    } catch (err) {
+      toast.error(
+        getApiErrorDetail(err)?.message ?? 'Could not activate this cooperative.'
+      )
+    } finally {
+      setActivating(false)
+    }
+  }
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -358,6 +425,44 @@ export default function CooperativeDetailPage() {
     { id: 'activity', label: 'Activity' },
   ] as const
 
+  const selectedGoalProgress =
+    contributeGoalId !== 'none' ? goalProgress[contributeGoalId] : undefined
+
+  const coopStatus = String(cooperative.status ?? '').toLowerCase()
+  const coopStatusStyle =
+    COOP_STATUS_STYLES[coopStatus] ?? 'bg-content/5 text-content/55'
+
+  // Only the creator or an admin member can take a pending cooperative live;
+  // everyone else waits for one of them.
+  const myRole = (myMembership?.role ?? '').toLowerCase()
+  const canActivate =
+    coopStatus === 'pending' &&
+    (myRole === 'admin' || cooperative.created_by === currentUser?.id)
+
+  // What the group has actually pooled. The summary endpoint includes general
+  // contributions; the goal-progress sum is the fallback while it loads (or
+  // for applicants, who can't call it yet).
+  const goalContributedTotal = Object.values(goalProgress).reduce(
+    (sum, progress) => sum + (progress.contributed_amount ?? 0),
+    0
+  )
+  const groupContributed = groupSummary?.total_contributed ?? goalContributedTotal
+  const goalTargetTotal = goals.reduce(
+    (sum, goal) => sum + (goal.target_amount ?? 0),
+    0
+  )
+  // Match the numerator to goals that actually have a target, so a goal with
+  // no target can't push the combined percentage above what's funded.
+  const goalRaisedTowardTargets = goals.reduce(
+    (sum, goal) =>
+      sum + (goal.target_amount ? (goalProgress[goal.id]?.contributed_amount ?? 0) : 0),
+    0
+  )
+  const overallGoalPercent =
+    goalTargetTotal > 0
+      ? Math.min(Math.round((goalRaisedTowardTargets / goalTargetTotal) * 100), 100)
+      : null
+
   return (
     <DashboardLayout>
       <motion.div
@@ -377,12 +482,36 @@ export default function CooperativeDetailPage() {
           </button>
 
           <div className={isPending || wasRejected ? 'hidden' : 'flex flex-wrap items-center gap-2.5'}>
+            {canActivate && (
+              <motion.button
+                variants={buttonHover}
+                whileHover="hover"
+                whileTap="tap"
+                onClick={handleActivate}
+                disabled={activating}
+                className="inline-flex items-center gap-2 rounded-full bg-[#B8892B] px-5 py-2.5 text-sm font-semibold text-[#0B1712] transition-colors hover:bg-[#C99A3A] disabled:opacity-60"
+              >
+                {activating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="w-4 h-4" />
+                )}
+                {activating ? 'Activating…' : 'Activate cooperative'}
+              </motion.button>
+            )}
+
             <motion.button
               variants={buttonHover}
-              whileHover="hover"
-              whileTap="tap"
+              whileHover={coopStatus === 'active' ? 'hover' : undefined}
+              whileTap={coopStatus === 'active' ? 'tap' : undefined}
               onClick={() => setShowContributeDialog(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-[#0E3B2E] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0A2E24]"
+              disabled={coopStatus !== 'active'}
+              title={
+                coopStatus === 'active'
+                  ? undefined
+                  : 'Contributions open once this cooperative is activated.'
+              }
+              className="inline-flex items-center gap-2 rounded-full bg-[#0E3B2E] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0A2E24] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Wallet className="w-4 h-4" />
               Contribute
@@ -442,6 +571,25 @@ export default function CooperativeDetailPage() {
           </motion.div>
         )}
 
+        {coopStatus === 'pending' && !isPending && !wasRejected && (
+          <motion.div
+            variants={itemVariants}
+            className="flex items-start gap-3 rounded-2xl border border-[#EAD9AC] bg-[#FBF3DE] px-5 py-4 dark:border-[#5A4A22] dark:bg-[#2E2818]"
+          >
+            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-[#8A6516] dark:text-[#E8BC63]" />
+            <div>
+              <p className="text-sm font-semibold text-[#7A5A14] dark:text-[#E8BC63]">
+                This cooperative is pending activation
+              </p>
+              <p className="mt-0.5 text-sm text-[#8A6A28] dark:text-[#D8C08A]">
+                {canActivate
+                  ? 'Activate it to start collecting contributions and inviting members. Nothing can be paid in until then, which is why the total reads ₦0.'
+                  : 'An organizer needs to activate it before contributions can begin.'}
+              </p>
+            </div>
+          </motion.div>
+        )}
+
         {/* Cooperative hero */}
         <motion.div
           variants={itemVariants}
@@ -458,8 +606,10 @@ export default function CooperativeDetailPage() {
                     {cooperative.name}
                   </h1>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-[#DFF0E4] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]">
-                      {cooperative.status}
+                    <span
+                      className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${coopStatusStyle}`}
+                    >
+                      {statusLabel(cooperative.status)}
                     </span>
                     <span className="rounded-full bg-content/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-content/60">
                       {cooperative.coop_model}
@@ -482,10 +632,19 @@ export default function CooperativeDetailPage() {
                     year: 'numeric',
                   })}
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="h-4 w-4 text-[#1F7A54] dark:text-[#7FBF9C]" />
-                  Verified cooperative
-                </span>
+                {coopStatus === 'active' ? (
+                  <span className="flex items-center gap-1.5">
+                    <ShieldCheck className="h-4 w-4 text-[#1F7A54] dark:text-[#7FBF9C]" />
+                    Verified cooperative
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-[#8A6516] dark:text-[#E8BC63]" />
+                    {coopStatus === 'pending'
+                      ? 'Pending activation'
+                      : `${statusLabel(cooperative.status)} cooperative`}
+                  </span>
+                )}
                 <span className="flex items-center gap-1.5 font-mono text-content/40">
                   ID: {cooperative.id.slice(0, 8)}…
                 </span>
@@ -514,6 +673,34 @@ export default function CooperativeDetailPage() {
                 <p className="mt-1 text-[11px] font-medium text-content/55">
                   Goal{goals.length === 1 ? '' : 's'}
                 </p>
+              </div>
+
+              {/* The number members actually care about: what the group has pooled. */}
+              <div className="col-span-2 flex items-center justify-between gap-4 rounded-2xl bg-[#0E3B2E] p-4 text-white dark:bg-[#173B2C]">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
+                    Total contributed
+                  </p>
+                  <p className="mt-1.5 font-display text-2xl font-bold leading-none tracking-tight">
+                    {formatCurrency(groupContributed)}
+                  </p>
+                  <p className="mt-1.5 truncate text-[11px] text-white/50">
+                    {groupSummary && groupSummary.contribution_count > 0
+                      ? `${groupSummary.contributor_count} contributor${
+                          groupSummary.contributor_count === 1 ? '' : 's'
+                        } · ${groupSummary.contribution_count} contribution${
+                          groupSummary.contribution_count === 1 ? '' : 's'
+                        }`
+                      : goalContributedTotal > 0
+                        ? 'Raised across group goals'
+                        : coopStatus === 'active'
+                          ? 'No contributions yet'
+                          : 'Contributions open once this cooperative is active'}
+                  </p>
+                </div>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-[#E8BC63]">
+                  <Wallet className="h-4 w-4" />
+                </span>
               </div>
             </div>
           </div>
@@ -596,28 +783,94 @@ export default function CooperativeDetailPage() {
                         </Link>
                       </div>
                     ) : (
-                      <div className="mt-4 space-y-2">
-                        {goals.slice(0, 3).map((goal) => (
-                          <div
-                            key={goal.id}
-                            className="flex items-center justify-between gap-3 rounded-2xl bg-content/[0.03] p-3.5"
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-content">
-                                {goal.name}
-                              </p>
-                              <p className="mt-0.5 text-[11px] capitalize text-content/45">
-                                {goal.status}
-                              </p>
+                      <>
+                        {goalTargetTotal > 0 &&
+                          goals.some((goal) => goalProgress[goal.id]) && (
+                            <div className="mt-4 rounded-2xl bg-content/[0.03] px-4 py-3">
+                              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                                <p className="text-sm font-semibold text-content">
+                                  {formatCurrency(goalRaisedTowardTargets)}
+                                  <span className="font-normal text-content/45">
+                                    {' '}raised of {formatCurrency(goalTargetTotal)}
+                                  </span>
+                                </p>
+                                <span className="text-[11px] font-semibold text-[#1F7A54] dark:text-[#7FBF9C]">
+                                  {overallGoalPercent}% funded
+                                </span>
+                              </div>
+                              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-content/[0.07]">
+                                <div
+                                  className="h-full rounded-full bg-gradient-to-r from-[#1F7A54] to-[#7FBF9C] transition-all"
+                                  style={{ width: `${overallGoalPercent ?? 0}%` }}
+                                />
+                              </div>
                             </div>
-                            {goal.target_amount != null && (
-                              <span className="shrink-0 text-xs font-semibold text-content/70">
-                                {goal.currency} {goal.target_amount.toLocaleString()}
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                          )}
+
+                        <div className="mt-2 space-y-2">
+                          {goals.slice(0, 3).map((goal) => {
+                            const progress = goalProgress[goal.id]
+                            const contributed = progress?.contributed_amount ?? 0
+                            const percent = progress
+                              ? (progress.percent_complete ??
+                                (goal.target_amount
+                                  ? Math.min((contributed / goal.target_amount) * 100, 100)
+                                  : null))
+                              : null
+                            return (
+                              <div
+                                key={goal.id}
+                                className="rounded-2xl bg-content/[0.03] p-3.5"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-semibold text-content">
+                                      {goal.name}
+                                    </p>
+                                    <p className="mt-0.5 text-[11px] capitalize text-content/45">
+                                      {goal.status}
+                                    </p>
+                                  </div>
+                                  <div className="shrink-0 text-right">
+                                    <p className="text-sm font-semibold tabular-nums text-content">
+                                      {progress ? formatCurrency(contributed) : '—'}
+                                    </p>
+                                    {goal.target_amount != null && (
+                                      <p className="text-[11px] tabular-nums text-content/40">
+                                        of {formatCurrency(goal.target_amount)}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                {goal.target_amount != null && (
+                                  <div className="mt-2.5 flex items-center gap-2">
+                                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-content/[0.07]">
+                                      <div
+                                        className="h-full rounded-full bg-gradient-to-r from-[#1F7A54] to-[#7FBF9C] transition-all"
+                                        style={{ width: `${Math.min(percent ?? 0, 100)}%` }}
+                                      />
+                                    </div>
+                                    <span className="w-9 shrink-0 text-right text-[11px] font-semibold tabular-nums text-content/55">
+                                      {percent != null ? `${Math.round(percent)}%` : '—'}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+
+                        {goals.length > 3 && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('goals')}
+                            className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#1F7A54] transition-colors hover:text-[#0E3B2E] dark:text-[#7FBF9C] dark:hover:text-[#B7E3C3]"
+                          >
+                            View all {goals.length} goals
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -637,8 +890,14 @@ export default function CooperativeDetailPage() {
                       </div>
                       <div className="flex justify-between gap-3 border-b border-content/[0.06] py-2.5">
                         <span className="text-content/50">Status</span>
-                        <span className="font-semibold uppercase text-[#1F7A54] dark:text-[#7FBF9C]">
-                          {cooperative.status}
+                        <span
+                          className={`font-semibold uppercase ${
+                            coopStatus === 'active'
+                              ? 'text-[#1F7A54] dark:text-[#7FBF9C]'
+                              : 'text-[#8A6516] dark:text-[#E8BC63]'
+                          }`}
+                        >
+                          {statusLabel(cooperative.status)}
                         </span>
                       </div>
                       <div className="flex justify-between gap-3 py-2.5">
@@ -733,7 +992,7 @@ export default function CooperativeDetailPage() {
                         <p className="mt-3 text-xs text-content/55">
                           Target:{' '}
                           <span className="font-semibold text-content/80">
-                            {goal.currency} {goal.target_amount.toLocaleString()}
+                            {formatCurrency(goal.target_amount)}
                           </span>
                           {goal.target_date &&
                             ` · Due ${new Date(goal.target_date).toLocaleDateString()}`}
@@ -748,8 +1007,7 @@ export default function CooperativeDetailPage() {
                             />
                           </div>
                           <p className="text-xs text-content/50">
-                            {goalProgress[goal.id].currency}{' '}
-                            {goalProgress[goal.id].contributed_amount.toLocaleString()} raised
+                            {formatCurrency(goalProgress[goal.id].contributed_amount)} raised
                             {goalProgress[goal.id].percent_complete != null &&
                               ` · ${goalProgress[goal.id].percent_complete}% funded`}
                             {' · '}
@@ -947,42 +1205,55 @@ export default function CooperativeDetailPage() {
       <Dialog open={showContributeDialog} onOpenChange={setShowContributeDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Make a contribution</DialogTitle>
+            <DialogTitle className="text-xl">Make a contribution</DialogTitle>
             <DialogDescription>
-              Pay from your CoopWise wallet balance, or directly with Paystack
-              {walletBalance != null && (
-                <span className="mt-1 flex items-center justify-between text-xs text-content/50">
-                  <span>Available balance: <span className="font-semibold text-content/75">{formatCurrency(walletBalance, 2)}</span></span>
-                  <Link href="/dashboard/wallet/fund" className="font-semibold text-[#1F7A54] hover:text-[#0E3B2E] dark:text-[#7FBF9C] dark:hover:text-[#B7E3C3]">
-                    Fund wallet
-                  </Link>
-                </span>
-              )}
+              Add to {cooperative?.name ?? "the cooperative"} from your wallet or
+              with Paystack.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="contribute-amount">Amount</Label>
-              <Input
-                id="contribute-amount"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="e.g. 5000"
-                value={contributeAmount}
-                onChange={(e) => setContributeAmount(e.target.value)}
-              />
+
+          <div className="mt-1 space-y-5">
+            {/* Amount */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="contribute-amount"
+                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-content/45"
+              >
+                Amount
+              </Label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-display text-lg font-bold text-content/35">
+                  ₦
+                </span>
+                <Input
+                  id="contribute-amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={contributeAmount}
+                  onChange={(e) => setContributeAmount(e.target.value)}
+                  className="h-14 rounded-xl border-content/15 bg-content/[0.03] pl-10 pr-4 font-display text-2xl font-bold tracking-tight md:text-2xl [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+              </div>
             </div>
 
+            {/* Goal */}
             {goals.length > 0 && (
-              <div className="space-y-1.5">
-                <Label>Apply toward a goal (optional)</Label>
+              <div className="space-y-2">
+                <Label className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] text-content/45">
+                  <span>Goal</span>
+                  <span className="font-medium normal-case tracking-normal text-content/35">
+                    Optional
+                  </span>
+                </Label>
                 <Select value={contributeGoalId} onValueChange={setContributeGoalId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="No specific goal" />
+                  <SelectTrigger className="h-11 rounded-xl border-content/15">
+                    <SelectValue placeholder="General contribution" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No specific goal</SelectItem>
+                    <SelectItem value="none">General contribution</SelectItem>
                     {goals.map((goal) => (
                       <SelectItem key={goal.id} value={goal.id}>
                         {goal.name}
@@ -990,31 +1261,67 @@ export default function CooperativeDetailPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {selectedGoalProgress?.target_amount != null && (
+                  <p className="text-[11px] text-content/45">
+                    {formatCurrency(selectedGoalProgress.contributed_amount)} of{" "}
+                    {formatCurrency(selectedGoalProgress.target_amount)} funded
+                    {selectedGoalProgress.percent_complete != null &&
+                      ` · ${Math.round(selectedGoalProgress.percent_complete)}%`}
+                  </p>
+                )}
               </div>
             )}
 
-            <Button
-              type="button"
-              className="w-full"
-              disabled={isContributing}
-              onClick={handleContribute}
-            >
-              {isContributing ? (
-                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-              ) : (
-                <Wallet className="w-4 h-4 mr-1.5" />
-              )}
-              Contribute from wallet
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full border-[#1F7A54] text-[#1F7A54] hover:bg-[#1F7A54]/5 hover:text-[#0E3B2E] dark:border-[#7FBF9C] dark:text-[#7FBF9C] dark:hover:bg-[#7FBF9C]/10 dark:hover:text-[#B7E3C3]"
-              disabled={isContributing}
-              onClick={handlePaystackContribute}
-            >
-              Pay with Paystack (card, transfer, USSD)
-            </Button>
+            {/* Wallet balance */}
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-content/10 bg-content/[0.03] px-3.5 py-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0E3B2E]/[0.08] text-[#0E3B2E] dark:bg-[#7FBF9C]/10 dark:text-[#7FBF9C]">
+                  <Wallet className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] text-content/45">Wallet balance</p>
+                  <p className="truncate text-sm font-semibold tabular-nums">
+                    {walletBalance != null ? formatCurrency(walletBalance, 2) : "—"}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/dashboard/wallet/fund"
+                className="shrink-0 rounded-full border border-content/15 px-3 py-1.5 text-xs font-semibold text-content/70 transition-colors hover:bg-content/[0.05] hover:text-content"
+              >
+                Fund
+              </Link>
+            </div>
+
+            {/* Payment actions */}
+            <div className="space-y-2">
+              <Button
+                type="button"
+                className="h-11 w-full rounded-xl"
+                disabled={isContributing}
+                onClick={handleContribute}
+              >
+                {isContributing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Wallet className="h-4 w-4" />
+                )}
+                Pay from wallet
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 w-full rounded-xl border-[#1F7A54]/40 text-[#1F7A54] hover:border-[#1F7A54]/60 hover:bg-[#1F7A54]/5 hover:text-[#0E3B2E] dark:border-[#7FBF9C]/40 dark:text-[#7FBF9C] dark:hover:bg-[#7FBF9C]/10 dark:hover:text-[#B7E3C3]"
+                disabled={isContributing}
+                onClick={handlePaystackContribute}
+              >
+                <CreditCard className="h-4 w-4" />
+                Pay with Paystack
+              </Button>
+              <p className="text-center text-[11px] text-content/40">
+                Card, bank transfer or USSD
+              </p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
