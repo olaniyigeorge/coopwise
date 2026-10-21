@@ -5,7 +5,7 @@ import React from 'react'
 const phases = [
   {
     tag: "Phase 1 — Now",
-    title: "The Web2 Foundation",
+    title: "The Foundation",
     points: [
       "Join or create cooperative groups",
       "Contributions via familiar payment rails",
@@ -14,20 +14,20 @@ const phases = [
   },
   {
     tag: "Phase 2 — Next",
-    title: "A Pluggable Web3 Layer",
+    title: "Automation and Reach",
     points: [
-      "Wallet provisioning running quietly underneath",
+      "Payment and wallet rails running quietly underneath",
       "AI group management live on WhatsApp and Telegram",
-      "On-chain event logs introduced",
+      "Auditable contribution history for every group",
     ],
   },
   {
     tag: "Phase 3 — Future",
-    title: "A Decentralized Core",
+    title: "A Financial Identity for Every Group",
     points: [
-      "Programmable, on-chain escrow",
-      "Per-group smart contract rules",
-      "Liquidity access via group standing",
+      "Programmable escrow",
+      "Group-defined rules enforced by the platform",
+      "Liquidity access via proven group standing",
     ],
   },
 ]
@@ -47,11 +47,12 @@ export default function Roadmap() {
         <div className="text-center mb-14 max-w-2xl mx-auto">
           <p className="text-xs font-semibold uppercase tracking-widest text-brand-gold mb-3">How We&apos;re Building</p>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-white text-balance">
-            Web3 Is the Engine. It&apos;s Never the Entry Point.
+            Built Deliberately. Layer by Layer.
           </h2>
           <p className="text-white/60 mt-4">
-            Members onboard entirely through tools they already know. Decentralized infrastructure
-            is phased in underneath, on our timeline — not theirs to figure out.
+            Members onboard entirely through tools they already know. Automation and
+            financial infrastructure are phased in underneath, on our timeline — not
+            theirs to figure out.
           </p>
           <p className="text-white/50 mt-3 text-sm">
             Each phase exists to make one thing true: your group&apos;s discipline becomes worth
