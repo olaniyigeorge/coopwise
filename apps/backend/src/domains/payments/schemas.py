@@ -97,6 +97,34 @@ class ChargeResponse(BaseModel):
     meta: ChargeResponseMeta
 
 
+class MyPayoutRead(BaseModel):
+    id: UUID
+    group_id: UUID
+    group_name: str
+    round_number: int
+    amount: Decimal
+    currency: str
+    status: PayoutStatus
+    failure_reason: str | None = None
+    created_at: datetime
+    completed_at: datetime | None = None
+
+
+class UpcomingPayoutRead(BaseModel):
+    group_id: UUID
+    group_name: str
+    strategy: str
+    trigger: str
+    is_my_turn: bool
+    next_recipient_name: str | None = None
+    payable_amount: float | None = None
+    currency: str
+    round_number: int
+    funded: bool
+    inflight: bool
+    can_trigger: bool
+
+
 class PayoutRecordRead(BaseModel):
     id: UUID
     group_id: UUID
