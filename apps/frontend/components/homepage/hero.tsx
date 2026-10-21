@@ -7,18 +7,36 @@ import {
   CheckCircle2,
   LayoutDashboard,
   ShieldCheck,
+  Target,
   Users,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import useAuthStore from "@/stores/auth-store"
 
+const GROUP_GOALS = [
+  {
+    label: "Market stall rent",
+    saved: "₦840,000",
+    target: "₦1,200,000",
+    progress: "70%",
+  },
+  {
+    label: "Delivery van",
+    saved: "₦1,600,000",
+    target: "₦4,000,000",
+    progress: "40%",
+  },
+]
+
 export default function Hero() {
   const { isAuthenticated } = useAuthStore()
 
   return (
     <section className="relative overflow-hidden bg-brand-paper">
-      {/* Warm light + ledger texture */}
+      {/* Warm light + ledger texture. These run all the way to the top of the
+          page so the fixed header floats over the hero instead of over a bare
+          strip of background. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_80%_0%,rgba(232,188,99,0.22),transparent_65%),radial-gradient(50%_45%_at_0%_30%,rgba(14,59,46,0.10),transparent_60%)]"
@@ -32,18 +50,23 @@ export default function Hero() {
         }}
       />
 
-      <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pb-24 sm:pt-14 lg:px-8 lg:pb-28">
+      <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-20 sm:px-6 sm:pb-24 sm:pt-24 lg:px-8 lg:pb-28 lg:pt-28">
         <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
           {/* ── Copy ── */}
           <div className="text-center lg:text-left">
             <h1 className="font-display text-[2.6rem] font-bold leading-[1.04] tracking-tight text-brand-ink text-balance sm:text-6xl lg:text-[3.6rem]">
               Your Community Is an{" "}
-              <span className="relative inline-block">
-                <span className="relative z-10">Economic Organism.</span>
-                <span
-                  aria-hidden
-                  className="absolute inset-x-0 bottom-0.5 z-0 h-[0.3em] -rotate-[0.6deg] rounded-sm bg-[#E8BC63]/55"
-                />
+              <span
+                className="[-webkit-box-decoration-break:clone] [box-decoration-break:clone]"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(rgba(232,188,99,0.55), rgba(232,188,99,0.55))",
+                  backgroundSize: "100% 0.3em",
+                  backgroundPosition: "0 88%",
+                  backgroundRepeat: "no-repeat",
+                }}
+              >
+                Economic Organism.
               </span>{" "}
               We Build the Infrastructure to Help It Scale.
             </h1>
@@ -51,7 +74,7 @@ export default function Hero() {
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-brand-ink/65 sm:text-lg lg:mx-0">
               Ajo, esusu, chamas — cooperative savings has moved money across Africa for
               generations. CoopWise gives communities the infrastructure to pool capital,
-              govern ownership, and build businesses and assets together.
+              govern ownership, and fund the goals you set together.
             </p>
 
             <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row lg:justify-start">
@@ -86,7 +109,7 @@ export default function Hero() {
             <div className="mt-7 flex items-start justify-center gap-2.5 lg:justify-start">
               <div className="tally-divider mt-0.5 w-6 shrink-0 text-brand-ink/70" />
               <p className="max-w-md text-xs leading-relaxed text-brand-ink/50">
-                Built for groups who already trust each other. Governance, goals, and
+                Built for groups who already trust each other. Goals, governance, and
                 ownership — not just a shared wallet.
               </p>
             </div>
@@ -137,7 +160,7 @@ export default function Hero() {
                 </div>
 
                 {/* Balance */}
-                <div className="mt-7">
+                <div className="mt-6">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
                     Group balance
                   </p>
@@ -150,19 +173,47 @@ export default function Hero() {
                   </p>
                 </div>
 
-                {/* Progress */}
-                <div className="mt-6">
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-white/40">Cycle progress</span>
-                    <span className="font-semibold text-white/70">68%</span>
+                {/* Goals the group is pooling toward */}
+                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/35">
+                      <Target className="h-3 w-3 text-[#E8BC63]" />
+                      Group goals
+                    </p>
+                    <span className="rounded-full bg-[#E8BC63]/10 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.1em] text-[#E8BC63]">
+                      2 on track
+                    </span>
                   </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full w-[68%] rounded-full bg-gradient-to-r from-[#7FBF9C] to-[#E8BC63]" />
+
+                  <div className="mt-3 space-y-3">
+                    {GROUP_GOALS.map((goal) => (
+                      <div key={goal.label}>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate text-[11px] font-semibold text-white/85">
+                            {goal.label}
+                          </span>
+                          <span className="shrink-0 text-[9px] tabular-nums text-white/40">
+                            {goal.saved} / {goal.target}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-[#7FBF9C] to-[#E8BC63]"
+                              style={{ width: goal.progress }}
+                            />
+                          </div>
+                          <span className="w-7 shrink-0 text-right font-display text-[9px] font-bold text-[#E8BC63]">
+                            {goal.progress}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 {/* Members */}
-                <div className="mt-5 flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+                <div className="mt-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
                   <div className="flex items-center">
                     {["MB", "CH", "AK", "TO"].map((initials, i) => (
                       <span
@@ -221,17 +272,17 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* Floating audit chip */}
+            {/* Floating goal chip */}
             <div className="absolute -bottom-4 right-0 flex items-center gap-2 rounded-xl border border-brand-ink/10 bg-white px-3 py-2 shadow-[0_18px_40px_-25px_rgba(11,23,18,0.5)] lg:-right-5">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0E3B2E]">
-                <ShieldCheck className="h-4 w-4 text-[#E8BC63]" />
+                <Target className="h-4 w-4 text-[#E8BC63]" />
               </span>
               <div>
                 <p className="text-[9px] font-semibold uppercase tracking-wide text-brand-ink/35">
-                  Ledger entry
+                  Goal on track
                 </p>
                 <p className="font-display text-xs font-bold text-brand-ink">
-                  Every kobo, auditable
+                  Market stall · 70% funded
                 </p>
               </div>
             </div>
