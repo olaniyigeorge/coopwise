@@ -45,10 +45,6 @@ export default function Features() {
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(120deg, #0B1712 0px, #0B1712 1px, transparent 20px, transparent 22px)",
-        }}
       />
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
