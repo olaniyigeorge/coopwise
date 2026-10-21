@@ -241,7 +241,7 @@ function AllContributionsContent() {
               <Download className="w-4 h-4 mr-2" />
               Export
             </Button>
-                        <Button               size="sm"               onClick={() => window.location.href = '/dashboard/contributions/make/loading?amount=100000'}            >              <Plus className="w-4 h-4 mr-2" />              New Contribution            </Button>
+                        <Button               size="sm"               onClick={() => window.location.href = '/dashboard/contributions/make'}            >              <Plus className="w-4 h-4 mr-2" />              New Contribution            </Button>
           </div>
         </div>
 
