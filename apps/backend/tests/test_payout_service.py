@@ -232,7 +232,7 @@ async def test_get_next_recipient_ties_broken_by_join_order(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_payable_amount_excludes_contributions_at_exact_boundary(db_session):
+async def test_get_payable_amount_is_contributions_minus_payouts(db_session):
     creator = await _make_user(db_session, "Creator")
     group = await _make_group(db_session, creator)
     alice = await _make_user(db_session, "Alice")
@@ -248,8 +248,8 @@ async def test_get_payable_amount_excludes_contributions_at_exact_boundary(db_se
         completed_at=boundary,
     )
     db_session.add(payout_record)
-    # Contribution fulfilled at exactly the last payout's completed_at —
-    # strict `>` comparison in get_payable_amount should exclude it.
+    # Both contributions are in the cooperative wallet. The completed
+    # payout is already out, so nothing remains to pay.
     db_session.add(
         Contribution(
             user_id=alice.id,
@@ -272,7 +272,7 @@ async def test_get_payable_amount_excludes_contributions_at_exact_boundary(db_se
     await db_session.flush()
 
     amount = await PayoutService.get_payable_amount(db_session, group.id)
-    assert amount == Decimal("300")
+    assert amount == Decimal("0")
 
 
 @pytest.mark.asyncio
