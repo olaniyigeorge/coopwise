@@ -9,6 +9,8 @@ from src.domains.contributions.schemas import (
     ContributionCreate,
     ContributionDetail,
     GoalProgress,
+    GroupContributionSummary,
+    LeaderboardResponse,
 )
 from src.api.middlewares.dependencies import get_current_user, get_current_admin_user
 from src.domains.contributions.service import ContributionService
@@ -108,6 +110,40 @@ async def get_goal_progress(
     Fetch a goal's funding progress computed from its completed contributions.
     """
     return await ContributionService.get_goal_progress(db, goal_id)
+
+
+@router.get("/leaderboard", response_model=LeaderboardResponse)
+async def get_leaderboard(
+    limit: int = 10,
+    db: AsyncSession = Depends(get_async_db_session),
+):
+    """
+    Public activity leaderboard: cooperatives ranked by completed
+    contributions. Counts only — no amounts or member details are exposed.
+    """
+    return await ContributionService.get_platform_leaderboard(
+        db, limit=min(max(limit, 1), 50)
+    )
+
+
+@router.get("/group/{group_id}/summary", response_model=GroupContributionSummary)
+async def get_group_contribution_summary(
+    group_id: UUID,
+    db: AsyncSession = Depends(get_async_db_session),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    """
+    Group-wide total of completed contributions (goal-specific and general).
+    Visible to any active member of the cooperative.
+    """
+    membership = await CooperativeMembershipService.get_membership_by_user_and_group(
+        user_id=current_user.id, group_id=group_id, db=db
+    )
+    if not membership or not membership.is_active:
+        raise HTTPException(
+            status_code=403, detail="You are not an active member of this cooperative."
+        )
+    return await ContributionService.get_group_contribution_summary(db, group_id)
 
 
 @router.get("/group/{group_id}", response_model=List[ContributionDetail])
