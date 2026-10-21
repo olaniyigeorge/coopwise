@@ -118,8 +118,9 @@ async def get_leaderboard(
     db: AsyncSession = Depends(get_async_db_session),
 ):
     """
-    Public activity leaderboard: cooperatives ranked by completed
-    contributions. Counts only — no amounts or member details are exposed.
+    Public activity leaderboard. Cooperatives and members are ranked from
+    activity, contributions, goals, join requests, and invites. Counts and
+    names only — amounts stay off this endpoint.
     """
     return await ContributionService.get_platform_leaderboard(
         db, limit=min(max(limit, 1), 50)
