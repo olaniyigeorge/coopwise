@@ -3,7 +3,13 @@ from uuid import UUID, uuid4
 from typing import Optional, Dict, Any, List
 from decimal import Decimal
 from enum import Enum
-from src.domains.cooperatives.models.enums import ContributionFrequency
+from src.domains.cooperatives.models.enums import (
+    ContributionFrequency,
+    CooperativeStatus,
+)
+from src.domains.cooperatives.models.cooperative import CoopCooperative
+from src.domains.memberships.models.group_membership import GroupMembership
+from src.domains.memberships.models.enums import MembershipStatus
 from fastapi import HTTPException, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -799,6 +805,152 @@ class ContributionService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Could not fetch contribution summary",
             )
+
+    @staticmethod
+    async def get_group_contribution_summary(
+        db: AsyncSession, group_id: UUID
+    ) -> Dict[str, Any]:
+        """
+        Totals for a cooperative's completed contributions — across every goal
+        *and* general contributions — so members can see the group's real
+        pooled figure at a glance.
+        """
+        stmt = select(
+            func.coalesce(func.sum(Contribution.amount), 0),
+            func.count(Contribution.id),
+            func.count(func.distinct(Contribution.user_id)),
+        ).where(
+            Contribution.group_id == group_id,
+            Contribution.status == ContributionStatus.completed,
+        )
+        total_contributed, contribution_count, contributor_count = (
+            await db.execute(stmt)
+        ).one()
+
+        return {
+            "group_id": group_id,
+            "total_contributed": float(total_contributed),
+            "contribution_count": contribution_count,
+            "contributor_count": contributor_count,
+            "currency": "NGN",
+        }
+
+    @staticmethod
+    async def get_platform_leaderboard(
+        db: AsyncSession, limit: int = 10
+    ) -> Dict[str, Any]:
+        """
+        Rank cooperatives by contribution activity for the public leaderboard.
+
+        Counts only — no amounts or member identities leave this endpoint, so
+        it is safe to serve without a session.
+        """
+        contribution_counts = (
+            select(
+                Contribution.group_id.label("group_id"),
+                func.count(Contribution.id).label("contribution_count"),
+                func.count(func.distinct(Contribution.user_id)).label(
+                    "contributor_count"
+                ),
+            )
+            .where(Contribution.status == ContributionStatus.completed)
+            .group_by(Contribution.group_id)
+            .subquery()
+        )
+        member_counts = (
+            select(
+                GroupMembership.group_id.label("group_id"),
+                func.count(GroupMembership.id).label("member_count"),
+            )
+            .where(GroupMembership.status == MembershipStatus.ACTIVE)
+            .group_by(GroupMembership.group_id)
+            .subquery()
+        )
+
+        contribution_count = func.coalesce(
+            contribution_counts.c.contribution_count, 0
+        )
+        member_count = func.coalesce(member_counts.c.member_count, 0)
+
+        rows = (
+            await db.execute(
+                select(
+                    CoopCooperative.id,
+                    CoopCooperative.name,
+                    CoopCooperative.status,
+                    member_count,
+                    contribution_count,
+                    func.coalesce(contribution_counts.c.contributor_count, 0),
+                )
+                .outerjoin(
+                    contribution_counts,
+                    contribution_counts.c.group_id == CoopCooperative.id,
+                )
+                .outerjoin(
+                    member_counts,
+                    member_counts.c.group_id == CoopCooperative.id,
+                )
+                .where(
+                    CoopCooperative.status != CooperativeStatus.DELETED,
+                    contribution_count > 0,
+                )
+                .order_by(
+                    contribution_count.desc(),
+                    member_count.desc(),
+                    CoopCooperative.created_at.asc(),
+                )
+                .limit(limit)
+            )
+        ).all()
+
+        total_circles = (
+            await db.execute(
+                select(func.count(CoopCooperative.id)).where(
+                    CoopCooperative.status != CooperativeStatus.DELETED
+                )
+            )
+        ).scalar_one()
+        active_circles = (
+            await db.execute(
+                select(func.count(CoopCooperative.id)).where(
+                    CoopCooperative.status == CooperativeStatus.ACTIVE
+                )
+            )
+        ).scalar_one()
+        total_members = (
+            await db.execute(
+                select(func.count(GroupMembership.id)).where(
+                    GroupMembership.status == MembershipStatus.ACTIVE
+                )
+            )
+        ).scalar_one()
+        total_contributions = (
+            await db.execute(
+                select(func.count(Contribution.id)).where(
+                    Contribution.status == ContributionStatus.completed
+                )
+            )
+        ).scalar_one()
+
+        return {
+            "platform_stats": {
+                "total_circles": total_circles,
+                "active_circles": active_circles,
+                "total_members": total_members,
+                "total_contributions": total_contributions,
+            },
+            "top_circles": [
+                {
+                    "group_id": row[0],
+                    "name": row[1],
+                    "status": str(row[2]),
+                    "member_count": int(row[3]),
+                    "contribution_count": int(row[4]),
+                    "contributor_count": int(row[5]),
+                }
+                for row in rows
+            ],
+        }
 
     @staticmethod
     async def get_goal_progress(db: AsyncSession, goal_id: UUID) -> Dict[str, Any]:
