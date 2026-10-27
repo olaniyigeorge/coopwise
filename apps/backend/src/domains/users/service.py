@@ -19,12 +19,11 @@ Changes from the original (per agreed PR2 scope):
 
 from __future__ import annotations
 
-import base64
 from typing import List
 from uuid import UUID
 
-
-from src.domains.users.tasks import upload_avatar_task
+from src.infra.storage.cloudinary_storage import CloudinaryStorage
+from src.shared.utils.logger import logger
 from src.domains.users.exceptions import (
     UserConflictError,
     UserFetchError,
@@ -34,7 +33,6 @@ from src.domains.users.exceptions import (
 from src.domains.users.ports import UserRepository
 from src.domains.users.schemas import UserUpdate
 from src.domains.users.models import User
-from src.shared.utils.logger import logger
 
 
 class UserService:
@@ -54,21 +52,26 @@ class UserService:
             raise UserNotFoundError("User not found")
         return user
 
-    async def queue_avatar_upload(
-        self, user_id: UUID, file_bytes: bytes, filename: str, content_type: str
+    async def upload_avatar(
+        self, user_id: UUID, file_bytes: bytes, content_type: str
     ) -> str:
         user = await self._users.get_by_id(user_id)
         if not user:
             raise UserNotFoundError(f"User {user_id} not found")
 
-        encoded = base64.b64encode(file_bytes).decode("utf-8")
-        result = upload_avatar_task.delay(
-            user_id=str(user_id),
-            file_data=encoded,
-            filename=filename,
-            content_type=content_type,
-        )
-        return result.id
+        try:
+            url = await CloudinaryStorage().upload(
+                key=f"avatars/{user_id}",
+                content=file_bytes,
+                content_type=content_type,
+            )
+        except Exception as e:
+            logger.error(f"Avatar upload failed for {user_id}: {e}")
+            raise UserUpdateError("Could not upload photo")
+
+        user.profile_picture_url = url
+        await self._users.update(user)
+        return url
 
     async def update_user(self, user_id: UUID, user_data: UserUpdate) -> User:
         user = await self._users.get_by_id(user_id)
