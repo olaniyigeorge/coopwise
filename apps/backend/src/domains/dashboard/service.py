@@ -5,8 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 
 from src.domains.users.dependencies import get_user_service
+from src.domains.users.schemas import UserDetail
 from src.domains.auth.schemas import AuthenticatedUser
 from src.domains.dashboard.schemas import DashboardData
+from src.infra.db.database import db_manager
 from src.shared.utils.logger import logger
 
 from src.domains.cooperatives.services.cooperative_service import CooperativeService
@@ -22,18 +24,28 @@ class DashboardService:
         self._db = db
         self._redis = redis
 
+    async def _run_section(self, method: str, user: AuthenticatedUser):
+        """Each section gets its own session so the reads actually overlap.
+
+        One shared AsyncSession cannot run concurrent queries, which is why
+        the home page used to wait on the slowest section.
+        """
+        async with db_manager.get_session() as session:
+            worker = DashboardService(db=session, redis=self._redis)
+            return await getattr(worker, method)(user)
+
     async def get_dashboard_data(self, user: AuthenticatedUser) -> DashboardData:
         logger.info(f"\nBuilding dashboard for user {user.id}\n")
 
         sections = {
-            "user": self._get_user_data(user),
-            "summary": self._get_summary(user),
-            "targets": self._get_targets(user),
-            "groups": self._get_groups(user),
-            "activities": self._get_activities(user),
-            "ai_insights": self._get_ai_insights(user),
-            "notifications": self._get_notifications(user),
-            "cooperative_members": self._get_cooperative_members(user),
+            "user": "_get_user_data",
+            "summary": "_get_summary",
+            "targets": "_get_targets",
+            "groups": "_get_groups",
+            "activities": "_get_activities",
+            "ai_insights": "_get_ai_insights",
+            "notifications": "_get_notifications",
+            "cooperative_members": "_get_cooperative_members",
         }
 
         list_fields = {
@@ -43,7 +55,10 @@ class DashboardService:
             "cooperative_members",
         }
 
-        results = await asyncio.gather(*sections.values(), return_exceptions=True)
+        results = await asyncio.gather(
+            *(self._run_section(method, user) for method in sections.values()),
+            return_exceptions=True,
+        )
         data: dict[str, Any] = {}
         for key, result in zip(sections.keys(), results):
             if isinstance(result, Exception):
@@ -54,7 +69,6 @@ class DashboardService:
             else:
                 data[key] = result
 
-        print(f"\n\n\n {data}  \n\n\n")
         if data["user"] is None:
             raise ValueError("Failed to load core user data")
 
@@ -62,7 +76,8 @@ class DashboardService:
         return DashboardData(**data)
 
     async def _get_user_data(self, user: AuthenticatedUser):
-        return await get_user_service(db=self._db).get_user_by_id(user.id)
+        row = await get_user_service(db=self._db).get_user_by_id(user.id)
+        return UserDetail.model_validate(row)
 
     async def _get_summary(self, user: AuthenticatedUser):
         return await SummaryService.get_user_summary(user, self._db, self._redis)
@@ -76,20 +91,15 @@ class DashboardService:
 
         service = CooperativeService(UnitOfWork(self._db))
         user_groups = await service.get_for_user(user.id)
-        user_group_ids = {g.id for g in user_groups}
 
-        all_groups = await service.list_cooperatives(page_size=50)
-        suggested = [g for g in all_groups if g.id not in user_group_ids]
-
+        # Discovery has its own listing. Pulling the whole catalog here held
+        # the wallet balance and the member's cooperatives on the home page.
         return ExploreGroups(
             user_groups=[
                 CooperativeRead.model_validate(g).model_dump(mode="json")
                 for g in user_groups
             ],
-            suggested_groups=[
-                CooperativeRead.model_validate(g).model_dump(mode="json")
-                for g in suggested
-            ],
+            suggested_groups=[],
         )
 
     async def _get_activities(self, user: AuthenticatedUser):
@@ -99,7 +109,7 @@ class DashboardService:
 
     async def _get_ai_insights(self, user: AuthenticatedUser):
         return await InsightEngine.get_user_insights(
-            self._db, user, self._redis, skip=0, limit=10
+            self._db, user, self._redis, skip=0, limit=10, generate=False
         )
 
     async def _get_notifications(self, user: AuthenticatedUser):
