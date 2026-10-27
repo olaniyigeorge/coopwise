@@ -1,6 +1,7 @@
 import axios from 'axios';
 import CookieService from './cookie-service';
 import StorageService from '../services/storage-service';
+import { rateLimitMessage } from '@/lib/rate-limit-message';
 
 // Define types
 export interface LoginCredentials {
@@ -260,9 +261,23 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   })
-  const data = await res.json().catch(() => ({}))
+  const text = await res.text()
+  let data: { detail?: unknown } = {}
+  if (text) {
+    try {
+      data = JSON.parse(text)
+    } catch {
+      data = { detail: text }
+    }
+  }
   if (!res.ok) {
-    throw new ApiError(data?.detail ?? "Something went wrong.", res.status)
+    const detail =
+      res.status === 429
+        ? rateLimitMessage(data?.detail, res.headers.get("Retry-After"))
+        : typeof data?.detail === "string"
+          ? data.detail
+          : "Something went wrong."
+    throw new ApiError(detail, res.status)
   }
   return data as T
 }
