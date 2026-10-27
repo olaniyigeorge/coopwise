@@ -18,9 +18,8 @@ from src.shared.utils.logger import logger
 
 
 from src.domains.wallets.service import WalletService
-from src.domains.dashboard.schemas import Summary
+from src.domains.dashboard.schemas import Summary, Targets
 from src.domains.contributions.models import Contribution, ContributionStatus
-from src.domains.memberships.service import CooperativeMembershipService
 
 
 class ActivityService:
@@ -162,10 +161,6 @@ class SummaryService:
             )
             next_contribution = next_contrib_query.scalar()
 
-            # 3. Get user's group memberships (kept even though unused below —
-            # cheap and other sections may want it; harmless to drop later)
-            await CooperativeMembershipService.get_memberships_by_user(user.id, db)
-
             # Payout timing is rotational (see PayoutService.get_current_round /
             # get_payable_amount), not a fixed date on CoopCooperative — there's
             # no `next_payout_date` column to query. Left as None here; wire
@@ -190,6 +185,15 @@ class SummaryService:
 
         logger.info(f"📦 Cached summary for user {user.id}")
         return fresh_summary
+
+    @staticmethod
+    async def get_user_targets(
+        _user: AuthenticatedUser, _db: AsyncSession, _redis: Redis
+    ) -> Targets:
+        # The previous query read contribution/target columns that no longer
+        # exist on cooperatives. Return an empty target set so the dashboard
+        # does not spend a failed section on every home-page load.
+        return Targets(savings_target=0.0, group_goals=[])
 
     # @staticmethod
     # async def get_user_targets(
