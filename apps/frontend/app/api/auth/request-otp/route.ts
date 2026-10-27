@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { clientIpHeadersFrom } from "@/lib/server/backend"
+import { jsonWithRetry, readBackendBody } from "@/lib/server/read-backend-body"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://coopwise.onrender.com"
 
@@ -12,13 +13,12 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     })
 
-    // 204/205/304 must not have a body
     if (backendRes.status === 204) {
       return new NextResponse(null, { status: 204 })
     }
 
-    const data = await backendRes.json().catch(() => ({}))
-    return NextResponse.json(data, { status: backendRes.status })
+    const { data, retryAfter } = await readBackendBody(backendRes)
+    return jsonWithRetry(data, backendRes.status, retryAfter)
   } catch (error) {
     console.error("Request OTP proxy error:", error)
     return NextResponse.json({ detail: "Couldn't send the code. Try again." }, { status: 500 })
