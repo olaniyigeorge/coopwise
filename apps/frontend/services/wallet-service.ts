@@ -26,6 +26,10 @@ export interface PaystackInitResponse {
 // Wallet service
 const WalletService = {
 
+  async getWallet() {
+    return ApiService.get<WalletDetail>("/wallet")
+  },
+
   async depositInWallet(depositData: DepositData): Promise<WalletDetail | null> {
     try {
       const token = await AuthService.getToken();
