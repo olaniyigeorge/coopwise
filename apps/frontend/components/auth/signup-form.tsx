@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -27,11 +27,10 @@ import { auth, getFirebaseErrorMessage } from "@/helpers/firebase"
 import {
   signUpDetailsSchema,
   signUpDetailsFormValues,
-  otpCodeSchema,
-  otpCodeFormValues,
 } from "@/helpers/validators/auth.schemas"
 import useAuthStore from "@/stores/auth-store"
 import { requestOtp, signInWithFirebase, verifyOtpAndRegister } from "@/services/auth-service"
+import OtpCodeInput from "@/components/auth/otp-code-input"
 
 type IdentifierMode = "email" | "phone"
 type Step = "details" | "otp"
@@ -52,35 +51,57 @@ const SignUpPage = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showPhoneDisabledNotice, setShowPhoneDisabledNotice] = useState(false)
+  const stepRef = useRef<Step>("details")
 
   const detailsForm = useForm<signUpDetailsFormValues>({
     resolver: zodResolver(signUpDetailsSchema),
     defaultValues: { identifier: "", full_name: "", password: "" },
   })
 
-  const otpForm = useForm<otpCodeFormValues>({
-    resolver: zodResolver(otpCodeSchema),
-    defaultValues: { code: "" },
-  })
+  const [otpCode, setOtpCode] = useState("")
+  const [otpError, setOtpError] = useState("")
+  const [otpSubmitting, setOtpSubmitting] = useState(false)
+
+  useEffect(() => {
+    stepRef.current = step
+    if (step === "otp") setIsGoogleLoading(false)
+  }, [step])
+
+  useEffect(() => {
+    if (step === "otp" && rootError === "Sign in was cancelled") {
+      setRootError(null)
+    }
+  }, [step, rootError])
 
   const handleDetailsSubmit = async (values: signUpDetailsFormValues) => {
     setRootError(null)
     try {
       await requestOtp(mode, values.identifier)
+      setOtpCode("")
+      setOtpError("")
       setStep("otp")
+      setRootError(null)
     } catch (error: any) {
       setRootError(error?.detail ?? "Couldn't send the code. Try again.")
     }
   }
 
-  const handleOtpSubmit = async (values: otpCodeFormValues) => {
+  const handleOtpSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    const code = otpCode.replace(/\D/g, "")
+    if (code.length !== 6) {
+      setOtpError("Enter the 6-digit code")
+      return
+    }
+    setOtpError("")
     setRootError(null)
+    setOtpSubmitting(true)
     const details = detailsForm.getValues()
     try {
       const { is_new_user, user } = await verifyOtpAndRegister({
         channel: mode,
         identifier: details.identifier,
-        code: values.code,
+        code,
         full_name: details.full_name,
         password: details.password,
       })
@@ -88,6 +109,8 @@ const SignUpPage = () => {
       router.push(is_new_user ? "/onboarding" : from)
     } catch (error: any) {
       setRootError(error?.detail ?? "That code didn't work. Try again.")
+    } finally {
+      setOtpSubmitting(false)
     }
   }
 
@@ -101,6 +124,9 @@ const SignUpPage = () => {
       setUser(user)
       router.push(is_new_user ? "/onboarding" : from)
     } catch (error: any) {
+      // A closed Google popup can resolve after the email code step is
+      // already on screen. Don't paint "Sign in was cancelled" over the code.
+      if (stepRef.current !== "details") return
       setRootError(getFirebaseErrorMessage(error.code))
     } finally {
       setIsGoogleLoading(false)
@@ -128,6 +154,7 @@ const SignUpPage = () => {
           <button
             type="button"
             onClick={() => {
+              stepRef.current = "details"
               setStep("details")
               setRootError(null)
             }}
@@ -318,27 +345,20 @@ const SignUpPage = () => {
             </p>
           </div>
 
-          <Form {...otpForm}>
-            <form onSubmit={otpForm.handleSubmit(handleOtpSubmit)} className="space-y-4">
-              <FormField
-                control={otpForm.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        placeholder="000000"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        maxLength={6}
-                        className={`${authFieldClass} h-14 text-center font-display text-2xl font-semibold tracking-[0.5em]`}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <form onSubmit={handleOtpSubmit} className="space-y-4">
+              <OtpCodeInput
+                value={otpCode}
+                disabled={otpSubmitting}
+                onChange={(next) => {
+                  setOtpCode(next)
+                  if (next.length === 6) setOtpError("")
+                }}
               />
+              {otpError && (
+                <p className="text-center text-sm font-medium text-destructive">
+                  {otpError}
+                </p>
+              )}
 
               {rootError && (
                 <div className="flex items-start gap-2 rounded-xl border border-red-600/20 bg-red-600/[0.06] px-3 py-2.5 text-xs leading-relaxed text-red-700">
@@ -349,17 +369,16 @@ const SignUpPage = () => {
 
               <Button
                 type="submit"
-                disabled={otpForm.formState.isSubmitting}
+                disabled={otpSubmitting}
                 className="h-11 w-full rounded-xl bg-[#0E3B2E] text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0A2E24]"
               >
-                {otpForm.formState.isSubmitting ? (
+                {otpSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   "Verify and create account"
                 )}
               </Button>
             </form>
-          </Form>
         </div>
       )}
     </AuthShell>
