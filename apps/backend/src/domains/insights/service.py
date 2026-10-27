@@ -63,6 +63,7 @@ class InsightEngine:
         redis: Redis,
         skip: int = 0,
         limit: int = 10,
+        generate: bool = True,
     ) -> List[AIInsightDetail]:
         cache_key = f"insights:{user.id}:skip:{skip}:limit:{limit}"
         cached = await get_cache(cache_key)
@@ -91,22 +92,15 @@ class InsightEngine:
             result = await db.execute(stmt)
             insights = result.scalars().all()
 
-            print(f"\n INSIGHT: \n {insights} \n")
-
-            if len(insights) < 1:
+            # Gemini generation is a blocking HTTP call. The dashboard passes
+            # generate=False so a home-page load returns stored insights only.
+            if generate and (
+                not insights
+                or insights[-1].created_at < (datetime.now() - timedelta(hours=12))
+            ):
                 logger.info(
-                    f"🔄 No insights found for user {user.id}, generating new one"
+                    f"🔄 Insights for user {user.id} are missing or stale, generating"
                 )
-                # Generate new insights if none exist
-                await InsightEngine.get_save_new_insight(db, user, redis)
-                result = await db.execute(stmt)
-                insights = result.scalars().all()
-
-            if insights[-1].created_at < (datetime.now() - timedelta(hours=12)):
-                logger.info(
-                    f"🔄 No recent insights for user {user.id}, generating new one"
-                )
-                # Generate new insights if none in the last 12 hours- TODO Update this to generate inteli
                 await InsightEngine.get_save_new_insight(db, user, redis)
                 result = await db.execute(stmt)
                 insights = result.scalars().all()
