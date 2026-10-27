@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { clientIpHeadersFrom } from "@/lib/server/backend"
+import { jsonWithRetry, readBackendBody } from "@/lib/server/read-backend-body"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://coopwise.onrender.com"
 const ACCESS_COOKIE = "auth_token"
@@ -15,10 +16,10 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     })
 
-    const data = await backendRes.json().catch(() => ({}))
+    const { data, retryAfter } = await readBackendBody(backendRes)
 
     if (!backendRes.ok) {
-      return NextResponse.json(data, { status: backendRes.status })
+      return jsonWithRetry(data, backendRes.status, retryAfter)
     }
 
     const { access_token, refresh_token, is_new_user, user } = data
