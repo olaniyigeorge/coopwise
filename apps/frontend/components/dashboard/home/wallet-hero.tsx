@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowLeftRight, Eye, EyeOff, Plus, ShieldCheck, Target, Clock } from 'lucide-react'
 import { formatCurrency, cn } from '@/lib/utils'
 import ComingSoonButton from '@/components/coming-soon-button'
+import RollingNumber from '@/components/dashboard/home/rolling-number'
 
 interface WalletHeroProps {
   localBalance: number
@@ -16,6 +17,10 @@ interface WalletHeroProps {
   activeGoalsCount: number
   /** Cooperatives the member currently sits in. */
   seatsTaken: number
+  /** Wallet figures are still in flight. */
+  balanceLoading?: boolean
+  /** Trust score, seats, and goals are still in flight. */
+  statsLoading?: boolean
 }
 
 type CurrencyTab = 'local' | 'stable'
@@ -25,9 +30,10 @@ function TrustCircle({
   kycVerified,
   activeGoalsCount,
   seatsTaken,
+  statsLoading,
 }: Pick<
   WalletHeroProps,
-  'trustScore' | 'kycVerified' | 'activeGoalsCount' | 'seatsTaken'
+  'trustScore' | 'kycVerified' | 'activeGoalsCount' | 'seatsTaken' | 'statsLoading'
 >) {
   return (
     <div className="relative flex min-h-[250px] flex-col justify-between overflow-hidden rounded-[24px] bg-gradient-to-br from-[#1B4B3D] via-[#123528] to-[#0A241C] p-5 text-white">
@@ -76,7 +82,11 @@ function TrustCircle({
       {/* Score sits inside the inner ring */}
       <div className="relative z-10 mx-auto my-3 flex h-[104px] w-[104px] flex-col items-center justify-center rounded-full border border-white/10 bg-white/[0.04] backdrop-blur-[1px]">
         <span className="font-display text-3xl font-bold leading-none">
-          {trustScore}
+          {statsLoading ? (
+            <span className="inline-block h-8 w-12 animate-pulse rounded-lg bg-white/15" />
+          ) : (
+            <RollingNumber value={trustScore} format={(n) => String(Math.round(n))} />
+          )}
         </span>
         <span className="mt-1 text-[10px] uppercase tracking-wider text-white/55">
           of 100 trust
@@ -87,12 +97,29 @@ function TrustCircle({
         <div className="min-w-0">
           <p className="text-sm font-semibold">Your trust circle</p>
           <p className="mt-0.5 truncate text-[11px] text-white/60">
-            {seatsTaken} {seatsTaken === 1 ? 'seat' : 'seats'} taken · open seats wait
+            {statsLoading ? (
+              <span className="inline-block h-3 w-36 animate-pulse rounded bg-white/15" />
+            ) : (
+              <>
+                <RollingNumber value={seatsTaken} format={(n) => String(Math.round(n))} />{' '}
+                {seatsTaken === 1 ? 'seat' : 'seats'} taken · open seats wait
+              </>
+            )}
           </p>
         </div>
         <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-white/85">
           <Target className="h-3.5 w-3.5" />
-          {activeGoalsCount} shared {activeGoalsCount === 1 ? 'goal' : 'goals'} active
+          {statsLoading ? (
+            <span className="inline-block h-3 w-24 animate-pulse rounded bg-white/15" />
+          ) : (
+            <>
+              <RollingNumber
+                value={activeGoalsCount}
+                format={(n) => String(Math.round(n))}
+              />{' '}
+              shared {activeGoalsCount === 1 ? 'goal' : 'goals'} active
+            </>
+          )}
         </span>
       </div>
     </div>
@@ -107,16 +134,11 @@ export default function WalletHero({
   kycVerified,
   activeGoalsCount,
   seatsTaken,
+  balanceLoading = false,
+  statsLoading = false,
 }: WalletHeroProps) {
   const [tab, setTab] = useState<CurrencyTab>('local')
   const [hidden, setHidden] = useState(false)
-
-  const primaryValue =
-    tab === 'local' ? formatCurrency(localBalance || 0, 2) : `$${(stableBalance || 0).toFixed(2)}`
-  const secondaryValue =
-    tab === 'local'
-      ? `≈ ${(stableBalance || 0).toFixed(2)} USDC`
-      : `≈ ${formatCurrency(localBalance || 0, 2)}`
 
   return (
     <section className="grid grid-cols-1 gap-4 rounded-[24px] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] lg:grid-cols-[1.45fr_1fr] lg:p-6">
@@ -161,7 +183,21 @@ export default function WalletHero({
           </p>
           <div className="mt-1 flex items-center gap-3">
             <span className="font-display text-4xl font-bold tracking-tight text-content sm:text-5xl">
-              {hidden ? '••••••' : primaryValue}
+              {balanceLoading ? (
+                <span className="inline-block h-12 w-44 animate-pulse rounded-xl bg-content/10" />
+              ) : hidden ? (
+                '••••••'
+              ) : tab === 'local' ? (
+                <RollingNumber
+                  value={localBalance || 0}
+                  format={(n) => formatCurrency(n, 2)}
+                />
+              ) : (
+                <RollingNumber
+                  value={stableBalance || 0}
+                  format={(n) => `$${n.toFixed(2)}`}
+                />
+              )}
             </span>
             <button
               type="button"
@@ -173,7 +209,28 @@ export default function WalletHero({
             </button>
           </div>
           <p className="mt-1.5 text-xs text-content/45">
-            {hidden ? '••••••' : secondaryValue}
+            {balanceLoading ? (
+              <span className="inline-block h-3 w-28 animate-pulse rounded bg-content/10" />
+            ) : hidden ? (
+              '••••••'
+            ) : tab === 'local' ? (
+              <>
+                ≈{' '}
+                <RollingNumber
+                  value={stableBalance || 0}
+                  format={(n) => n.toFixed(2)}
+                />{' '}
+                USDC
+              </>
+            ) : (
+              <>
+                ≈{' '}
+                <RollingNumber
+                  value={localBalance || 0}
+                  format={(n) => formatCurrency(n, 2)}
+                />
+              </>
+            )}
           </p>
         </div>
 
@@ -208,6 +265,7 @@ export default function WalletHero({
         kycVerified={kycVerified}
         activeGoalsCount={activeGoalsCount}
         seatsTaken={seatsTaken}
+        statsLoading={statsLoading}
       />
     </section>
   )
