@@ -14,6 +14,7 @@ import {
 import ComingSoonButton from '@/components/coming-soon-button'
 import { formatCurrency, cn } from '@/lib/utils'
 import type { FinancialRule } from '@/types/cooperative'
+import RollingNumber from '@/components/dashboard/home/rolling-number'
 
 /**The minimum a landing-table row needs; both the dashboard payload's group
  * shape and `/cooperatives/me` satisfy it. */
@@ -29,6 +30,8 @@ interface CooperativesTableProps {
   /** Active financial rule per cooperative id, when it could be fetched. */
   rulesByCoop?: Record<string, FinancialRule | null>
   loading?: boolean
+  /** Contribution amount and cycle are still being fetched per cooperative. */
+  rulesLoading?: boolean
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -50,6 +53,7 @@ export default function CooperativesTable({
   groups,
   rulesByCoop = {},
   loading = false,
+  rulesLoading = false,
 }: CooperativesTableProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
@@ -126,9 +130,18 @@ export default function CooperativesTable({
       </div>
 
       {loading ? (
-        <div className="mt-6 space-y-3">
+        <div className="mt-4 space-y-1">
           {Array.from({ length: 3 }).map((_, idx) => (
-            <div key={idx} className="h-10 animate-pulse rounded-lg bg-content/5" />
+            <div
+              key={idx}
+              className="flex items-center gap-3 border-t border-content/[0.06] py-3"
+            >
+              <span className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-content/10" />
+              <span className="h-4 w-32 animate-pulse rounded bg-content/10" />
+              <span className="ml-auto h-4 w-16 animate-pulse rounded bg-content/10" />
+              <span className="h-4 w-20 animate-pulse rounded bg-content/10" />
+              <span className="h-6 w-16 animate-pulse rounded-full bg-content/10" />
+            </div>
           ))}
         </div>
       ) : (
@@ -172,10 +185,23 @@ export default function CooperativesTable({
                         </Link>
                       </td>
                       <td className="py-3 pr-4 text-content/65">
-                        {titleCase(rule?.contribution_frequency)}
+                        {rulesLoading && !rule ? (
+                          <span className="inline-block h-4 w-16 animate-pulse rounded bg-content/10" />
+                        ) : (
+                          titleCase(rule?.contribution_frequency)
+                        )}
                       </td>
                       <td className="py-3 pr-4 font-medium text-content/75">
-                        {rule ? formatCurrency(rule.contribution_amount, 0) : '—'}
+                        {rulesLoading && !rule ? (
+                          <span className="inline-block h-4 w-20 animate-pulse rounded bg-content/10" />
+                        ) : rule?.contribution_amount != null ? (
+                          <RollingNumber
+                            value={Number(rule.contribution_amount)}
+                            format={(n) => formatCurrency(n, 0)}
+                          />
+                        ) : (
+                          '—'
+                        )}
                       </td>
                       <td className="py-3 text-right">
                         <span
