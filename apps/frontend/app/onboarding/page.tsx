@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -106,9 +106,28 @@ const OnboardingWizard = () => {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [customPurpose, setCustomPurpose] = useState(false)
   const [justCompleted, setJustCompleted] = useState(false)
+  const [canConfirm, setCanConfirm] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const step = STEPS[stepIndex]
+
+  // A click that advances onto this step can land on the confirm button in the
+  // same spot. Ignore confirms until the review screen has actually settled.
+  useEffect(() => {
+    if (step.id !== "review") {
+      setCanConfirm(false)
+      return
+    }
+    const id = window.setTimeout(() => setCanConfirm(true), 450)
+    return () => window.clearTimeout(id)
+  }, [step.id])
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimer.current) window.clearTimeout(redirectTimer.current)
+    }
+  }, [])
 
   const form = useForm<OnboardingFormValues>({
     resolver: zodResolver(onboardingSchema),
@@ -149,6 +168,7 @@ const OnboardingWizard = () => {
   }
 
   const onSubmit = async (data: OnboardingFormValues) => {
+    if (step.id !== "review" || !canConfirm || justCompleted) return
     setRootError(null)
     try {
       let profile_picture_url = data.profile_picture_url
@@ -164,7 +184,7 @@ const OnboardingWizard = () => {
       const result = await completeOnboarding(currentUser!.id, payload)
       setUser(result.user)
       setJustCompleted(true)
-      setTimeout(() => router.push("/dashboard"), 650)
+      redirectTimer.current = setTimeout(() => router.push("/dashboard"), 700)
     } catch (error: any) {
       setRootError(error?.detail ?? "Something went wrong. Try again.")
     }
@@ -189,7 +209,17 @@ const OnboardingWizard = () => {
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault()
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || event.shiftKey || step.id === "review") return
+              event.preventDefault()
+              void handleNext()
+            }}
+            className="space-y-5"
+          >
             <div className="relative min-h-[190px]">
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
@@ -421,8 +451,9 @@ const OnboardingWizard = () => {
                             </div>
                             <button
                               type="button"
+                              disabled={form.formState.isSubmitting || justCompleted}
                               onClick={() => goTo(row.stepIdx, -1)}
-                              className="text-xs text-brand-teal underline underline-offset-2"
+                              className="text-xs text-brand-teal underline underline-offset-2 disabled:opacity-40"
                             >
                               Edit
                             </button>
@@ -460,9 +491,13 @@ const OnboardingWizard = () => {
                 </Button>
               ) : (
                 <Button
-                  type="submit"
-                  disabled={form.formState.isSubmitting || justCompleted}
-                  className="flex-1 h-11 rounded-xl bg-brand-ink hover:bg-brand-ink/90"
+                  type="button"
+                  disabled={!canConfirm || form.formState.isSubmitting || justCompleted}
+                  onClick={() => {
+                    if (!canConfirm || justCompleted) return
+                    void form.handleSubmit(onSubmit)()
+                  }}
+                  className="flex-1 h-11 rounded-xl bg-brand-ink hover:bg-brand-ink/90 disabled:opacity-100"
                 >
                   {form.formState.isSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
