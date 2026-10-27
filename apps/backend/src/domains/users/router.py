@@ -76,34 +76,33 @@ ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_AVATAR_BYTES = 5 * 1024 * 1024  # 5MB
 
 
-@router.patch("/{user_id}/avatar", response_model=AvatarUploadResponse, status_code=202)
+@router.patch("/{user_id}/avatar", response_model=AvatarUploadResponse)
 async def update_user_avatar(
     user_id: UUID,
     file: UploadFile = File(...),
     user: AuthenticatedUser = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service),
 ):
-    print("UPDATE USER ENDPOINT")
-
-    """Queue an avatar upload to Cloudinary. Admin or the user themself."""
+    """Save a new profile photo. Admin or the user themself."""
     if file.content_type not in ALLOWED_AVATAR_TYPES:
-        raise HTTPException(status_code=415, detail="Unsupported image type")
+        raise HTTPException(status_code=415, detail="Use a JPEG, PNG, or WebP image")
 
     contents = await file.read()
     if len(contents) > MAX_AVATAR_BYTES:
         raise HTTPException(status_code=413, detail="Image too large (max 5MB)")
 
     try:
-        task_id = await user_service.queue_avatar_upload(
+        url = await user_service.upload_avatar(
             user_id=user_id,
             file_bytes=contents,
-            filename=file.filename,
-            content_type=file.content_type,
+            content_type=file.content_type or "image/jpeg",
         )
     except UserNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except UserUpdateError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
-    return AvatarUploadResponse(task_id=task_id, status="processing")
+    return AvatarUploadResponse(profile_picture_url=url)
 
 
 @router.patch("/{user_id}", response_model=UserDetail)
