@@ -39,8 +39,8 @@ class iAuthWallet(BaseModel):
 
 
 class AvatarUploadResponse(BaseModel):
-    task_id: str
-    status: str = "processing"
+    profile_picture_url: str
+    status: str = "ready"
 
 
 class UserUpdate(BaseModel):
