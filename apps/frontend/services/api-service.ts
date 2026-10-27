@@ -1,4 +1,5 @@
 import { ApiError } from "@/lib/api-error"
+import { rateLimitMessage } from "@/lib/rate-limit-message"
 import { emitAuthInvalidated } from "@/lib/auth/events"
 
 
@@ -173,11 +174,15 @@ async function request<T>(
         // not JSON — leave as raw text
       }
 
+      const detail =
+        parsed && typeof parsed === "object" && "detail" in parsed
+          ? (parsed as { detail?: unknown }).detail
+          : undefined
       throw new ApiError(
         response.status,
         parsed,
         response.status === 429
-          ? "Too many requests right now. Please wait a moment and try again."
+          ? rateLimitMessage(detail, response.headers.get("Retry-After"))
           : `API request failed (${response.status}): ${raw}`
       )
     }
