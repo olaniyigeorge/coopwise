@@ -10,6 +10,7 @@ import {
   Copy,
   Loader2,
   Mail,
+  Pencil,
   Phone,
   Save,
   ShieldCheck,
@@ -32,6 +33,9 @@ import {
 import { useUserProfile } from '@/lib/hooks/use-user-profile'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { getApiErrorDetail } from '@/lib/api-error'
+import { uploadAvatar } from '@/services/onboarding-service'
+import useAuthStore from '@/stores/auth-store'
 
 interface ProfileData {
   fullName: string
@@ -240,11 +244,16 @@ function GoalPurposeInput({ value, onChange }: { value: string; onChange: (v: st
 }
 
 export default function ProfileContent() {
-  const { profile, isLoading: isProfileLoading, isUpdating, updateProfile } =
+  const { profile, isLoading: isProfileLoading, isUpdating, updateProfile, refetch } =
     useUserProfile()
   const searchParams = useSearchParams()
   const focusSection = searchParams.get('focus')
   const savingsGoalRef = useRef<HTMLDivElement>(null)
+
+  const updateUser = useAuthStore((state) => state.updateUser)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
 
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: '',
@@ -304,6 +313,38 @@ export default function ProfileContent() {
     })
   }
 
+  async function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || !profile?.id) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Use a JPEG, PNG, or WebP image.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('That image is larger than 5MB.')
+      return
+    }
+
+    setAvatarPreview(URL.createObjectURL(file))
+    setAvatarUploading(true)
+    try {
+      const result = await uploadAvatar(profile.id, file)
+      setAvatarPreview(result.profile_picture_url)
+      updateUser({ profile_picture_url: result.profile_picture_url })
+      await refetch()
+      toast.success('Profile photo updated')
+    } catch (error) {
+      setAvatarPreview(null)
+      const detail = getApiErrorDetail(error)
+      toast.error(
+        typeof detail === 'string' ? detail : 'Could not update your photo.'
+      )
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
   const displayName = profile?.full_name || profile?.username || 'Your profile'
   const kycVerified = !!profile?.is_kyc_verified
 
@@ -350,12 +391,34 @@ export default function ProfileContent() {
         <div className="px-5 pb-5 sm:px-6">
           <div className="relative z-10 -mt-9 flex flex-wrap items-end justify-between gap-4">
             <div className="flex items-end gap-4">
-              <UserAvatar
-                name={displayName}
-                src={profile?.profile_picture_url}
-                size="lg"
-                className="h-20 w-20 shrink-0 rounded-3xl border-4 border-surface shadow-sm"
-              />
+              <div className="relative">
+                <UserAvatar
+                  name={displayName}
+                  src={avatarPreview || profile?.profile_picture_url}
+                  size="lg"
+                  className="h-20 w-20 shrink-0 rounded-3xl border-4 border-surface shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={avatarUploading || !profile?.id}
+                  aria-label="Change profile photo"
+                  className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-surface bg-[#0E3B2E] text-white shadow-sm transition-colors hover:bg-[#0A2E24] disabled:opacity-60"
+                >
+                  {avatarUploading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Pencil className="h-3.5 w-3.5" />
+                  )}
+                </button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="sr-only"
+                  onChange={handleAvatarChange}
+                />
+              </div>
               <div className="min-w-0 pb-1">
                 <h2 className="truncate font-display text-xl font-bold tracking-tight text-content">
                   {profile?.full_name || '—'}
