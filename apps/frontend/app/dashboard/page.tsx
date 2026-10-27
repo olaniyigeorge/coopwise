@@ -31,7 +31,9 @@ import {
   DashboardData,
   defDashData,
   MembershipStatus,
+  type WalletDetail,
 } from '@/services/dashboard-service'
+import WalletService from '@/services/wallet-service'
 import { getKYCOverview } from '@/services/kyc-service'
 import RulesService from '@/services/rules-service'
 import {
@@ -87,6 +89,11 @@ export default function Dashboard() {
   // cooperatives they created or joined.
   const [myCooperatives, setMyCooperatives] = useState<Cooperative[]>([])
   const [coopsLoading, setCoopsLoading] = useState(true)
+  const [wallet, setWallet] = useState<WalletDetail | null>(null)
+  // The balance skeleton ends when the wallet call finishes, fails, or times
+  // out. A new member with no row yet should see ₦0, not a pulse that never ends.
+  const [walletSettled, setWalletSettled] = useState(false)
+  const [rulesLoading, setRulesLoading] = useState(false)
 
   const userGroups = useMemo(() => {
     const merged = new Map<string, CooperativeRow>()
@@ -102,46 +109,98 @@ export default function Dashboard() {
   const firstName = user?.full_name?.split(' ')[0] || 'Member'
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (isAuthenticated) {
-        try {
-          const data = await getDashboardData()
-          setDashboardData(data)
-          setDashboardReady(true)
-        } catch (error) {
-          console.error('Error fetching dashboard data:', error)
-        } finally {
-          setLoading(false)
-        }
-
-        try {
-          const kyc = await getKYCOverview()
-          setKycVerified(kyc.overall_status === 'verified')
-        } catch (err) {
-          console.error(err)
-          setKycVerified(false)
-        }
-      }
+    if (!isAuthenticated) {
+      setLoading(false)
+      return
     }
-    fetchData()
+
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      if (!cancelled) setLoading(false)
+    }, 8000)
+
+    const dashboardPromise = getDashboardData()
+      .then((data) => {
+        if (cancelled) return
+        setDashboardData(data)
+        setDashboardReady(true)
+      })
+      .catch((error) => {
+        console.error('Error fetching dashboard data:', error)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+        window.clearTimeout(timer)
+      })
+
+    const kycPromise = getKYCOverview()
+      .then((kyc) => {
+        if (!cancelled) setKycVerified(kyc.overall_status === 'verified')
+      })
+      .catch((err) => {
+        console.error(err)
+        if (!cancelled) setKycVerified(false)
+      })
+
+    void Promise.all([dashboardPromise, kycPromise])
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
   }, [isAuthenticated])
 
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated) {
+      setWalletSettled(true)
+      return
+    }
     let cancelled = false
-    setCoopsLoading(true)
-    CooperativeService.listMyCooperatives()
-      .then((groups) => {
-        if (!cancelled) setMyCooperatives(groups ?? [])
+    setWalletSettled(false)
+    const timer = window.setTimeout(() => {
+      if (!cancelled) setWalletSettled(true)
+    }, 8000)
+    WalletService.getWallet()
+      .then((detail) => {
+        if (!cancelled && detail) setWallet(detail)
       })
       .catch((error) => {
-        console.error('Error loading your cooperatives:', error)
+        console.error('Error loading wallet:', error)
       })
       .finally(() => {
-        if (!cancelled) setCoopsLoading(false)
+        if (!cancelled) setWalletSettled(true)
+        window.clearTimeout(timer)
       })
     return () => {
       cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setCoopsLoading(false)
+      return
+    }
+    let cancelled = false
+    setCoopsLoading(true)
+    const timer = window.setTimeout(() => {
+      if (!cancelled) setCoopsLoading(false)
+    }, 8000)
+    CooperativeService.listMyCooperatives()
+      .then((groups) => {
+        if (!cancelled) setMyCooperatives(Array.isArray(groups) ? groups : [])
+      })
+      .catch((error) => {
+        console.error('Error loading your cooperatives:', error)
+        if (!cancelled) setMyCooperatives([])
+      })
+      .finally(() => {
+        if (!cancelled) setCoopsLoading(false)
+        window.clearTimeout(timer)
+      })
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
     }
   }, [isAuthenticated])
 
@@ -151,10 +210,12 @@ export default function Dashboard() {
   useEffect(() => {
     if (userGroups.length === 0) {
       setRulesByCoop({})
+      setRulesLoading(false)
       return
     }
 
     let cancelled = false
+    setRulesLoading(true)
     Promise.all(
       userGroups.map(async (group) => {
         const rule = await RulesService.getActiveFinancialRule(group.id).catch(
@@ -162,11 +223,15 @@ export default function Dashboard() {
         )
         return [group.id, rule] as const
       })
-    ).then((entries) => {
-      if (!cancelled) {
-        setRulesByCoop(Object.fromEntries(entries))
-      }
-    })
+    )
+      .then((entries) => {
+        if (!cancelled) {
+          setRulesByCoop(Object.fromEntries(entries))
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setRulesLoading(false)
+      })
 
     return () => {
       cancelled = true
@@ -175,7 +240,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!isAuthenticated && !loading) {
-      router.push('/login')
+      router.push('/signin')
     }
   }, [isAuthenticated, router, loading])
 
@@ -216,14 +281,15 @@ export default function Dashboard() {
 
   if (!isAuthenticated && !loading) return null
 
-  // Both arrive as decimal strings from the API; convert once for display.
-  const walletBalance = Number(
-    dashboardData.summary?.wallet?.stable_coin_balance ?? 0
-  )
-  const walletLocalBalance = Number(
-    dashboardData.summary?.wallet?.local_balance ?? 0
-  )
-  const walletCurrency = dashboardData.summary?.wallet?.local_currency || 'NGN'
+  // The dedicated wallet read lands first. The dashboard summary is only a
+  // fallback so a failed wallet call can still fill the hero. A missing
+  // wallet (brand-new account) is ₦0, not an endless skeleton.
+  const resolvedWallet =
+    wallet ?? (dashboardReady ? dashboardData.summary?.wallet ?? null : null)
+  const balanceLoading = resolvedWallet == null && !walletSettled
+  const walletBalance = Number(resolvedWallet?.stable_coin_balance ?? 0)
+  const walletLocalBalance = Number(resolvedWallet?.local_balance ?? 0)
+  const walletCurrency = resolvedWallet?.local_currency || 'NGN'
   const activeGoalsCount = dashboardData.targets?.group_goals?.length || 0
   const pendingInvitations =
     dashboardData.cooperative_members?.filter(
@@ -326,6 +392,8 @@ export default function Dashboard() {
           kycVerified={kycVerified}
           activeGoalsCount={activeGoalsCount}
           seatsTaken={userGroups.length}
+          balanceLoading={balanceLoading}
+          statsLoading={!trustReady}
         />
 
         <QuickActions />
@@ -334,7 +402,15 @@ export default function Dashboard() {
           <CooperativesTable
             groups={userGroups}
             rulesByCoop={rulesByCoop}
-            loading={loading || coopsLoading}
+            loading={
+              coopsLoading &&
+              userGroups.length === 0 &&
+              !(
+                dashboardReady &&
+                (dashboardData.groups?.user_groups?.length ?? 0) === 0
+              )
+            }
+            rulesLoading={rulesLoading}
           />
 
           <div className="flex flex-col gap-4">
