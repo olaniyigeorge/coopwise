@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion'
-import { ArrowLeft, CheckCircle, CreditCard, Loader2, Wallet } from 'lucide-react'
+import { ArrowLeft, CheckCircle, CreditCard, Landmark, Loader2, Wallet } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils';
 import WalletService from '@/services/wallet-service';
 import { getDashboardData, LocalCurrency } from '@/services/dashboard-service';
@@ -37,16 +37,35 @@ function FundWalletContent() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [amount, setAmount] = useState('');
+  const [withdrawalAmount, setWithdrawalAmount] = useState('');
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawalError, setWithdrawalError] = useState<string | null>(null);
+  const [withdrawals, setWithdrawals] = useState<Awaited<ReturnType<typeof WalletService.listWithdrawals>>>([]);
   const [isPaystackLoading, setIsPaystackLoading] = useState(false);
   const [paymentSuccessful, setPaymentSuccessful] = useState(false);
   const [localCurrency, setLocalCurrency] = useState<LocalCurrency>(LocalCurrency.NGN);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   useEffect(() => {
-    getDashboardData().then((data) => {
-      const wallet = data?.summary?.wallet;
-      if (wallet?.local_currency) setLocalCurrency(wallet.local_currency);
-      if (wallet?.local_balance != null) setWalletBalance(Number(wallet.local_balance));
+    Promise.allSettled([getDashboardData(), WalletService.listWithdrawals()]).then(([dashboardResult, withdrawalsResult]) => {
+      if (dashboardResult.status === 'fulfilled') {
+        const wallet = dashboardResult.value?.summary?.wallet;
+        if (wallet?.local_currency) setLocalCurrency(wallet.local_currency);
+        if (wallet?.local_balance != null) setWalletBalance(Number(wallet.local_balance));
+      }
+      if (withdrawalsResult.status === 'fulfilled' && Array.isArray(withdrawalsResult.value)) {
+        setWithdrawals(withdrawalsResult.value);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (window.location.hash !== '#withdraw') return;
+    requestAnimationFrame(() => {
+      document.getElementById('withdraw')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
     });
   }, []);
 
@@ -60,6 +79,11 @@ function FundWalletContent() {
         title: 'Payment failed',
         description: 'Your Paystack payment did not complete. Please try again.',
         variant: 'destructive',
+      });
+    } else if (status === 'abandoned') {
+      toast({
+        title: 'Payment abandoned',
+        description: 'Your Paystack checkout was abandoned. No funds were added.',
       });
     }
   }, [searchParams, toast]);
@@ -122,6 +146,40 @@ function FundWalletContent() {
   const fundedLabel = Number.isFinite(fundedAmount) && fundedAmount > 0
     ? `You added ${formatCurrency(fundedAmount)} to your wallet.`
     : 'Your wallet has been funded.';
+
+  const handleWithdraw = async () => {
+    const value = Number(withdrawalAmount);
+    if (!Number.isFinite(value) || value < 100) {
+      toast({
+        title: 'Invalid amount',
+        description: 'Enter at least ₦100 to withdraw.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsWithdrawing(true);
+      setWithdrawalError(null);
+      const withdrawal = await WalletService.withdraw(value);
+      setWithdrawals((current) => [withdrawal, ...current]);
+      setWithdrawalAmount('');
+      const dashboard = await getDashboardData();
+      const wallet = dashboard?.summary?.wallet;
+      if (wallet?.local_balance != null) setWalletBalance(Number(wallet.local_balance));
+      toast({
+        title: 'Withdrawal initiated',
+        description: `Your transfer to account ending ${withdrawal.account_number_last4} is processing.`,
+      });
+    } catch (err: any) {
+      const detail = getApiErrorDetail(err);
+      const message = (typeof detail === 'string' ? detail : detail?.message) || err?.message || 'Could not start withdrawal.';
+      setWithdrawalError(message);
+      toast({ title: 'Withdrawal failed', description: message, variant: 'destructive' });
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
 
   if (paymentSuccessful) {
     return (
@@ -262,6 +320,54 @@ function FundWalletContent() {
                 : 'Test mode credits your wallet instantly while live Paystack keys are being set up.'}
             </p>
           </div>
+        </div>
+
+        <div id="withdraw" className="scroll-mt-5 space-y-4 rounded-[24px] bg-surface p-5 shadow-[0_1px_2px_rgba(11,23,18,0.04)] sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FBF1D0] text-[#8A6516] dark:bg-[#3A3120] dark:text-[#E8BC63]">
+              <Landmark className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="font-display text-lg font-bold tracking-tight text-content">Withdraw to bank</h2>
+              <p className="mt-1 text-sm text-content/55">Payouts and wallet funds are sent to your verified KYC bank account.</p>
+            </div>
+          </div>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-display text-lg font-bold text-content/35">₦</span>
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={withdrawalAmount}
+              onChange={(event) => setWithdrawalAmount(event.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="Amount to withdraw"
+              className="h-12 rounded-xl border-content/15 bg-content/[0.03] pl-10 pr-4 font-display text-xl font-bold tracking-tight"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleWithdraw}
+            disabled={isWithdrawing}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0E3B2E] text-sm font-semibold text-white transition-colors hover:bg-[#0A2E24] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isWithdrawing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Landmark className="h-4 w-4" />}
+            Withdraw to verified bank
+          </button>
+          {withdrawalError && (
+            <p role="alert" className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-xs leading-relaxed text-red-600 dark:text-red-400">
+              {withdrawalError}
+            </p>
+          )}
+          {withdrawals.length > 0 && (
+            <div className="space-y-2 border-t border-content/10 pt-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-content/45">Recent withdrawals</p>
+              {withdrawals.slice(0, 3).map((withdrawal) => (
+                <div key={withdrawal.id} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-content/60">{formatCurrency(Number(withdrawal.local_amount))}</span>
+                  <span className="capitalize text-content/45">{withdrawal.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>
