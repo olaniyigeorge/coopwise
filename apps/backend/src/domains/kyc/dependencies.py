@@ -50,7 +50,7 @@ def get_kyc_service(
         repository=SQLAlchemyKYCRepository(db),
         audit_repository=SQLAlchemyKYCAuditRepository(db),
         encryptor=FieldEncryptor(config.SECRET_ENCRYPTION_KEY),
-        notifier=NotificationServiceKYCNotifier(),
+        notifier=NotificationServiceKYCNotifier(db),
         identity_provider=MockIdentityVerificationProvider(),
         bank_provider=get_bank_verification_provider(),
         storage=CloudinaryStorage(),
@@ -97,7 +97,7 @@ async def build_kyc_service():
             bank_provider=get_bank_verification_provider(),
             storage=CloudinaryStorage(),
             user_flag_port=UserKYCFlager(session),
-            notifier=NotificationServiceKYCNotifier(),
+            notifier=NotificationServiceKYCNotifier(session),
         )
         try:
             yield service
