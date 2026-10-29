@@ -36,7 +36,6 @@ from src.domains.kyc.exceptions import (
     IdentityVerificationFailedError,
     BankAccountNameMismatchError,
 )
-from src.domains.kyc.completeness import is_kyc_complete
 
 
 # ---- Allowed status transitions — the actual state machine ----
@@ -533,23 +532,8 @@ class KYCService:
                 f"Call start() before submitting steps for user {user_id}"
             )
         if kyc.status == KYCStatus.verified:
-            # A verified row can outlive one of its required step records if an
-            # admin removes that record directly (for example, banking info).
-            # Treat that state as incomplete and reopen it so the member can
-            # repair the missing step without an unnecessary admin action.
-            if is_kyc_complete(kyc):
-                raise KYCAlreadyVerifiedError(
-                    "Cannot edit a verified KYC record — admin reopen required"
-                )
-            previous_status = kyc.status
-            updated = await self._repo.set_overall_status(
-                kyc.id,
-                status=KYCStatus.in_progress,
-                verified_at=None,
-            )
-            await self._user_flags.set_kyc_verified(kyc.user_id, False)
-            await self._notifier.notify_kyc_status_transition(
-                updated, previous_status, KYCStatus.in_progress
+            raise KYCAlreadyVerifiedError(
+                "Cannot edit a verified KYC record — admin reopen required"
             )
 
         current_step_status = (
