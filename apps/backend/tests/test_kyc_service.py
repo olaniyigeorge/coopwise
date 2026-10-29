@@ -70,7 +70,7 @@ def _build_service(db_session, *, identity_success=True, identity_manual_review=
         bank_provider=MockBankVerificationProvider(),
         storage=FakeObjectStorage(),
         user_flag_port=UserKYCFlager(db_session),
-        notifier=NotificationServiceKYCNotifier(),
+        notifier=NotificationServiceKYCNotifier(db_session),
     )
 
 
@@ -409,6 +409,8 @@ async def test_illegal_transition_raises(db_session):
     service = _build_service(db_session)
     kyc = await service.start(user.id)  # now in_progress
 
-    # in_progress -> verified is not an allowed direct transition.
+    # A record may be verified directly from in_progress after the final
+    # reopened step is approved, but not from the initial state.
+    kyc.status = KYCStatus.not_started
     with pytest.raises(InvalidKYCStateTransitionError):
         await service._transition(kyc, KYCStatus.verified)
