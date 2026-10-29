@@ -35,6 +35,7 @@ class NotificationCreate(BaseModel):
     event_type: EventType
     type: NotificationType
     entity_url: Optional[str] = None
+    idempotency_key: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
