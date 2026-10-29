@@ -24,7 +24,7 @@ const STATUS: Record<
   { label: string; classes: string; icon: React.ReactNode }
 > = {
   completed: {
-    label: "Sent",
+    label: "Credited to wallet",
     classes: "bg-[#DFF0E4] text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]",
     icon: <CheckCircle2 className="h-3.5 w-3.5" />,
   },
@@ -145,7 +145,7 @@ export default function PayoutsPage() {
               Payouts
             </h1>
             <p className="mt-1.5 text-sm text-content/55">
-              Your turn in each cooperative, and the payouts that have been sent to you.
+              Your turn in each cooperative, and the payouts credited to your wallet.
             </p>
           </div>
           <button
