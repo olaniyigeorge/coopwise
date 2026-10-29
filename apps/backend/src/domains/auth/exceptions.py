@@ -20,6 +20,10 @@ class InvalidCredentialsError(AuthDomainError):
     Deliberately generic — don't let this leak whether an account exists."""
 
 
+class OAuthPasswordLoginError(AuthDomainError):
+    """The account was created with OAuth and has no local password."""
+
+
 class OtpRateLimitedError(AuthDomainError):
     """Too many OTP requests for this identifier too recently."""
 

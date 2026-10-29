@@ -227,3 +227,10 @@ export async function finalizeRejected(
     payload
   )
 }
+
+export async function reopenKycStep(
+  kycId: string,
+  step: KycStep = 'banking_info'
+): Promise<void> {
+  await ApiService.post<void>(`${ADMIN_BASE}/${kycId}/reopen`, { step })
+}

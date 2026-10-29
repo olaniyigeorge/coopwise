@@ -267,6 +267,8 @@ export default function CooperativeDetailPage() {
     if (payment === 'success') {
       toast.success('Payment received — your contribution is complete.', { id: 'payment-result' })
       refreshAfterContribution().catch(() => {})
+    } else if (payment === 'abandoned') {
+      toast('Payment abandoned — your contribution was not completed.', { id: 'payment-result' })
     } else {
       toast.error('Your Paystack payment did not complete. Please try again.', { id: 'payment-result' })
     }
@@ -628,7 +630,7 @@ export default function CooperativeDetailPage() {
                 </div>
               </div>
 
-              <p className="mt-4 text-sm leading-relaxed text-content/60">
+              <p className="mt-4 text-sm leading-relaxed  text-content/60">
                 {cooperative.description}
               </p>
 

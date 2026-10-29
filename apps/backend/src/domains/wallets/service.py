@@ -1,14 +1,19 @@
 # app/services/wallet_service.py
 import json
 import secrets
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from src.domains.wallets.models import (
     LedgerStatus,
+    LedgerType,
+    PaymentGateway,
     Wallet,
     LocalCurrency,
     WalletLedger,
-    LedgerType,
+    WalletWithdrawal,
+    WithdrawalStatus,
+    StableCurrency,
 )
 from src.domains.wallets.schemas import (
     WalletDeposit,
@@ -22,7 +27,7 @@ from fastapi import HTTPException
 from decimal import Decimal
 from src.shared.utils.logger import logger
 from src.shared.money import MOCK_LOCAL_TO_STABLE_RATE, to_kobo, to_micro
-from uuid import UUID
+from uuid import UUID, uuid4
 from redis.asyncio import Redis
 from src.infra.cache.redis_client import get_cache, update_cache
 from typing import Dict, Any
@@ -354,6 +359,180 @@ class WalletService:
             return Decimal(0)
 
     @staticmethod
+    async def credit_payout(
+        user_id: UUID,
+        local_amount: Decimal,
+        currency: str,
+        reference: str,
+        db: AsyncSession,
+    ) -> Wallet:
+        """Credit a cooperative payout into the member's wallet."""
+        wallet_result = await db.execute(
+            select(Wallet).where(Wallet.user_id == user_id)
+        )
+        wallet = wallet_result.scalars().first()
+        if not wallet:
+            wallet = Wallet(user_id=user_id, local_currency=LocalCurrency(currency))
+            db.add(wallet)
+            await db.flush()
+
+        existing = await WalletService.get_wallet_ledger_by_reference(reference, db)
+        if existing:
+            return wallet
+
+        stable_amount = Decimal(str(local_amount)) * MOCK_LOCAL_TO_STABLE_RATE
+        stable_micro = to_micro(stable_amount)
+        wallet.stable_coin_balance_micro += stable_micro
+        db.add(
+            WalletLedger(
+                reference=reference,
+                wallet_id=wallet.id,
+                type=LedgerType.deposit,
+                stable_amount_micro=stable_micro,
+                stable_currency=StableCurrency.usdc,
+                local_amount_minor=to_kobo(local_amount),
+                local_currency=LocalCurrency(currency),
+                exchange_rate=MOCK_LOCAL_TO_STABLE_RATE,
+                gateway=PaymentGateway.coopwise_network,
+                status=LedgerStatus.settled,
+                note="Cooperative payout credited to wallet",
+            )
+        )
+        await db.commit()
+        await db.refresh(wallet)
+        return wallet
+
+    @staticmethod
+    async def reserve_withdrawal(
+        user_id: UUID, local_amount: Decimal, db: AsyncSession
+    ) -> WalletWithdrawal:
+        """Reserve wallet funds before starting a bank transfer."""
+        result = await db.execute(select(Wallet).where(Wallet.user_id == user_id))
+        wallet = result.scalars().first()
+        if not wallet:
+            raise HTTPException(status_code=404, detail="Wallet not found")
+
+        stable_micro = to_micro(Decimal(str(local_amount)) * MOCK_LOCAL_TO_STABLE_RATE)
+        if stable_micro <= 0:
+            raise HTTPException(
+                status_code=400, detail="Withdrawal amount must be positive"
+            )
+        if wallet.stable_coin_balance_micro < stable_micro:
+            raise HTTPException(status_code=400, detail="Insufficient wallet balance")
+
+        withdrawal_id = uuid4()
+        reference = f"withdrawal-{withdrawal_id}"
+        withdrawal = WalletWithdrawal(
+            id=withdrawal_id,
+            reference=reference,
+            wallet_id=wallet.id,
+            local_amount_minor=to_kobo(local_amount),
+            stable_amount_micro=stable_micro,
+            local_currency=wallet.local_currency,
+            status=WithdrawalStatus.pending,
+            bank_name="",
+            bank_code="",
+            account_number_last4="",
+        )
+        wallet.stable_coin_balance_micro -= stable_micro
+        db.add(withdrawal)
+        await db.commit()
+        await db.refresh(withdrawal)
+        return withdrawal
+
+    @staticmethod
+    async def set_withdrawal_provider(
+        withdrawal_id: UUID,
+        recipient_code: str,
+        provider_reference: str,
+        bank_name: str,
+        bank_code: str,
+        account_number_last4: str,
+        db: AsyncSession,
+    ) -> WalletWithdrawal:
+        withdrawal = await db.get(WalletWithdrawal, withdrawal_id)
+        if not withdrawal:
+            raise HTTPException(status_code=404, detail="Withdrawal not found")
+        withdrawal.recipient_code = recipient_code
+        withdrawal.provider_reference = provider_reference
+        withdrawal.bank_name = bank_name
+        withdrawal.bank_code = bank_code
+        withdrawal.account_number_last4 = account_number_last4
+        withdrawal.status = WithdrawalStatus.processing
+        await db.commit()
+        await db.refresh(withdrawal)
+        return withdrawal
+
+    @staticmethod
+    async def get_withdrawal_by_provider_reference(
+        provider_reference: str, db: AsyncSession
+    ) -> WalletWithdrawal | None:
+        result = await db.execute(
+            select(WalletWithdrawal).where(
+                WalletWithdrawal.provider_reference == provider_reference
+            )
+        )
+        return result.scalars().first()
+
+    @staticmethod
+    async def mark_withdrawal_from_provider(
+        withdrawal: WalletWithdrawal,
+        success: bool,
+        reversed: bool,
+        reason: str | None,
+        db: AsyncSession,
+    ) -> WalletWithdrawal:
+        if withdrawal.status in (
+            WithdrawalStatus.completed,
+            WithdrawalStatus.failed,
+            WithdrawalStatus.reversed,
+        ):
+            return withdrawal
+
+        if success:
+            withdrawal.status = WithdrawalStatus.completed
+            withdrawal.completed_at = datetime.now(timezone.utc)
+        else:
+            withdrawal.status = (
+                WithdrawalStatus.reversed if reversed else WithdrawalStatus.failed
+            )
+            withdrawal.failure_reason = reason or "Bank transfer failed"
+            wallet = await db.get(Wallet, withdrawal.wallet_id)
+            if wallet:
+                wallet.stable_coin_balance_micro += withdrawal.stable_amount_micro
+                db.add(
+                    WalletLedger(
+                        reference=f"refund-{withdrawal.reference}",
+                        wallet_id=wallet.id,
+                        type=LedgerType.refund,
+                        stable_amount_micro=withdrawal.stable_amount_micro,
+                        stable_currency=StableCurrency.usdc,
+                        local_amount_minor=withdrawal.local_amount_minor,
+                        local_currency=withdrawal.local_currency,
+                        exchange_rate=MOCK_LOCAL_TO_STABLE_RATE,
+                        gateway=PaymentGateway.paystack,
+                        status=LedgerStatus.settled,
+                        note="Wallet withdrawal refunded after bank transfer failure",
+                    )
+                )
+        await db.commit()
+        await db.refresh(withdrawal)
+        return withdrawal
+
+    @staticmethod
+    async def list_withdrawals(
+        user_id: UUID, db: AsyncSession, limit: int = 20
+    ) -> list[WalletWithdrawal]:
+        result = await db.execute(
+            select(WalletWithdrawal)
+            .join(Wallet, Wallet.id == WalletWithdrawal.wallet_id)
+            .where(Wallet.user_id == user_id)
+            .order_by(WalletWithdrawal.created_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    @staticmethod
     async def get_wallet(
         db: AsyncSession, user: AuthenticatedUser, redis: Redis
     ) -> WalletDetail:
@@ -527,3 +706,17 @@ class WalletService:
             f"wallet_detail:{wallet.user_id}", wallet_data.model_dump_json(), ttl=300
         )
         return wallet_data
+
+    @staticmethod
+    async def fail_deposit(reference: str, db: AsyncSession) -> WalletLedger:
+        """Mark an initiated/pending deposit as failed without crediting it."""
+        ledger = await WalletService.get_wallet_ledger_by_reference(reference, db)
+        if not ledger:
+            raise HTTPException(status_code=404, detail="Transaction ledger not found.")
+        if ledger.status == LedgerStatus.settled:
+            return ledger
+        if ledger.status != LedgerStatus.failed:
+            ledger.status = LedgerStatus.failed
+            await db.commit()
+            await db.refresh(ledger)
+        return ledger

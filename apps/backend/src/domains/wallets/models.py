@@ -67,6 +67,12 @@ class Wallet(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    withdrawals = relationship(
+        "WalletWithdrawal",
+        back_populates="wallet",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     @property
     def stable_coin_balance(self):
@@ -110,6 +116,14 @@ class LedgerStatus(enum.Enum):
     pending = "pending"
     settled = "settled"
     failed = "failed"
+
+
+class WithdrawalStatus(enum.Enum):
+    pending = "pending"
+    processing = "processing"
+    completed = "completed"
+    failed = "failed"
+    reversed = "reversed"
 
 
 class StableCurrency(enum.Enum):
@@ -171,6 +185,46 @@ class WalletLedger(Base):  # TNX RECORD
     @property
     def local_amount(self):
         return from_kobo(self.local_amount_minor)
+
+
+class WalletWithdrawal(Base):
+    """A wallet-to-bank transfer reserved from the wallet balance."""
+
+    __tablename__ = "wallet_withdrawals"
+
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    reference = Column(String(128), unique=True, index=True, nullable=False)
+    wallet_id = Column(
+        PGUUID(as_uuid=True), ForeignKey("wallets.id"), nullable=False, index=True
+    )
+    local_amount_minor = Column(BigInteger, nullable=False)
+    stable_amount_micro = Column(BigInteger, nullable=False)
+    local_currency = Column(Enum(LocalCurrency), nullable=False)
+    status = Column(
+        Enum(WithdrawalStatus), nullable=False, default=WithdrawalStatus.pending
+    )
+    provider = Column(String(32), nullable=False, default="paystack")
+    provider_reference = Column(String, nullable=True, unique=True, index=True)
+    recipient_code = Column(String, nullable=True)
+    bank_name = Column(String, nullable=False)
+    bank_code = Column(String, nullable=False)
+    account_number_last4 = Column(String(4), nullable=False)
+    failure_reason = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
+    )
+    completed_at = Column(DateTime, nullable=True)
+
+    wallet = relationship("Wallet", back_populates="withdrawals", lazy="joined")
+
+    @property
+    def local_amount(self):
+        return from_kobo(self.local_amount_minor)
+
+    @property
+    def stable_amount(self):
+        return from_micro(self.stable_amount_micro)
 
 
 # # Your existing reference = your internal reference (keep it)

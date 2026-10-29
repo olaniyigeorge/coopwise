@@ -87,6 +87,33 @@ export default function DashboardLayout({
       }
     }
 
+    if (path === '/dashboard/admin') {
+      return {
+        title: 'Admin dashboard',
+        subtitle: 'Operations and compliance',
+        showBackButton: true,
+        backUrl: '/dashboard',
+      }
+    }
+
+    if (path === '/dashboard/admin/kyc') {
+      return {
+        title: 'KYC review',
+        subtitle: 'Review member verification submissions',
+        showBackButton: true,
+        backUrl: '/dashboard',
+      }
+    }
+
+    if (path.startsWith('/dashboard/admin/kyc/')) {
+      return {
+        title: 'KYC submission',
+        subtitle: 'Review verification details',
+        showBackButton: true,
+        backUrl: '/dashboard/admin/kyc',
+      }
+    }
+
     switch (path) {
       case '/dashboard':
         return {

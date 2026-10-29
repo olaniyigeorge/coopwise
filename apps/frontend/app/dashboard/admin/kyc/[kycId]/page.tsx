@@ -13,6 +13,7 @@ import {
   rejectStep,
   finalizeVerified,
   finalizeRejected,
+  reopenKycStep,
 } from "@/services/kyc-service";
 import {
   AlertCircle,
@@ -214,7 +215,8 @@ function deriveSteps(submission: KycSubmissionDetail): StepRecord[] {
 type MutationKey =
   | { kind: "step"; step: KycStep }
   | { kind: "finalize-verify" }
-  | { kind: "finalize-reject" };
+  | { kind: "finalize-reject" }
+  | { kind: "reopen" };
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -357,6 +359,19 @@ export default function KycAdminDetailPage() {
       setActionError(
         e instanceof Error ? e.message : "Couldn't reject this submission."
       );
+    } finally {
+      setPending(null);
+    }
+  }
+
+  async function handleReopen() {
+    setPending({ kind: "reopen" });
+    setActionError(null);
+    try {
+      await reopenKycStep(kycId, "banking_info");
+      await refresh();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Couldn't reopen this KYC step.");
     } finally {
       setPending(null);
     }
@@ -619,9 +634,22 @@ export default function KycAdminDetailPage() {
               </div>
               <p className="mt-1.5 text-xs leading-relaxed text-content/50">
                 {submission.status === "verified"
-                  ? "This member has full access. No further action is needed."
+                  ? "This member has full access. Reopen the banking step if they need to replace or resubmit their bank details."
                   : "The applicant can amend their details and restart verification."}
               </p>
+              {submission.status === "verified" && (
+                <Button
+                  variant="outline"
+                  disabled={isMutating}
+                  onClick={handleReopen}
+                  className="mt-4 h-10 w-full gap-1.5 rounded-xl border-[#B8892B]/35 text-xs font-semibold text-[#8A6516] hover:bg-[#B8892B]/[0.08] dark:text-[#E8BC63]"
+                >
+                  {pending?.kind === "reopen" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : null}
+                  {pending?.kind === "reopen" ? "Reopening…" : "Reopen banking step"}
+                </Button>
+              )}
               {submission.status === "rejected" &&
                 submissionRejectionReason && (
                   <p className="mt-3 rounded-lg border border-red-500/15 bg-surface/60 px-3 py-2 text-[11px] leading-relaxed text-red-600 dark:text-red-400">

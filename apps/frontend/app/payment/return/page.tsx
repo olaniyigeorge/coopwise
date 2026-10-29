@@ -21,7 +21,10 @@ import { Loader2 } from 'lucide-react'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function destination(params: URLSearchParams): string {
-  const status = params.get('status') === 'success' ? 'success' : 'failed'
+  const requestedStatus = params.get('status')
+  const status = ['success', 'failed', 'abandoned'].includes(requestedStatus ?? '')
+    ? requestedStatus
+    : 'failed'
   const ref = encodeURIComponent(params.get('ref') ?? '')
   const kind = params.get('kind')
   const group = params.get('group') ?? ''

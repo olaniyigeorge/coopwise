@@ -42,6 +42,7 @@ from src.domains.kyc.models import (
     KYCStepType,
     KYCIdDocumentType,
 )
+from src.domains.kyc.completeness import is_kyc_complete
 from src.domains.kyc.service import (
     KYCService,
     PersonalInfoInput,
@@ -60,6 +61,7 @@ from src.domains.kyc.schemas import (
     RejectStepRequest,
     FinalizeRejectRequest,
     KYCStatusResponse,
+    ReopenStepRequest,
     KYCSummaryResponse,
     StartKYCResponse,
     StepSummary,
@@ -149,9 +151,13 @@ def _build_summary(kyc) -> KYCSummaryResponse:
         if record.status.value == "rejected":
             rejected_count += 1
 
+    effective_status = kyc.status
+    if kyc.status == KYCStatus.verified and not is_kyc_complete(kyc):
+        effective_status = KYCStatus.in_progress
+
     return KYCSummaryResponse(
         kyc_id=kyc.id,
-        overall_status=kyc.status,
+        overall_status=effective_status,
         current_step=_current_step(kyc),
         submitted_count=submitted_count,
         approved_count=approved_count,
@@ -187,7 +193,11 @@ async def get_kyc_status(
         kyc = await service.get_status(user.id)
     except Exception as exc:
         _raise_mapped(exc)
-    return KYCStatusResponse.model_validate(kyc)
+    response = KYCStatusResponse.model_validate(kyc)
+    if kyc.status == KYCStatus.verified and not is_kyc_complete(kyc):
+        response.status = KYCStatus.in_progress
+        response.current_step = _current_step(kyc)
+    return response
 
 
 @router.get("/summary", response_model=KYCSummaryResponse)
@@ -579,3 +589,27 @@ async def finalize_rejected(
         await service.finalize_rejected(kyc_id, payload.reason)
     except Exception as exc:
         _raise_mapped(exc)
+
+
+@router.post("/admin/{kyc_id}/reopen", status_code=status.HTTP_204_NO_CONTENT)
+async def reopen_kyc_step(
+    kyc_id: UUID,
+    payload: ReopenStepRequest,
+    request: Request,
+    admin=Depends(get_current_admin_user),
+    service: KYCService = Depends(get_kyc_service),
+    audit: KYCAuditService = Depends(get_kyc_audit_service),
+):
+    try:
+        await service.reopen_step(kyc_id, payload.step)
+    except Exception as exc:
+        _raise_mapped(exc)
+    await audit.log(
+        kyc_id=kyc_id,
+        admin_id=admin.id,
+        action="reopen_step",
+        step=payload.step.value,
+        reason="Admin reopened step for member correction",
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent"),
+    )

@@ -1,5 +1,4 @@
 import random
-import secrets
 from decimal import Decimal, ROUND_DOWN
 import requests
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,8 +25,7 @@ from src.domains.cooperatives.models.cooperative import CoopCooperative
 from src.domains.contributions.models import Contribution, ContributionStatus
 from src.domains.memberships.models.group_membership import GroupMembership
 from src.domains.payments.models import PayoutRecord, PayoutStatus
-from src.domains.kyc.models import KYCVerification
-from src.infra.security.field_encryptor import FieldEncryptor
+from src.domains.notifications.service import NotificationService
 
 
 # One rate for the whole wallet: deposits, withdrawals and contributions must
@@ -847,14 +845,6 @@ class PayoutService:
         round_number: int,
         currency: str,
     ) -> PayoutRecord:
-        kyc = await db.execute(
-            select(KYCVerification).where(KYCVerification.user_id == user_id)
-        )
-        kyc_verification = kyc.scalars().first()
-        banking_info = kyc_verification.banking_info if kyc_verification else None
-        if not banking_info or not banking_info.provider_verified:
-            raise PayoutError("Recipient has not completed verified bank-account KYC")
-
         payout_record = PayoutRecord(
             group_id=group.id,
             user_id=user_id,
@@ -867,32 +857,39 @@ class PayoutService:
         await db.commit()
         await db.refresh(payout_record)
 
-        encryptor = FieldEncryptor(config.SECRET_ENCRYPTION_KEY)
-        account_number = encryptor.decrypt(banking_info.account_number_encrypted)
-
         try:
-            recipient_code = await PaymentService.create_paystack_transfer_recipient(
-                account_number=account_number,
-                bank_code=banking_info.bank_code,
-                account_name=banking_info.account_name,
-            )
-            reference = f"payout-{payout_record.id}-{secrets.token_hex(4)}"
-            transfer = await PaymentService.initiate_paystack_transfer(
-                amount=amount,
-                recipient_code=recipient_code,
+            reference = f"wallet-payout-{payout_record.id}"
+            await WalletService.credit_payout(
+                user_id=user_id,
+                local_amount=amount,
+                currency=currency,
                 reference=reference,
-                reason=f"CoopWise payout — {group.name} (round {round_number})",
+                db=db,
             )
-            payout_record.recipient_code = recipient_code
-            payout_record.provider_reference = transfer.get("reference", reference)
-            payout_record.status = PayoutStatus.processing
-        except HTTPException as e:
+            payout_record.provider = "wallet"
+            payout_record.provider_reference = reference
+            payout_record.status = PayoutStatus.completed
+            payout_record.completed_at = datetime.now()
+        except Exception as e:
             payout_record.status = PayoutStatus.failed
-            payout_record.failure_reason = str(e.detail)
-            logger.error(f"Payout {payout_record.id} failed to initiate: {e.detail}")
+            payout_record.failure_reason = str(getattr(e, "detail", e))
+            logger.error(f"Payout {payout_record.id} failed to credit wallet: {e}")
 
         await db.commit()
         await db.refresh(payout_record)
+        if payout_record.status == PayoutStatus.completed:
+            await NotificationService.notify_transaction(
+                db=db,
+                user_id=user_id,
+                reference=payout_record.provider_reference or str(payout_record.id),
+                status="succeeded",
+                title="Payout credited to your wallet",
+                message=(
+                    f"Your cooperative payout of {currency} {amount} "
+                    "has been credited to your wallet."
+                ),
+                entity_url="/dashboard/wallet/fund",
+            )
         return payout_record
 
     @staticmethod

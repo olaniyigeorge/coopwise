@@ -41,7 +41,13 @@ from src.domains.kyc.exceptions import (
 # ---- Allowed status transitions — the actual state machine ----
 _ALLOWED_TRANSITIONS: dict[KYCStatus, set[KYCStatus]] = {
     KYCStatus.not_started: {KYCStatus.in_progress},
-    KYCStatus.in_progress: {KYCStatus.pending_review, KYCStatus.rejected},
+    # Admin approval of the final step may verify a record directly from
+    # in_progress, especially after an admin reopens a single step.
+    KYCStatus.in_progress: {
+        KYCStatus.pending_review,
+        KYCStatus.verified,
+        KYCStatus.rejected,
+    },
     KYCStatus.pending_review: {
         KYCStatus.verified,
         KYCStatus.rejected,
@@ -376,6 +382,7 @@ class KYCService:
         await self._repo.set_step_status(
             kyc_id, step, KYCStepStatus.rejected, rejection_reason=reason
         )
+        await self._notifier.notify_kyc_step_rejected(kyc, step, reason)
         if kyc.status != KYCStatus.rejected:
             await self._transition(kyc, KYCStatus.rejected)
             await self._repo.set_overall_status(
@@ -399,6 +406,33 @@ class KYCService:
         kyc = await self._transition(kyc, KYCStatus.rejected)
         await self._repo.set_overall_status(kyc.id, rejection_reason=reason)
         await self._user_flags.set_kyc_verified(kyc.user_id, False)
+
+    async def reopen_step(self, kyc_id: UUID, step: KYCStepType):
+        """Reopen one KYC step so an admin can request corrected details."""
+        kyc = await self._repo.get_by_id(kyc_id)
+        if kyc is None:
+            raise KYCNotFoundError(str(kyc_id))
+
+        record = getattr(kyc, step.value)
+        if record is not None:
+            await self._repo.set_step_status(
+                kyc_id,
+                step,
+                KYCStepStatus.submitted,
+                rejection_reason=None,
+            )
+
+        previous_status = kyc.status
+        updated = await self._repo.set_overall_status(
+            kyc_id,
+            status=KYCStatus.in_progress,
+            verified_at=None,
+            rejection_reason=None,
+        )
+        await self._user_flags.set_kyc_verified(kyc.user_id, False)
+        await self._notifier.notify_kyc_status_transition(
+            updated, previous_status, KYCStatus.in_progress
+        )
 
     async def begin_identity_submission(self, user_id: UUID):
         kyc = await self._require_editable(
@@ -538,4 +572,9 @@ class KYCService:
             raise InvalidKYCStateTransitionError(
                 f"Cannot go from {kyc.status} to {new_status}"
             )
-        return await self._repo.set_overall_status(kyc.id, status=new_status)
+        previous_status = kyc.status
+        updated = await self._repo.set_overall_status(kyc.id, status=new_status)
+        await self._notifier.notify_kyc_status_transition(
+            updated, previous_status, new_status
+        )
+        return updated

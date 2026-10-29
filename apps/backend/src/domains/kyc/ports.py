@@ -114,6 +114,16 @@ class KYCNotifierPort(Protocol):
     notifications.service or builds NotificationCreate payloads directly.
     """
 
-    async def notify_kyc_user_step_rejected(
-        self, verification: KYCVerification, status=KYCStepType
+    async def notify_kyc_status_transition(
+        self,
+        verification: KYCVerification,
+        previous_status: KYCStatus,
+        new_status: KYCStatus,
+    ) -> None: ...
+
+    async def notify_kyc_step_rejected(
+        self,
+        verification: KYCVerification,
+        step: KYCStepType,
+        reason: str,
     ) -> None: ...

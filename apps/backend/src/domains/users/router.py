@@ -10,6 +10,8 @@ from src.api.middlewares.dependencies import (
 )
 from src.domains.auth.schemas import AuthenticatedUser
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from src.domains.users.public_profile import get_public_profile
 from src.domains.users.schemas import (
@@ -27,6 +29,8 @@ from src.domains.users.exceptions import (
     UserNotFoundError,
     UserUpdateError,
 )
+from src.domains.kyc.completeness import is_kyc_complete
+from src.domains.kyc.models import KYCVerification
 
 router = APIRouter(prefix="/api/v1/users", tags=["User Management"])
 
@@ -35,10 +39,23 @@ router = APIRouter(prefix="/api/v1/users", tags=["User Management"])
 async def get_my_profile(
     user: AuthenticatedUser = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service),
+    db: AsyncSession = Depends(get_async_db_session),
 ):
     """Fetch the authenticated user's own profile."""
     try:
-        return await user_service.get_user_by_id(user.id)
+        profile = await user_service.get_user_by_id(user.id)
+        kyc = await db.scalar(
+            select(KYCVerification)
+            .options(
+                selectinload(KYCVerification.personal_info),
+                selectinload(KYCVerification.contact_info),
+                selectinload(KYCVerification.identity_verification),
+                selectinload(KYCVerification.banking_info),
+            )
+            .where(KYCVerification.user_id == user.id)
+        )
+        profile.is_kyc_verified = is_kyc_complete(kyc)
+        return profile
     except UserNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

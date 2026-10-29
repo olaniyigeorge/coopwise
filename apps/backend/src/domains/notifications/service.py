@@ -19,7 +19,12 @@ from src.domains.notifications.schemas import (
     NotificationCreate,
     NotificationDetail,
 )
-from src.domains.notifications.models import Notification, NotificationStatus
+from src.domains.notifications.models import (
+    EventType,
+    Notification,
+    NotificationStatus,
+    NotificationType,
+)
 from src.infra.cache.redis_client import get_cache, update_cache
 from src.shared.utils.logger import logger
 from src.domains.users.service import UserService
@@ -33,6 +38,18 @@ class NotificationService:
         notification_data: NotificationCreate, db: AsyncSession
     ) -> NotificationDetail:
         """Create a persistent notification and send it to the user in real time."""
+        if notification_data.idempotency_key:
+            existing_result = await db.execute(
+                select(Notification)
+                .where(
+                    Notification.idempotency_key == notification_data.idempotency_key
+                )
+                .options(joinedload(Notification.user))
+            )
+            existing = existing_result.scalar_one_or_none()
+            if existing:
+                return NotificationDetail.model_validate(existing)
+
         notification = Notification(
             user_id=notification_data.user_id,
             title=notification_data.title,
@@ -40,6 +57,7 @@ class NotificationService:
             type=notification_data.type,
             event_type=notification_data.event_type,
             entity_url=notification_data.entity_url,
+            idempotency_key=notification_data.idempotency_key,
         )
 
         db.add(notification)
@@ -51,6 +69,49 @@ class NotificationService:
             notification_data.user_id, notification_detail
         )
         return notification_detail
+
+    @staticmethod
+    async def notify_transaction(
+        *,
+        db: AsyncSession,
+        user_id: UUID,
+        reference: str,
+        status: str,
+        title: str,
+        message: str,
+        entity_url: str,
+    ) -> None:
+        """Persist and push a transaction lifecycle notification.
+
+        Notification delivery must never turn a settled payment into a failed
+        API request, so notification errors are logged and swallowed here.
+        The reference/status key also makes webhook + callback processing safe.
+        """
+        notification_type = {
+            "succeeded": NotificationType.success,
+            "failed": NotificationType.error,
+            "abandoned": NotificationType.warning,
+            "initiated": NotificationType.info,
+        }.get(status, NotificationType.info)
+        try:
+            await NotificationService.create_and_push_notification_to_user(
+                NotificationCreate(
+                    user_id=user_id,
+                    title=title,
+                    message=message,
+                    event_type=EventType.transaction,
+                    type=notification_type,
+                    entity_url=entity_url,
+                    idempotency_key=f"transaction:{reference}:{status}",
+                ),
+                db,
+            )
+        except Exception:
+            logger.exception(
+                "Could not create transaction notification reference=%s status=%s",
+                reference,
+                status,
+            )
 
     @staticmethod
     async def get_user_unread_notifications(

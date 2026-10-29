@@ -29,6 +29,7 @@ from src.domains.auth.exceptions import (
     InvalidCredentialsError,
     InvalidTokenError,
     InvalidTokenTypeError,
+    OAuthPasswordLoginError,
     OtpInvalidOrExpiredError,
     TokenExpiredError,
     UserNotFoundError,
@@ -176,7 +177,14 @@ class AuthService:
         # Deliberately identical error for "no such user", "no password set",
         # and "wrong password" — don't give an attacker an account-enumeration
         # oracle via three different failure messages.
-        if user is None or not user.password:
+        if user is None:
+            raise InvalidCredentialsError("Invalid email/phone or password")
+
+        if not user.password:
+            if user.firebase_uid:
+                raise OAuthPasswordLoginError(
+                    "This account uses Google sign-in. Continue with Google instead."
+                )
             raise InvalidCredentialsError("Invalid email/phone or password")
 
         if not self._passwords.verify(payload.password, user.password):

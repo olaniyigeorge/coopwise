@@ -23,6 +23,21 @@ export interface PaystackInitResponse {
   }
 }
 
+export interface WalletWithdrawal {
+  id: string
+  reference: string
+  local_amount: number
+  stable_amount: number
+  local_currency: string
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'reversed'
+  provider_reference: string | null
+  bank_name: string
+  account_number_last4: string
+  failure_reason: string | null
+  created_at: string
+  completed_at: string | null
+}
+
 // Wallet service
 const WalletService = {
 
@@ -87,6 +102,16 @@ const WalletService = {
     return ApiService.post<{ message: string; receipt: Record<string, unknown> }>(
       `/wallet/deposit/finalise?reference=${encodeURIComponent(reference)}&payment_gateway=${encodeURIComponent(paymentGateway)}`
     )
+  },
+
+  async withdraw(localAmount: number) {
+    return ApiService.post<WalletWithdrawal>('/wallet/withdraw', {
+      local_amount: localAmount,
+    })
+  },
+
+  async listWithdrawals() {
+    return ApiService.get<WalletWithdrawal[]>('/wallet/withdrawals')
   },
 }
 

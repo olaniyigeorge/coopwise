@@ -4,7 +4,6 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeftRight, Eye, EyeOff, Plus, ShieldCheck, Target, Clock } from 'lucide-react'
 import { formatCurrency, cn } from '@/lib/utils'
-import ComingSoonButton from '@/components/coming-soon-button'
 import RollingNumber from '@/components/dashboard/home/rolling-number'
 
 interface WalletHeroProps {
@@ -242,14 +241,13 @@ export default function WalletHero({
             <Plus className="h-4 w-4" />
             Add Money
           </Link>
-          <ComingSoonButton
-            title="Withdrawals coming soon"
-            description="Bank and stable-coin withdrawals are being wired up. You'll be able to cash out from this wallet soon."
+          <Link
+            href="/dashboard/wallet/fund#withdraw"
             className="inline-flex h-auto items-center gap-2 rounded-full bg-[#1F7A54] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#196546]"
           >
             <ArrowLeftRight className="h-4 w-4" />
             Withdraw
-          </ComingSoonButton>
+          </Link>
           <Link
             href="/dashboard/contributions/make"
             className="inline-flex items-center gap-2 rounded-full border border-content/15 px-5 py-2.5 text-sm font-semibold text-content transition-colors hover:border-content/30 hover:bg-content/[0.03]"
