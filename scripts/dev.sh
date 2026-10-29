@@ -16,6 +16,26 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 BACKEND_DIR="$PROJECT_ROOT/apps/backend"
 FRONTEND_DIR="$PROJECT_ROOT/apps/frontend"
 
+# Local development must not silently connect to a hosted/production database.
+# Set ALLOW_REMOTE_DATABASE=true only when a remote database is intentional.
+if [ -n "${DATABASE_URL:-}" ]; then
+  CONFIGURED_DATABASE_URL="$DATABASE_URL"
+else
+  CONFIGURED_DATABASE_URL="$(awk -F= '/^DATABASE_URL=/{sub(/^DATABASE_URL=/, ""); print; exit}' "$BACKEND_DIR/.env" 2>/dev/null || true)"
+fi
+DATABASE_HOST="$(printf '%s\n' "$CONFIGURED_DATABASE_URL" | sed -E 's#^[^:]+://([^@]+@)?([^:/]+).*#\2#')"
+case "$DATABASE_HOST" in
+  localhost|127.0.0.1|postgres|"" ) ;;
+  *)
+    if [ "${ALLOW_REMOTE_DATABASE:-false}" != "true" ]; then
+      echo -e "${RED}Refusing to start: local dev is configured for remote database host '$DATABASE_HOST'.${NC}"
+      echo "Set DATABASE_URL to a local database, use docker-compose.dev.yml, or explicitly set ALLOW_REMOTE_DATABASE=true."
+      exit 1
+    fi
+    echo -e "${YELLOW}WARNING: local dev is using remote database host '$DATABASE_HOST'.${NC}"
+    ;;
+esac
+
 # --- macOS: make Homebrew and the EDB Postgres tools visible ---
 # (a fresh terminal/script doesn't always have these on PATH)
 [ -d /opt/homebrew/bin ] && export PATH="/opt/homebrew/bin:$PATH"
