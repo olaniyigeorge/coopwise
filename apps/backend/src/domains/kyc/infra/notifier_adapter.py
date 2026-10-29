@@ -9,7 +9,15 @@ class NotificationServiceKYCNotifier:
     def __init__(self, db=None):
         self._db = db
 
-    async def _send(self, *, verification: KYCVerification, title: str, message: str, notification_type: NotificationType, key: str) -> None:
+    async def _send(
+        self,
+        *,
+        verification: KYCVerification,
+        title: str,
+        message: str,
+        notification_type: NotificationType,
+        key: str,
+    ) -> None:
         if self._db is None:
             return
         try:
@@ -26,7 +34,9 @@ class NotificationServiceKYCNotifier:
                 self._db,
             )
         except Exception:
-            logger.exception("Could not create KYC notification for %s", verification.id)
+            logger.exception(
+                "Could not create KYC notification for %s", verification.id
+            )
 
     async def notify_kyc_status_transition(
         self,

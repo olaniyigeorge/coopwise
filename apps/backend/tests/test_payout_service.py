@@ -87,7 +87,9 @@ async def test_execute_payout_pays_earliest_joiner_first(db_session):
 
 
 @pytest.mark.asyncio
-async def test_execute_payout_does_not_require_bank_account_for_wallet_credit(db_session):
+async def test_execute_payout_does_not_require_bank_account_for_wallet_credit(
+    db_session,
+):
     creator = await _make_user(db_session, "Creator")
     group = await _make_group(db_session, creator)
 

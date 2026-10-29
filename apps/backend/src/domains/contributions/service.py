@@ -757,9 +757,7 @@ class ContributionService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(
-                f"Failed to mark contribution abandoned: {e}", exc_info=True
-            )
+            logger.error(f"Failed to mark contribution abandoned: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Could not mark contribution as abandoned",

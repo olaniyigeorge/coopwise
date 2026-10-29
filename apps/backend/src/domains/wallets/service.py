@@ -1,6 +1,7 @@
 # app/services/wallet_service.py
 import json
 import secrets
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from src.domains.wallets.models import (
@@ -366,7 +367,9 @@ class WalletService:
         db: AsyncSession,
     ) -> Wallet:
         """Credit a cooperative payout into the member's wallet."""
-        wallet_result = await db.execute(select(Wallet).where(Wallet.user_id == user_id))
+        wallet_result = await db.execute(
+            select(Wallet).where(Wallet.user_id == user_id)
+        )
         wallet = wallet_result.scalars().first()
         if not wallet:
             wallet = Wallet(user_id=user_id, local_currency=LocalCurrency(currency))
@@ -411,7 +414,9 @@ class WalletService:
 
         stable_micro = to_micro(Decimal(str(local_amount)) * MOCK_LOCAL_TO_STABLE_RATE)
         if stable_micro <= 0:
-            raise HTTPException(status_code=400, detail="Withdrawal amount must be positive")
+            raise HTTPException(
+                status_code=400, detail="Withdrawal amount must be positive"
+            )
         if wallet.stable_coin_balance_micro < stable_micro:
             raise HTTPException(status_code=400, detail="Insufficient wallet balance")
 
@@ -486,7 +491,7 @@ class WalletService:
 
         if success:
             withdrawal.status = WithdrawalStatus.completed
-            withdrawal.completed_at = datetime.now()
+            withdrawal.completed_at = datetime.now(timezone.utc)
         else:
             withdrawal.status = (
                 WithdrawalStatus.reversed if reversed else WithdrawalStatus.failed

@@ -132,9 +132,7 @@ async def paystack_webhook(
                     reference=withdrawal.reference,
                     status="succeeded" if is_success else "failed",
                     title=(
-                        "Withdrawal successful"
-                        if is_success
-                        else "Withdrawal failed"
+                        "Withdrawal successful" if is_success else "Withdrawal failed"
                     ),
                     message=(
                         "Your withdrawal has reached your bank account."
@@ -162,9 +160,11 @@ async def paystack_webhook(
     payment_status = (
         "succeeded"
         if event == "charge.success" and status_ == "success"
-        else "abandoned"
-        if event == "charge.abandoned" or status_ == "abandoned"
-        else "failed"
+        else (
+            "abandoned"
+            if event == "charge.abandoned" or status_ == "abandoned"
+            else "failed"
+        )
     )
 
     # Direct Paystack contribution (no wallet ledger): settle by reference
@@ -176,7 +176,9 @@ async def paystack_webhook(
             )
         elif payment_status == "abandoned":
             await ContributionService.mark_contribution_cancelled(
-                db, direct.id, data.get("gateway_response") or "Paystack checkout abandoned"
+                db,
+                direct.id,
+                data.get("gateway_response") or "Paystack checkout abandoned",
             )
         else:
             await ContributionService.mark_contribution_failed(

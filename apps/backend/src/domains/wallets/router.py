@@ -281,20 +281,29 @@ async def finalise_deposit(
         )
 
     if not verification_result:
-        ledger_record = ledger_record or await WalletService.get_wallet_ledger_by_reference(
-            reference, db
+        ledger_record = (
+            ledger_record
+            or await WalletService.get_wallet_ledger_by_reference(reference, db)
         )
         if ledger_record:
             await WalletService.fail_deposit(reference, db)
-            wallet = await WalletService.get_wallet_by_id(str(ledger_record.wallet_id), db)
+            wallet = await WalletService.get_wallet_by_id(
+                str(ledger_record.wallet_id), db
+            )
             if wallet:
-                gateway_status = "abandoned" if payment_gateway == "paystack" else "failed"
+                gateway_status = (
+                    "abandoned" if payment_gateway == "paystack" else "failed"
+                )
                 await NotificationService.notify_transaction(
                     db=db,
                     user_id=wallet.user_id,
                     reference=reference,
                     status=gateway_status,
-                    title="Deposit abandoned" if gateway_status == "abandoned" else "Deposit failed",
+                    title=(
+                        "Deposit abandoned"
+                        if gateway_status == "abandoned"
+                        else "Deposit failed"
+                    ),
                     message=(
                         "Your deposit checkout was abandoned before completion."
                         if gateway_status == "abandoned"
@@ -410,7 +419,9 @@ async def withdraw_to_bank(
             detail=detail,
         )
 
-    withdrawal = await WalletService.reserve_withdrawal(user.id, payload.local_amount, db)
+    withdrawal = await WalletService.reserve_withdrawal(
+        user.id, payload.local_amount, db
+    )
     encryptor = FieldEncryptor(config.SECRET_ENCRYPTION_KEY)
     account_number = encryptor.decrypt(banking.account_number_encrypted)
     provider_reference = f"withdrawal-{withdrawal.id}-{uuid.uuid4().hex[:8]}"

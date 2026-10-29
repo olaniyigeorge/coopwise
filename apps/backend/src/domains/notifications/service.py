@@ -41,7 +41,9 @@ class NotificationService:
         if notification_data.idempotency_key:
             existing_result = await db.execute(
                 select(Notification)
-                .where(Notification.idempotency_key == notification_data.idempotency_key)
+                .where(
+                    Notification.idempotency_key == notification_data.idempotency_key
+                )
                 .options(joinedload(Notification.user))
             )
             existing = existing_result.scalar_one_or_none()

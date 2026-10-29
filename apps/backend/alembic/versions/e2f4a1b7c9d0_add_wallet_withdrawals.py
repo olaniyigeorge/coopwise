@@ -19,7 +19,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     withdrawal_status = postgresql.ENUM(
-        "pending", "processing", "completed", "failed", "reversed",
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "reversed",
         name="withdrawalstatus",
     )
     withdrawal_status.create(op.get_bind(), checkfirst=True)
@@ -32,7 +36,9 @@ def upgrade() -> None:
         sa.Column("stable_amount_micro", sa.BigInteger(), nullable=False),
         sa.Column(
             "local_currency",
-            postgresql.ENUM("NGN", "GHS", "KES", name="localcurrency", create_type=False),
+            postgresql.ENUM(
+                "NGN", "GHS", "KES", name="localcurrency", create_type=False
+            ),
             nullable=False,
         ),
         sa.Column("status", withdrawal_status, nullable=False),
@@ -52,13 +58,23 @@ def upgrade() -> None:
         sa.UniqueConstraint("provider_reference"),
     )
     op.create_index("ix_wallet_withdrawals_id", "wallet_withdrawals", ["id"])
-    op.create_index("ix_wallet_withdrawals_reference", "wallet_withdrawals", ["reference"])
-    op.create_index("ix_wallet_withdrawals_wallet_id", "wallet_withdrawals", ["wallet_id"])
-    op.create_index("ix_wallet_withdrawals_provider_reference", "wallet_withdrawals", ["provider_reference"])
+    op.create_index(
+        "ix_wallet_withdrawals_reference", "wallet_withdrawals", ["reference"]
+    )
+    op.create_index(
+        "ix_wallet_withdrawals_wallet_id", "wallet_withdrawals", ["wallet_id"]
+    )
+    op.create_index(
+        "ix_wallet_withdrawals_provider_reference",
+        "wallet_withdrawals",
+        ["provider_reference"],
+    )
 
 
 def downgrade() -> None:
-    op.drop_index("ix_wallet_withdrawals_provider_reference", table_name="wallet_withdrawals")
+    op.drop_index(
+        "ix_wallet_withdrawals_provider_reference", table_name="wallet_withdrawals"
+    )
     op.drop_index("ix_wallet_withdrawals_wallet_id", table_name="wallet_withdrawals")
     op.drop_index("ix_wallet_withdrawals_reference", table_name="wallet_withdrawals")
     op.drop_index("ix_wallet_withdrawals_id", table_name="wallet_withdrawals")

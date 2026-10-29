@@ -12,4 +12,6 @@ def is_kyc_complete(kyc: KYCVerification | None) -> bool:
         kyc.identity_verification,
         kyc.banking_info,
     )
-    return all(step is not None and step.status == KYCStepStatus.approved for step in steps)
+    return all(
+        step is not None and step.status == KYCStepStatus.approved for step in steps
+    )
