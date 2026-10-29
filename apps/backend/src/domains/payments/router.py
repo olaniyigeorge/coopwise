@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import UUID
 from fastapi import APIRouter, Request, Header, HTTPException, Depends
 from fastapi.responses import RedirectResponse
@@ -27,11 +26,47 @@ from src.domains.wallets.service import WalletService
 from src.domains.wallets.models import LedgerStatus
 from config import AppConfig as config
 from src.domains.payments.service import PaymentService, PayoutService, PayoutError
+from src.domains.notifications.service import NotificationService
 
 
 from src.infra.db.dependencies import get_async_db_session
 
 router = APIRouter(prefix="/api/v1/payments", tags=["Payments & Integrations"])
+
+
+async def _notify_wallet_payment(
+    *, db: AsyncSession, ledger, reference: str, status: str
+) -> None:
+    wallet = await WalletService.get_wallet_by_id(str(ledger.wallet_id), db)
+    if not wallet:
+        return
+
+    currency = ledger.local_currency.value
+    amount = ledger.local_amount
+    messages = {
+        "succeeded": (
+            "Deposit successful",
+            f"Your deposit of {currency} {amount} was completed successfully.",
+        ),
+        "failed": (
+            "Deposit failed",
+            f"Your deposit of {currency} {amount} failed. No funds were added to your wallet.",
+        ),
+        "abandoned": (
+            "Deposit abandoned",
+            f"Your deposit of {currency} {amount} was abandoned before completion.",
+        ),
+    }
+    title, message = messages[status]
+    await NotificationService.notify_transaction(
+        db=db,
+        user_id=wallet.user_id,
+        reference=reference,
+        status=status,
+        title=title,
+        message=message,
+        entity_url="/dashboard/wallet/fund",
+    )
 
 
 @router.get("/deposit-with-paystack", summary="Verify Paystack Payment")
@@ -77,6 +112,39 @@ async def paystack_webhook(
     status_ = data.get("status")
 
     if event in ("transfer.success", "transfer.failed", "transfer.reversed"):
+        withdrawal = await WalletService.get_withdrawal_by_provider_reference(
+            reference, db
+        )
+        if withdrawal:
+            is_success = event == "transfer.success"
+            withdrawal = await WalletService.mark_withdrawal_from_provider(
+                withdrawal,
+                success=is_success,
+                reversed=event == "transfer.reversed",
+                reason=data.get("reason") or data.get("failure_reason"),
+                db=db,
+            )
+            wallet = await WalletService.get_wallet_by_id(str(withdrawal.wallet_id), db)
+            if wallet:
+                await NotificationService.notify_transaction(
+                    db=db,
+                    user_id=wallet.user_id,
+                    reference=withdrawal.reference,
+                    status="succeeded" if is_success else "failed",
+                    title=(
+                        "Withdrawal successful"
+                        if is_success
+                        else "Withdrawal failed"
+                    ),
+                    message=(
+                        "Your withdrawal has reached your bank account."
+                        if is_success
+                        else "Your bank withdrawal failed and the funds were returned to your wallet."
+                    ),
+                    entity_url="/dashboard/wallet/fund",
+                )
+            return {"message": f"Withdrawal {withdrawal.status.value}."}
+
         payout_record = await PayoutService.mark_payout_from_webhook(
             db=db,
             reference=reference,
@@ -87,15 +155,33 @@ async def paystack_webhook(
             return {"message": "No matching payout record for reference."}
         return {"message": f"Payout {payout_record.status.value}."}
 
-    if event != "charge.success" or status_ != "success":
+    is_charge_event = event in ("charge.success", "charge.failed", "charge.abandoned")
+    if not is_charge_event:
         return {"message": "Ignored non-success event."}
+
+    payment_status = (
+        "succeeded"
+        if event == "charge.success" and status_ == "success"
+        else "abandoned"
+        if event == "charge.abandoned" or status_ == "abandoned"
+        else "failed"
+    )
 
     # Direct Paystack contribution (no wallet ledger): settle by reference
     direct = await ContributionService.get_contribution_by_reference(db, reference)
     if direct:
-        await ContributionService.settle_paystack_contribution(
-            db, direct, int(data.get("amount") or 0)
-        )
+        if payment_status == "succeeded":
+            await ContributionService.settle_paystack_contribution(
+                db, direct, int(data.get("amount") or 0)
+            )
+        elif payment_status == "abandoned":
+            await ContributionService.mark_contribution_cancelled(
+                db, direct.id, data.get("gateway_response") or "Paystack checkout abandoned"
+            )
+        else:
+            await ContributionService.mark_contribution_failed(
+                db, direct.id, data.get("gateway_response") or "Paystack payment failed"
+            )
         return {"message": "Contribution payment processed."}
 
     try:
@@ -108,16 +194,42 @@ async def paystack_webhook(
         if payment.status == LedgerStatus.settled:
             return {"message": "Payment already settled."}
 
+        if payment_status != "succeeded":
+            await WalletService.fail_deposit(reference, db)
+            if payment.contribution_id:
+                if payment_status == "abandoned":
+                    await ContributionService.mark_contribution_cancelled(
+                        db,
+                        payment.contribution_id,
+                        "Payment checkout abandoned",
+                    )
+                else:
+                    await ContributionService.mark_contribution_failed(
+                        db,
+                        payment.contribution_id,
+                        "Payment failed",
+                    )
+            await _notify_wallet_payment(
+                db=db,
+                ledger=payment,
+                reference=reference,
+                status=payment_status,
+            )
+            return {"message": f"Payment {payment_status}."}
+
         # Step 4: Settle the ledger and credit the wallet
         await WalletService.finalize_deposit(reference, db, redis)
+        await _notify_wallet_payment(
+            db=db, ledger=payment, reference=reference, status="succeeded"
+        )
 
         # Step 5: Update related contribution record, if this deposit was tied to one
         if payment.contribution_id:
-            await ContributionService.update_contribution_status(
+            await ContributionService.mark_contribution_success(
                 db=db,
                 contribution_id=payment.contribution_id,
-                contribution_status="completed",
-                paid_at=datetime.now(),
+                tx_hash=reference,
+                debit_wallet=False,
             )
             return {"message": "Payment and contribution updated successfully."}
 
@@ -145,7 +257,8 @@ async def paystack_callback(
 
     direct = await ContributionService.get_contribution_by_reference(db, reference)
     if direct:
-        paid = verification["data"]["status"] == "success"
+        gateway_status = verification["data"].get("status")
+        paid = gateway_status == "success"
         if paid:
             paid = (
                 await ContributionService.settle_paystack_contribution(
@@ -153,18 +266,41 @@ async def paystack_callback(
                 )
                 or direct.status.value == "completed"
             )
-        outcome = "success" if paid else "failed"
+        elif gateway_status == "abandoned":
+            await ContributionService.mark_contribution_cancelled(
+                db, direct.id, "Paystack checkout abandoned"
+            )
+        else:
+            await ContributionService.mark_contribution_failed(
+                db, direct.id, "Paystack payment failed"
+            )
+        outcome = "success" if paid else gateway_status or "failed"
         return RedirectResponse(
             url=f"{config.CLIENT_DOMAIN}/payment/return?kind=contribution"
             f"&group={direct.group_id}&status={outcome}&ref={reference}"
         )
 
-    if not verification["status"] or verification["data"]["status"] != "success":
+    gateway_status = verification["data"].get("status")
+    if not verification["status"] or gateway_status != "success":
+        ledger = await WalletService.get_wallet_ledger_by_reference(reference, db)
+        if ledger:
+            await WalletService.fail_deposit(reference, db)
+            await _notify_wallet_payment(
+                db=db,
+                ledger=ledger,
+                reference=reference,
+                status="abandoned" if gateway_status == "abandoned" else "failed",
+            )
         return RedirectResponse(
-            url=f"{config.CLIENT_DOMAIN}/payment/return?kind=wallet&status=failed&ref={reference}"
+            url=f"{config.CLIENT_DOMAIN}/payment/return?kind=wallet&status={gateway_status or 'failed'}&ref={reference}"
         )
 
+    ledger = await WalletService.get_wallet_ledger_by_reference(reference, db)
     await WalletService.finalize_deposit(reference, db, redis)
+    if ledger:
+        await _notify_wallet_payment(
+            db=db, ledger=ledger, reference=reference, status="succeeded"
+        )
 
     return RedirectResponse(
         url=f"{config.CLIENT_DOMAIN}/payment/return?kind=wallet&status=success&ref={reference}"
