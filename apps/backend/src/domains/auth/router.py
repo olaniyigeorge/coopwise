@@ -14,6 +14,7 @@ from src.domains.auth.exceptions import (
     FullNameRequiredError,
     InvalidCredentialsError,
     InvalidTokenTypeError,
+    OAuthPasswordLoginError,
     OtpDeliveryError,
     OtpInvalidOrExpiredError,
     OtpRateLimitedError,
@@ -76,6 +77,8 @@ async def sign_in_with_password(
     registered via OTP and set a password (no Google account required)."""
     try:
         return await auth_service.sign_in_with_password(payload)
+    except OAuthPasswordLoginError as e:
+        raise HTTPException(status_code=401, detail=str(e))
     except InvalidCredentialsError as e:
         raise HTTPException(status_code=401, detail=str(e))
 
