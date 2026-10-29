@@ -8,6 +8,7 @@ from src.domains.auth.exceptions import (
     InvalidCredentialsError,
     InvalidTokenError,
     InvalidTokenTypeError,
+    OAuthPasswordLoginError,
     OtpInvalidOrExpiredError,
     TokenExpiredError,
 )
@@ -175,6 +176,17 @@ class TestPasswordSignIn:
     async def test_user_with_no_password_set_raises(self, auth_service, user_repo):
         user_repo.seed(email="ada@coopwise.example", password=None)
         with pytest.raises(InvalidCredentialsError):
+            await auth_service.sign_in_with_password(
+                PasswordSignIn(identifier="ada@coopwise.example", password="whatever")
+            )
+
+    async def test_oauth_user_gets_provider_specific_error(
+        self, auth_service, user_repo
+    ):
+        user_repo.seed(
+            email="ada@coopwise.example", password=None, firebase_uid="google-1"
+        )
+        with pytest.raises(OAuthPasswordLoginError, match="Google sign-in"):
             await auth_service.sign_in_with_password(
                 PasswordSignIn(identifier="ada@coopwise.example", password="whatever")
             )
