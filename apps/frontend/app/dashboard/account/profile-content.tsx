@@ -397,6 +397,7 @@ export default function ProfileContent() {
                   src={avatarPreview || profile?.profile_picture_url}
                   size="lg"
                   className="h-20 w-20 shrink-0 rounded-3xl border-4 border-surface shadow-sm"
+                fallbackClassName="bg-[#DFF0E4] text-[#17603F] dark:bg-[#1C3A2C] dark:text-[#B7E3C3]"
                 />
                 <button
                   type="button"
@@ -484,6 +485,21 @@ export default function ProfileContent() {
           </div>
         </div>
       </section>
+
+      {profile?.role?.toLowerCase() === 'admin' && (
+        <section className="flex flex-col gap-3 rounded-[24px] border border-[#B8892B]/20 bg-[#FBF3DE] p-5 dark:border-[#B8892B]/30 dark:bg-[#2E2818] sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <p className="text-sm font-semibold text-[#6B4E12] dark:text-[#E8BC63]">Admin tools</p>
+            <p className="mt-1 text-xs text-[#8A6516]/80 dark:text-[#E8BC63]/70">Review member KYC submissions and verification status.</p>
+          </div>
+          <Link
+            href="/dashboard/admin/kyc"
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#0E3B2E] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0A2E24] dark:bg-[#7FBF9C] dark:text-[#0B1712]"
+          >
+            Open KYC review
+          </Link>
+        </section>
+      )}
 
       {/* Personal information */}
       <SectionCard
