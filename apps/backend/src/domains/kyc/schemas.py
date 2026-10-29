@@ -149,6 +149,10 @@ class FinalizeRejectRequest(BaseModel):
     reason: str = Field(..., min_length=3)
 
 
+class ReopenStepRequest(BaseModel):
+    step: KYCStepType = KYCStepType.banking_info
+
+
 # ---------- Responses ----------
 
 
