@@ -1,5 +1,5 @@
 from decimal import Decimal
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 from uuid import UUID
 from datetime import datetime
 from typing import Literal, Optional
@@ -12,6 +12,7 @@ from src.domains.wallets.models import (
     LocalCurrency,
     PaymentGateway,
     StableCurrency,
+    WithdrawalStatus,
 )
 
 
@@ -29,7 +30,24 @@ class WalletDeposit(BaseModel):
 
 
 class WalletWithdraw(BaseModel):
-    local_amount: Decimal
+    local_amount: Decimal = Field(..., gt=0)
+
+
+class WalletWithdrawalDetail(BaseModel):
+    id: UUID
+    reference: str
+    local_amount: float
+    stable_amount: float
+    local_currency: LocalCurrency
+    status: WithdrawalStatus
+    provider_reference: Optional[str]
+    bank_name: str
+    account_number_last4: str
+    failure_reason: Optional[str]
+    created_at: datetime
+    completed_at: Optional[datetime]
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class WalletBalance(BaseModel):
