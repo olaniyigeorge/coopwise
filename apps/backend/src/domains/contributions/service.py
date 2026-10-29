@@ -32,6 +32,7 @@ from src.domains.analytics.schemas import ActivityCreate
 from src.domains.analytics.models import ActivityLog, ActivityType
 from src.domains.memberships.models.invitation import CoopInvitation
 from src.domains.users.models import User
+from src.domains.notifications.service import NotificationService
 
 
 class ContributionActionType(Enum):
@@ -306,6 +307,19 @@ class ContributionService:
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Could not start the payment. Please try again.",
             )
+
+        await NotificationService.notify_transaction(
+            db=db,
+            user_id=user.id,
+            reference=reference,
+            status="initiated",
+            title="Contribution payment initiated",
+            message=(
+                f"Your contribution payment of {currency} {amount} was initiated. "
+                "Complete the payment to confirm your contribution."
+            ),
+            entity_url=f"/dashboard/cooperatives/{contribution.group_id}",
+        )
 
         return {
             "contribution": contribution,
@@ -590,6 +604,19 @@ class ContributionService:
                 ),
             )
 
+            await NotificationService.notify_transaction(
+                db=db,
+                user_id=contribution.user_id,
+                reference=contribution.tx_id or str(contribution.id),
+                status="succeeded",
+                title="Contribution payment successful",
+                message=(
+                    f"Your contribution of {contribution.currency} "
+                    f"{contribution.amount} was completed successfully."
+                ),
+                entity_url=f"/dashboard/cooperatives/{contribution.group_id}",
+            )
+
             logger.info(
                 f"Contribution marked successful: id={contribution_id}, "
                 f"action={action_type.value}, tx={tx_hash}"
@@ -637,11 +664,34 @@ class ContributionService:
             if not contribution:
                 raise HTTPException(status_code=404, detail="Contribution not found")
 
+            if contribution.status in (
+                ContributionStatus.completed,
+                ContributionStatus.cancelled,
+            ):
+                return {
+                    "message": "Contribution is already in a terminal state.",
+                    "contribution_id": str(contribution_id),
+                    "reason": reason,
+                }
+
             contribution.status = ContributionStatus.failed
             contribution.note = f"{contribution.note or ''} | FAILED: {reason}"
 
             await db.commit()
             await db.refresh(contribution)
+
+            await NotificationService.notify_transaction(
+                db=db,
+                user_id=contribution.user_id,
+                reference=contribution.tx_id or str(contribution.id),
+                status="failed",
+                title="Contribution payment failed",
+                message=(
+                    f"Your contribution payment of {contribution.currency} "
+                    f"{contribution.amount} failed. {reason}"
+                ),
+                entity_url=f"/dashboard/cooperatives/{contribution.group_id}",
+            )
 
             logger.warning(
                 f"Contribution marked failed: id={contribution_id}, "
@@ -659,6 +709,60 @@ class ContributionService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Could not mark contribution as failed",
+            )
+
+    @staticmethod
+    async def mark_contribution_cancelled(
+        db: AsyncSession, contribution_id: UUID, reason: str
+    ) -> Dict[str, Any]:
+        """Mark an unpaid gateway contribution as abandoned/cancelled."""
+        try:
+            contribution = await db.get(Contribution, contribution_id)
+            if not contribution:
+                raise HTTPException(status_code=404, detail="Contribution not found")
+
+            if contribution.status in (
+                ContributionStatus.completed,
+                ContributionStatus.failed,
+                ContributionStatus.cancelled,
+            ):
+                return {
+                    "message": "Contribution is already in a terminal state.",
+                    "contribution_id": str(contribution_id),
+                    "reason": reason,
+                }
+
+            contribution.status = ContributionStatus.cancelled
+            contribution.note = f"{contribution.note or ''} | ABANDONED: {reason}"
+            await db.commit()
+            await db.refresh(contribution)
+
+            await NotificationService.notify_transaction(
+                db=db,
+                user_id=contribution.user_id,
+                reference=contribution.tx_id or str(contribution.id),
+                status="abandoned",
+                title="Contribution payment abandoned",
+                message=(
+                    f"Your contribution payment of {contribution.currency} "
+                    f"{contribution.amount} was abandoned before completion."
+                ),
+                entity_url=f"/dashboard/cooperatives/{contribution.group_id}",
+            )
+            return {
+                "message": "Contribution marked as abandoned.",
+                "contribution_id": str(contribution_id),
+                "reason": reason,
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(
+                f"Failed to mark contribution abandoned: {e}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not mark contribution as abandoned",
             )
 
     @staticmethod
