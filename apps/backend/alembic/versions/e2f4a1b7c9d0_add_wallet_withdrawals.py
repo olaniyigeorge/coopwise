@@ -41,7 +41,21 @@ def upgrade() -> None:
             ),
             nullable=False,
         ),
-        sa.Column("status", withdrawal_status, nullable=False),
+        # The enum is created explicitly above; prevent SQLAlchemy from
+        # attempting to create the PostgreSQL type a second time.
+        sa.Column(
+            "status",
+            postgresql.ENUM(
+                "pending",
+                "processing",
+                "completed",
+                "failed",
+                "reversed",
+                name="withdrawalstatus",
+                create_type=False,
+            ),
+            nullable=False,
+        ),
         sa.Column("provider", sa.String(length=32), nullable=False),
         sa.Column("provider_reference", sa.String(), nullable=True),
         sa.Column("recipient_code", sa.String(), nullable=True),
